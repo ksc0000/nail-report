@@ -4,8 +4,48 @@ import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
 
+interface Todo {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
 function App() {
   const [count, setCount] = useState(0)
+  const [inputValue, setInputValue] = useState('')
+  const [todos, setTodos] = useState<Todo[]>([])
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value)
+  }
+
+  const handleAddTodo = () => {
+    if (inputValue.trim() !== '') {
+      setTodos([
+        ...todos,
+        { id: Date.now(), text: inputValue, completed: false }
+      ])
+      setInputValue('')
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && inputValue.trim() !== '') {
+      handleAddTodo()
+    }
+  }
+
+  const handleToggleComplete = (id: number) => {
+    setTodos(
+      todos.map(todo =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    )
+  }
+
+  const handleDeleteTodo = (id: number) => {
+    setTodos(todos.filter(todo => todo.id !== id))
+  }
 
   return (
     <>
@@ -28,6 +68,15 @@ function App() {
         >
           Count is {count}
         </button>
+
+        <input
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Add a new todo..."
+        />
+        <button onClick={handleAddTodo}>Add</button>
       </section>
 
       <div className="ticks"></div>
