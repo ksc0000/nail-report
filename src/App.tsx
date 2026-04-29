@@ -75,8 +75,9 @@ function App() {
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="Add a new todo..."
+          className="todo-input"
         />
-        <button onClick={handleAddTodo}>Add</button>
+        <button onClick={handleAddTodo} className="add-button">Add</button>
         <ul id="todo-list">
   {todos.map((todo) => (
     <li key={todo.id} className={todo.completed ? 'completed' : ''}>

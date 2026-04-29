@@ -223,3 +223,23 @@
 #todo-list button:hover {
   background: rgba(255, 255, 255, 0.08);
 }
+
+.todo-input {
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.add-button {
+  padding: 8px 16px;
+  background-color: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--accent-hover);
+  }
+}
