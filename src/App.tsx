@@ -77,6 +77,21 @@ function App() {
           placeholder="Add a new todo..."
         />
         <button onClick={handleAddTodo}>Add</button>
+        <ul id="todo-list">
+  {todos.map((todo) => (
+    <li key={todo.id} className={todo.completed ? 'completed' : ''}>
+      <span
+        className="todo-text"
+        onClick={() => handleToggleComplete(todo.id)}
+      >
+        {todo.text}
+      </span>
+      <button type="button" onClick={() => handleDeleteTodo(todo.id)}>
+        Delete
+      </button>
+    </li>
+  ))}
+</ul>
       </section>
 
       <div className="ticks"></div>

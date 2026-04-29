@@ -187,31 +187,39 @@
   list-style-type: none;
   padding: 0;
   margin: 24px 0;
+}
 
-  li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px;
-    border-bottom: 1px solid var(--border);
+#todo-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
 
-    &:last-child {
-      border-bottom: none;
-    }
+#todo-list li:last-child {
+  border-bottom: none;
+}
 
-    .todo-text {
-      flex-grow: 1;
-      text-decoration: ${props => props.completed ? 'line-through' : 'none'};
-    }
+#todo-list .todo-text {
+  flex-grow: 1;
+  cursor: pointer;
+}
 
-    button {
-      background: none;
-      border: none;
-      cursor: pointer;
+#todo-list li.completed .todo-text {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
 
-      &:hover {
-        opacity: 0.8;
-      }
-    }
-  }
+#todo-list button {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 6px 10px;
+}
+
+#todo-list button:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
