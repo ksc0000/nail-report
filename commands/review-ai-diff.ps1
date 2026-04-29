@@ -10,4 +10,7 @@ Write-Host "`n=== Git diff ===" -ForegroundColor Cyan
 git --no-pager diff
 
 Write-Host "`n=== Build check ===" -ForegroundColor Cyan
+
+Write-Host "`n=== CSS guard ===" -ForegroundColor Cyan
+.\commands\check-css-guard.ps1
 npm run build
