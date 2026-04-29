@@ -229,6 +229,8 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   margin-bottom: 10px;
+  width: 300px; /* 新しい */
+  box-sizing: border-box; /* 新しい */
 }
 
 .add-button {
