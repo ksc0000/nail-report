@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Nail Jewelry Box · Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: #0a0612;
+    color: white;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #canvas { display: block; width: 100%; height: 100%; }
+  
+  .header {
+    position: fixed; top: 0; left: 0; right: 0;
+    padding: 16px 20px; z-index: 10;
+    background: linear-gradient(180deg, rgba(10,6,18,0.8), transparent);
+    pointer-events: none;
+  }
+  .title {
+    font-size: 18px; font-weight: 300; letter-spacing: 4px;
+    color: rgba(255,255,255,0.9); text-align: center;
+  }
+  .subtitle {
+    font-size: 10px; letter-spacing: 2px; text-align: center;
+    color: rgba(255,255,255,0.5); margin-top: 4px;
+  }
+  
+  .skin-selector {
+    position: fixed; bottom: 24px; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 8px;
+    z-index: 10; padding: 0 16px;
+    flex-wrap: wrap;
+  }
+  .skin-btn {
+    padding: 10px 14px; border-radius: 20px;
+    background: rgba(255,255,255,0.08); backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.15); color: white;
+    font-size: 11px; cursor: pointer; transition: all 0.3s;
+    letter-spacing: 1px;
+  }
+  .skin-btn.active {
+    background: rgba(255,255,255,0.95); color: #0a0612;
+    border-color: white;
+  }
+  
+  .counter {
+    position: fixed; top: 60px; right: 16px; z-index: 10;
+    background: rgba(255,255,255,0.08); backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 8px 14px; border-radius: 20px;
+    font-size: 11px; letter-spacing: 1px;
+    color: rgba(255,255,255,0.85);
+  }
+  
+  .detail-modal {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(10,6,18,0.85); backdrop-filter: blur(20px);
+    display: none; align-items: center; justify-content: center;
+    padding: 20px; opacity: 0; transition: opacity 0.3s;
+  }
+  .detail-modal.show { display: flex; opacity: 1; }
+  .detail-card {
+    background: linear-gradient(160deg, #1a0f24, #2a1a38);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px; padding: 24px; max-width: 360px;
+    width: 100%;
+    transform: scale(0.9); transition: transform 0.3s;
+  }
+  .detail-modal.show .detail-card { transform: scale(1); }
+  .detail-img {
+    width: 100%; aspect-ratio: 1; border-radius: 16px;
+    object-fit: cover; margin-bottom: 16px;
+    background: linear-gradient(135deg, #ec407a, #c2185b);
+  }
+  .detail-name {
+    font-size: 18px; font-weight: 500; margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  .detail-date {
+    font-size: 12px; color: rgba(255,255,255,0.5);
+    letter-spacing: 1px; margin-bottom: 12px;
+  }
+  .detail-tags {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .detail-tag {
+    font-size: 10px; padding: 4px 10px;
+    background: rgba(236,64,122,0.2);
+    border: 1px solid rgba(236,64,122,0.4);
+    border-radius: 12px; color: #f8bbd0;
+    letter-spacing: 1px;
+  }
+  .close-btn {
+    position: absolute; top: 16px; right: 16px;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,0.1); border: none;
+    color: white; font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  
+  .loading {
+    position: fixed; inset: 0; display: flex;
+    align-items: center; justify-content: center;
+    background: #0a0612; z-index: 1000;
+    transition: opacity 0.5s;
+  }
+  .loading.hide { opacity: 0; pointer-events: none; }
+  .loading-text {
+    font-size: 12px; letter-spacing: 4px;
+    color: rgba(255,255,255,0.6);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; } 50% { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="loading-text">LOADING</div>
+</div>
+
+<div class="header">
+  <div class="title">JEWELRY BOX</div>
+  <div class="subtitle">YOUR NAIL COLLECTION</div>
+</div>
+
+<div class="counter" id="counter">12 / 30</div>
+
+<canvas id="canvas"></canvas>
+
+<div class="skin-selector">
+  <button class="skin-btn active" data-skin="glass">Glass</button>
+  <button class="skin-btn" data-skin="snow">Snow Globe</button>
+  <button class="skin-btn" data-skin="velvet">Velvet</button>
+  <button class="skin-btn" data-skin="showcase">Showcase</button>
+</div>
+
+<div class="detail-modal" id="detailModal">
+  <div class="detail-card">
+    <button class="close-btn" id="closeBtn">×</button>
+    <div class="detail-img" id="detailImg"></div>
+    <div class="detail-name" id="detailName">Pink Marble</div>
+    <div class="detail-date" id="detailDate">2026.04.15</div>
+    <div class="detail-tags" id="detailTags"></div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+// ============================================
+// サンプルデータ
+// ============================================
+const SAMPLE_NAILS = [
+  { id: 1, name: 'Pink Marble', date: '2026.04.15', colors: ['#f8bbd0', '#ec407a', '#ad1457'], tags: ['マーブル', 'ピンク'] },
+  { id: 2, name: 'Glitter Ombre', date: '2026.04.02', colors: ['#fce4ec', '#f48fb1', '#c2185b'], tags: ['グラデ', 'ラメ'] },
+  { id: 3, name: 'Spring Floral', date: '2026.03.20', colors: ['#fff', '#f8bbd0', '#aed581'], tags: ['花柄', 'パステル'] },
+  { id: 4, name: 'Royal Blue', date: '2026.03.05', colors: ['#1a237e', '#3949ab', '#7986cb'], tags: ['ワンカラー'] },
+  { id: 5, name: 'French Classic', date: '2026.02.18', colors: ['#fce4ec', '#fff'], tags: ['フレンチ'] },
+  { id: 6, name: 'Galaxy', date: '2026.02.01', colors: ['#1a0033', '#4a148c', '#e1bee7'], tags: ['ギャラクシー'] },
+  { id: 7, name: 'Nude Beige', date: '2026.01.20', colors: ['#efebe9', '#d7ccc8', '#a1887f'], tags: ['ヌード'] },
+  { id: 8, name: 'Ruby Red', date: '2026.01.05', colors: ['#b71c1c', '#d32f2f', '#ef5350'], tags: ['赤', 'ワンカラー'] },
+  { id: 9, name: 'Mint Frost', date: '2025.12.22', colors: ['#b2dfdb', '#80cbc4', '#fff'], tags: ['ミント'] },
+  { id: 10, name: 'Gold Leaf', date: '2025.12.08', colors: ['#fff8e1', '#ffd54f', '#ff8f00'], tags: ['ゴールド'] },
+  { id: 11, name: 'Lavender Dream', date: '2025.11.25', colors: ['#e1bee7', '#ba68c8', '#7b1fa2'], tags: ['パープル'] },
+  { id: 12, name: 'Cherry Blossom', date: '2025.11.10', colors: ['#fce4ec', '#f48fb1', '#fff'], tags: ['花柄', '桜'] },
+];
+
+// ============================================
+// シーン構築
+// ============================================
+const canvas = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({
+  canvas, antialias: true, alpha: true,
+  powerPreference: 'high-performance'
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 0, 8);
+
+// ============================================
+// ライティング
+// ============================================
+const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+scene.add(ambient);
+
+const keyLight = new THREE.DirectionalLight(0xffd0e8, 1.2);
+keyLight.position.set(3, 5, 5);
+scene.add(keyLight);
+
+const rimLight = new THREE.DirectionalLight(0x88aaff, 0.6);
+rimLight.position.set(-3, 2, -3);
+scene.add(rimLight);
+
+const pointLight1 = new THREE.PointLight(0xff80ab, 0.8, 10);
+pointLight1.position.set(2, 0, 2);
+scene.add(pointLight1);
+
+// ============================================
+// 爪型ジオメトリ生成
+// 楕円体をベースに、先端を少しシャープに
+// ============================================
+function createNailGeometry() {
+  const shape = new THREE.Shape();
+  const w = 0.5, h = 0.75;
+  shape.moveTo(0, -h);
+  shape.bezierCurveTo(w * 0.9, -h, w, -h * 0.3, w * 0.85, h * 0.4);
+  shape.bezierCurveTo(w * 0.7, h * 0.95, -w * 0.7, h * 0.95, -w * 0.85, h * 0.4);
+  shape.bezierCurveTo(-w, -h * 0.3, -w * 0.9, -h, 0, -h);
+  
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.18,
+    bevelEnabled: true,
+    bevelThickness: 0.08,
+    bevelSize: 0.06,
+    bevelSegments: 8,
+    curveSegments: 24,
+  });
+  geometry.center();
+  return geometry;
+}
+
+const nailGeometry = createNailGeometry();
+
+// ============================================
+// 爪オブジェクト生成
+// ============================================
+function createNailObject(nailData, index) {
+  // グラデーションテクスチャ生成
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  
+  if (nailData.colors.length >= 2) {
+    const gradient = ctx.createLinearGradient(0, 0, 256, 256);
+    nailData.colors.forEach((c, i) => {
+      gradient.addColorStop(i / (nailData.colors.length - 1), c);
+    });
+    ctx.fillStyle = gradient;
+  } else {
+    ctx.fillStyle = nailData.colors[0];
+  }
+  ctx.fillRect(0, 0, 256, 256);
+  
+  // ラメ・キラキラ感を追加
+  if (nailData.tags.includes('ラメ') || nailData.tags.includes('ゴールド') || nailData.tags.includes('ギャラクシー')) {
+    for (let i = 0; i < 50; i++) {
+      ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.8})`;
+      ctx.beginPath();
+      ctx.arc(Math.random() * 256, Math.random() * 256, Math.random() * 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.encoding = THREE.sRGBEncoding;
+  
+  const material = new THREE.MeshPhysicalMaterial({
+    map: texture,
+    metalness: 0.2,
+    roughness: 0.15,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.1,
+    reflectivity: 0.8,
+  });
+  
+  const mesh = new THREE.Mesh(nailGeometry, material);
+  mesh.userData = { nailData, index };
+  mesh.scale.setScalar(0.7);
+  return mesh;
+}
+
+// ============================================
+// 爪を球状に配置
+// ============================================
+const nailGroup = new THREE.Group();
+const nailObjects = [];
+
+SAMPLE_NAILS.forEach((data, i) => {
+  const mesh = createNailObject(data, i);
+  
+  // 球面上にランダム配置（フィボナッチ螺旋で均等分布）
+  const phi = Math.acos(1 - 2 * (i + 0.5) / SAMPLE_NAILS.length);
+  const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+  const radius = 2.2 + Math.random() * 0.4;
+  
+  mesh.position.set(
+    radius * Math.sin(phi) * Math.cos(theta),
+    radius * Math.sin(phi) * Math.sin(theta),
+    radius * Math.cos(phi)
+  );
+  
+  mesh.userData.basePosition = mesh.position.clone();
+  mesh.userData.floatOffset = Math.random() * Math.PI * 2;
+  mesh.userData.rotSpeed = {
+    x: (Math.random() - 0.5) * 0.005,
+    y: (Math.random() - 0.5) * 0.005,
+    z: (Math.random() - 0.5) * 0.005,
+  };
+  mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+  
+  nailGroup.add(mesh);
+  nailObjects.push(mesh);
+});
+
+scene.add(nailGroup);
+
+// ============================================
+// ボックス（4種類のスキン）
+// ============================================
+const boxGroup = new THREE.Group();
+scene.add(boxGroup);
+
+let currentSkin = 'glass';
+const skinObjects = {};
+
+// Glass（透明ガラスケース）
+function createGlassSkin() {
+  const group = new THREE.Group();
+  const geometry = new THREE.BoxGeometry(5, 5, 5);
+  const edges = new THREE.EdgesGeometry(geometry);
+  const lineMaterial = new THREE.LineBasicMaterial({
+    color: 0xffffff, transparent: true, opacity: 0.3
+  });
+  const wireframe = new THREE.LineSegments(edges, lineMaterial);
+  group.add(wireframe);
+  
+  const glassMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff,
+    metalness: 0.0,
+    roughness: 0.05,
+    transmission: 0.95,
+    transparent: true,
+    opacity: 0.15,
+    ior: 1.5,
+    thickness: 0.5,
+  });
+  const glass = new THREE.Mesh(geometry, glassMaterial);
+  group.add(glass);
+  
+  return { group, bgColor: 0x0a0612, particles: null };
+}
+
+// Snow Globe（雪が舞う）
+function createSnowSkin() {
+  const group = new THREE.Group();
+  const geometry = new THREE.SphereGeometry(3.2, 32, 32);
+  const glassMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff,
+    metalness: 0.0,
+    roughness: 0.05,
+    transmission: 0.9,
+    transparent: true,
+    opacity: 0.2,
+    ior: 1.4,
+  });
+  const sphere = new THREE.Mesh(geometry, glassMaterial);
+  group.add(sphere);
+  
+  // 台座
+  const baseGeo = new THREE.CylinderGeometry(2.2, 2.5, 0.5, 32);
+  const baseMat = new THREE.MeshPhysicalMaterial({
+    color: 0x6b3410, metalness: 0.7, roughness: 0.3
+  });
+  const base = new THREE.Mesh(baseGeo, baseMat);
+  base.position.y = -3.3;
+  group.add(base);
+  
+  // 雪パーティクル
+  const snowGeo = new THREE.BufferGeometry();
+  const snowCount = 200;
+  const positions = new Float32Array(snowCount * 3);
+  const velocities = [];
+  for (let i = 0; i < snowCount; i++) {
+    const r = Math.random() * 3;
+    const phi = Math.random() * Math.PI * 2;
+    const theta = Math.random() * Math.PI;
+    positions[i*3] = r * Math.sin(theta) * Math.cos(phi);
+    positions[i*3+1] = r * Math.cos(theta);
+    positions[i*3+2] = r * Math.sin(theta) * Math.sin(phi);
+    velocities.push({
+      x: (Math.random() - 0.5) * 0.005,
+      y: -Math.random() * 0.01 - 0.003,
+      z: (Math.random() - 0.5) * 0.005,
+    });
+  }
+  snowGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const snowMat = new THREE.PointsMaterial({
+    color: 0xffffff, size: 0.06,
+    transparent: true, opacity: 0.8,
+    blending: THREE.AdditiveBlending
+  });
+  const snow = new THREE.Points(snowGeo, snowMat);
+  snow.userData.velocities = velocities;
+  group.add(snow);
+  
+  return { group, bgColor: 0x051028, particles: snow };
+}
+
+// Velvet（ベルベットボックス）
+function createVelvetSkin() {
+  const group = new THREE.Group();
+  
+  // 内側のベルベット
+  const innerGeo = new THREE.BoxGeometry(5, 5, 5);
+  const innerMat = new THREE.MeshStandardMaterial({
+    color: 0x4a0e2a, roughness: 0.95, side: THREE.BackSide,
+  });
+  const inner = new THREE.Mesh(innerGeo, innerMat);
+  group.add(inner);
+  
+  // 外側の枠（ゴールド）
+  const edges = new THREE.EdgesGeometry(new THREE.BoxGeometry(5.05, 5.05, 5.05));
+  const goldMat = new THREE.LineBasicMaterial({ color: 0xffd700, linewidth: 2 });
+  const frame = new THREE.LineSegments(edges, goldMat);
+  group.add(frame);
+  
+  return { group, bgColor: 0x1a0510, particles: null };
+}
+
+// Showcase（ショーケース）
+function createShowcaseSkin() {
+  const group = new THREE.Group();
+  
+  // 棚（2段）
+  for (let i = -1; i <= 1; i += 2) {
+    const shelfGeo = new THREE.BoxGeometry(5.5, 0.05, 5.5);
+    const shelfMat = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff, metalness: 0.1, roughness: 0.2,
+      transparent: true, opacity: 0.3
+    });
+    const shelf = new THREE.Mesh(shelfGeo, shelfMat);
+    shelf.position.y = i * 1.5;
+    group.add(shelf);
+  }
+  
+  // ガラスケース
+  const geometry = new THREE.BoxGeometry(5.5, 6, 5.5);
+  const edges = new THREE.EdgesGeometry(geometry);
+  const lineMaterial = new THREE.LineBasicMaterial({
+    color: 0xffffff, transparent: true, opacity: 0.4
+  });
+  const wireframe = new THREE.LineSegments(edges, lineMaterial);
+  group.add(wireframe);
+  
+  return { group, bgColor: 0x0f0a18, particles: null };
+}
+
+skinObjects.glass = createGlassSkin();
+skinObjects.snow = createSnowSkin();
+skinObjects.velvet = createVelvetSkin();
+skinObjects.showcase = createShowcaseSkin();
+
+function setSkin(name) {
+  while (boxGroup.children.length > 0) boxGroup.remove(boxGroup.children[0]);
+  const skin = skinObjects[name];
+  boxGroup.add(skin.group);
+  scene.background = new THREE.Color(skin.bgColor);
+  document.body.style.background = '#' + skin.bgColor.toString(16).padStart(6, '0');
+  currentSkin = name;
+  
+  // Snow Globe のときは球状に配置調整
+  if (name === 'snow') {
+    nailObjects.forEach((m, i) => {
+      const r = m.userData.basePosition.length();
+      if (r > 2.5) {
+        m.userData.basePosition.normalize().multiplyScalar(2.0);
+      }
+    });
+  }
+}
+setSkin('glass');
+
+// ============================================
+// インタラクション
+// ============================================
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let dragging = false;
+let lastX = 0, lastY = 0;
+let velX = 0, velY = 0;
+let rotX = 0, rotY = 0;
+let touchStartTime = 0;
+let touchStartPos = { x: 0, y: 0 };
+
+function onPointerDown(e) {
+  const x = e.touches ? e.touches[0].clientX : e.clientX;
+  const y = e.touches ? e.touches[0].clientY : e.clientY;
+  dragging = true;
+  lastX = x; lastY = y;
+  touchStartTime = Date.now();
+  touchStartPos = { x, y };
+}
+
+function onPointerMove(e) {
+  if (!dragging) return;
+  const x = e.touches ? e.touches[0].clientX : e.clientX;
+  const y = e.touches ? e.touches[0].clientY : e.clientY;
+  const dx = x - lastX;
+  const dy = y - lastY;
+  velX = dy * 0.005;
+  velY = dx * 0.005;
+  lastX = x; lastY = y;
+}
+
+function onPointerUp(e) {
+  dragging = false;
+  const x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+  const y = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+  const dt = Date.now() - touchStartTime;
+  const moveDist = Math.hypot(x - touchStartPos.x, y - touchStartPos.y);
+  
+  // タップ判定（短時間 & 動きが小さい）
+  if (dt < 250 && moveDist < 10) {
+    handleTap(x, y);
+  }
+}
+
+function handleTap(x, y) {
+  mouse.x = (x / window.innerWidth) * 2 - 1;
+  mouse.y = -(y / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(nailObjects);
+  if (hits.length > 0) {
+    showDetail(hits[0].object.userData.nailData);
+  }
+}
+
+canvas.addEventListener('mousedown', onPointerDown);
+canvas.addEventListener('mousemove', onPointerMove);
+canvas.addEventListener('mouseup', onPointerUp);
+canvas.addEventListener('touchstart', onPointerDown, { passive: true });
+canvas.addEventListener('touchmove', onPointerMove, { passive: true });
+canvas.addEventListener('touchend', onPointerUp);
+
+// ============================================
+// 詳細モーダル
+// ============================================
+function showDetail(data) {
+  const modal = document.getElementById('detailModal');
+  document.getElementById('detailName').textContent = data.name;
+  document.getElementById('detailDate').textContent = data.date;
+  
+  // グラデーション背景再現
+  const imgEl = document.getElementById('detailImg');
+  if (data.colors.length >= 2) {
+    imgEl.style.background = `linear-gradient(135deg, ${data.colors.join(', ')})`;
+  } else {
+    imgEl.style.background = data.colors[0];
+  }
+  
+  const tagsEl = document.getElementById('detailTags');
+  tagsEl.innerHTML = '';
+  data.tags.forEach(t => {
+    const span = document.createElement('span');
+    span.className = 'detail-tag';
+    span.textContent = t;
+    tagsEl.appendChild(span);
+  });
+  
+  modal.classList.add('show');
+}
+
+document.getElementById('closeBtn').addEventListener('click', () => {
+  document.getElementById('detailModal').classList.remove('show');
+});
+document.getElementById('detailModal').addEventListener('click', (e) => {
+  if (e.target.id === 'detailModal') {
+    e.currentTarget.classList.remove('show');
+  }
+});
+
+// ============================================
+// スキン切替UI
+// ============================================
+document.querySelectorAll('.skin-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.skin-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    setSkin(btn.dataset.skin);
+  });
+});
+
+document.getElementById('counter').textContent = `${SAMPLE_NAILS.length} / 30`;
+
+// ============================================
+// アニメーションループ
+// ============================================
+const clock = new THREE.Clock();
+function animate() {
+  const t = clock.getElapsedTime();
+  
+  // 慣性付きグループ回転
+  if (!dragging) {
+    velX *= 0.95; velY *= 0.95;
+  }
+  rotX += velX;
+  rotY += velY;
+  velX *= 0.95; velY *= 0.95;
+  nailGroup.rotation.x = rotX;
+  nailGroup.rotation.y = rotY + t * 0.05;
+  
+  // 各爪の浮遊・自転
+  nailObjects.forEach((m) => {
+    const base = m.userData.basePosition;
+    const off = m.userData.floatOffset;
+    m.position.x = base.x + Math.sin(t * 0.8 + off) * 0.05;
+    m.position.y = base.y + Math.cos(t * 0.6 + off) * 0.08;
+    m.position.z = base.z + Math.sin(t * 0.7 + off) * 0.05;
+    m.rotation.x += m.userData.rotSpeed.x;
+    m.rotation.y += m.userData.rotSpeed.y;
+    m.rotation.z += m.userData.rotSpeed.z;
+  });
+  
+  // 雪パーティクル更新
+  if (currentSkin === 'snow' && skinObjects.snow.particles) {
+    const snow = skinObjects.snow.particles;
+    const positions = snow.geometry.attributes.position.array;
+    const velocities = snow.userData.velocities;
+    for (let i = 0; i < velocities.length; i++) {
+      positions[i*3] += velocities[i].x;
+      positions[i*3+1] += velocities[i].y;
+      positions[i*3+2] += velocities[i].z;
+      // 球内に閉じ込める
+      const dist = Math.hypot(positions[i*3], positions[i*3+1], positions[i*3+2]);
+      if (dist > 3 || positions[i*3+1] < -3) {
+        positions[i*3] = (Math.random() - 0.5) * 4;
+        positions[i*3+1] = 3;
+        positions[i*3+2] = (Math.random() - 0.5) * 4;
+      }
+    }
+    snow.geometry.attributes.position.needsUpdate = true;
+  }
+  
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+}
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+animate();
+
+// ローディング解除
+setTimeout(() => {
+  document.getElementById('loading').classList.add('hide');
+}, 800);
+</script>
+
+</body>
+</html>
