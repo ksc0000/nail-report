@@ -1,73 +1,89 @@
-# React + TypeScript + Vite
+# Nail AI App — Web Prototype
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> iOSネイティブアプリ「Nail Jewelry Box」の体験検証用リポジトリ  
+> 最終ゴール: App Store公開 → 詳細は [ROADMAP.md](./ROADMAP.md) を参照
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## リポジトリ構成
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+nail-report/
+├── prototype/
+│   └── jewelry-box.html   # 3Dジュエリーボックス Webプロトタイプ（UX検証用）
+├── src/                   # React + TypeScript アプリ（将来の移植先）
+├── ROADMAP.md             # 開発ロードマップ & 技術スタック
+└── .github/workflows/     # CI（npm run build ガード）
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Webプロトタイプの確認方法
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+`prototype/jewelry-box.html` は**単一HTMLファイル**で動作します。サーバー不要。
+
+### ローカルで開く
+
+```bash
+# 方法1: ブラウザで直接開く（最速）
+open prototype/jewelry-box.html          # macOS
+start prototype/jewelry-box.html         # Windows
+
+# 方法2: VS Code Live Server 拡張を使う
+# → jewelry-box.html を右クリック → "Open with Live Server"
+
+# 方法3: Python 簡易サーバー（CORS制限を避けたい場合）
+python -m http.server 8080
+# → http://localhost:8080/prototype/jewelry-box.html
 ```
+
+### iPhone Safari で確認する
+
+```bash
+# 同一Wi-Fi上で Python サーバーを起動し、
+# iPhoneのSafariから http://<PCのIPアドレス>:8080/prototype/jewelry-box.html にアクセス
+```
+
+### プロトタイプでできること
+
+| 操作 | 内容 |
+|------|------|
+| ドラッグ | ジュエリーボックスを回転 |
+| タップ / クリック | ネイルカードの詳細を表示 |
+| SPHERE / GRID / SPIRAL | レイアウトモードの切り替え |
+| Glass / Snow Globe / Velvet / Showcase | ボックススキンの切り替え |
+| 左下の `+` ボタン | 自分のネイル写真をコレクションに追加 |
+
+---
+
+> **注意**: `prototype/jewelry-box.html` は**UX検証専用**です。  
+> React（`src/`）や将来のSwiftUI実装とはコードを共有しません。  
+> Web版で確定した体験設計・パラメータは「仕様書」として iOS 実装へ引き継ぎます。
+
+---
+
+## React アプリ（開発環境）
+
+```bash
+npm install
+npm run dev      # 開発サーバー起動
+npm run build    # プロダクションビルド（CI で自動実行）
+```
+
+---
+
+## CI
+
+Pull Request を `main` へ出すと GitHub Actions が以下を自動実行します。
+
+1. `npm ci` — 依存関係インストール
+2. CSS ガードスクリプト
+3. `npm run build` — TypeScript コンパイル + Vite ビルド
+
+すべてパスすることが main マージの条件です。
+
+---
+
+## 関連ドキュメント
+
+- [ROADMAP.md](./ROADMAP.md) — フェーズ別開発計画・技術スタック・KPI
