@@ -1,0 +1,126 @@
+/* ── Page root ── */
+.page {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  transition: background 0.65s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.header {
+  flex-shrink: 0;
+  padding: 18px 20px 12px;
+  text-align: center;
+  position: relative;
+  z-index: 10;
+  background: linear-gradient(180deg, var(--jb-bg, #050308) 40%, transparent 100%);
+  pointer-events: none;
+}
+
+.title {
+  font-size: 17px;
+  font-weight: 200;
+  letter-spacing: 6px;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 0 22px var(--jb-accent, #ffd0e8);
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 5px;
+}
+
+/* ── Top controls row ── */
+.controlsRow {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px 8px;
+  position: relative;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.controlsRow > * {
+  pointer-events: auto;
+}
+
+.counter {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 7px 13px;
+  border-radius: 20px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Scrollable stage ── */
+.stageArea {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 16px 140px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* ── Bottom area ── */
+.bottomArea {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  background: linear-gradient(0deg, var(--jb-bg, #050308) 30%, transparent 100%);
+  pointer-events: none;
+}
+
+.bottomArea > * {
+  pointer-events: auto;
+}
+
+/* ── Skin toast ── */
+.skinToast {
+  text-align: center;
+  padding-bottom: 10px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.skinToastVisible {
+  opacity: 1;
+}
+
+.skinToastName {
+  font-size: 11px;
+  letter-spacing: 4px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.skinToastDesc {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.38);
+  margin-top: 3px;
+}
+
+/* ── SkinSelector wrapper ── */
+.skinSelectorWrap {
+  padding-bottom: 4px;
+}
