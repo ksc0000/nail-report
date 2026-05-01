@@ -246,3 +246,46 @@
     background-color: var(--accent-hover);
   }
 }
+
+#auth-bar {
+  min-height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.auth-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.auth-user button {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.auth-user button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.auth-signin {
+  padding: 8px 20px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.auth-signin:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
