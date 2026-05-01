@@ -2,9 +2,9 @@ rules_version = '2';
 
 // nail-report-dev-ksc0000  Firestore Security Rules
 //
-// CURRENT PHASE: 0 — Deny all by default
-//   Firestore is initialized but no client reads/writes are implemented yet.
-//   Do NOT remove the deny-all block until Phase 1 is approved by a human.
+// CURRENT PHASE: 1 — Authenticated owner access
+//   Users can read and write their own nailItems and profile.
+//   All other paths remain denied.
 //
 // HOW TO DEPLOY (human only):
 //   firebase deploy --only firestore:rules --project nail-report-dev-ksc0000
@@ -15,32 +15,28 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ================================================================
-    // Phase 0 (active): Deny everything
+    // Default deny — must remain as the first rule
     // ================================================================
     match /{document=**} {
       allow read, write: if false;
     }
 
     // ================================================================
-    // Phase 1 (pending human approval — Human Gate G3/G4):
+    // Phase 1 (active — Human Gate G3/G4 approved 2026-05-01):
     //   User-scoped access for authenticated owners only.
-    //
-    // Conditions before enabling:
-    //   - Google Auth confirmed working in browser + mobile
-    //   - NailItem data model finalized (see PRODUCT_SPEC.md Q13)
-    //   - Human approval received for G3 (schema) and G4 (auth/authz)
-    //   - Tested locally with Firebase Emulator
     // ================================================================
-    //
-    // match /users/{userId}/nailItems/{itemId} {
-    //   allow read, write: if request.auth != null
-    //                       && request.auth.uid == userId;
-    // }
-    //
-    // match /users/{userId} {
-    //   allow read, write: if request.auth != null
-    //                       && request.auth.uid == userId;
-    // }
+
+    // User's private nail items — authenticated owner only
+    match /users/{userId}/nailItems/{itemId} {
+      allow read, write: if request.auth != null
+                          && request.auth.uid == userId;
+    }
+
+    // User profile document — authenticated owner only
+    match /users/{userId} {
+      allow read, write: if request.auth != null
+                          && request.auth.uid == userId;
+    }
 
     // ================================================================
     // Phase 2 (pending human approval — Human Gate G1/G3):
