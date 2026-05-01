@@ -71,3 +71,28 @@ export default defineConfig([
   },
 ])
 ```
+
+## Project Documents
+
+### Product
+
+| Document | Description |
+|----------|-------------|
+| [docs/product/PRODUCT_SPEC.md](docs/product/PRODUCT_SPEC.md) | Product vision, MVP scope, data model, open questions |
+| [docs/product/ROADMAP.md](docs/product/ROADMAP.md) | Phase-by-phase development roadmap |
+| [docs/product/ACCEPTANCE_CRITERIA.md](docs/product/ACCEPTANCE_CRITERIA.md) | Definition of done for each task type |
+
+### AI Harness
+
+| Document | Description |
+|----------|-------------|
+| [docs/harness/WORKFLOW.md](docs/harness/WORKFLOW.md) | Standard AI-assisted development workflow |
+| [docs/harness/HUMAN_GATES.md](docs/harness/HUMAN_GATES.md) | Conditions requiring human approval before AI proceeds |
+| [docs/harness/MODEL_POLICY.md](docs/harness/MODEL_POLICY.md) | Model selection policy per agent role |
+| [docs/harness/HUMAN_TASK_REQUEST.md](docs/harness/HUMAN_TASK_REQUEST.md) | Template for AI to request human input via GitHub Issue |
+
+### Operations
+
+| Document | Description |
+|----------|-------------|
+| [docs/operations/LOCAL_DEVELOPMENT_MANUAL.md](docs/operations/LOCAL_DEVELOPMENT_MANUAL.md) | Step-by-step local development guide including VS Code Tunnel |
