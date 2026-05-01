@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { auth, signInWithGoogle, signOutUser, onAuthStateChanged } from './lib/auth'
 import type { User } from './lib/auth'
+import { createTestNailItem, fetchNailItems } from './lib/firestore'
+import type { NailItemDoc } from './lib/firestore'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
@@ -17,8 +19,29 @@ function App() {
   const [inputValue, setInputValue] = useState('')
   const [todos, setTodos] = useState<Todo[]>([])
   const [user, setUser] = useState<User | null | undefined>(undefined)
+  const [nailItems, setNailItems] = useState<NailItemDoc[]>([])
+  const [nailStatus, setNailStatus] = useState('')
+  const [nailLoading, setNailLoading] = useState(false)
 
   useEffect(() => onAuthStateChanged(auth, setUser), [])
+
+  useEffect(() => {
+    if (!user) { setNailItems([]); setNailStatus(''); return }
+    fetchNailItems(user.uid)
+      .then(setNailItems)
+      .catch((e: unknown) => console.error('fetch failed', e))
+  }, [user])
+
+  const handleCreateNailItem = () => {
+    if (!user) return
+    setNailLoading(true)
+    setNailStatus('')
+    createTestNailItem(user.uid)
+      .then(id => { setNailStatus(`Created: ${id}`); return fetchNailItems(user.uid) })
+      .then(setNailItems)
+      .catch((e: unknown) => setNailStatus(`Error: ${String(e)}`))
+      .finally(() => setNailLoading(false))
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value)
@@ -71,6 +94,21 @@ function App() {
             </button>
           )}
         </div>
+        {user && (
+          <div id="smoke-test">
+            <button type="button" onClick={handleCreateNailItem} disabled={nailLoading}>
+              {nailLoading ? 'Creating...' : 'Create test NailItem'}
+            </button>
+            {nailStatus && <p className="nail-status">{nailStatus}</p>}
+            {nailItems.length > 0 && (
+              <ul id="nail-list">
+                {nailItems.map(item => (
+                  <li key={item.id}>{item.title}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
         <div className="hero">
           <img src={heroImg} className="base" width="170" height="179" alt="" />
           <img src={reactLogo} className="framework" alt="React logo" />
