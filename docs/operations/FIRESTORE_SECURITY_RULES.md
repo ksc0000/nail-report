@@ -1,8 +1,11 @@
 # Firestore Security Rules Design
 
-> **Status: Draft — 人間承認待ち**
+> **Status: Phase 0 Active — deploy 完了 2026-05-01**
 > このドキュメントは Firestore Security Rules の設計方針を定義します。
 > `firestore.rules` の deploy は必ず人間が行ってください。AI は deploy しません。
+>
+> **現在の本番状態:** Phase 0 (deny-all) を `nail-report-dev-ksc0000` に deploy 済み。
+> 次のアクション → GitHub Issues #A2 / #A3 / #A4 を参照。
 
 ---
 
@@ -237,14 +240,22 @@ Firestore Security Rules は以下の Human Gate に該当します。
 
 ## 人間承認が必要な項目（優先度順）
 
-| # | 項目 | 優先度 | Gate |
-|---|------|--------|------|
-| A1 | Phase 0 rules の `firebase deploy` 実行 | **高** | G15 |
-| A2 | Google Auth の実機動作確認完了 | **高** | G4 |
-| A3 | `NailItem` データモデルの最終確定 | **高** | G3 |
-| A4 | Phase 1 rules への移行承認 | 中 | G3/G4 |
-| A5 | Firebase Emulator セットアップ（任意だが推奨） | 中 | — |
-| A6 | `publicSamples` コレクション方針の確定 | 低 | G1 |
+| # | 項目 | 優先度 | Gate | 状態 |
+|---|------|--------|------|------|
+| A1 | Phase 0 rules の `firebase deploy` 実行 | **高** | G15 | ✅ 完了 2026-05-01 |
+| A2 | Google Auth の実機動作確認完了 | **高** | G4 | ⬜ 未完了 → Issue #A2 |
+| A3 | `NailItem` データモデルの最終確定 | **高** | G3 | ⬜ 未完了 → Issue #A3 |
+| A4 | Phase 1 rules への移行承認 | 中 | G3/G4 | ⬜ 未完了 → Issue #A4 |
+| A5 | Firebase Emulator セットアップ（任意だが推奨） | 中 | — | ⬜ 未完了 |
+| A6 | `publicSamples` コレクション方針の確定 | 低 | G1 | ⬜ 未完了 |
+
+---
+
+## Deploy 記録
+
+| # | 日付 | フェーズ | 実行コマンド | 実行者 | 結果 |
+|---|------|---------|------------|--------|------|
+| 1 | 2026-05-01 | Phase 0 (deny-all) | `firebase deploy --only firestore:rules --project nail-report-dev-ksc0000` | 人間 (ksc0000) | ✅ 成功 |
 
 ---
 
