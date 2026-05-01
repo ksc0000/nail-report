@@ -247,6 +247,34 @@
   }
 }
 
+#smoke-test {
+  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.nail-status {
+  font-size: 0.85rem;
+  color: #888;
+  margin: 0;
+}
+
+#nail-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#nail-list li {
+  font-size: 0.85rem;
+  padding: 2px 0;
+}
+
 #auth-bar {
   min-height: 40px;
   display: flex;
