@@ -59,10 +59,14 @@ function App() {
           {user === undefined ? null : user ? (
             <div className="auth-user">
               <span>{user.displayName ?? user.email}</span>
-              <button type="button" onClick={() => { void signOutUser() }}>Sign out</button>
+              <button type="button" onClick={() => {
+                signOutUser().catch((e: unknown) => console.error('sign-out failed', e))
+              }}>Sign out</button>
             </div>
           ) : (
-            <button type="button" className="auth-signin" onClick={() => { void signInWithGoogle() }}>
+            <button type="button" className="auth-signin" onClick={() => {
+              signInWithGoogle().catch((e: unknown) => console.error('sign-in failed', e))
+            }}>
               Sign in with Google
             </button>
           )}
