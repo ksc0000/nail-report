@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { auth, signInWithGoogle, signOutUser, onAuthStateChanged } from './lib/auth'
+import type { User } from './lib/auth'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
@@ -14,6 +16,9 @@ function App() {
   const [count, setCount] = useState(0)
   const [inputValue, setInputValue] = useState('')
   const [todos, setTodos] = useState<Todo[]>([])
+  const [user, setUser] = useState<User | null | undefined>(undefined)
+
+  useEffect(() => onAuthStateChanged(auth, setUser), [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value)
@@ -50,6 +55,18 @@ function App() {
   return (
     <>
       <section id="center">
+        <div id="auth-bar">
+          {user === undefined ? null : user ? (
+            <div className="auth-user">
+              <span>{user.displayName ?? user.email}</span>
+              <button type="button" onClick={() => { void signOutUser() }}>Sign out</button>
+            </div>
+          ) : (
+            <button type="button" className="auth-signin" onClick={() => { void signInWithGoogle() }}>
+              Sign in with Google
+            </button>
+          )}
+        </div>
         <div className="hero">
           <img src={heroImg} className="base" width="170" height="179" alt="" />
           <img src={reactLogo} className="framework" alt="React logo" />
