@@ -96,3 +96,4 @@ export default defineConfig([
 | Document | Description |
 |----------|-------------|
 | [docs/operations/LOCAL_DEVELOPMENT_MANUAL.md](docs/operations/LOCAL_DEVELOPMENT_MANUAL.md) | Step-by-step local development guide including VS Code Tunnel |
+| [docs/operations/FIRESTORE_SECURITY_RULES.md](docs/operations/FIRESTORE_SECURITY_RULES.md) | Firestore Security Rules design, phase plan, and deploy checklist |
