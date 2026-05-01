@@ -96,30 +96,62 @@ MVP 追加候補（**[要人間判断]**）:
 
 > アプリが扱うデータの概要を定義します。
 
-### 現在の Todo アイテム（フロントエンド state のみ）
+### NailItem（Firestore — Phase 1 以降）
+
+> **スキーマ確定: 2026-05-01 (A3 完了)**
+
+```
+Firestore (default) / users/{userId}/nailItems/{itemId}
+```
+
+| フィールド | 型 | 必須 | 制約 | 説明 |
+|-----------|-----|------|------|------|
+| `title` | `string` | ✅ | — | ネイルタイトル |
+| `imageUrl` | `string` | ✅ | Firebase Storage URL | フル解像度画像 |
+| `thumbnailUrl` | `string` | ✅ | Firebase Storage URL | サムネイル画像（初期は imageUrl と同値でも可） |
+| `tags` | `string[]` | ✅ | 最大 10 件、空配列可 | スタイル・色・シーン等のタグ |
+| `memo` | `string` | ✅ | 最大 500 文字、空文字可 | サロン名・価格・シーン等のメモ |
+| `createdAt` | `Timestamp` | ✅ | サーバータイムスタンプ | 作成日時 |
+| `updatedAt` | `Timestamp` | ✅ | サーバータイムスタンプ | 更新日時 |
+
+**型定義（TypeScript）:**
 
 ```typescript
-interface Todo {
-  id: number;       // 一意なID
-  text: string;     // Todoテキスト
-  completed: boolean; // 完了フラグ
+interface NailItem {
+  title: string
+  imageUrl: string
+  thumbnailUrl: string
+  tags: string[]
+  memo: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
 }
 ```
 
-### 永続化が必要になった場合の拡張候補（**[要人間判断]**）
+**決定事項:**
+- `thumbnailUrl` を `imageUrl` と別フィールドで保持 — モバイルリスト表示でフル解像度は重い。将来 Cloud Storage Resize Extension で自動生成可能。
+- `memo` を追加 — サロン名・価格・シーンのメモニーズに対応。今入れないと後でマイグレーションが必要。
+- `color` / AI フィールドはスキップ — Gemini API 連携フェーズ（Phase 3 以降）で追加。今追加しても入力 UI がない。
+- `tags` は `string[]` のままで構造化しない — スタイル・色・シーンを自由に分類できる柔軟性を優先。
+
+**アクセスルール（Phase 1 Security Rules 移行後）:**
+- `users/{userId}/nailItems/{itemId}` — ログイン済み本人のみ read / write
+
+---
+
+### Todo（フロントエンド state のみ — 開発用スキャフォールド）
+
+現在の実装に残っている Todo 機能は開発用の足場であり、将来削除予定です。
 
 ```typescript
 interface Todo {
-  id: string;           // UUID
-  text: string;
-  completed: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  userId?: string;      // マルチユーザー対応時
+  id: number
+  text: string
+  completed: boolean
 }
 ```
 
-DB / ストレージ方式: **[TBD]**
+DB / ストレージ方式: なし（フロントエンド state のみ）
 
 ---
 
@@ -167,6 +199,7 @@ DB / ストレージ方式: **[TBD]**
 | Q4 | デプロイ先は何を使うか | 中 | 人間 |
 | Q5 | モバイル対応のレベル感（レスポンシブのみ / アプリ） | 中 | 人間 |
 | Q6 | プロダクト名 | 低 | 人間 |
+| Q13 | NailItem Firestore スキーマの最終確定 | 高 | ✅ **確定 2026-05-01** — Data Model Overview 参照 |
 
 これらの質問に回答が必要な場合は [HUMAN_TASK_REQUEST.md](../harness/HUMAN_TASK_REQUEST.md) を使って Issue を起票してください。
 

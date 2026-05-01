@@ -243,9 +243,9 @@ Firestore Security Rules は以下の Human Gate に該当します。
 | # | 項目 | 優先度 | Gate | 状態 |
 |---|------|--------|------|------|
 | A1 | Phase 0 rules の `firebase deploy` 実行 | **高** | G15 | ✅ 完了 2026-05-01 |
-| A2 | Google Auth の実機動作確認完了 | **高** | G4 | ⬜ 未完了 → Issue #A2 |
-| A3 | `NailItem` データモデルの最終確定 | **高** | G3 | ⬜ 未完了 → Issue #A3 |
-| A4 | Phase 1 rules への移行承認 | 中 | G3/G4 | ⬜ 未完了 → Issue #A4 |
+| A2 | Google Auth の実機動作確認完了 | **高** | G4 | ✅ 完了 2026-05-01 |
+| A3 | `NailItem` データモデルの最終確定 | **高** | G3 | ✅ 完了 2026-05-01 |
+| A4 | Phase 1 rules への移行承認 | 中 | G3/G4 | ⬜ 未完了 → Issue #15 |
 | A5 | Firebase Emulator セットアップ（任意だが推奨） | 中 | — | ⬜ 未完了 |
 | A6 | `publicSamples` コレクション方針の確定 | 低 | G1 | ⬜ 未完了 |
 
