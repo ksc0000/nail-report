@@ -1,4 +1,8 @@
-import { collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore'
+import {
+  collection, addDoc, getDocs,
+  doc, updateDoc, deleteDoc,
+  serverTimestamp,
+} from 'firebase/firestore'
 import type { Timestamp } from 'firebase/firestore'
 import { db } from './firebase'
 
@@ -16,25 +20,53 @@ export interface NailItemDoc extends NailItem {
   id: string
 }
 
-export const createTestNailItem = async (userId: string): Promise<string> => {
+export interface NailItemInput {
+  title: string
+  imageUrl: string
+  tags: string[]
+  memo: string
+}
+
+export const fetchNailItems = async (userId: string): Promise<NailItemDoc[]> => {
+  const ref = collection(db, 'users', userId, 'nailItems')
+  const snapshot = await getDocs(ref)
+  return snapshot.docs.map(snap => ({
+    id: snap.id,
+    ...(snap.data() as NailItem),
+  }))
+}
+
+export const addNailItem = async (userId: string, input: NailItemInput): Promise<string> => {
   const ref = collection(db, 'users', userId, 'nailItems')
   const snap = await addDoc(ref, {
-    title: `test-nail-${Date.now()}`,
-    imageUrl: '',
-    thumbnailUrl: '',
-    tags: [] as string[],
-    memo: 'smoke test',
+    title: input.title,
+    imageUrl: input.imageUrl,
+    thumbnailUrl: input.imageUrl,
+    tags: input.tags,
+    memo: input.memo,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })
   return snap.id
 }
 
-export const fetchNailItems = async (userId: string): Promise<NailItemDoc[]> => {
-  const ref = collection(db, 'users', userId, 'nailItems')
-  const snapshot = await getDocs(ref)
-  return snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...(doc.data() as NailItem),
-  }))
+export const updateNailItem = async (
+  userId: string,
+  itemId: string,
+  input: NailItemInput,
+): Promise<void> => {
+  const ref = doc(db, 'users', userId, 'nailItems', itemId)
+  await updateDoc(ref, {
+    title: input.title,
+    imageUrl: input.imageUrl,
+    thumbnailUrl: input.imageUrl,
+    tags: input.tags,
+    memo: input.memo,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+export const deleteNailItem = async (userId: string, itemId: string): Promise<void> => {
+  const ref = doc(db, 'users', userId, 'nailItems', itemId)
+  await deleteDoc(ref)
 }
