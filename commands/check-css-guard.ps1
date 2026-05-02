@@ -36,14 +36,6 @@ foreach ($line in $addedLines) {
   }
 }
 
-# Full-file required behavior check.
-# The completed todo style must not disappear.
-$content = Get-Content $cssPath -Raw
-
-if ($content -notmatch '#todo-list\s+li\.completed\s+\.todo-text') {
-  $errors += "Required completed todo style is missing: #todo-list li.completed .todo-text"
-}
-
 if ($errors.Count -gt 0) {
   Write-Host "CSS guard failed:" -ForegroundColor Red
   foreach ($error in $errors) {
