@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { auth, signInWithGoogle, signOutUser, onAuthStateChanged } from './lib/auth'
 import type { User } from './lib/auth'
 import { addNailItem, updateNailItem, deleteNailItem, fetchNailItems } from './lib/firestore'
 import type { NailItemDoc } from './lib/firestore'
+import { uploadNailImage, deleteNailImage } from './lib/storage'
 import './App.css'
 
 function App() {
@@ -10,11 +11,12 @@ function App() {
   const [nailItems, setNailItems] = useState<NailItemDoc[]>([])
   const [nailTitle, setNailTitle] = useState('')
   const [nailTags, setNailTags] = useState('')
-  const [nailImageUrl, setNailImageUrl] = useState('')
+  const [nailImageFile, setNailImageFile] = useState<File | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [nailLoading, setNailLoading] = useState(false)
   const [nailError, setNailError] = useState('')
   const [isFetching, setIsFetching] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => onAuthStateChanged(auth, setUser), [])
 
@@ -33,47 +35,72 @@ function App() {
   const resetForm = () => {
     setNailTitle('')
     setNailTags('')
-    setNailImageUrl('')
+    setNailImageFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
     setEditingId(null)
     setNailError('')
   }
 
-  const handleSubmitNailItem = () => {
+  const handleSubmitNailItem = async () => {
     if (!user || nailTitle.trim() === '') return
     const uid = user.uid
     setNailLoading(true)
     setNailError('')
-    const input = { title: nailTitle.trim(), imageUrl: nailImageUrl.trim(), tags: parseTags(nailTags), memo: '' }
-    const op: Promise<void> = editingId
-      ? updateNailItem(uid, editingId, input)
-      : addNailItem(uid, input).then(() => {})
-    op
-      .then(() => fetchNailItems(uid))
-      .then(items => { setNailItems(items); resetForm() })
-      .catch((e: unknown) => setNailError(String(e)))
-      .finally(() => setNailLoading(false))
+    const baseInput = { title: nailTitle.trim(), tags: parseTags(nailTags), memo: '' }
+    try {
+      if (editingId) {
+        const editingItem = nailItems.find(i => i.id === editingId)
+        let imageUrl = editingItem?.imageUrl ?? ''
+        if (nailImageFile) {
+          imageUrl = await uploadNailImage(uid, editingId, nailImageFile)
+        }
+        await updateNailItem(uid, editingId, { ...baseInput, imageUrl })
+      } else {
+        const itemId = await addNailItem(uid, { ...baseInput, imageUrl: '' })
+        if (nailImageFile) {
+          const imageUrl = await uploadNailImage(uid, itemId, nailImageFile)
+          await updateNailItem(uid, itemId, { ...baseInput, imageUrl })
+        }
+      }
+      setNailItems(await fetchNailItems(uid))
+      resetForm()
+    } catch (e: unknown) {
+      setNailError(String(e))
+    } finally {
+      setNailLoading(false)
+    }
   }
 
   const handleStartEdit = (item: NailItemDoc) => {
     setEditingId(item.id)
     setNailTitle(item.title)
     setNailTags(item.tags.join(', '))
-    setNailImageUrl(item.imageUrl)
+    setNailImageFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
     setNailError('')
   }
 
-  const handleDeleteNailItem = (itemId: string) => {
+  const handleDeleteNailItem = async (itemId: string) => {
     if (!user) return
     const uid = user.uid
+    const item = nailItems.find(i => i.id === itemId)
     if (editingId === itemId) resetForm()
     setNailLoading(true)
     setNailError('')
-    deleteNailItem(uid, itemId)
-      .then(() => fetchNailItems(uid))
-      .then(setNailItems)
-      .catch((e: unknown) => setNailError(String(e)))
-      .finally(() => setNailLoading(false))
+    try {
+      if (item?.imageUrl) {
+        await deleteNailImage(uid, itemId).catch(() => {})
+      }
+      await deleteNailItem(uid, itemId)
+      setNailItems(await fetchNailItems(uid))
+    } catch (e: unknown) {
+      setNailError(String(e))
+    } finally {
+      setNailLoading(false)
+    }
   }
+
+  const editingItem = editingId ? nailItems.find(i => i.id === editingId) : null
 
   return (
     <section id="center">
@@ -112,13 +139,18 @@ function App() {
               placeholder="Tags (comma separated)"
               className="nail-input"
             />
-            <input
-              type="text"
-              value={nailImageUrl}
-              onChange={e => setNailImageUrl(e.target.value)}
-              placeholder="Image URL (optional)"
-              className="nail-input"
-            />
+            <div className="nail-file-area">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={e => setNailImageFile(e.target.files?.[0] ?? null)}
+                className="nail-file-input"
+              />
+              {editingItem?.imageUrl && !nailImageFile && (
+                <p className="nail-file-note">Current image kept. Select to replace.</p>
+              )}
+            </div>
             <div className="nail-form-actions">
               <button
                 type="button"
