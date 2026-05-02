@@ -102,6 +102,24 @@
   color: inherit;
 }
 
+.nail-file-area {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nail-file-input {
+  font-size: 0.85rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.nail-file-note {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0;
+}
+
 .nail-form-actions {
   display: flex;
   gap: 8px;
