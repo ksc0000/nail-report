@@ -29,6 +29,31 @@ function App() {
       .finally(() => setIsFetching(false))
   }, [user])
 
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+  const MAX_FILE_BYTES = 5 * 1024 * 1024
+
+  const validateImageFile = (file: File): string | null => {
+    if (!ALLOWED_TYPES.includes(file.type))
+      return 'jpeg・png・webp 形式の画像を選択してください。'
+    if (file.size > MAX_FILE_BYTES)
+      return `ファイルサイズは 5MB 以下にしてください（選択: ${(file.size / 1024 / 1024).toFixed(1)}MB）。`
+    return null
+  }
+
+  const handleNailFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null
+    if (!file) { setNailImageFile(null); setNailError(''); return }
+    const err = validateImageFile(file)
+    if (err) {
+      setNailError(err)
+      setNailImageFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    setNailError('')
+    setNailImageFile(file)
+  }
+
   const parseTags = (s: string): string[] =>
     s.split(',').map(t => t.trim()).filter(Boolean)
 
@@ -43,6 +68,10 @@ function App() {
 
   const handleSubmitNailItem = async () => {
     if (!user || nailTitle.trim() === '') return
+    if (nailImageFile) {
+      const err = validateImageFile(nailImageFile)
+      if (err) { setNailError(err); return }
+    }
     const uid = user.uid
     setNailLoading(true)
     setNailError('')
@@ -65,7 +94,10 @@ function App() {
       setNailItems(await fetchNailItems(uid))
       resetForm()
     } catch (e: unknown) {
-      setNailError(String(e))
+      const msg = e instanceof Error ? e.message : String(e)
+      setNailError(msg.toLowerCase().includes('storage') || msg.toLowerCase().includes('permission')
+        ? '画像のアップロードに失敗しました。もう一度お試しください。'
+        : msg)
     } finally {
       setNailLoading(false)
     }
@@ -144,7 +176,7 @@ function App() {
                 ref={fileInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                onChange={e => setNailImageFile(e.target.files?.[0] ?? null)}
+                onChange={handleNailFileChange}
                 className="nail-file-input"
               />
               {editingItem?.imageUrl && !nailImageFile && (
