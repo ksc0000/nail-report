@@ -186,6 +186,7 @@ function App() {
             <div className="nail-form-actions">
               <button
                 type="button"
+                className="btn-primary"
                 onClick={handleSubmitNailItem}
                 disabled={nailLoading || nailTitle.trim() === ''}
               >
