@@ -100,3 +100,9 @@ export default defineConfig([
 | [docs/operations/FIREBASE_SETUP.md](docs/operations/FIREBASE_SETUP.md) | Firebase Auth setup and verification steps |
 | [docs/operations/FIREBASE_STORAGE_RULES.md](docs/operations/FIREBASE_STORAGE_RULES.md) | Storage Security Rules design, allowed types/sizes, and deploy checklist |
 | [docs/operations/IMAGE_UPLOAD_QA.md](docs/operations/IMAGE_UPLOAD_QA.md) | QA checklist for image upload — normal, error, edit, delete, and pre-merge checks |
+
+### Design References
+
+| Document | Description |
+|----------|-------------|
+| [docs/design-references/nail-view-prototype/README.md](docs/design-references/nail-view-prototype/README.md) | Nail view UI prototype — color palette, layout, and component styles for reference only |
