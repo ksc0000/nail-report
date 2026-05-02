@@ -285,6 +285,36 @@
   border-top: 1px solid var(--border);
 }
 
+.nail-item-actions button,
+.nail-form-actions button:not(.btn-primary) {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.nail-item-actions button:hover:not(:disabled),
+.nail-form-actions button:not(.btn-primary):hover:not(:disabled) {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+
+.nail-item-actions button:focus-visible,
+.nail-form-actions button:not(.btn-primary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.nail-item-actions button:disabled,
+.nail-form-actions button:not(.btn-primary):disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 #nail-list li {
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
