@@ -1,0 +1,45 @@
+rules_version = '2';
+
+// nail-report-dev-ksc0000  Firebase Storage Security Rules
+//
+// CURRENT PHASE: 2 — Authenticated owner image storage
+//   Users can read, write, and delete their own images.
+//   All other paths remain denied.
+//
+// HOW TO DEPLOY (human only):
+//   firebase deploy --only storage --project nail-report-dev-ksc0000
+//
+// See docs/operations/FIREBASE_STORAGE_RULES.md for full design.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ================================================================
+    // Default deny — must remain as the first rule
+    // ================================================================
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // ================================================================
+    // Phase 2 (active — Human Gate G4/G6 approved 2026-05-02):
+    //   User-scoped image storage for authenticated owners only.
+    //   - Max file size: 5 MB
+    //   - Allowed types: image/jpeg, image/png, image/webp
+    // ================================================================
+    match /users/{userId}/nailItems/{nailItemId}/{filename} {
+
+      allow read: if request.auth != null
+                  && request.auth.uid == userId;
+
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource.size <= 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/(jpeg|png|webp)');
+
+      allow delete: if request.auth != null
+                    && request.auth.uid == userId;
+    }
+
+  }
+}
