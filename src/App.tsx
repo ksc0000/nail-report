@@ -6,6 +6,13 @@ import type { NailItemDoc } from './lib/firestore'
 import { uploadNailImage, deleteNailImage } from './lib/storage'
 import './App.css'
 
+const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
+  [...items].sort((a, b) => {
+    const ta = (a.updatedAt ?? a.createdAt)?.seconds ?? 0
+    const tb = (b.updatedAt ?? b.createdAt)?.seconds ?? 0
+    return tb - ta
+  })
+
 const formatDate = (ts: { toDate(): Date } | null | undefined): string | null => {
   if (!ts) return null
   try {
@@ -36,7 +43,7 @@ function App() {
     if (!user) { setNailItems([]); return }
     setIsFetching(true)
     fetchNailItems(user.uid)
-      .then(setNailItems)
+      .then(items => setNailItems(sortByDate(items)))
       .catch((e: unknown) => console.error('fetch failed', e))
       .finally(() => setIsFetching(false))
   }, [user])
@@ -104,7 +111,7 @@ function App() {
           await updateNailItem(uid, itemId, { ...baseInput, imageUrl })
         }
       }
-      setNailItems(await fetchNailItems(uid))
+      setNailItems(sortByDate(await fetchNailItems(uid)))
       resetForm()
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
@@ -139,7 +146,7 @@ function App() {
         await deleteNailImage(uid, itemId).catch(() => {})
       }
       await deleteNailItem(uid, itemId)
-      setNailItems(await fetchNailItems(uid))
+      setNailItems(sortByDate(await fetchNailItems(uid)))
     } catch (e: unknown) {
       setNailError(String(e))
     } finally {
