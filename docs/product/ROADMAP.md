@@ -12,10 +12,10 @@
 
 | フェーズ | 名称 | 状態 |
 |----------|------|------|
-| Phase 0 | Harness Foundation | ✅ 進行中 |
-| Phase 1 | Core UI | 🔲 未着手 |
-| Phase 2 | Data Persistence | 🔲 未着手 |
-| Phase 3 | Authentication / User Management | 🔲 未着手 |
+| Phase 0 | Harness Foundation | ✅ 完了 |
+| Phase 1 | Core UI | ✅ 完了 |
+| Phase 2 | Data Persistence | ✅ 完了 |
+| Phase 3 | Authentication / User Management | ✅ 完了 |
 | Phase 4 | AI-Assisted Features | 🔲 未着手 |
 | Phase 5 | Review / Export / Sharing | 🔲 未着手 |
 | Phase 6 | Security / Operations Hardening | 🔲 未着手 |
@@ -27,15 +27,16 @@
 
 **Goal:** AI 支援開発を安全・安定に運用するための基盤を整備する
 
-### Example Issues
+### 完了タスク
 
 - [x] AI 役割エージェント定義（`agents/` ディレクトリ）
 - [x] PowerShell コマンド整備（`commands/` ディレクトリ）
 - [x] GitHub Actions CI 整備（CSS guard + build）
 - [x] Branch Ruleset 設定（main 保護）
-- [ ] Harness ドキュメント整備（`docs/harness/`）
-- [ ] プロダクト仕様雛形作成（`docs/product/`）
-- [ ] ローカル開発マニュアル作成（`docs/operations/`）
+- [x] Harness ドキュメント整備（`docs/harness/`）
+- [x] プロダクト仕様雛形作成（`docs/product/`）
+- [x] ローカル開発マニュアル作成（`docs/operations/`）
+- [x] デザイン参考資料整備（`docs/design-references/`）
 
 ### Human Gates
 
@@ -47,22 +48,27 @@
 - [x] AI が安全なフローで作業できる環境が整っている
 - [x] CSS guard が CI で動作している
 - [x] build が CI で検証されている
-- [ ] ドキュメント一式が `docs/` に揃っている
-- [ ] README に全ドキュメントへのリンクがある
+- [x] ドキュメント一式が `docs/` に揃っている
+- [x] README に全ドキュメントへのリンクがある
 
 ---
 
 ## Phase 1: Core UI
 
-**Goal:** 基本的な Todo アプリの UI を完成させる
+**Goal:** NailItem コレクションアプリの UI を完成させる
 
-### Example Issues
+### 完了タスク
 
-- [ ] レスポンシブ対応（スマートフォン表示の最適化）
-- [ ] Todo フィルタリング（全て / 未完了 / 完了済み）
-- [ ] Todo の編集機能
-- [ ] 空状態の表示改善
-- [ ] アクセシビリティ対応（`aria-label` 等）
+- [x] NailItem カードグリッド（2カラム、レスポンシブ対応）
+- [x] 追加 / 編集フォーム（タイトル・タグ・メモ・画像）
+- [x] 削除確認ダイアログ
+- [x] クライアント検索（タイトル・タグ絞り込み）
+- [x] 新着順ソート（updatedAt / createdAt 降順）
+- [x] 空状態ガイド（初回ユーザー向けオンボーディング）
+- [x] 作成日・更新日の表示
+- [x] カードホバーエフェクト（lift + shadow + 画像ズーム）
+- [x] アクセシビリティ対応（focus-visible リング）
+- [x] `prefers-reduced-motion` 対応
 
 ### Human Gates
 
@@ -71,66 +77,60 @@
 
 ### Done Criteria
 
-- [ ] 主要なユーザーストーリーが画面で確認できる
-- [ ] スマートフォン / デスクトップで表示が崩れない
-- [ ] `npm run build` が成功する
-- [ ] CSS guard が通過する
-- [ ] 既存の Todo CRUD 機能が壊れていない
+- [x] 主要なユーザーストーリーが画面で確認できる
+- [x] スマートフォン / デスクトップで表示が崩れない
+- [x] `npm run build` が成功する
+- [x] CSS guard が通過する
+- [x] 既存の NailItem CRUD 機能が壊れていない
 
 ---
 
 ## Phase 2: Data Persistence
 
-**Goal:** Todo データを永続化し、リロードしてもデータが残るようにする
+**Goal:** NailItem データを永続化し、リロードしてもデータが残るようにする
 
-> **人間判断が必要:** 永続化方式（localStorage / バックエンド / クラウド DB）の決定
+### 完了タスク
 
-### Example Issues
-
-- [ ] localStorage による Todo 永続化
-- [ ] データ構造の設計（`id`, `createdAt` 等の追加）
-- [ ] データマイグレーション戦略
+- [x] Firestore による NailItem 永続化（CRUD）
+- [x] Firebase Storage による画像アップロード（5MB / jpeg・png・webp）
+- [x] Firestore Security Rules（オーナー本人のみ read / write）
+- [x] Storage Security Rules（認証済み本人のみ）
+- [x] サーバータイムスタンプ（createdAt / updatedAt）
 
 ### Human Gates
 
-- G1: 永続化方式の決定（プロダクト方針）
-- G3: DB スキーマ変更（バックエンド導入時）
-- G8: 新しいライブラリ追加（バックエンド SDK 等）
+- G3: DB スキーマ変更
+- G8: 新しいライブラリ追加
 
 ### Done Criteria
 
-- [ ] ページをリロードしても Todo が消えない
-- [ ] データが破損せずに読み書きされる
-- [ ] 永続化エラー時のフォールバックがある（または方針が決まっている）
+- [x] ページをリロードしても NailItem が消えない
+- [x] データが破損せずに読み書きされる
+- [x] 画像アップロード・削除が正常に動作する
 
 ---
 
 ## Phase 3: Authentication / User Management
 
-**Goal:** 複数ユーザーが個別の Todo を管理できるようにする
+**Goal:** ユーザーが自分のコレクションを管理できるようにする
 
-> **人間判断が必要:** 認証方式・プロバイダーの決定
+### 完了タスク
 
-### Example Issues
-
-- [ ] 認証プロバイダー選定（GitHub OAuth / Google / Supabase 等）
-- [ ] ログイン / ログアウト画面
-- [ ] ユーザー別の Todo 管理
-- [ ] セッション管理
+- [x] Google OAuth ログイン / ログアウト
+- [x] ユーザー別の NailItem 管理（users/{uid}/nailItems/）
+- [x] 未ログイン時のサインイン導線
 
 ### Human Gates
 
 - G4: 認証・認可変更
-- G5: （課金モデルと連動する場合）
 - G6: 個人情報の取り扱い
 - G7: 外部 API キーの管理
-- G8: 認証ライブラリの追加
 
 ### Done Criteria
 
-- [ ] ログイン / ログアウトが動作する
-- [ ] ユーザーごとに独立した Todo が表示される
-- [ ] セキュリティレビュー（Security Reviewer）が完了している
+- [x] ログイン / ログアウトが動作する
+- [x] ユーザーごとに独立した NailItem が表示される
+- [x] Firestore / Storage Security Rules によるアクセス制御が機能している
 
 ---
 
@@ -142,8 +142,9 @@
 
 ### Example Issues
 
-- [ ] AI による Todo 優先度提案
-- [ ] 自然言語での Todo 追加（例: 「明日の会議の準備」→ 自動分解）
+- [ ] 画像からタグ自動提案（色・スタイル分析）
+- [ ] 画像から OCR でサロン名・価格を自動読み取り
+- [ ] 類似ネイル推薦
 - [ ] Claude API / Anthropic SDK 連携
 
 ### Human Gates
@@ -162,16 +163,15 @@
 
 ## Phase 5: Review / Export / Sharing
 
-**Goal:** Todo の振り返り・共有・エクスポート機能を追加する
+**Goal:** コレクションの振り返り・共有・エクスポート機能を追加する
 
 > **人間判断が必要:** 共有機能のスコープ決定
 
 ### Example Issues
 
 - [ ] CSV / JSON エクスポート
-- [ ] 完了履歴の振り返り画面
-- [ ] 共有 URL / 公開リスト機能
-- [ ] 定期レポート機能
+- [ ] コレクション振り返り画面（月別・タグ別）
+- [ ] 共有 URL / 公開コレクション機能
 
 ### Human Gates
 
@@ -192,9 +192,8 @@
 ### Example Issues
 
 - [ ] セキュリティヘッダーの設定（CSP 等）
-- [ ] 入力バリデーションの強化
+- [ ] 入力バリデーションの強化（tags 件数制限 UI 等）
 - [ ] エラーログ / 監視の整備
-- [ ] レートリミット設定
 - [ ] 依存関係の脆弱性スキャン
 
 ### Human Gates
@@ -219,9 +218,9 @@
 
 ### Example Issues
 
-- [ ] デプロイ先の決定と設定（Vercel / Netlify / Cloudflare Pages 等）
+- [ ] デプロイ先の決定と設定（Firebase Hosting / Vercel / Cloudflare Pages 等）
 - [ ] カスタムドメイン設定
-- [ ] 本番ビルド最適化
+- [ ] 本番ビルド最適化（code splitting 等）
 - [ ] アクセス解析 / モニタリング設定
 - [ ] README の最終整備
 
