@@ -78,9 +78,9 @@ export default defineConfig([
 
 | Document | Description |
 |----------|-------------|
-| [docs/product/PRODUCT_SPEC.md](docs/product/PRODUCT_SPEC.md) | Product vision, MVP scope, data model, open questions |
-| [docs/product/ROADMAP.md](docs/product/ROADMAP.md) | Phase-by-phase development roadmap |
-| [docs/product/ACCEPTANCE_CRITERIA.md](docs/product/ACCEPTANCE_CRITERIA.md) | Definition of done for each task type |
+| [docs/product/PRODUCT_SPEC.md](docs/product/PRODUCT_SPEC.md) | Product vision, MVP scope, data model, open questions, future 3D/AR vision |
+| [docs/product/ROADMAP.md](docs/product/ROADMAP.md) | Phase-by-phase development roadmap (Phase 0–9; Phase 8–9 cover 3D Preview / Modeling / AR Try-on — not yet implemented) |
+| [docs/product/ACCEPTANCE_CRITERIA.md](docs/product/ACCEPTANCE_CRITERIA.md) | Definition of done for each task type (includes 3D / Modeling / AR criteria) |
 
 ### AI Harness
 
