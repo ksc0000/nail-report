@@ -112,6 +112,21 @@
   color: inherit;
 }
 
+.nail-textarea {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  line-height: 1.5;
+  box-sizing: border-box;
+  width: 100%;
+  background: transparent;
+  color: inherit;
+  resize: vertical;
+  min-height: 72px;
+}
+
 .nail-file-area {
   display: flex;
   flex-direction: column;
@@ -270,6 +285,18 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--text-h);
+}
+
+.nail-item-memo {
+  font-size: 0.78rem;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .nail-item-tags {

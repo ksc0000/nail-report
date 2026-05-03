@@ -11,6 +11,7 @@ function App() {
   const [nailItems, setNailItems] = useState<NailItemDoc[]>([])
   const [nailTitle, setNailTitle] = useState('')
   const [nailTags, setNailTags] = useState('')
+  const [nailMemo, setNailMemo] = useState('')
   const [nailImageFile, setNailImageFile] = useState<File | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [nailLoading, setNailLoading] = useState(false)
@@ -60,6 +61,7 @@ function App() {
   const resetForm = () => {
     setNailTitle('')
     setNailTags('')
+    setNailMemo('')
     setNailImageFile(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
     setEditingId(null)
@@ -75,7 +77,7 @@ function App() {
     const uid = user.uid
     setNailLoading(true)
     setNailError('')
-    const baseInput = { title: nailTitle.trim(), tags: parseTags(nailTags), memo: '' }
+    const baseInput = { title: nailTitle.trim(), tags: parseTags(nailTags), memo: nailMemo.trim() }
     try {
       if (editingId) {
         const editingItem = nailItems.find(i => i.id === editingId)
@@ -107,6 +109,7 @@ function App() {
     setEditingId(item.id)
     setNailTitle(item.title)
     setNailTags(item.tags.join(', '))
+    setNailMemo(item.memo ?? '')
     setNailImageFile(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
     setNailError('')
@@ -171,6 +174,14 @@ function App() {
               placeholder="Tags (comma separated)"
               className="nail-input"
             />
+            <textarea
+              value={nailMemo}
+              onChange={e => setNailMemo(e.target.value)}
+              placeholder="Memo (salon, price, scene...)"
+              className="nail-textarea"
+              rows={3}
+              maxLength={500}
+            />
             <div className="nail-file-area">
               <input
                 ref={fileInputRef}
@@ -230,6 +241,9 @@ function App() {
                           <span key={t} className="nail-tag">#{t}</span>
                         ))}
                       </div>
+                    )}
+                    {item.memo && (
+                      <p className="nail-item-memo">{item.memo}</p>
                     )}
                   </div>
                   <div className="nail-item-actions">
