@@ -117,8 +117,9 @@ function App() {
 
   const handleDeleteNailItem = async (itemId: string) => {
     if (!user) return
-    const uid = user.uid
     const item = nailItems.find(i => i.id === itemId)
+    if (!window.confirm(`「${item?.title ?? 'このアイテム'}」を削除しますか？\nこの操作は取り消せません。`)) return
+    const uid = user.uid
     if (editingId === itemId) resetForm()
     setNailLoading(true)
     setNailError('')
