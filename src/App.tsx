@@ -6,6 +6,17 @@ import type { NailItemDoc } from './lib/firestore'
 import { uploadNailImage, deleteNailImage } from './lib/storage'
 import './App.css'
 
+const formatDate = (ts: { toDate(): Date } | null | undefined): string | null => {
+  if (!ts) return null
+  try {
+    return ts.toDate().toLocaleDateString('ja-JP', {
+      year: 'numeric', month: 'numeric', day: 'numeric',
+    })
+  } catch {
+    return null
+  }
+}
+
 function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [nailItems, setNailItems] = useState<NailItemDoc[]>([])
@@ -220,46 +231,58 @@ function App() {
             </div>
           ) : (
             <ul id="nail-list" className={nailLoading ? 'loading' : ''}>
-              {nailItems.map(item => (
-                <li key={item.id} className={editingId === item.id ? 'editing' : ''}>
-                  <div className="nail-card-thumb">
-                    <div className="nail-thumb-placeholder">No image</div>
-                    {item.imageUrl && (
-                      <img
-                        className="nail-thumb-img"
-                        src={item.imageUrl}
-                        alt={item.title}
-                        onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-                      />
-                    )}
-                  </div>
-                  <div className="nail-card-body">
-                    <span className="nail-item-title">{item.title}</span>
-                    {item.tags.length > 0 && (
-                      <div className="nail-item-tags">
-                        {item.tags.map(t => (
-                          <span key={t} className="nail-tag">#{t}</span>
-                        ))}
-                      </div>
-                    )}
-                    {item.memo && (
-                      <p className="nail-item-memo">{item.memo}</p>
-                    )}
-                  </div>
-                  <div className="nail-item-actions">
-                    <button
-                      type="button"
-                      onClick={() => handleStartEdit(item)}
-                      disabled={nailLoading}
-                    >Edit</button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteNailItem(item.id)}
-                      disabled={nailLoading}
-                    >Delete</button>
-                  </div>
-                </li>
-              ))}
+              {nailItems.map(item => {
+                const createdDate = formatDate(item.createdAt)
+                const updatedDate = (item.updatedAt && item.createdAt &&
+                  item.updatedAt.seconds !== item.createdAt.seconds)
+                  ? formatDate(item.updatedAt)
+                  : null
+                return (
+                  <li key={item.id} className={editingId === item.id ? 'editing' : ''}>
+                    <div className="nail-card-thumb">
+                      <div className="nail-thumb-placeholder">No image</div>
+                      {item.imageUrl && (
+                        <img
+                          className="nail-thumb-img"
+                          src={item.imageUrl}
+                          alt={item.title}
+                          onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+                        />
+                      )}
+                    </div>
+                    <div className="nail-card-body">
+                      <span className="nail-item-title">{item.title}</span>
+                      {item.tags.length > 0 && (
+                        <div className="nail-item-tags">
+                          {item.tags.map(t => (
+                            <span key={t} className="nail-tag">#{t}</span>
+                          ))}
+                        </div>
+                      )}
+                      {item.memo && (
+                        <p className="nail-item-memo">{item.memo}</p>
+                      )}
+                      {(createdDate || updatedDate) && (
+                        <p className="nail-item-date">
+                          {createdDate}{updatedDate && `・更新 ${updatedDate}`}
+                        </p>
+                      )}
+                    </div>
+                    <div className="nail-item-actions">
+                      <button
+                        type="button"
+                        onClick={() => handleStartEdit(item)}
+                        disabled={nailLoading}
+                      >Edit</button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteNailItem(item.id)}
+                        disabled={nailLoading}
+                      >Delete</button>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>
