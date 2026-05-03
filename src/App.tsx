@@ -35,6 +35,7 @@ function App() {
   const [nailLoading, setNailLoading] = useState(false)
   const [nailError, setNailError] = useState('')
   const [isFetching, setIsFetching] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => onAuthStateChanged(auth, setUser), [])
@@ -156,6 +157,14 @@ function App() {
 
   const editingItem = editingId ? nailItems.find(i => i.id === editingId) : null
 
+  const filteredItems = searchQuery.trim()
+    ? nailItems.filter(item => {
+        const q = searchQuery.trim().toLowerCase()
+        return item.title.toLowerCase().includes(q) ||
+          item.tags.some(t => t.toLowerCase().includes(q))
+      })
+    : nailItems
+
   return (
     <section id="center">
       <h1 id="app-title">Nailous</h1>
@@ -230,6 +239,17 @@ function App() {
             </div>
             {nailError && <p className="nail-error">{nailError}</p>}
           </div>
+          {!isFetching && nailItems.length > 0 && (
+            <div id="nail-search">
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="タイトル・タグで検索"
+                className="nail-search-input"
+              />
+            </div>
+          )}
           {isFetching ? (
             <p className="nail-loading">Loading...</p>
           ) : nailItems.length === 0 ? (
@@ -237,9 +257,11 @@ function App() {
               <p className="nail-empty-main">No nail items yet.</p>
               <p className="nail-empty-sub">Add your first one above.</p>
             </div>
+          ) : filteredItems.length === 0 ? (
+            <p className="nail-search-empty">「{searchQuery}」に一致するアイテムがありません。</p>
           ) : (
             <ul id="nail-list" className={nailLoading ? 'loading' : ''}>
-              {nailItems.map(item => {
+              {filteredItems.map(item => {
                 const createdDate = formatDate(item.createdAt)
                 const updatedDate = (item.updatedAt && item.createdAt &&
                   item.updatedAt.seconds !== item.createdAt.seconds)
