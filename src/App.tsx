@@ -254,8 +254,18 @@ function App() {
             <p className="nail-loading">Loading...</p>
           ) : nailItems.length === 0 ? (
             <div className="nail-empty">
-              <p className="nail-empty-main">No nail items yet.</p>
-              <p className="nail-empty-sub">Add your first one above.</p>
+              <svg className="nail-empty-icon" aria-hidden="true" width="44" height="44" viewBox="0 0 44 44" fill="none">
+                <rect x="17" y="3" width="10" height="6" rx="2" fill="currentColor" opacity="0.35"/>
+                <rect x="15" y="9" width="14" height="3" rx="1.5" fill="currentColor" opacity="0.5"/>
+                <rect x="13" y="12" width="18" height="26" rx="5" fill="currentColor" opacity="0.12"/>
+                <rect x="13" y="12" width="18" height="10" rx="5" fill="currentColor" opacity="0.4"/>
+              </svg>
+              <p className="nail-empty-main">コレクションを始めましょう</p>
+              <p className="nail-empty-sub">上のフォームから最初のネイルを追加してください</p>
+              <ul className="nail-empty-tips">
+                <li>タイトル・写真・タグ・メモを記録できます</li>
+                <li>タグや検索でいつでも素早く見つかります</li>
+              </ul>
             </div>
           ) : filteredItems.length === 0 ? (
             <p className="nail-search-empty">「{searchQuery}」に一致するアイテムがありません。</p>
