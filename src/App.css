@@ -225,19 +225,59 @@
 
 .nail-empty {
   text-align: center;
-  padding: 48px 0;
+  padding: 40px 0 48px;
+}
+
+.nail-empty-icon {
+  color: var(--accent);
+  opacity: 0.6;
+  display: block;
+  margin: 0 auto 18px;
 }
 
 .nail-empty-main {
-  font-size: 1rem;
+  font-size: 1.05rem;
+  font-weight: 600;
   color: var(--text-h);
-  margin: 0 0 6px;
+  margin: 0 0 8px;
 }
 
 .nail-empty-sub {
   font-size: 0.85rem;
   color: #888;
-  margin: 0;
+  margin: 0 0 20px;
+}
+
+.nail-empty-tips {
+  list-style: none;
+  padding: 14px 20px;
+  margin: 0 auto;
+  max-width: 280px;
+  background: var(--social-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nail-empty-tips li {
+  font-size: 0.8rem;
+  color: var(--text);
+  padding-left: 12px;
+  position: relative;
+}
+
+.nail-empty-tips li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--accent);
 }
 
 #nail-list {
