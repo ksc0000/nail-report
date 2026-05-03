@@ -299,6 +299,13 @@
   line-clamp: 2;
 }
 
+.nail-item-date {
+  font-size: 0.72rem;
+  color: #888;
+  margin: 0;
+  margin-top: auto;
+}
+
 .nail-item-tags {
   display: flex;
   flex-wrap: wrap;
