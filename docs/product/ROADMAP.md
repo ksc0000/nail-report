@@ -20,6 +20,8 @@
 | Phase 5 | Review / Export / Sharing | 🔲 未着手 |
 | Phase 6 | Security / Operations Hardening | 🔲 未着手 |
 | Phase 7 | Release Preparation | 🔲 未着手 |
+| Phase 8 | 3D Preview / Modeling Foundation | 🔲 未着手 |
+| Phase 9 | AR Try-on / Advanced Modeling | 🔲 未着手 |
 
 ---
 
@@ -235,6 +237,73 @@
 - [ ] 全ての Human Gates が適切に処理されている
 - [ ] 監視・ロールバック手順が準備されている
 - [ ] README が公開用に整備されている
+
+---
+
+## Phase 8: 3D Preview / Modeling Foundation
+
+**Goal:** ネイルチップの 3D プレビュー基盤を構築し、形状・カラー・テクスチャをインタラクティブに確認できるようにする
+
+> **人間判断が必要:** 3D ライブラリ選定・3D アセット戦略・Firebase Storage との関係整理
+
+### Example Issues
+
+- [ ] 技術スパイク: `model-viewer`（Web Components）vs Three.js / React Three Fiber の評価
+- [ ] 静的 GLB ネイルチップモデルの用意と Firebase Storage への格納方針の決定
+- [ ] 3D プレビュー画面の実装（形状・カラー・テクスチャのプリセット選択）
+- [ ] NailItem への将来フィールド追加検討（`shape` / `color` / `texture` / `modelUrl` / `materialPreset`）
+- [ ] Firestore スキーマ拡張設計（マイグレーション戦略）
+- [ ] 3D アセットのライセンス・サイズ・配信戦略の確定
+
+### Human Gates
+
+- G8: 3D ライブラリ追加（`package.json` 変更）— 人間の承認が必須
+- G16: 3D アセット追加（GLB / GLTF / テクスチャファイル）— ライセンス・サイズ確認
+- G3: Firestore スキーマ拡張（NailItem フィールド追加）
+- G1: 3D 機能のスコープ・優先度決定
+
+### Done Criteria
+
+- [ ] 技術スパイクの結果が `docs/` にまとめられている
+- [ ] 静的 GLB プレビューが少なくとも 1 形状で動作する
+- [ ] プリセット（形状 / カラー / テクスチャ）が UI で選択できる
+- [ ] 3D プレビューが既存の NailItem CRUD を壊していない
+- [ ] `npm run build` が成功している
+- [ ] 人間が 3D ライブラリ追加を承認している（G8）
+
+---
+
+## Phase 9: AR Try-on / Advanced Modeling
+
+**Goal:** カメラ映像にリアルタイムでネイルを重ねて試せる AR Try-on と、高度なモデリング機能を実現する
+
+> **人間判断が必要:** カメラ・画像処理のプライバシーポリシー、手の検出ライブラリ選定
+
+### Example Issues
+
+- [ ] 手のランドマーク検出（MediaPipe Hands 等）の技術スパイク
+- [ ] ネイルチップの手への位置合わせ・オーバーレイ実装
+- [ ] デコレーションパーツの配置 UI（ストーン・ラメ・アート）
+- [ ] Modeling Lite: カラー・グラデーション・アートのカスタム描画
+- [ ] AR プレビュー画面（カメラ映像 + リアルタイムオーバーレイ）
+- [ ] プライバシーポリシーの策定（カメラ映像はサーバー送信しない旨の明記）
+- [ ] 画像処理のオンデバイス / クラウド方針の決定
+
+### Human Gates
+
+- G8: AR / 画像処理ライブラリ追加（`package.json` 変更）— 人間の承認が必須
+- G6: カメラ映像・個人情報の取り扱いポリシー — プライバシーインパクト評価が必要
+- G17: AR / カメラアクセスのユーザー同意フロー設計
+- G1: AR 機能のスコープ・優先度決定
+
+### Done Criteria
+
+- [ ] カメラ映像上にネイルオーバーレイがリアルタイムで表示される
+- [ ] プライバシーポリシーがユーザーに提示されている
+- [ ] カメラ映像がサーバーに送信されないことが確認されている
+- [ ] AR 機能が既存の NailItem CRUD を壊していない
+- [ ] `npm run build` が成功している
+- [ ] 人間が AR ライブラリ追加を承認している（G8・G6・G17）
 
 ---
 

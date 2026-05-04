@@ -64,6 +64,61 @@
 - モバイルアプリ（PWA / ネイティブ）
 - データエクスポート（CSV / JSON）
 - リマインダー・次回サロン予約通知
+- **3D Preview / Modeling / AR Try-on**（Phase 8〜9 — 将来フェーズ、現在未実装）
+
+---
+
+## Future Vision: 3D Preview / Modeling / AR Try-on
+
+> このセクションは将来フェーズ（Phase 8〜9）の構想です。現在は実装されていません。
+
+### 3D Preview（Phase 8）
+
+ネイルチップの 3D モデルをインタラクティブにプレビューする機能。
+
+| 機能 | 概要 |
+|------|------|
+| Static GLB Preview | 静的な GLB ネイルチップモデルの表示 |
+| Shape Presets | ラウンド / スクエア / アーモンド等の形状プリセット |
+| Color Presets | カラーパレットの適用 |
+| Texture Presets | マット / グロス / ラメ等のテクスチャ |
+| 技術候補 | `model-viewer`（Web Components）または Three.js / React Three Fiber |
+
+### Modeling Lite（Phase 9）
+
+カラー・グラデーション・デコレーションのカスタム描画・配置機能。
+
+| 機能 | 概要 |
+|------|------|
+| Decoration Parts | ストーン・ラメ・アートパーツの配置 UI |
+| Custom Drawing | グラデーション・フレンチ等のカスタム描画 |
+
+### AR Try-on（Phase 9）
+
+カメラ映像にリアルタイムでネイルをオーバーレイする試着機能。
+
+| 機能 | 概要 |
+|------|------|
+| Hand Landmark Detection | MediaPipe Hands 等によるリアルタイム手検出 |
+| Nail Placement Overlay | ネイルチップの指への位置合わせと重畳表示 |
+| Privacy Policy | カメラ映像はオンデバイス処理・サーバー非送信を明記 |
+
+---
+
+### NailItem 将来フィールド（Phase 8〜9 以降）
+
+> 現在の Firestore スキーマへの追加候補です。追加時は Human Gate G3（スキーマ変更）が必要です。
+
+| フィールド | 型 | 説明 | 追加フェーズ |
+|---|---|---|---|
+| `shape` | `string` | ネイル形状プリセット（round / square / almond / coffin / stiletto） | Phase 8 |
+| `color` | `string` | カラーコード（例: `#AA3BFF`）または カラー名 | Phase 8 |
+| `texture` | `string` | テクスチャプリセット（matte / gloss / glitter / chrome） | Phase 8 |
+| `modelUrl` | `string` | Firebase Storage 上の GLB モデル URL | Phase 8 |
+| `materialPreset` | `string` | マテリアルプリセット識別子 | Phase 8 |
+| `decorationParts` | `string[]` | デコレーションパーツ識別子の配列 | Phase 9 |
+
+> **注意:** これらのフィールドは現在の `NailItemInput` / `NailItemDoc` 型に含まれていません。追加する際は `src/lib/firestore.ts` の型定義変更・Firestore マイグレーション戦略・UI 実装を合わせて計画してください。
 
 ---
 
