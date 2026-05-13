@@ -1,11 +1,12 @@
 # Firestore Security Rules Design
 
-> **Status: Phase 1 Ready — deploy 待ち（人間が実行）**
+> **Status: Repository Phase 1 Active — production deploy status 要確認（人間が確認）**
 > このドキュメントは Firestore Security Rules の設計方針を定義します。
 > `firestore.rules` の deploy は必ず人間が行ってください。AI は deploy しません。
 >
-> **現在の本番状態:** Phase 0 (deny-all) deploy 済み。`firestore.rules` は Phase 1 に更新済み。
-> **次のアクション:** 人間が `firebase deploy --only firestore:rules --project nail-report-dev-ksc0000` を実行する。
+> **リポジトリ状態:** `firestore.rules` は Phase 1（認証ユーザー本人のみ read / write）です。
+> **本番 deploy 状態:** このリポジトリだけでは確認できません。Firebase Console / deploy 履歴で人間が確認してください。
+> **未 deploy の場合:** 人間が `firebase deploy --only firestore:rules --project nail-report-dev-ksc0000` を実行してください。
 
 ---
 
@@ -23,12 +24,12 @@
 
 ## コレクション設計
 
-### Phase 0（現在）: Firestore 未使用
+### Phase 0（完了 / 過去）: Firestore 未使用
 
-アプリに Firebase Auth は実装済みですが、Firestore への読み書きはまだ実装していません。  
-全アクセスを deny にした状態で rules を配置し、安全な初期状態を確立します。
+Firestore 利用開始前の安全な初期状態です。
+全アクセスを deny にした rules を配置し、意図しない読み書きを防ぎます。
 
-### Phase 1（次フェーズ）: ユーザー個人データ
+### Phase 1（リポジトリ上の現在）: ユーザー個人データ
 
 ```
 Firestore (default)
@@ -68,7 +69,7 @@ Firestore (default)
 
 ## フェーズ別 Rules
 
-### Phase 0 — Deny All（現在の `firestore.rules`）
+### Phase 0 — Deny All（過去の初期 rules）
 
 ```
 rules_version = '2';
@@ -85,7 +86,7 @@ service cloud.firestore {
 
 ---
 
-### Phase 1 — 認証ユーザーの個人データ（人間承認後に移行）
+### Phase 1 — 認証ユーザーの個人データ（現在の `firestore.rules`）
 
 ```
 rules_version = '2';
@@ -112,11 +113,11 @@ service cloud.firestore {
 }
 ```
 
-**Phase 1 への移行条件（全て揃ったら人間が承認）:**
+**Phase 1 への移行条件（承認済み項目として記録）:**
 1. Google Auth がブラウザ・スマートフォンで動作確認済み
 2. `NailItem` データモデルが確定済み（[PRODUCT_SPEC.md](../product/PRODUCT_SPEC.md) の Q13 解決）
 3. Human Gate G3（DB スキーマ変更）・G4（認証・認可変更）の承認取得
-4. Firebase Emulator でのローカルテスト完了
+4. Firebase Emulator でのローカルテスト完了（任意だが推奨）
 
 ---
 
@@ -245,7 +246,7 @@ Firestore Security Rules は以下の Human Gate に該当します。
 | A1 | Phase 0 rules の `firebase deploy` 実行 | **高** | G15 | ✅ 完了 2026-05-01 |
 | A2 | Google Auth の実機動作確認完了 | **高** | G4 | ✅ 完了 2026-05-01 |
 | A3 | `NailItem` データモデルの最終確定 | **高** | G3 | ✅ 完了 2026-05-01 |
-| A4 | Phase 1 rules への移行承認 | 中 | G3/G4 | ✅ 承認済み 2026-05-01 → deploy 待ち |
+| A4 | Phase 1 rules への移行承認 | 中 | G3/G4 | ✅ 承認済み 2026-05-01（deploy 状態は要確認） |
 | A5 | Firebase Emulator セットアップ（任意だが推奨） | 中 | — | ⬜ 未完了 |
 | A6 | `publicSamples` コレクション方針の確定 | 低 | G1 | ⬜ 未完了 |
 
@@ -256,7 +257,7 @@ Firestore Security Rules は以下の Human Gate に該当します。
 | # | 日付 | フェーズ | 実行コマンド | 実行者 | 結果 |
 |---|------|---------|------------|--------|------|
 | 1 | 2026-05-01 | Phase 0 (deny-all) | `firebase deploy --only firestore:rules --project nail-report-dev-ksc0000` | 人間 (ksc0000) | ✅ 成功 |
-| 2 | — | Phase 1 (認証ユーザー個人データ) | `firebase deploy --only firestore:rules --project nail-report-dev-ksc0000` | 人間 (ksc0000) | ⬜ 実行待ち |
+| 2 | — | Phase 1 (認証ユーザー個人データ) | `firebase deploy --only firestore:rules --project nail-report-dev-ksc0000` | 人間 (ksc0000) | ⬜ 要確認（リポジトリからは未確認） |
 
 ---
 

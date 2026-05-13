@@ -1,8 +1,12 @@
 # Firebase Storage Security Rules Design
 
-> **Status: Phase 2 Ready — deploy 待ち（人間が実行）**
+> **Status: Repository Phase 2 Active — production deploy status 要確認（人間が確認）**
 > このドキュメントは Firebase Storage Security Rules の設計方針を定義します。
 > `storage.rules` の deploy は必ず人間が行ってください。AI は deploy しません。
+>
+> **リポジトリ状態:** `storage.rules` は Phase 2（認証ユーザー本人のみ read / write / delete）です。
+> **本番 deploy 状態:** このリポジトリだけでは確認できません。Firebase Console / deploy 履歴で人間が確認してください。
+> **未 deploy の場合:** 人間が `firebase deploy --only storage --project nail-report-dev-ksc0000` を実行してください。
 
 ---
 
@@ -30,13 +34,13 @@ gs://{storageBucket}/users/{uid}/nailItems/{nailItemId}/{filename}
 |-----------|------|
 | `users/{uid}` | Firebase Auth の UID — Firestore パスと一致 |
 | `nailItems/{nailItemId}` | NailItem 単位のフォルダ — Firestore ドキュメント ID と対応 |
-| `{filename}` | ファイル名（例: `original.jpg`） — Rules は contentType で制約 |
+| `{filename}` | ファイル名（現行実装は `original`） — Rules は contentType で制約 |
 
-**ファイル名の推奨規則（実装時）:**
+**ファイル名の規則:**
 
 | 用途 | ファイル名 |
 |------|-----------|
-| オリジナル画像 | `original.jpg` / `original.png` / `original.webp` |
+| オリジナル画像（現行実装） | `original` |
 | サムネイル（将来） | `thumb_400x400.jpg` |
 
 ---
@@ -117,17 +121,17 @@ Firebase Console → Storage → Rules → **Playground** で以下を確認:
 
 | # | 操作 | パス | uid | ファイルサイズ | contentType | 期待値 |
 |---|------|------|-----|-------------|-------------|--------|
-| 1 | read | `users/A/nailItems/xxx/original.jpg` | A | — | — | ✅ allow |
-| 2 | write | `users/A/nailItems/xxx/original.jpg` | A | 3MB | image/jpeg | ✅ allow |
-| 3 | write | `users/A/nailItems/xxx/original.png` | A | 3MB | image/png | ✅ allow |
-| 4 | write | `users/A/nailItems/xxx/original.webp` | A | 3MB | image/webp | ✅ allow |
-| 5 | delete | `users/A/nailItems/xxx/original.jpg` | A | — | — | ✅ allow |
-| 6 | read | `users/A/nailItems/xxx/original.jpg` | 未認証 | — | — | ❌ deny |
-| 7 | write | `users/A/nailItems/xxx/original.jpg` | 未認証 | 3MB | image/jpeg | ❌ deny |
-| 8 | read | `users/A/nailItems/xxx/original.jpg` | B | — | — | ❌ deny |
-| 9 | write | `users/A/nailItems/xxx/original.jpg` | B | 3MB | image/jpeg | ❌ deny |
-| 10 | delete | `users/A/nailItems/xxx/original.jpg` | B | — | — | ❌ deny |
-| 11 | write | `users/A/nailItems/xxx/original.jpg` | A | 6MB | image/jpeg | ❌ deny (サイズ超過) |
+| 1 | read | `users/A/nailItems/xxx/original` | A | — | — | ✅ allow |
+| 2 | write | `users/A/nailItems/xxx/original` | A | 3MB | image/jpeg | ✅ allow |
+| 3 | write | `users/A/nailItems/xxx/original` | A | 3MB | image/png | ✅ allow |
+| 4 | write | `users/A/nailItems/xxx/original` | A | 3MB | image/webp | ✅ allow |
+| 5 | delete | `users/A/nailItems/xxx/original` | A | — | — | ✅ allow |
+| 6 | read | `users/A/nailItems/xxx/original` | 未認証 | — | — | ❌ deny |
+| 7 | write | `users/A/nailItems/xxx/original` | 未認証 | 3MB | image/jpeg | ❌ deny |
+| 8 | read | `users/A/nailItems/xxx/original` | B | — | — | ❌ deny |
+| 9 | write | `users/A/nailItems/xxx/original` | B | 3MB | image/jpeg | ❌ deny |
+| 10 | delete | `users/A/nailItems/xxx/original` | B | — | — | ❌ deny |
+| 11 | write | `users/A/nailItems/xxx/original` | A | 6MB | image/jpeg | ❌ deny (サイズ超過) |
 | 12 | write | `users/A/nailItems/xxx/file.pdf` | A | 1MB | application/pdf | ❌ deny (type 不正) |
 
 ---
@@ -179,8 +183,8 @@ firebase deploy --only storage --project nail-report-dev-ksc0000
 |---|------|------|
 | S1 | Storage Rules Phase 2 内容の承認 | ✅ 承認済み 2026-05-02 |
 | S2 | `firebase.json` への storage セクション追加の承認 | ✅ 承認済み 2026-05-02 |
-| S3 | `firebase deploy --only storage` の実行 | ⬜ 実行待ち |
-| S4 | Rules Playground での動作確認 | ⬜ 未完了 |
+| S3 | `firebase deploy --only storage` の実行 | ⬜ 要確認（リポジトリからは未確認） |
+| S4 | Rules Playground での動作確認 | ⬜ 要確認 |
 
 ---
 
@@ -188,17 +192,23 @@ firebase deploy --only storage --project nail-report-dev-ksc0000
 
 | # | 日付 | 内容 | 実行者 | 結果 |
 |---|------|------|--------|------|
-| 1 | — | Phase 2 Storage Rules 初回 deploy | 人間 (ksc0000) | ⬜ 実行待ち |
+| 1 | — | Phase 2 Storage Rules 初回 deploy | 人間 (ksc0000) | ⬜ 要確認（リポジトリからは未確認） |
 
 ---
 
-## 次フェーズ（PR B）
+## 実装状況との同期
 
-Storage Rules deploy 完了後に実施:
+以下はすでに現行実装に反映済みです。
 
-1. `src/lib/firebase.ts` に `getStorage` + `storage` export を追加
-2. `src/lib/storage.ts` を新規作成（uploadImage / deleteImage 関数）
-3. `src/App.tsx` に画像アップロード UI を追加（ファイル選択 → アップロード → imageUrl 保存）
+1. `src/lib/firebase.ts` で `getStorage` + `storage` を export
+2. `src/lib/storage.ts` で `uploadNailImage` / `deleteNailImage` を実装
+3. `src/App.tsx` で画像アップロード UI（ファイル選択 → Storage upload → Firestore `imageUrl` 保存）を実装
+
+残タスク:
+
+1. 人間が本番 Storage Rules の deploy 状態を確認する
+2. 未 deploy の場合、人間が deploy を実行する
+3. Firebase Console の Rules Playground と [IMAGE_UPLOAD_QA.md](./IMAGE_UPLOAD_QA.md) で動作確認する
 
 ---
 
