@@ -1,12 +1,12 @@
 # Firebase Storage Security Rules Design
 
-> **Status: Repository Phase 2 Active — production deploy status 要確認（人間が確認）**
+> **Status: Phase 2 Active — deployed 2026-05-14**
 > このドキュメントは Firebase Storage Security Rules の設計方針を定義します。
-> `storage.rules` の deploy は必ず人間が行ってください。AI は deploy しません。
+> `storage.rules` の deploy は原則として人間が行ってください。AI が実行するのは、人間が明示的に委譲した場合のみです。
 >
 > **リポジトリ状態:** `storage.rules` は Phase 2（認証ユーザー本人のみ read / write / delete）です。
-> **本番 deploy 状態:** このリポジトリだけでは確認できません。Firebase Console / deploy 履歴で人間が確認してください。
-> **未 deploy の場合:** 人間が `firebase deploy --only storage --project nail-report-dev-ksc0000` を実行してください。
+> **本番 deploy 状態:** 2026-05-14 01:35 JST に `nail-report-dev-ksc0000` へ deploy 済みです。
+> **実行記録:** 人間の委譲承認に基づき Codex が `firebase deploy --only firestore:rules,storage --project nail-report-dev-ksc0000` を実行しました。
 
 ---
 
@@ -20,7 +20,7 @@
 | contentType 制限 | image/jpeg, image/png, image/webp のみ許可 |
 | ファイルサイズ制限 | 5MB 以下のみ許可 |
 | public read 禁止 | 未認証ユーザーの読み取りは完全に禁止 |
-| deploy は手動 | AI は `firebase deploy` を実行しない。人間が承認・deploy する |
+| deploy は手動 | 原則として人間が承認・deploy する。AI が実行するのは明示委譲時のみ |
 
 ---
 
@@ -183,7 +183,7 @@ firebase deploy --only storage --project nail-report-dev-ksc0000
 |---|------|------|
 | S1 | Storage Rules Phase 2 内容の承認 | ✅ 承認済み 2026-05-02 |
 | S2 | `firebase.json` への storage セクション追加の承認 | ✅ 承認済み 2026-05-02 |
-| S3 | `firebase deploy --only storage` の実行 | ⬜ 要確認（リポジトリからは未確認） |
+| S3 | `firebase deploy --only storage` の実行 | ✅ 完了 2026-05-14 |
 | S4 | Rules Playground での動作確認 | ⬜ 要確認 |
 
 ---
@@ -192,7 +192,7 @@ firebase deploy --only storage --project nail-report-dev-ksc0000
 
 | # | 日付 | 内容 | 実行者 | 結果 |
 |---|------|------|--------|------|
-| 1 | — | Phase 2 Storage Rules 初回 deploy | 人間 (ksc0000) | ⬜ 要確認（リポジトリからは未確認） |
+| 1 | 2026-05-14 | Phase 2 Storage Rules 初回 deploy | Codex（ksc0000 承認） | ✅ 成功 |
 
 ---
 
@@ -206,9 +206,8 @@ firebase deploy --only storage --project nail-report-dev-ksc0000
 
 残タスク:
 
-1. 人間が本番 Storage Rules の deploy 状態を確認する
-2. 未 deploy の場合、人間が deploy を実行する
-3. Firebase Console の Rules Playground と [IMAGE_UPLOAD_QA.md](./IMAGE_UPLOAD_QA.md) で動作確認する
+1. Firebase Console の Rules Playground でアクセス制御ケースを確認する
+2. [IMAGE_UPLOAD_QA.md](./IMAGE_UPLOAD_QA.md) に沿って実機動作を確認する
 
 ---
 
