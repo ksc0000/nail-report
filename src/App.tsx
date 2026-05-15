@@ -34,19 +34,34 @@ function App() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [nailLoading, setNailLoading] = useState(false)
   const [nailError, setNailError] = useState('')
-  const [isFetching, setIsFetching] = useState(false)
+  const [nailItemsUserId, setNailItemsUserId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => onAuthStateChanged(auth, setUser), [])
+  useEffect(() => onAuthStateChanged(auth, nextUser => {
+    setUser(nextUser)
+    if (!nextUser) {
+      setNailItems([])
+      setNailItemsUserId(null)
+    }
+  }), [])
 
   useEffect(() => {
-    if (!user) { setNailItems([]); return }
-    setIsFetching(true)
+    if (!user) return
+    let didCancel = false
     fetchNailItems(user.uid)
-      .then(items => setNailItems(sortByDate(items)))
-      .catch((e: unknown) => console.error('fetch failed', e))
-      .finally(() => setIsFetching(false))
+      .then(items => {
+        if (didCancel) return
+        setNailItems(sortByDate(items))
+        setNailItemsUserId(user.uid)
+      })
+      .catch((e: unknown) => {
+        console.error('fetch failed', e)
+        if (didCancel) return
+        setNailItems([])
+        setNailItemsUserId(user.uid)
+      })
+    return () => { didCancel = true }
   }, [user])
 
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -113,6 +128,7 @@ function App() {
         }
       }
       setNailItems(sortByDate(await fetchNailItems(uid)))
+      setNailItemsUserId(uid)
       resetForm()
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
@@ -148,6 +164,7 @@ function App() {
       }
       await deleteNailItem(uid, itemId)
       setNailItems(sortByDate(await fetchNailItems(uid)))
+      setNailItemsUserId(uid)
     } catch (e: unknown) {
       setNailError(String(e))
     } finally {
@@ -156,6 +173,7 @@ function App() {
   }
 
   const editingItem = editingId ? nailItems.find(i => i.id === editingId) : null
+  const isFetching = Boolean(user && nailItemsUserId !== user.uid)
 
   const filteredItems = searchQuery.trim()
     ? nailItems.filter(item => {
