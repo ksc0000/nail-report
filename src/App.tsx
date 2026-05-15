@@ -31,23 +31,46 @@ function App() {
   const [nailTags, setNailTags] = useState('')
   const [nailMemo, setNailMemo] = useState('')
   const [nailImageFile, setNailImageFile] = useState<File | null>(null)
+  const [nailImagePreview, setNailImagePreview] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [nailLoading, setNailLoading] = useState(false)
   const [nailError, setNailError] = useState('')
-  const [isFetching, setIsFetching] = useState(false)
+  const [nailItemsUserId, setNailItemsUserId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const previewUrlRef = useRef<string | null>(null)
 
-  useEffect(() => onAuthStateChanged(auth, setUser), [])
+  useEffect(() => () => {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+  }, [])
+
+  useEffect(() => onAuthStateChanged(auth, nextUser => {
+    setUser(nextUser)
+    if (!nextUser) {
+      setNailItems([])
+      setNailItemsUserId(null)
+    }
+  }), [])
 
   useEffect(() => {
-    if (!user) { setNailItems([]); return }
-    setIsFetching(true)
+    if (!user) return
+    let didCancel = false
     fetchNailItems(user.uid)
-      .then(items => setNailItems(sortByDate(items)))
-      .catch((e: unknown) => console.error('fetch failed', e))
-      .finally(() => setIsFetching(false))
+      .then(items => {
+        if (didCancel) return
+        setNailItems(sortByDate(items))
+        setNailItemsUserId(user.uid)
+      })
+      .catch((e: unknown) => {
+        console.error('fetch failed', e)
+        if (didCancel) return
+        setNailItems([])
+        setNailItemsUserId(user.uid)
+      })
+    return () => { didCancel = true }
   }, [user])
+
+  const isFetching = Boolean(user && nailItemsUserId !== user.uid)
 
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
   const MAX_FILE_BYTES = 5 * 1024 * 1024
@@ -60,18 +83,35 @@ function App() {
     return null
   }
 
+  const clearPreview = () => {
+    if (previewUrlRef.current) { URL.revokeObjectURL(previewUrlRef.current); previewUrlRef.current = null }
+    setNailImagePreview(null)
+  }
+
   const handleNailFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
-    if (!file) { setNailImageFile(null); setNailError(''); return }
+    if (!file) { setNailImageFile(null); clearPreview(); setNailError(''); return }
     const err = validateImageFile(file)
     if (err) {
       setNailError(err)
       setNailImageFile(null)
+      clearPreview()
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
     setNailError('')
     setNailImageFile(file)
+    clearPreview()
+    const url = URL.createObjectURL(file)
+    previewUrlRef.current = url
+    setNailImagePreview(url)
+  }
+
+  const handleRemoveFile = () => {
+    setNailImageFile(null)
+    clearPreview()
+    setNailError('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const parseTags = (s: string): string[] =>
@@ -82,6 +122,7 @@ function App() {
     setNailTags('')
     setNailMemo('')
     setNailImageFile(null)
+    clearPreview()
     if (fileInputRef.current) fileInputRef.current.value = ''
     setEditingId(null)
     setNailError('')
@@ -112,7 +153,9 @@ function App() {
           await updateNailItem(uid, itemId, { ...baseInput, imageUrl })
         }
       }
-      setNailItems(sortByDate(await fetchNailItems(uid)))
+      const items = await fetchNailItems(uid)
+      setNailItems(sortByDate(items))
+      setNailItemsUserId(uid)
       resetForm()
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
@@ -130,6 +173,7 @@ function App() {
     setNailTags(item.tags.join(', '))
     setNailMemo(item.memo ?? '')
     setNailImageFile(null)
+    clearPreview()
     if (fileInputRef.current) fileInputRef.current.value = ''
     setNailError('')
   }
@@ -147,7 +191,9 @@ function App() {
         await deleteNailImage(uid, itemId).catch(() => {})
       }
       await deleteNailItem(uid, itemId)
-      setNailItems(sortByDate(await fetchNailItems(uid)))
+      const items = await fetchNailItems(uid)
+      setNailItems(sortByDate(items))
+      setNailItemsUserId(uid)
     } catch (e: unknown) {
       setNailError(String(e))
     } finally {
@@ -218,8 +264,29 @@ function App() {
                 onChange={handleNailFileChange}
                 className="nail-file-input"
               />
+              {nailImageFile && nailImagePreview && (
+                <div className="nail-file-preview-area">
+                  <img
+                    className="nail-file-preview"
+                    src={nailImagePreview}
+                    alt="選択画像のプレビュー"
+                  />
+                  <div className="nail-file-info-row">
+                    <span className="nail-file-info">
+                      {nailImageFile.name}（{(nailImageFile.size / 1024 / 1024).toFixed(1)}MB）
+                    </span>
+                    <button
+                      type="button"
+                      className="nail-file-remove"
+                      onClick={handleRemoveFile}
+                    >
+                      削除
+                    </button>
+                  </div>
+                </div>
+              )}
               {editingItem?.imageUrl && !nailImageFile && (
-                <p className="nail-file-note">Current image kept. Select to replace.</p>
+                <p className="nail-file-note">現在の画像を維持します。変更するには新しい画像を選択してください。</p>
               )}
             </div>
             <div className="nail-form-actions">
