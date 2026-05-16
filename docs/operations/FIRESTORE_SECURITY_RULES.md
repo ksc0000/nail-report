@@ -1,6 +1,6 @@
 # Firestore Security Rules Design
 
-> **Status: Phase 1 Active — deployed 2026-05-14**
+> **Status: Phase 1 Active — deployed 2026-05-14 / Phase 3 designed 2026-05-17 (pending deploy)**
 > このドキュメントは Firestore Security Rules の設計方針を定義します。
 > `firestore.rules` の deploy は原則として人間が行ってください。AI が実行するのは、人間が明示的に委譲した場合のみです。
 >
@@ -48,6 +48,41 @@ Firestore (default)
 **アクセスルール:**
 - `users/{userId}/nailItems/{itemId}` — ログイン済み本人のみ read / write
 - `userId` = Firebase Auth の `uid` と一致する場合のみ許可
+
+### Phase 3（設計済み・deploy pending）: 公開共有リンク
+
+```
+Firestore (default)
+└── publicShares/
+    └── {shareId}/                 ← Firestore 自動生成 ID（推測困難）
+        ├── ownerUid: string       ← Firebase Auth UID（UIには表示しない）
+        ├── isEnabled: boolean     ← false にすることで revoke（共有停止）
+        ├── createdAt: Timestamp
+        ├── updatedAt: Timestamp
+        ├── title: string
+        ├── source: "snapshot"
+        └── items: [
+              {
+                id: string
+                title: string
+                tags: string[]
+                createdAt: Timestamp | null
+              }
+            ]
+```
+
+**除外フィールド（意図的）:**
+- `memo` — 個人情報リスク
+- `imageUrl` — 画像URL漏洩リスク
+- `ownerEmail` / `ownerDisplayName` — owner 情報を公開しない
+
+**アクセスルール:**
+- `isEnabled == true` の publicShares のみ未認証 read 可
+- owner のみ create / update（revoke）可
+- client-side delete は不可（`isEnabled: false` による revoke のみ）
+- `users/{uid}/nailItems` は引き続き owner-only
+
+---
 
 ### Phase 2（将来）: 公開サンプルデータ
 
@@ -121,6 +156,54 @@ service cloud.firestore {
 
 ---
 
+### Phase 3 — 公開共有リンク MVP（設計済み・deploy は人間が実施）
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // User's private nail items — authenticated owner only
+    match /users/{userId}/nailItems/{itemId} {
+      allow read, write: if request.auth != null
+                          && request.auth.uid == userId;
+    }
+
+    // User profile — authenticated owner only
+    match /users/{userId} {
+      allow read, write: if request.auth != null
+                          && request.auth.uid == userId;
+    }
+
+    // Public share links — unlisted snapshot sharing MVP
+    match /publicShares/{shareId} {
+      // Anyone can read a share that is explicitly enabled
+      allow read: if resource.data.isEnabled == true;
+
+      // Authenticated owner can create a share
+      allow create: if request.auth != null
+                     && request.resource.data.ownerUid == request.auth.uid
+                     && request.resource.data.source == 'snapshot'
+                     && request.resource.data.isEnabled == true;
+
+      // Authenticated owner can update (e.g., set isEnabled:false to revoke)
+      allow update: if request.auth != null
+                     && resource.data.ownerUid == request.auth.uid;
+
+      // No client-side delete — revoke by setting isEnabled:false
+      allow delete: if false;
+    }
+  }
+}
+```
+
+---
+
 ### Phase 2 — 公開サンプル追加（将来・人間承認後）
 
 ```
@@ -164,6 +247,30 @@ service cloud.firestore {
 | `users/{uid}/nailItems/*` (Phase 1+) | ❌ | ❌ | ✅ | ✅ | ❌ |
 | `users/{uid}` (Phase 1+) | ❌ | ❌ | ✅ | ✅ | ❌ |
 | `publicSamples/*` (Phase 2+) | ✅ | ❌ | ✅ | ❌ | ✅ |
+| `publicShares/*` isEnabled:true (Phase 3+) | ✅ | ❌ | ✅ | ✅ (owner) | ❌ |
+| `publicShares/*` isEnabled:false (Phase 3+) | ❌ | ❌ | ✅ (owner) | ✅ (owner) | ❌ |
+
+---
+
+---
+
+## Phase 3 Rules Playground 確認ケース
+
+Firebase Console の Rules Playground で以下を確認してから deploy してください。
+
+| # | ケース | 認証状態 | path | 操作 | isEnabled | 期待結果 |
+|---|--------|---------|------|------|-----------|---------|
+| 1 | 有効な share を未認証で read | 未認証 | `publicShares/{shareId}` | get | true | **ALLOW** |
+| 2 | 無効な share を未認証で read | 未認証 | `publicShares/{shareId}` | get | false | **DENY** |
+| 3 | 未認証で publicShares create | 未認証 | `publicShares/{shareId}` | create | — | **DENY** |
+| 4 | 未認証で publicShares update | 未認証 | `publicShares/{shareId}` | update | — | **DENY** |
+| 5 | owner が share を create | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | create | true | **ALLOW** |
+| 6 | owner が source 不正で create | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | create (`source:"invalid"`) | true | **DENY** |
+| 7 | owner が isEnabled:false で revoke | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | update | false | **ALLOW** |
+| 8 | 別ユーザーが update | 認証済み (ownerUid 不一致) | `publicShares/{shareId}` | update | — | **DENY** |
+| 9 | owner が delete | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | delete | — | **DENY** |
+| 10 | 未認証で users/{uid}/nailItems read | 未認証 | `users/{uid}/nailItems/{itemId}` | get | — | **DENY** |
+| 11 | 他人が users/{uid}/nailItems read | 認証済み (uid 不一致) | `users/{uid}/nailItems/{itemId}` | get | — | **DENY** |
 
 ---
 
@@ -249,6 +356,8 @@ Firestore Security Rules は以下の Human Gate に該当します。
 | A4 | Phase 1 rules への移行承認 | 中 | G3/G4 | ✅ 承認済み 2026-05-01 / deploy 済み 2026-05-14 |
 | A5 | Firebase Emulator セットアップ（任意だが推奨） | 中 | — | ⬜ 未完了 |
 | A6 | `publicSamples` コレクション方針の確定 | 低 | G1 | ⬜ 未完了 |
+| A7 | Phase 3 rules の Rules Playground 確認 | **高** | G6 | ⬜ 未完了 |
+| A8 | Phase 3 rules の `firebase deploy` 実行 | **高** | G15 | ⬜ 未完了（人間が実行） |
 
 ---
 
