@@ -580,3 +580,43 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.summary-export-note {
+  font-size: 0.75rem;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.summary-export-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-export {
+  padding: 7px 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: 6px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.btn-export:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-export:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-export:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
