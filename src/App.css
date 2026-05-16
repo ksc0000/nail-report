@@ -603,6 +603,99 @@
   flex-wrap: wrap;
 }
 
+.share-section {
+  background: var(--social-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#nail-share {
+  padding-top: 4px;
+}
+
+.share-privacy-note,
+.share-description,
+.share-status,
+.share-error {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.share-privacy-note {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+}
+
+.share-description {
+  color: var(--text);
+}
+
+.share-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.share-actions {
+  align-items: center;
+}
+
+.btn-export-danger {
+  border-color: rgba(204, 0, 0, 0.24);
+  background: rgba(204, 0, 0, 0.08);
+  color: #b42318;
+}
+
+.btn-export-danger:hover:not(:disabled) {
+  background: #b42318;
+  border-color: #b42318;
+  color: #fff;
+}
+
+.share-url-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.share-url-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.share-url-value {
+  font-size: 0.76rem;
+  color: var(--text-h);
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.share-status {
+  color: var(--accent);
+}
+
+.share-error {
+  color: #c00;
+}
+
 .btn-export {
   padding: 7px 16px;
   border: 1px solid var(--accent-border);
@@ -701,4 +794,10 @@
 .filter-clear:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .share-actions .btn-export {
+    width: 100%;
+  }
 }
