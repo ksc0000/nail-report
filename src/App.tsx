@@ -128,6 +128,16 @@ const getExportDateStamp = (): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+const getItemMonth = (item: NailItemDoc): string | null => {
+  try {
+    const d = (item.createdAt ?? item.updatedAt)?.toDate()
+    if (!d) return null
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  } catch {
+    return null
+  }
+}
+
 function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [nailItems, setNailItems] = useState<NailItemDoc[]>([])
@@ -141,6 +151,8 @@ function App() {
   const [nailError, setNailError] = useState('')
   const [nailItemsUserId, setNailItemsUserId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null)
+  const [activeMonthFilter, setActiveMonthFilter] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const previewUrlRef = useRef<string | null>(null)
 
@@ -305,13 +317,15 @@ function App() {
   const isFetching = Boolean(user && nailItemsUserId !== user.uid)
   const summary = useMemo(() => getNailSummary(nailItems), [nailItems])
 
-  const filteredItems = searchQuery.trim()
-    ? nailItems.filter(item => {
-        const q = searchQuery.trim().toLowerCase()
-        return item.title.toLowerCase().includes(q) ||
-          item.tags.some(t => t.toLowerCase().includes(q))
-      })
-    : nailItems
+  const filteredItems = nailItems.filter(item => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase()
+      if (!item.title.toLowerCase().includes(q) && !item.tags.some(t => t.toLowerCase().includes(q))) return false
+    }
+    if (activeTagFilter !== null && !item.tags.includes(activeTagFilter)) return false
+    if (activeMonthFilter !== null && getItemMonth(item) !== activeMonthFilter) return false
+    return true
+  })
 
   return (
     <section id="center">
@@ -430,9 +444,14 @@ function App() {
                   <h4 className="summary-section-title">タグ</h4>
                   <div className="summary-tags">
                     {summary.tagCounts.map(({ tag, count }) => (
-                      <span key={tag} className="summary-tag">
+                      <button
+                        key={tag}
+                        type="button"
+                        className={`summary-tag${activeTagFilter === tag ? ' summary-tag--active' : ''}`}
+                        onClick={() => setActiveTagFilter(prev => prev === tag ? null : tag)}
+                      >
                         #{tag}<span className="summary-tag-count">{count}</span>
-                      </span>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -442,10 +461,15 @@ function App() {
                   <h4 className="summary-section-title">月別</h4>
                   <div className="summary-monthly">
                     {summary.monthlyCounts.map(({ month, count }) => (
-                      <div key={month} className="summary-monthly-row">
+                      <button
+                        key={month}
+                        type="button"
+                        className={`summary-monthly-row${activeMonthFilter === month ? ' summary-monthly-row--active' : ''}`}
+                        onClick={() => setActiveMonthFilter(prev => prev === month ? null : month)}
+                      >
                         <span className="summary-monthly-label">{month}</span>
                         <span className="summary-monthly-count">{count}</span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -491,6 +515,21 @@ function App() {
               </div>
             </div>
           )}
+          {!isFetching && nailItems.length > 0 && (activeTagFilter !== null || activeMonthFilter !== null) && (
+            <div className="filter-bar">
+              {activeTagFilter !== null && (
+                <span className="filter-pill">タグ: #{activeTagFilter}</span>
+              )}
+              {activeMonthFilter !== null && (
+                <span className="filter-pill">月: {activeMonthFilter}</span>
+              )}
+              <button
+                type="button"
+                className="filter-clear"
+                onClick={() => { setActiveTagFilter(null); setActiveMonthFilter(null) }}
+              >Clear filters</button>
+            </div>
+          )}
           {!isFetching && nailItems.length > 0 && (
             <div id="nail-search">
               <input
@@ -520,7 +559,7 @@ function App() {
               </ul>
             </div>
           ) : filteredItems.length === 0 ? (
-            <p className="nail-search-empty">「{searchQuery}」に一致するアイテムがありません。</p>
+            <p className="nail-search-empty">条件に一致するアイテムがありません。</p>
           ) : (
             <ul id="nail-list" className={nailLoading ? 'loading' : ''}>
               {filteredItems.map(item => {
