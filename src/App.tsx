@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { auth, signInWithGoogle, signOutUser, onAuthStateChanged } from './lib/auth'
 import type { User } from './lib/auth'
 import { addNailItem, updateNailItem, deleteNailItem, fetchNailItems } from './lib/firestore'
@@ -21,6 +21,51 @@ const formatDate = (ts: { toDate(): Date } | null | undefined): string | null =>
     })
   } catch {
     return null
+  }
+}
+
+interface NailSummary {
+  totalCount: number
+  withImageCount: number
+  withoutImageCount: number
+  tagCounts: { tag: string; count: number }[]
+  monthlyCounts: { month: string; count: number }[]
+  recentItems: NailItemDoc[]
+}
+
+const getNailSummary = (items: NailItemDoc[]): NailSummary => {
+  const withImageCount = items.filter(i => Boolean(i.imageUrl)).length
+  const tagMap = new Map<string, number>()
+  items.forEach(item => item.tags.forEach(t => tagMap.set(t, (tagMap.get(t) ?? 0) + 1)))
+  const tagCounts = [...tagMap.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
+  const monthMap = new Map<string, number>()
+  items.forEach(item => {
+    try {
+      const d = (item.createdAt ?? item.updatedAt)?.toDate()
+      if (!d) return
+      const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      monthMap.set(month, (monthMap.get(month) ?? 0) + 1)
+    } catch { /* skip */ }
+  })
+  const monthlyCounts = [...monthMap.entries()]
+    .map(([month, count]) => ({ month, count }))
+    .sort((a, b) => b.month.localeCompare(a.month))
+  const recentItems = [...items]
+    .sort((a, b) => {
+      const ta = (a.updatedAt ?? a.createdAt)?.seconds ?? 0
+      const tb = (b.updatedAt ?? b.createdAt)?.seconds ?? 0
+      return tb - ta
+    })
+    .slice(0, 5)
+  return {
+    totalCount: items.length,
+    withImageCount,
+    withoutImageCount: items.length - withImageCount,
+    tagCounts,
+    monthlyCounts,
+    recentItems,
   }
 }
 
@@ -199,6 +244,7 @@ function App() {
 
   const editingItem = editingId ? nailItems.find(i => i.id === editingId) : null
   const isFetching = Boolean(user && nailItemsUserId !== user.uid)
+  const summary = useMemo(() => getNailSummary(nailItems), [nailItems])
 
   const filteredItems = searchQuery.trim()
     ? nailItems.filter(item => {
@@ -303,6 +349,63 @@ function App() {
             </div>
             {nailError && <p className="nail-error">{nailError}</p>}
           </div>
+          {!isFetching && nailItems.length > 0 && (
+            <div id="nail-summary">
+              <h3 className="summary-heading">コレクション概要</h3>
+              <div className="summary-stats">
+                <div className="summary-stat">
+                  <span className="summary-stat-value">{summary.totalCount}</span>
+                  <span className="summary-stat-label">合計</span>
+                </div>
+                <div className="summary-stat">
+                  <span className="summary-stat-value">{summary.withImageCount}</span>
+                  <span className="summary-stat-label">画像あり</span>
+                </div>
+                <div className="summary-stat">
+                  <span className="summary-stat-value">{summary.withoutImageCount}</span>
+                  <span className="summary-stat-label">画像なし</span>
+                </div>
+              </div>
+              {summary.tagCounts.length > 0 && (
+                <div className="summary-section">
+                  <h4 className="summary-section-title">タグ</h4>
+                  <div className="summary-tags">
+                    {summary.tagCounts.map(({ tag, count }) => (
+                      <span key={tag} className="summary-tag">
+                        #{tag}<span className="summary-tag-count">{count}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {summary.monthlyCounts.length > 0 && (
+                <div className="summary-section">
+                  <h4 className="summary-section-title">月別</h4>
+                  <div className="summary-monthly">
+                    {summary.monthlyCounts.map(({ month, count }) => (
+                      <div key={month} className="summary-monthly-row">
+                        <span className="summary-monthly-label">{month}</span>
+                        <span className="summary-monthly-count">{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {summary.recentItems.length > 0 && (
+                <div className="summary-section">
+                  <h4 className="summary-section-title">最近の更新</h4>
+                  <ul className="summary-recent">
+                    {summary.recentItems.map(item => (
+                      <li key={item.id} className="summary-recent-item">
+                        <span className={`summary-recent-dot${item.imageUrl ? ' summary-recent-dot--image' : ''}`} />
+                        <span className="summary-recent-title">{item.title}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
           {!isFetching && nailItems.length > 0 && (
             <div id="nail-search">
               <input
