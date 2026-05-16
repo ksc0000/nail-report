@@ -3,6 +3,7 @@ import { auth, signInWithGoogle, signOutUser, onAuthStateChanged } from './lib/a
 import type { User } from './lib/auth'
 import { addNailItem, updateNailItem, deleteNailItem, fetchNailItems } from './lib/firestore'
 import type { NailItemDoc } from './lib/firestore'
+import { createPublicShare, disablePublicShare } from './lib/publicShares'
 import { uploadNailImage, deleteNailImage } from './lib/storage'
 import './App.css'
 
@@ -153,6 +154,11 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null)
   const [activeMonthFilter, setActiveMonthFilter] = useState<string | null>(null)
+  const [shareUrl, setShareUrl] = useState('')
+  const [shareId, setShareId] = useState('')
+  const [isCreatingShare, setIsCreatingShare] = useState(false)
+  const [shareError, setShareError] = useState('')
+  const [shareStatusMessage, setShareStatusMessage] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const previewUrlRef = useRef<string | null>(null)
 
@@ -326,6 +332,76 @@ function App() {
     if (activeMonthFilter !== null && getItemMonth(item) !== activeMonthFilter) return false
     return true
   })
+
+  const handleCreateShareLink = async () => {
+    if (!user || filteredItems.length === 0) return
+
+    setIsCreatingShare(true)
+    setShareError('')
+    setShareStatusMessage('')
+
+    try {
+      const nextShareId = await createPublicShare(
+        user.uid,
+        `Nail collection snapshot ${new Date().toLocaleDateString('ja-JP')}`,
+        filteredItems.map(item => ({
+          id: item.id,
+          title: item.title,
+          tags: item.tags,
+          createdAt: item.createdAt ?? null,
+        }))
+      )
+      const nextShareUrl = `${window.location.origin}/share/${nextShareId}`
+      setShareId(nextShareId)
+      setShareUrl(nextShareUrl)
+      setShareStatusMessage('Share link created. Copy it to share this snapshot.')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to create share link.'
+      setShareError(message)
+    } finally {
+      setIsCreatingShare(false)
+    }
+  }
+
+  const handleCopyShareLink = async () => {
+    if (!shareUrl) return
+
+    setShareError('')
+    setShareStatusMessage('')
+
+    if (!navigator.clipboard?.writeText) {
+      setShareError('Clipboard API is not available in this browser.')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setShareStatusMessage('Share link copied to clipboard.')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to copy share link.'
+      setShareError(message)
+    }
+  }
+
+  const handleDisableShare = async () => {
+    if (!shareId) return
+
+    setIsCreatingShare(true)
+    setShareError('')
+    setShareStatusMessage('')
+
+    try {
+      await disablePublicShare(shareId)
+      setShareId('')
+      setShareUrl('')
+      setShareStatusMessage('Share link disabled.')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Failed to disable share link.'
+      setShareError(message)
+    } finally {
+      setIsCreatingShare(false)
+    }
+  }
 
   return (
     <section id="center">
@@ -513,6 +589,55 @@ function App() {
                   >Export JSON</button>
                 </div>
               </div>
+            </div>
+          )}
+          {!isFetching && (
+            <div id="nail-share" className="share-section">
+              <h3 className="summary-heading">Share collection</h3>
+              <p className="share-privacy-note">
+                共有リンクを知っている人は、このコレクションを閲覧できます。MVPではメモと画像は共有対象に含まれません。個人情報を含む内容を共有しないよう確認してください。共有はいつでも停止できます。
+              </p>
+              <p className="share-description">
+                現在表示中のアイテムを共有します。検索・タグ・月フィルターが適用されている場合、その結果だけが共有されます。
+              </p>
+              <div className="share-meta">
+                <span>{filteredItems.length} items ready to share</span>
+                {filteredItems.length === 0 && <span>No items to share</span>}
+              </div>
+              <div className="summary-export-actions share-actions">
+                <button
+                  type="button"
+                  className="btn-export"
+                  onClick={handleCreateShareLink}
+                  disabled={isCreatingShare || filteredItems.length === 0}
+                >
+                  {isCreatingShare ? 'Creating...' : 'Create share link'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-export"
+                  onClick={handleCopyShareLink}
+                  disabled={!shareUrl}
+                >
+                  Copy share link
+                </button>
+                <button
+                  type="button"
+                  className="btn-export btn-export-danger"
+                  onClick={handleDisableShare}
+                  disabled={!shareId || isCreatingShare}
+                >
+                  Disable share
+                </button>
+              </div>
+              {shareUrl && (
+                <div className="share-url-box">
+                  <span className="share-url-label">Share URL</span>
+                  <code className="share-url-value">{shareUrl}</code>
+                </div>
+              )}
+              {shareStatusMessage && <p className="share-status">{shareStatusMessage}</p>}
+              {shareError && <p className="share-error">{shareError}</p>}
             </div>
           )}
           {!isFetching && nailItems.length > 0 && (activeTagFilter !== null || activeMonthFilter !== null) && (
