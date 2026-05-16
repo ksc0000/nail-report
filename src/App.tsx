@@ -515,7 +515,7 @@ function App() {
               </div>
             </div>
           )}
-          {!isFetching && (activeTagFilter !== null || activeMonthFilter !== null) && (
+          {!isFetching && nailItems.length > 0 && (activeTagFilter !== null || activeMonthFilter !== null) && (
             <div className="filter-bar">
               {activeTagFilter !== null && (
                 <span className="filter-pill">タグ: #{activeTagFilter}</span>
