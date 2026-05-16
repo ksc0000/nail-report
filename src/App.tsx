@@ -69,6 +69,65 @@ const getNailSummary = (items: NailItemDoc[]): NailSummary => {
   }
 }
 
+interface ExportedNailItem {
+  id: string
+  title: string
+  tags: string
+  memo: string
+  imageUrl: string
+  createdAt: string
+  updatedAt: string
+}
+
+const formatTimestampForExport = (ts: { toDate(): Date } | null | undefined): string => {
+  if (!ts) return ''
+  try { return ts.toDate().toISOString() } catch { return '' }
+}
+
+const formatNailItemForExport = (item: NailItemDoc): ExportedNailItem => ({
+  id: item.id,
+  title: item.title,
+  tags: item.tags.join(';'),
+  memo: item.memo ?? '',
+  imageUrl: item.imageUrl ?? '',
+  createdAt: formatTimestampForExport(item.createdAt),
+  updatedAt: formatTimestampForExport(item.updatedAt),
+})
+
+const CSV_HEADERS = ['id', 'title', 'tags', 'memo', 'imageUrl', 'createdAt', 'updatedAt'] as const
+
+const escapeCsvCell = (value: string): string => {
+  if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`
+  return value
+}
+
+const toCsv = (items: NailItemDoc[]): string => {
+  const header = CSV_HEADERS.join(',')
+  const rows = items.map(item => {
+    const e = formatNailItemForExport(item)
+    return CSV_HEADERS.map(k => escapeCsvCell(e[k])).join(',')
+  })
+  return [header, ...rows].join('\r\n')
+}
+
+const toJson = (items: NailItemDoc[]): string =>
+  JSON.stringify(items.map(formatNailItemForExport), null, 2)
+
+const downloadTextFile = (filename: string, content: string, mimeType: string): void => {
+  const blob = new Blob([content], { type: mimeType })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+const getExportDateStamp = (): string => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function App() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [nailItems, setNailItems] = useState<NailItemDoc[]>([])
@@ -404,6 +463,32 @@ function App() {
                   </ul>
                 </div>
               )}
+              <div className="summary-section">
+                <h4 className="summary-section-title">エクスポート</h4>
+                <p className="summary-export-note">エクスポートには保存済みのネイル情報と画像URLが含まれます。画像ファイル本体は含まれません。</p>
+                <div className="summary-export-actions">
+                  <button
+                    type="button"
+                    className="btn-export"
+                    onClick={() => downloadTextFile(
+                      `nail-report-export-${getExportDateStamp()}.csv`,
+                      toCsv(nailItems),
+                      'text/csv;charset=utf-8;'
+                    )}
+                    disabled={nailItems.length === 0}
+                  >Export CSV</button>
+                  <button
+                    type="button"
+                    className="btn-export"
+                    onClick={() => downloadTextFile(
+                      `nail-report-export-${getExportDateStamp()}.json`,
+                      toJson(nailItems),
+                      'application/json'
+                    )}
+                    disabled={nailItems.length === 0}
+                  >Export JSON</button>
+                </div>
+              </div>
             </div>
           )}
           {!isFetching && nailItems.length > 0 && (
