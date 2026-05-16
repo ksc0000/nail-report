@@ -252,8 +252,6 @@ service cloud.firestore {
 
 ---
 
----
-
 ## Phase 3 Rules Playground 確認ケース
 
 Firebase Console の Rules Playground で以下を確認してから deploy してください。
@@ -271,6 +269,8 @@ Firebase Console の Rules Playground で以下を確認してから deploy し�
 | 9 | owner が delete | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | delete | — | **DENY** |
 | 10 | 未認証で users/{uid}/nailItems read | 未認証 | `users/{uid}/nailItems/{itemId}` | get | — | **DENY** |
 | 11 | 他人が users/{uid}/nailItems read | 認証済み (uid 不一致) | `users/{uid}/nailItems/{itemId}` | get | — | **DENY** |
+
+> **Note (follow-up candidate):** update rule は owner であれば `items` フィールドの内容も変更可能です。MVPでは `createPublicShare` helper がアプリ層で memo / imageUrl の除外を保証しますが、将来的には update 時の allowed fields 制限（rules レベルで `items[*].memo` 等を禁止）を検討してください。
 
 ---
 
