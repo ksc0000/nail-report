@@ -49,5 +49,34 @@ service cloud.firestore {
     //   allow write: if false;
     // }
 
+    // ================================================================
+    // Phase 3 (pending human approval — Human Gate G3/G4/G6/G15):
+    //   Public share links — unlisted snapshot sharing MVP.
+    //   isEnabled:true shares are readable by unauthenticated users.
+    //   Owner can create / update / disable their own shares.
+    //   Client-side delete is disallowed; revoke via isEnabled:false.
+    //   memo / imageUrl are NOT stored in publicShares (enforced by app).
+    //   See docs/operations/FIRESTORE_SECURITY_RULES.md Phase 3 section.
+    //   Deploy only after human approval (Human Gate G15).
+    // ================================================================
+    //
+    // match /publicShares/{shareId} {
+    //   // Anyone can read a share that is explicitly enabled
+    //   allow read: if resource.data.isEnabled == true;
+    //
+    //   // Authenticated owner can create a share
+    //   allow create: if request.auth != null
+    //                  && request.resource.data.ownerUid == request.auth.uid
+    //                  && request.resource.data.source == 'snapshot'
+    //                  && request.resource.data.isEnabled == true;
+    //
+    //   // Authenticated owner can update (e.g., set isEnabled:false to revoke)
+    //   allow update: if request.auth != null
+    //                  && resource.data.ownerUid == request.auth.uid;
+    //
+    //   // No client-side delete — revoke by setting isEnabled:false
+    //   allow delete: if false;
+    // }
+
   }
 }
