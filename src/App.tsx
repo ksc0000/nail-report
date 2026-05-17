@@ -3,7 +3,8 @@ import { auth, signInWithGoogle, signOutUser, onAuthStateChanged } from './lib/a
 import type { User } from './lib/auth'
 import { addNailItem, updateNailItem, deleteNailItem, fetchNailItems } from './lib/firestore'
 import type { NailItemDoc } from './lib/firestore'
-import { createPublicShare, disablePublicShare } from './lib/publicShares'
+import { createPublicShare, disablePublicShare, getPublicShare } from './lib/publicShares'
+import type { PublicShareDocWithId, PublicShareItemSnapshot } from './lib/publicShares'
 import { uploadNailImage, deleteNailImage } from './lib/storage'
 import './App.css'
 
@@ -139,7 +140,19 @@ const getItemMonth = (item: NailItemDoc): string | null => {
   }
 }
 
+type PublicShareViewState = 'idle' | 'loading' | 'ready' | 'not-found' | 'disabled' | 'error'
+
+const getPublicShareIdFromPath = (pathname: string): string | null => {
+  const m = pathname.match(/^\/share\/([^/]+)\/?$/)
+  return m?.[1] ? decodeURIComponent(m[1]) : null
+}
+
 function App() {
+  const sharePathId = useMemo(
+    () => typeof window === 'undefined' ? null : getPublicShareIdFromPath(window.location.pathname),
+    []
+  )
+  const isPublicSharePage = sharePathId !== null
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [nailItems, setNailItems] = useState<NailItemDoc[]>([])
   const [nailTitle, setNailTitle] = useState('')
@@ -159,6 +172,10 @@ function App() {
   const [isCreatingShare, setIsCreatingShare] = useState(false)
   const [shareError, setShareError] = useState('')
   const [shareStatusMessage, setShareStatusMessage] = useState('')
+  const [publicShare, setPublicShare] = useState<PublicShareDocWithId | null>(null)
+  const [publicShareState, setPublicShareState] = useState<PublicShareViewState>(
+    isPublicSharePage ? 'loading' : 'idle'
+  )
   const fileInputRef = useRef<HTMLInputElement>(null)
   const previewUrlRef = useRef<string | null>(null)
 
@@ -166,15 +183,77 @@ function App() {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
   }, [])
 
+  useEffect(() => {
+    const previousTitle = document.title
+    const meta = document.querySelector('meta[name="robots"]')
+    const previousRobots = meta?.getAttribute('content') ?? null
+    let createdMeta: HTMLMetaElement | null = null
+
+    if (isPublicSharePage) {
+      document.title = 'Shared nail collection'
+      if (meta) {
+        meta.setAttribute('content', 'noindex')
+      } else {
+        createdMeta = document.createElement('meta')
+        createdMeta.name = 'robots'
+        createdMeta.content = 'noindex'
+        document.head.appendChild(createdMeta)
+      }
+    } else {
+      document.title = 'Nailous'
+    }
+
+    return () => {
+      document.title = previousTitle
+      if (createdMeta) {
+        createdMeta.remove()
+      } else if (meta && previousRobots !== null) {
+        meta.setAttribute('content', previousRobots)
+      } else if (meta && isPublicSharePage) {
+        meta.removeAttribute('content')
+      }
+    }
+  }, [isPublicSharePage])
+
+  useEffect(() => {
+    if (!isPublicSharePage || !sharePathId) return
+
+    let didCancel = false
+
+    getPublicShare(sharePathId)
+      .then(share => {
+        if (didCancel) return
+        if (!share) {
+          setPublicShareState('not-found')
+          return
+        }
+        if (share.isEnabled !== true) {
+          setPublicShareState('disabled')
+          return
+        }
+        setPublicShare(share)
+        setPublicShareState('ready')
+      })
+      .catch((e: unknown) => {
+        console.error('public share fetch failed', e)
+        if (didCancel) return
+        setPublicShareState('error')
+      })
+
+    return () => { didCancel = true }
+  }, [isPublicSharePage, sharePathId])
+
   useEffect(() => onAuthStateChanged(auth, nextUser => {
+    if (isPublicSharePage) return
     setUser(nextUser)
     if (!nextUser) {
       setNailItems([])
       setNailItemsUserId(null)
     }
-  }), [])
+  }), [isPublicSharePage])
 
   useEffect(() => {
+    if (isPublicSharePage) return
     if (!user) return
     let didCancel = false
     fetchNailItems(user.uid)
@@ -190,7 +269,7 @@ function App() {
         setNailItemsUserId(user.uid)
       })
     return () => { didCancel = true }
-  }, [user])
+  }, [isPublicSharePage, user])
 
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
   const MAX_FILE_BYTES = 5 * 1024 * 1024
@@ -401,6 +480,88 @@ function App() {
     } finally {
       setIsCreatingShare(false)
     }
+  }
+
+  const renderPublicShareState = () => {
+    if (publicShareState === 'loading') {
+      return <p className="public-share-note">Loading shared collection...</p>
+    }
+    if (publicShareState === 'not-found') {
+      return (
+        <div className="public-share-empty">
+          <h2 className="public-share-heading">Shared nail collection</h2>
+          <p className="public-share-note">This shared collection could not be found.</p>
+          <a className="public-share-link" href="/">Back to home</a>
+        </div>
+      )
+    }
+    if (publicShareState === 'disabled') {
+      return (
+        <div className="public-share-empty">
+          <h2 className="public-share-heading">Shared nail collection</h2>
+          <p className="public-share-note">This shared collection is no longer available.</p>
+          <a className="public-share-link" href="/">Back to home</a>
+        </div>
+      )
+    }
+    if (publicShareState === 'error') {
+      return (
+        <div className="public-share-empty">
+          <h2 className="public-share-heading">Shared nail collection</h2>
+          <p className="public-share-note">We could not load this shared collection right now.</p>
+          <a className="public-share-link" href="/">Back to home</a>
+        </div>
+      )
+    }
+    if (!publicShare) return null
+
+    return (
+      <div id="public-share-page">
+        <div className="public-share-header">
+          <p className="public-share-kicker">Shared nail collection</p>
+          <h2 className="public-share-heading">{publicShare.title}</h2>
+          <p className="public-share-note">
+            {publicShare.items.length} items shared. This page is read-only and does not include memo or image data.
+          </p>
+        </div>
+        {publicShare.items.length === 0 ? (
+          <p className="public-share-note">No items are included in this shared collection.</p>
+        ) : (
+          <ul id="public-share-list">
+            {publicShare.items.map((item: PublicShareItemSnapshot) => {
+              const createdDate = formatDate(item.createdAt)
+              return (
+                <li key={item.id} className="public-share-card">
+                  <div className="public-share-card-body">
+                    <span className="public-share-item-title">{item.title}</span>
+                    {item.tags.length > 0 && (
+                      <div className="public-share-tags">
+                        {item.tags.map(tag => (
+                          <span key={tag} className="nail-tag">#{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    {createdDate && (
+                      <p className="public-share-created-at">{createdDate}</p>
+                    )}
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        <a className="public-share-link" href="/">Back to home</a>
+      </div>
+    )
+  }
+
+  if (isPublicSharePage) {
+    return (
+      <section id="center">
+        <h1 id="app-title">Nailous</h1>
+        {renderPublicShareState()}
+      </section>
+    )
   }
 
   return (
