@@ -17,7 +17,7 @@
 | Phase 2 | Data Persistence | ✅ 完了 |
 | Phase 3 | Authentication / User Management | ✅ 完了 |
 | Phase 4 | AI-Assisted Features | 🔲 未着手 |
-| Phase 5 | Review / Export / Sharing | 🔲 未着手 |
+| Phase 5 | Review / Export / Sharing | 🟡 進行中 |
 | Phase 6 | Security / Operations Hardening | 🔲 未着手 |
 | Phase 7 | Release Preparation | 🔲 未着手 |
 | Phase 8 | 3D Preview / Modeling Foundation | 🔲 未着手 |
@@ -174,6 +174,15 @@
 - [ ] CSV / JSON エクスポート
 - [ ] コレクション振り返り画面（月別・タグ別）
 - [ ] 共有 URL / 公開コレクション機能
+
+### 完了済みサブセット
+
+- [x] CSV / JSON エクスポート
+- [x] コレクション概要（タグ別 / 月別 / 最近の更新）
+- [x] 共有 URL 作成 UI
+- [x] `/share/{shareId}` 公開閲覧ページ
+- [x] public sharing browser QA
+- [x] public sharing privacy notes
 
 ### Human Gates
 

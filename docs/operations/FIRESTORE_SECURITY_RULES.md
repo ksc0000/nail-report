@@ -1,11 +1,11 @@
 # Firestore Security Rules Design
 
-> **Status: Phase 1 Active — deployed 2026-05-14 / Phase 3 designed 2026-05-17 (pending deploy)**
+> **Status: Phase 1 Active — deployed 2026-05-14 / Phase 3 Active — deployed 2026-05-17**
 > このドキュメントは Firestore Security Rules の設計方針を定義します。
 > `firestore.rules` の deploy は原則として人間が行ってください。AI が実行するのは、人間が明示的に委譲した場合のみです。
 >
-> **リポジトリ状態:** `firestore.rules` は Phase 1（認証ユーザー本人のみ read / write）です。
-> **本番 deploy 状態:** 2026-05-14 01:35 JST に `nail-report-dev-ksc0000` へ deploy 済みです。
+> **リポジトリ状態:** `firestore.rules` は Phase 1 + Phase 3 publicShares rules を含みます。
+> **本番 deploy 状態:** 2026-05-14 01:35 JST に Phase 1、2026-05-17 03:37 JST に Phase 3 を `nail-report-dev-ksc0000` へ deploy 済みです。
 > **実行記録:** 人間の委譲承認に基づき Codex が `firebase deploy --only firestore:rules,storage --project nail-report-dev-ksc0000` を実行しました。
 
 ---
@@ -49,7 +49,7 @@ Firestore (default)
 - `users/{userId}/nailItems/{itemId}` — ログイン済み本人のみ read / write
 - `userId` = Firebase Auth の `uid` と一致する場合のみ許可
 
-### Phase 3（設計済み・deploy pending）: 公開共有リンク
+### Phase 3（実装済み・deploy 済み）: 公開共有リンク
 
 ```
 Firestore (default)
@@ -156,7 +156,7 @@ service cloud.firestore {
 
 ---
 
-### Phase 3 — 公開共有リンク MVP（設計済み・deploy は人間が実施）
+### Phase 3 — 公開共有リンク MVP（deploy 済み）
 
 ```
 rules_version = '2';
@@ -356,8 +356,8 @@ Firestore Security Rules は以下の Human Gate に該当します。
 | A4 | Phase 1 rules への移行承認 | 中 | G3/G4 | ✅ 承認済み 2026-05-01 / deploy 済み 2026-05-14 |
 | A5 | Firebase Emulator セットアップ（任意だが推奨） | 中 | — | ⬜ 未完了 |
 | A6 | `publicSamples` コレクション方針の確定 | 低 | G1 | ⬜ 未完了 |
-| A7 | Phase 3 rules の Rules Playground 確認 | **高** | G6 | ⬜ 未完了 |
-| A8 | Phase 3 rules の `firebase deploy` 実行 | **高** | G15 | ⬜ 未完了（人間が実行） |
+| A7 | Phase 3 rules の Rules Playground 確認 | **高** | G6 | ✅ 完了 2026-05-17 |
+| A8 | Phase 3 rules の `firebase deploy` 実行 | **高** | G15 | ✅ 完了 2026-05-17 |
 
 ---
 
@@ -367,6 +367,7 @@ Firestore Security Rules は以下の Human Gate に該当します。
 |---|------|---------|------------|--------|------|
 | 1 | 2026-05-01 | Phase 0 (deny-all) | `firebase deploy --only firestore:rules --project nail-report-dev-ksc0000` | 人間 (ksc0000) | ✅ 成功 |
 | 2 | 2026-05-14 | Phase 1 (認証ユーザー個人データ) | `firebase deploy --only firestore:rules,storage --project nail-report-dev-ksc0000` | Codex（ksc0000 承認） | ✅ 成功 |
+| 3 | 2026-05-17 | Phase 3 (publicShares 公開共有リンク) | `firebase deploy --only firestore:rules --project nail-report-dev-ksc0000` | Codex（ksc0000 承認） | ✅ 成功 |
 
 ---
 
