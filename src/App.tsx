@@ -193,7 +193,8 @@ function App() {
   const [publicShareState, setPublicShareState] = useState<PublicShareViewState>(
     isPublicSharePage ? 'loading' : 'idle'
   )
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const uploadInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const detailCloseButtonRef = useRef<HTMLButtonElement>(null)
   const previewUrlRef = useRef<string | null>(null)
 
@@ -339,6 +340,11 @@ function App() {
     setNailImagePreview(null)
   }
 
+  const clearImageInputs = () => {
+    if (uploadInputRef.current) uploadInputRef.current.value = ''
+    if (cameraInputRef.current) cameraInputRef.current.value = ''
+  }
+
   const handleNailFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
     if (!file) { setNailImageFile(null); clearPreview(); setNailError(''); return }
@@ -347,7 +353,7 @@ function App() {
       setNailError(err)
       setNailImageFile(null)
       clearPreview()
-      if (fileInputRef.current) fileInputRef.current.value = ''
+      clearImageInputs()
       return
     }
     setNailError('')
@@ -362,7 +368,7 @@ function App() {
     setNailImageFile(null)
     clearPreview()
     setNailError('')
-    if (fileInputRef.current) fileInputRef.current.value = ''
+    clearImageInputs()
   }
 
   const parseTags = (s: string): string[] =>
@@ -374,7 +380,7 @@ function App() {
     setNailMemo('')
     setNailImageFile(null)
     clearPreview()
-    if (fileInputRef.current) fileInputRef.current.value = ''
+    clearImageInputs()
     setEditingId(null)
     setNailError('')
   }
@@ -424,7 +430,7 @@ function App() {
     setNailMemo(item.memo ?? '')
     setNailImageFile(null)
     clearPreview()
-    if (fileInputRef.current) fileInputRef.current.value = ''
+    clearImageInputs()
     setNailError('')
   }
 
@@ -865,13 +871,30 @@ function App() {
               maxLength={500}
             />
             <div className="nail-file-area">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleNailFileChange}
-                className="nail-file-input"
-              />
+              <div className="nail-file-options">
+                <label className="nail-file-option">
+                  <span>画像を選択</span>
+                  <input
+                    ref={uploadInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleNailFileChange}
+                    className="nail-file-input"
+                  />
+                </label>
+                <label className="nail-file-option">
+                  <span>写真を撮る</span>
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleNailFileChange}
+                    className="nail-file-input"
+                  />
+                </label>
+              </div>
+              <p className="nail-file-note">カメラが使えない場合は画像を選択してください。</p>
               {nailImageFile && nailImagePreview && (
                 <div className="nail-file-preview-area">
                   <img
