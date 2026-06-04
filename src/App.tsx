@@ -174,6 +174,7 @@ function App() {
   const [nailImagePreview, setNailImagePreview] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [detailItemId, setDetailItemId] = useState<string | null>(null)
+  const [comparisonItemIds, setComparisonItemIds] = useState<string[]>([])
   const [nailLoading, setNailLoading] = useState(false)
   const [nailError, setNailError] = useState('')
   const [nailItemsUserId, setNailItemsUserId] = useState<string | null>(null)
@@ -269,6 +270,7 @@ function App() {
       setPublicShares([])
       setPublicSharesUserId(null)
       setDetailItemId(null)
+      setComparisonItemIds([])
     }
   }), [isPublicSharePage])
 
@@ -432,6 +434,7 @@ function App() {
     if (!window.confirm(`「${item?.title ?? 'このアイテム'}」を削除しますか？\nこの操作は取り消せません。`)) return
     const uid = user.uid
     if (editingId === itemId) resetForm()
+    setComparisonItemIds(prev => prev.filter(id => id !== itemId))
     setNailLoading(true)
     setNailError('')
     try {
@@ -450,6 +453,9 @@ function App() {
 
   const editingItem = editingId ? nailItems.find(i => i.id === editingId) : null
   const detailItem = detailItemId ? nailItems.find(i => i.id === detailItemId) : null
+  const comparisonItems = comparisonItemIds
+    .map(id => nailItems.find(item => item.id === id))
+    .filter((item): item is NailItemDoc => Boolean(item))
   const isFetching = Boolean(user && nailItemsUserId !== user.uid)
   const summary = useMemo(() => getNailSummary(nailItems), [nailItems])
 
@@ -462,6 +468,70 @@ function App() {
     if (activeMonthFilter !== null && getItemMonth(item) !== activeMonthFilter) return false
     return true
   })
+
+  const handleToggleComparisonItem = (itemId: string) => {
+    setComparisonItemIds(prev => {
+      if (prev.includes(itemId)) return prev.filter(id => id !== itemId)
+      if (prev.length < 2) return [...prev, itemId]
+      return [prev[1], itemId]
+    })
+  }
+
+  const renderComparisonItem = (item: NailItemDoc, label: string) => {
+    const createdDate = formatDate(item.createdAt)
+    const updatedDate = formatDate(item.updatedAt)
+    return (
+      <article className="comparison-card">
+        <p className="comparison-side-label">{label}</p>
+        <div className="comparison-image-frame">
+          {item.imageUrl ? (
+            <img
+              className="comparison-image"
+              src={item.imageUrl}
+              alt={item.title + ' の比較用ネイル画像'}
+            />
+          ) : (
+            <div className="comparison-no-image">画像なし</div>
+          )}
+        </div>
+        <div className="comparison-card-body">
+          <h4 className="comparison-title">{item.title}</h4>
+          <div className="comparison-section">
+            <span className="comparison-label">タグ</span>
+            {item.tags.length > 0 ? (
+              <div className="nail-item-tags">
+                {item.tags.map(t => (
+                  <span key={t} className="nail-tag">#{t}</span>
+                ))}
+              </div>
+            ) : (
+              <p className="comparison-empty">タグなし</p>
+            )}
+          </div>
+          {item.memo && (
+            <div className="comparison-section">
+              <span className="comparison-label">メモ</span>
+              <p className="comparison-memo">{item.memo}</p>
+            </div>
+          )}
+          <dl className="comparison-meta">
+            {createdDate && (
+              <div>
+                <dt>作成日</dt>
+                <dd>{createdDate}</dd>
+              </div>
+            )}
+            {updatedDate && (
+              <div>
+                <dt>更新日</dt>
+                <dd>{updatedDate}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+      </article>
+    )
+  }
 
   const getShareUrl = (id: string): string =>
     typeof window === 'undefined' ? `/share/${id}` : `${window.location.origin}/share/${id}`
@@ -1044,6 +1114,31 @@ function App() {
               </div>
             </div>
           )}
+          {!isFetching && comparisonItems.length > 0 && (
+            <section className="comparison-panel" aria-labelledby="comparison-heading">
+              <div className="comparison-header">
+                <div>
+                  <h3 id="comparison-heading" className="summary-heading">ネイル比較</h3>
+                  {comparisonItems.length === 1 && (
+                    <p className="comparison-prompt">比較するネイルをもう1つ選択してください</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="btn-export"
+                  onClick={() => setComparisonItemIds([])}
+                >
+                  比較をクリア
+                </button>
+              </div>
+              {comparisonItems.length === 2 && (
+                <div className="comparison-grid">
+                  {renderComparisonItem(comparisonItems[0], '左')}
+                  {renderComparisonItem(comparisonItems[1], '右')}
+                </div>
+              )}
+            </section>
+          )}
           {!isFetching && nailItems.length > 0 && (activeTagFilter !== null || activeMonthFilter !== null) && (
             <div className="filter-bar">
               {activeTagFilter !== null && (
@@ -1097,8 +1192,15 @@ function App() {
                   item.updatedAt.seconds !== item.createdAt.seconds)
                   ? formatDate(item.updatedAt)
                   : null
+                const isCompareSelected = comparisonItemIds.includes(item.id)
                 return (
-                  <li key={item.id} className={editingId === item.id ? 'editing' : ''}>
+                  <li
+                    key={item.id}
+                    className={[
+                      editingId === item.id ? 'editing' : '',
+                      isCompareSelected ? 'comparison-selected' : '',
+                    ].filter(Boolean).join(' ')}
+                  >
                     <div className="nail-card-thumb">
                       <div className="nail-thumb-placeholder">No image</div>
                       {item.imageUrl && (
@@ -1133,6 +1235,10 @@ function App() {
                         type="button"
                         onClick={() => setDetailItemId(item.id)}
                       >詳しく見る</button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleComparisonItem(item.id)}
+                      >{isCompareSelected ? '比較から外す' : '比較に追加'}</button>
                       <button
                         type="button"
                         onClick={() => handleStartEdit(item)}
