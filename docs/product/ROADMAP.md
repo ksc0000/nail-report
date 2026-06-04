@@ -17,6 +17,7 @@
 | Phase 2 | Data Persistence | ✅ 完了 |
 | Phase 3 | Authentication / User Management | ✅ 完了 |
 | Phase 4 | AI-Assisted Features | 🔲 未着手 |
+| Phase 4.5 | Nail View / Camera Foundation | 🔲 推奨 next |
 | Phase 5 | Review / Export / Sharing | 🟡 進行中 |
 | Phase 6 | Security / Operations Hardening | 🔲 未着手 |
 | Phase 7 | Release Preparation | 🔲 未着手 |
@@ -160,6 +161,42 @@
 - [ ] AI 機能が指定された仕様通りに動作する
 - [ ] API キーがコードに含まれていない
 - [ ] フォールバック（API 障害時の動作）が定義されている
+
+---
+
+## Phase 4.5: Nail View / Camera Foundation
+
+**Goal:** iOS release に向けて、ネイル画像の閲覧・比較・撮影導線・将来の検出/AI/AR に必要な土台を先に整える
+
+> **Recommended next direction:** 共有・運用の追加 polish を続ける前に、NailItem の「ネイルらしい体験」を強化する。Phase 8 / 9 の 3D / AR は引き続き後続の advanced phase とし、この Phase 4.5 では画像閲覧・カメラ導線・手動 annotation・AI/検出の設計基盤までに絞る。
+
+### Example Issues
+
+- [ ] feature: add nail image detail viewer
+- [ ] feature: add nail image comparison view
+- [ ] design: plan camera capture flow
+- [ ] feature: add upload/camera source distinction
+- [ ] design: plan nail/hand detection pipeline
+- [ ] feature: add AI nail tag suggestion from image
+- [ ] design: plan iOS capture requirements
+
+### Human Gates
+
+- G1: iOS / Web / PWA の product direction 判断
+- G2: 画像 detail / comparison など UI/UX の主要変更
+- G3: `imageSource` / `manualRegions` / `analysis` 等の Firestore schema 追加
+- G6: カメラ・ユーザー写真・AI 画像解析のプライバシー方針
+- G7: 外部 AI API キーが必要な場合
+- G8: 画像処理 / ML / camera helper library 追加
+
+### Done Criteria
+
+- [ ] NailItem の画像 detail viewer が既存データで動作する
+- [ ] 画像比較の最小 UX がスマートフォン幅で破綻しない
+- [ ] カメラ/アップロード source の方針が docs にまとまっている
+- [ ] AI tag suggestion / nail detection / iOS capture の判断材料が docs にまとまっている
+- [ ] 既存の NailItem CRUD / upload / share 機能を壊していない
+- [ ] `npm run build` が成功している
 
 ---
 
