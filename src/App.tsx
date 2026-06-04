@@ -3,13 +3,25 @@ import { auth, signInWithGoogle, signOutUser, onAuthStateChanged } from './lib/a
 import type { User } from './lib/auth'
 import { addNailItem, updateNailItem, deleteNailItem, fetchNailItems } from './lib/firestore'
 import type { NailItemDoc } from './lib/firestore'
-import { createPublicShare, disablePublicShare, getPublicShare } from './lib/publicShares'
+import {
+  createPublicShare,
+  disablePublicShare,
+  fetchPublicSharesForOwner,
+  getPublicShare,
+} from './lib/publicShares'
 import type { PublicShareDocWithId, PublicShareItemSnapshot } from './lib/publicShares'
 import { uploadNailImage, deleteNailImage } from './lib/storage'
 import './App.css'
 
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
   [...items].sort((a, b) => {
+    const ta = (a.updatedAt ?? a.createdAt)?.seconds ?? 0
+    const tb = (b.updatedAt ?? b.createdAt)?.seconds ?? 0
+    return tb - ta
+  })
+
+const sortPublicShares = (shares: PublicShareDocWithId[]): PublicShareDocWithId[] =>
+  [...shares].sort((a, b) => {
     const ta = (a.updatedAt ?? a.createdAt)?.seconds ?? 0
     const tb = (b.updatedAt ?? b.createdAt)?.seconds ?? 0
     return tb - ta
@@ -172,6 +184,9 @@ function App() {
   const [isCreatingShare, setIsCreatingShare] = useState(false)
   const [shareError, setShareError] = useState('')
   const [shareStatusMessage, setShareStatusMessage] = useState('')
+  const [publicShares, setPublicShares] = useState<PublicShareDocWithId[]>([])
+  const [publicSharesUserId, setPublicSharesUserId] = useState<string | null>(null)
+  const [shareActionId, setShareActionId] = useState<string | null>(null)
   const [publicShare, setPublicShare] = useState<PublicShareDocWithId | null>(null)
   const [publicShareState, setPublicShareState] = useState<PublicShareViewState>(
     isPublicSharePage ? 'loading' : 'idle'
@@ -249,6 +264,8 @@ function App() {
     if (!nextUser) {
       setNailItems([])
       setNailItemsUserId(null)
+      setPublicShares([])
+      setPublicSharesUserId(null)
     }
   }), [isPublicSharePage])
 
@@ -267,6 +284,26 @@ function App() {
         if (didCancel) return
         setNailItems([])
         setNailItemsUserId(user.uid)
+      })
+    return () => { didCancel = true }
+  }, [isPublicSharePage, user])
+
+  useEffect(() => {
+    if (isPublicSharePage) return
+    if (!user) return
+    let didCancel = false
+    fetchPublicSharesForOwner(user.uid)
+      .then(shares => {
+        if (didCancel) return
+        setPublicShares(sortPublicShares(shares))
+        setPublicSharesUserId(user.uid)
+      })
+      .catch((e: unknown) => {
+        console.error('public shares fetch failed', e)
+        if (didCancel) return
+        setPublicShares([])
+        setPublicSharesUserId(user.uid)
+        setShareError('共有リンクの取得に失敗しました。')
       })
     return () => { didCancel = true }
   }, [isPublicSharePage, user])
@@ -412,6 +449,15 @@ function App() {
     return true
   })
 
+  const getShareUrl = (id: string): string =>
+    typeof window === 'undefined' ? `/share/${id}` : `${window.location.origin}/share/${id}`
+
+  const refreshPublicShares = async (uid: string): Promise<void> => {
+    const shares = await fetchPublicSharesForOwner(uid)
+    setPublicShares(sortPublicShares(shares))
+    setPublicSharesUserId(uid)
+  }
+
   const handleCreateShareLink = async () => {
     if (!user || filteredItems.length === 0) return
 
@@ -430,10 +476,11 @@ function App() {
           createdAt: item.createdAt ?? null,
         }))
       )
-      const nextShareUrl = `${window.location.origin}/share/${nextShareId}`
+      const nextShareUrl = getShareUrl(nextShareId)
       setShareId(nextShareId)
       setShareUrl(nextShareUrl)
       setShareStatusMessage('Share link created. Copy it to share this snapshot.')
+      await refreshPublicShares(user.uid)
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to create share link.'
       setShareError(message)
@@ -462,6 +509,24 @@ function App() {
     }
   }
 
+  const handleCopyManagedShareLink = async (managedShareId: string) => {
+    setShareError('')
+    setShareStatusMessage('')
+
+    if (!navigator.clipboard?.writeText) {
+      setShareError('Clipboard API is not available in this browser.')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(getShareUrl(managedShareId))
+      setShareStatusMessage('リンクをコピーしました。')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : '共有リンクのコピーに失敗しました。'
+      setShareError(message)
+    }
+  }
+
   const handleDisableShare = async () => {
     if (!shareId) return
 
@@ -474,11 +539,36 @@ function App() {
       setShareId('')
       setShareUrl('')
       setShareStatusMessage('Share link disabled.')
+      if (user) await refreshPublicShares(user.uid)
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to disable share link.'
       setShareError(message)
     } finally {
       setIsCreatingShare(false)
+    }
+  }
+
+  const handleDisableManagedShare = async (managedShare: PublicShareDocWithId) => {
+    if (!user || !managedShare.isEnabled) return
+    if (!window.confirm(`「${managedShare.title}」の共有を停止しますか？\n停止した共有リンクは再有効化できません。`)) return
+
+    setShareActionId(managedShare.id)
+    setShareError('')
+    setShareStatusMessage('')
+
+    try {
+      await disablePublicShare(managedShare.id)
+      if (shareId === managedShare.id) {
+        setShareId('')
+        setShareUrl('')
+      }
+      await refreshPublicShares(user.uid)
+      setShareStatusMessage('共有を停止しました。')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : '共有の停止に失敗しました。'
+      setShareError(message)
+    } finally {
+      setShareActionId(null)
     }
   }
 
@@ -799,6 +889,64 @@ function App() {
               )}
               {shareStatusMessage && <p className="share-status">{shareStatusMessage}</p>}
               {shareError && <p className="share-error">{shareError}</p>}
+              <div className="share-management">
+                <h4 className="summary-section-title">共有リンク管理</h4>
+                {user && publicSharesUserId !== user.uid ? (
+                  <p className="share-description">共有リンクを読み込んでいます...</p>
+                ) : publicShares.length === 0 ? (
+                  <p className="share-description">共有リンクはまだありません</p>
+                ) : (
+                  <ul className="share-management-list">
+                    {publicShares.map(managedShare => {
+                      const managedShareUrl = getShareUrl(managedShare.id)
+                      const createdDate = formatDate(managedShare.createdAt)
+                      const updatedDate = formatDate(managedShare.updatedAt)
+                      return (
+                        <li key={managedShare.id} className="share-management-item">
+                          <div className="share-management-main">
+                            <div className="share-management-title-row">
+                              <span className="share-management-title">{managedShare.title}</span>
+                              <span className={`share-state ${managedShare.isEnabled ? 'share-state--enabled' : 'share-state--disabled'}`}>
+                                {managedShare.isEnabled ? '有効' : '無効'}
+                              </span>
+                            </div>
+                            <div className="share-management-dates">
+                              {createdDate && <span>作成: {createdDate}</span>}
+                              {updatedDate && <span>更新: {updatedDate}</span>}
+                            </div>
+                            <code className="share-management-url">{managedShareUrl}</code>
+                          </div>
+                          <div className="share-management-actions">
+                            <a
+                              className="btn-export share-open-link"
+                              href={managedShareUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              開く
+                            </a>
+                            <button
+                              type="button"
+                              className="btn-export"
+                              onClick={() => { void handleCopyManagedShareLink(managedShare.id) }}
+                            >
+                              リンクをコピー
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-export btn-export-danger"
+                              onClick={() => { void handleDisableManagedShare(managedShare) }}
+                              disabled={!managedShare.isEnabled || shareActionId === managedShare.id}
+                            >
+                              {shareActionId === managedShare.id ? '停止中...' : '共有を停止'}
+                            </button>
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </div>
             </div>
           )}
           {!isFetching && nailItems.length > 0 && (activeTagFilter !== null || activeMonthFilter !== null) && (
