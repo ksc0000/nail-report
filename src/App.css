@@ -805,6 +805,98 @@
   color: #c00;
 }
 
+.share-management {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.share-management-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.share-management-item {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.share-management-main {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.share-management-title-row,
+.share-management-dates,
+.share-management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-management-title {
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-h);
+  overflow-wrap: anywhere;
+}
+
+.share-state {
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.share-state--enabled {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+.share-state--disabled {
+  color: #888;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.share-management-dates {
+  font-size: 0.74rem;
+  color: #888;
+}
+
+.share-management-url {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.share-management-actions {
+  justify-content: flex-end;
+  align-content: flex-start;
+  flex: 0 0 176px;
+}
+
+.share-open-link {
+  text-decoration: none;
+  text-align: center;
+}
+
 .btn-export {
   padding: 7px 16px;
   border: 1px solid var(--accent-border);
@@ -908,6 +1000,16 @@
 @media (max-width: 480px) {
   .share-actions .btn-export {
     width: 100%;
+  }
+
+  .share-management-item,
+  .share-management-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .share-management-actions {
+    flex-basis: auto;
   }
 
   #public-share-list {

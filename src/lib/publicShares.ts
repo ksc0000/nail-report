@@ -1,5 +1,5 @@
 import {
-  collection, addDoc, doc, updateDoc, getDoc,
+  collection, addDoc, doc, updateDoc, getDoc, getDocs, query, where,
   serverTimestamp,
 } from 'firebase/firestore'
 import type { Timestamp } from 'firebase/firestore'
@@ -55,6 +55,16 @@ export const disablePublicShare = async (shareId: string): Promise<void> => {
     isEnabled: false,
     updatedAt: serverTimestamp(),
   })
+}
+
+export const fetchPublicSharesForOwner = async (ownerUid: string): Promise<PublicShareDocWithId[]> => {
+  const ref = collection(db, 'publicShares')
+  const q = query(ref, where('ownerUid', '==', ownerUid))
+  const snapshot = await getDocs(q)
+  return snapshot.docs.map(snap => ({
+    id: snap.id,
+    ...(snap.data() as PublicShareDoc),
+  }))
 }
 
 export const getPublicShare = async (shareId: string): Promise<PublicShareDocWithId | null> => {

@@ -75,8 +75,9 @@ service cloud.firestore {
     // ================================================================
     //
     match /publicShares/{shareId} {
-      // Anyone can read a share that is explicitly enabled
-      allow read: if resource.data.isEnabled == true;
+      // Anyone can read enabled shares; owners can also read their disabled shares.
+      allow read: if resource.data.isEnabled == true
+                  || isPublicShareOwner();
 
       // Authenticated owner can create a share
       allow create: if request.auth != null
