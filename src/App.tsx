@@ -173,6 +173,7 @@ function App() {
   const [nailImageFile, setNailImageFile] = useState<File | null>(null)
   const [nailImagePreview, setNailImagePreview] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [detailItemId, setDetailItemId] = useState<string | null>(null)
   const [nailLoading, setNailLoading] = useState(false)
   const [nailError, setNailError] = useState('')
   const [nailItemsUserId, setNailItemsUserId] = useState<string | null>(null)
@@ -192,6 +193,7 @@ function App() {
     isPublicSharePage ? 'loading' : 'idle'
   )
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const detailCloseButtonRef = useRef<HTMLButtonElement>(null)
   const previewUrlRef = useRef<string | null>(null)
 
   useEffect(() => () => {
@@ -266,8 +268,19 @@ function App() {
       setNailItemsUserId(null)
       setPublicShares([])
       setPublicSharesUserId(null)
+      setDetailItemId(null)
     }
   }), [isPublicSharePage])
+
+  useEffect(() => {
+    if (!detailItemId) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDetailItemId(null)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    detailCloseButtonRef.current?.focus()
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [detailItemId])
 
   useEffect(() => {
     if (isPublicSharePage) return
@@ -436,6 +449,7 @@ function App() {
   }
 
   const editingItem = editingId ? nailItems.find(i => i.id === editingId) : null
+  const detailItem = detailItemId ? nailItems.find(i => i.id === detailItemId) : null
   const isFetching = Boolean(user && nailItemsUserId !== user.uid)
   const summary = useMemo(() => getNailSummary(nailItems), [nailItems])
 
@@ -657,6 +671,87 @@ function App() {
   return (
     <section id="center">
       <h1 id="app-title">Nailous</h1>
+      {detailItem && (() => {
+        const createdDate = formatDate(detailItem.createdAt)
+        const updatedDate = (detailItem.updatedAt && detailItem.createdAt &&
+          detailItem.updatedAt.seconds !== detailItem.createdAt.seconds)
+          ? formatDate(detailItem.updatedAt)
+          : null
+        return (
+          <div
+            className="nail-detail-backdrop"
+            role="presentation"
+            onClick={() => setDetailItemId(null)}
+          >
+            <div
+              className="nail-detail-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="nail-detail-title"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="nail-detail-header">
+                <p className="nail-detail-kicker">ネイル詳細</p>
+                <button
+                  ref={detailCloseButtonRef}
+                  type="button"
+                  className="nail-detail-close"
+                  onClick={() => setDetailItemId(null)}
+                  aria-label="ネイル詳細を閉じる"
+                >
+                  閉じる
+                </button>
+              </div>
+              <div className="nail-detail-image-frame">
+                {detailItem.imageUrl ? (
+                  <img
+                    className="nail-detail-image"
+                    src={detailItem.imageUrl}
+                    alt={detailItem.title + ' のネイル画像'}
+                  />
+                ) : (
+                  <div className="nail-detail-no-image">画像なし</div>
+                )}
+              </div>
+              <div className="nail-detail-body">
+                <h2 id="nail-detail-title" className="nail-detail-title">{detailItem.title}</h2>
+                <div className="nail-detail-section">
+                  <h3 className="nail-detail-label">タグ</h3>
+                  {detailItem.tags.length > 0 ? (
+                    <div className="nail-item-tags">
+                      {detailItem.tags.map(t => (
+                        <span key={t} className="nail-tag">#{t}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="nail-detail-empty">タグなし</p>
+                  )}
+                </div>
+                {detailItem.memo && (
+                  <div className="nail-detail-section">
+                    <h3 className="nail-detail-label">メモ</h3>
+                    <p className="nail-detail-memo">{detailItem.memo}</p>
+                  </div>
+                )}
+                <dl className="nail-detail-meta">
+                  {createdDate && (
+                    <div>
+                      <dt>作成日</dt>
+                      <dd>{createdDate}</dd>
+                    </div>
+                  )}
+                  {updatedDate && (
+                    <div>
+                      <dt>更新日</dt>
+                      <dd>{updatedDate}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
       <div id="auth-bar">
         {user === undefined ? null : user ? (
           <div className="auth-user">
@@ -1034,6 +1129,10 @@ function App() {
                       )}
                     </div>
                     <div className="nail-item-actions">
+                      <button
+                        type="button"
+                        onClick={() => setDetailItemId(item.id)}
+                      >詳しく見る</button>
                       <button
                         type="button"
                         onClick={() => handleStartEdit(item)}
