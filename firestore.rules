@@ -13,6 +13,20 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isPublicShareOwner() {
+      return request.auth != null
+             && resource.data.ownerUid == request.auth.uid;
+    }
+
+    function changesOnlyPublicShareRevokeFields() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['isEnabled', 'updatedAt']);
+    }
+
+    function doesNotReenablePublicShare() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isEnabled'])
+             || request.resource.data.isEnabled == false;
+    }
 
     // ================================================================
     // Default deny — must remain as the first rule
@@ -53,7 +67,7 @@ service cloud.firestore {
     // Phase 3 (pending human approval — Human Gate G3/G4/G6/G15):
     //   Public share links — unlisted snapshot sharing MVP.
     //   isEnabled:true shares are readable by unauthenticated users.
-    //   Owner can create / update / disable their own shares.
+    //   Owner can create and revoke their own shares.
     //   Client-side delete is disallowed; revoke via isEnabled:false.
     //   memo / imageUrl are NOT stored in publicShares (enforced by app).
     //   See docs/operations/FIRESTORE_SECURITY_RULES.md Phase 3 section.
@@ -70,9 +84,11 @@ service cloud.firestore {
                      && request.resource.data.source == 'snapshot'
                      && request.resource.data.isEnabled == true;
 
-      // Authenticated owner can update (e.g., set isEnabled:false to revoke)
-      allow update: if request.auth != null
-                     && resource.data.ownerUid == request.auth.uid;
+      // Authenticated owner can only revoke or refresh updatedAt.
+      // ownerUid/source/createdAt/title/items remain immutable after create.
+      allow update: if isPublicShareOwner()
+                     && changesOnlyPublicShareRevokeFields()
+                     && doesNotReenablePublicShare();
 
       // No client-side delete — revoke by setting isEnabled:false
       allow delete: if false;
