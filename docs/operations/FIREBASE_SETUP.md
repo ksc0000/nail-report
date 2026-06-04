@@ -13,7 +13,7 @@
 | Firebase Web App | `nail-report-web` |
 | Firestore database | `(default)`, リージョン: `asia-northeast1` |
 | 認証プロバイダー | Google Sign-In |
-| Firestore Security Rules 現フェーズ | Phase 0 (deny-all) |
+| Firestore Security Rules 現フェーズ | Phase 1 + Phase 3 publicShares |
 
 ---
 
@@ -44,19 +44,33 @@
 
 ### 2-1. `.env.local` の確認
 
-プロジェクトルート (`C:\dev\agent-sandbox`) に `.env.local` が存在することを確認:
+プロジェクトルートに `.env.local` が存在することを確認:
 
 ```
-VITE_FIREBASE_API_KEY=AIza...
-VITE_FIREBASE_AUTH_DOMAIN=nail-report-dev-ksc0000.firebaseapp.com
+VITE_FIREBASE_API_KEY=<firebase-web-api-key>
+VITE_FIREBASE_AUTH_DOMAIN=<project-id>.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=nail-report-dev-ksc0000
-VITE_FIREBASE_STORAGE_BUCKET=nail-report-dev-ksc0000.firebasestorage.app
-VITE_FIREBASE_MESSAGING_SENDER_ID=...
-VITE_FIREBASE_APP_ID=1:...:web:...
+VITE_FIREBASE_STORAGE_BUCKET=<storage-bucket>
+VITE_FIREBASE_MESSAGING_SENDER_ID=<messaging-sender-id>
+VITE_FIREBASE_APP_ID=<firebase-web-app-id>
 ```
 
 > `.env.local` は `.gitignore` によって Git 管理外です。コードに実際の値を書かないでください。  
 > 値は Firebase Console → プロジェクト設定 → アプリ → Web アプリ設定 から取得できます。
+
+Firebase CLI で Web アプリ設定を確認する場合は、出力に実値が含まれるためログや Issue に貼らないでください。
+
+```powershell
+firebase apps:list --project nail-report-dev-ksc0000
+firebase apps:sdkconfig WEB <web-app-id> --project nail-report-dev-ksc0000
+```
+
+`.env.local` が Git 管理外であることは、以下で確認できます。
+
+```powershell
+git check-ignore -v .env.local
+# 例: .gitignore:13:*.local .env.local
+```
 
 ### 2-2. 依存関係のインストール確認
 
@@ -92,6 +106,8 @@ npm run dev
 [ ] サインアウト後に「Sign in with Google」ボタンへ戻る
 ```
 
+> **Codex In-app Browser の注意:** Codex In-app Browser が single-tab mode の場合、Firebase の `signInWithPopup` が現在のタブを `https://nail-report-dev-ksc0000.firebaseapp.com/__/auth/handler?...` へ遷移させ、ローカルアプリに認証済み状態が戻らないことがあります。これはブラウザ自動操作環境の制約であり、アプリ不具合とは限りません。認証済み smoke test は通常の Chrome / Edge / Safari など、ポップアップを正常に開閉できるブラウザで実施してください。
+
 ### 3-3. Firebase Console でユーザー登録を確認
 
 **Authentication** → **Users** タブに今サインインしたアカウントの UID・メールアドレスが登録されていることを確認。
@@ -103,6 +119,31 @@ npm run dev
 | Chrome (PC) | サインイン・サインアウト |
 | Edge (PC) | サインイン・サインアウト |
 | Safari (PC/Mac) | サインイン・サインアウト |
+
+### 3-5. Public share management UI smoke test
+
+PR #79 以降、ログイン後の共有セクションには `共有リンク管理` が表示されます。ローカル認証が成功したら、通常ブラウザで以下を確認してください。
+
+```text
+[ ] 未ログイン時に `Nailous` と `Sign in with Google` が表示される
+[ ] Google login が成功する
+[ ] ログイン後にネイル管理画面が表示される
+[ ] 共有セクション内に `共有リンク管理` が表示される
+[ ] 共有リンクがない場合、`共有リンクはまだありません` の empty state が表示される
+[ ] 共有リンクがある場合、title / 有効・無効 status / createdAt / updatedAt（存在する場合）/ share URL が表示される
+[ ] `開く` で `/share/{shareId}` の公開共有ページを開ける
+[ ] `リンクをコピー` で share URL をコピーできる
+[ ] 安全な dev share の場合のみ `共有を停止` を実行し、revoke 後も owner には disabled share が表示される
+[ ] disabled share に re-enable action が表示されない
+[ ] delete action が表示されない
+[ ] title edit action が表示されない
+[ ] items edit action が表示されない
+[ ] ブラウザ Console に新しい関連エラーがない
+```
+
+共有リンクが存在しない場合は、empty state の確認で smoke test として許容できます。revoke は、停止してよいことが明確な dev share に対してのみ実行してください。個人情報・本番相当データ・他人の共有データを smoke test 用に作成または変更しないでください。
+
+Firestore Rules を変更した PR の場合、実 deploy の前に Rules Playground で対象ケースを確認してください。UI smoke test と Rules Playground の両方が PASS してから、`firebase deploy --only firestore:rules --project nail-report-dev-ksc0000` を人間判断で実行します。
 
 ---
 
@@ -155,13 +196,15 @@ Tunnel URL (`https://xxx.devtunnels.ms:5173` 相当) をスマートフォンの
 **原因:** アクセス中のドメインが Firebase Console の承認済みドメインに登録されていない  
 **対処:** Firebase Console → Authentication → Settings → 承認済みドメインに該当ドメインを追加する
 
-### `auth/configuration-not-found` / Firebase 初期化エラー
+### `auth/configuration-not-found` / `auth/invalid-api-key` / Firebase 初期化エラー
 
 **原因:** `.env.local` の値が正しくないか、ファイルが存在しない  
 **対処:**
-1. `.env.local` が `C:\dev\agent-sandbox` に存在するか確認
+1. `.env.local` がプロジェクトルートに存在するか確認
 2. `VITE_FIREBASE_*` 6つの変数が全て設定されているか確認
 3. `npm run dev` を再起動する（`.env.local` は起動時に読み込まれるため）
+
+`.env.local` が無い、または空の値がある場合、ローカルアプリが blank screen になり、Console に `FirebaseError: Firebase: Error (auth/invalid-api-key)` が出ることがあります。
 
 ### サインイン後にユーザー表示が出ない
 
@@ -172,9 +215,7 @@ Tunnel URL (`https://xxx.devtunnels.ms:5173` 相当) をスマートフォンの
 
 ## 6. Firestore に関する注意事項
 
-> **現在の Firestore Security Rules は Phase 0 (deny-all) です。**  
-> Google Auth でサインインできても、Firestore への読み書きは全て拒否されます。  
-> これは意図した動作です。Phase 1 への移行は別途人間が承認します（Issue #15 参照）。
+現在の Firestore Security Rules は、ログイン済み owner の `users/{uid}/nailItems` と、public sharing MVP の `publicShares/{shareId}` を扱います。public share management UI では、owner が自分の disabled share を管理一覧で読める必要があります。Rules の詳細、Rules Playground ケース、deploy 手順は [FIRESTORE_SECURITY_RULES.md](./FIRESTORE_SECURITY_RULES.md) を参照してください。
 
 ---
 
