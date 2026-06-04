@@ -78,7 +78,10 @@ Firestore (default)
 
 **アクセスルール:**
 - `isEnabled == true` の publicShares のみ未認証 read 可
-- owner のみ create / update（revoke）可
+- owner のみ create 可
+- owner の update は revoke 用途に限定し、変更可能フィールドは `isEnabled` / `updatedAt` のみ
+- disabled share の再有効化（`isEnabled:false` から `true`）は不可
+- `ownerUid` / `source` / `createdAt` / `title` / `items` は create 後 immutable
 - client-side delete は不可（`isEnabled: false` による revoke のみ）
 - `users/{uid}/nailItems` は引き続き owner-only
 
@@ -162,6 +165,20 @@ service cloud.firestore {
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isPublicShareOwner() {
+      return request.auth != null
+             && resource.data.ownerUid == request.auth.uid;
+    }
+
+    function changesOnlyPublicShareRevokeFields() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['isEnabled', 'updatedAt']);
+    }
+
+    function doesNotReenablePublicShare() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isEnabled'])
+             || request.resource.data.isEnabled == false;
+    }
 
     // Default deny
     match /{document=**} {
@@ -191,9 +208,11 @@ service cloud.firestore {
                      && request.resource.data.source == 'snapshot'
                      && request.resource.data.isEnabled == true;
 
-      // Authenticated owner can update (e.g., set isEnabled:false to revoke)
-      allow update: if request.auth != null
-                     && resource.data.ownerUid == request.auth.uid;
+      // Authenticated owner can only revoke or refresh updatedAt.
+      // ownerUid/source/createdAt/title/items remain immutable after create.
+      allow update: if isPublicShareOwner()
+                     && changesOnlyPublicShareRevokeFields()
+                     && doesNotReenablePublicShare();
 
       // No client-side delete — revoke by setting isEnabled:false
       allow delete: if false;
@@ -247,8 +266,8 @@ service cloud.firestore {
 | `users/{uid}/nailItems/*` (Phase 1+) | ❌ | ❌ | ✅ | ✅ | ❌ |
 | `users/{uid}` (Phase 1+) | ❌ | ❌ | ✅ | ✅ | ❌ |
 | `publicSamples/*` (Phase 2+) | ✅ | ❌ | ✅ | ❌ | ✅ |
-| `publicShares/*` isEnabled:true (Phase 3+) | ✅ | ❌ | ✅ | ✅ (owner) | ❌ |
-| `publicShares/*` isEnabled:false (Phase 3+) | ❌ | ❌ | ✅ (owner) | ✅ (owner) | ❌ |
+| `publicShares/*` isEnabled:true (Phase 3+) | ✅ | ❌ | ✅ | ✅ revoke only (owner) | ❌ |
+| `publicShares/*` isEnabled:false (Phase 3+) | ❌ | ❌ | ✅ (owner) | ✅ updatedAt only (owner) | ❌ |
 
 ---
 
@@ -264,13 +283,18 @@ Firebase Console の Rules Playground で以下を確認してから deploy し�
 | 4 | 未認証で publicShares update | 未認証 | `publicShares/{shareId}` | update | — | **DENY** |
 | 5 | owner が share を create | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | create | true | **ALLOW** |
 | 6 | owner が source 不正で create | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | create (`source:"invalid"`) | true | **DENY** |
-| 7 | owner が isEnabled:false で revoke | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | update | false | **ALLOW** |
-| 8 | 別ユーザーが update | 認証済み (ownerUid 不一致) | `publicShares/{shareId}` | update | — | **DENY** |
-| 9 | owner が delete | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | delete | — | **DENY** |
-| 10 | 未認証で users/{uid}/nailItems read | 未認証 | `users/{uid}/nailItems/{itemId}` | get | — | **DENY** |
-| 11 | 他人が users/{uid}/nailItems read | 認証済み (uid 不一致) | `users/{uid}/nailItems/{itemId}` | get | — | **DENY** |
-
-> **Note (follow-up candidate):** update rule は owner であれば `items` フィールドの内容も変更可能です。MVPでは `createPublicShare` helper がアプリ層で memo / imageUrl の除外を保証しますが、将来的には update 時の allowed fields 制限（rules レベルで `items[*].memo` 等を禁止）を検討してください。
+| 7 | owner が `isEnabled:false` で revoke | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | update | false | **ALLOW** |
+| 8 | owner が `updatedAt` のみ更新 | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | update | unchanged | **ALLOW** |
+| 9 | owner が disabled share を再有効化 | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | update | true | **DENY** |
+| 10 | owner が `ownerUid` を変更 | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | update | unchanged | **DENY** |
+| 11 | owner が `source` を変更 | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | update | unchanged | **DENY** |
+| 12 | owner が `createdAt` を変更 | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | update | unchanged | **DENY** |
+| 13 | owner が `title` を変更 | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | update | unchanged | **DENY** |
+| 14 | owner が `items` を変更 | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | update | unchanged | **DENY** |
+| 15 | 別ユーザーが update | 認証済み (ownerUid 不一致) | `publicShares/{shareId}` | update | — | **DENY** |
+| 16 | owner が delete | 認証済み (ownerUid 一致) | `publicShares/{shareId}` | delete | — | **DENY** |
+| 17 | 未認証で users/{uid}/nailItems read | 未認証 | `users/{uid}/nailItems/{itemId}` | get | — | **DENY** |
+| 18 | 他人が users/{uid}/nailItems read | 認証済み (uid 不一致) | `users/{uid}/nailItems/{itemId}` | get | — | **DENY** |
 
 ---
 
