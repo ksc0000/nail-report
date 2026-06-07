@@ -1,11 +1,11 @@
 # Firestore Security Rules Design
 
-> **Status: Phase 1 Active — deployed 2026-05-14 / Phase 3 Active — deployed 2026-05-17 / Phase 3 update hardening — pending deploy approval**
+> **Status: Phase 1 Active — deployed 2026-05-14 / Phase 3 Active — deployed 2026-05-17 / Phase 3 update hardening — deployed 2026-06-07**
 > このドキュメントは Firestore Security Rules の設計方針を定義します。
 > `firestore.rules` の deploy は原則として人間が行ってください。AI が実行するのは、人間が明示的に委譲した場合のみです。
 >
 > **リポジトリ状態:** `firestore.rules` は Phase 1 + Phase 3 publicShares rules + publicShares update hardening を含みます。
-> **本番 deploy 状態:** 2026-05-14 01:35 JST に Phase 1、2026-05-17 03:37 JST に Phase 3 を `nail-report-dev-ksc0000` へ deploy 済みです。update hardening の deploy は未実施です。
+> **本番 deploy 状態:** 2026-05-14 01:35 JST に Phase 1、2026-05-17 03:37 JST に Phase 3、2026-06-07 JST に Phase 3 update hardening を `nail-report-dev-ksc0000` へ deploy 済みです。
 > **実行記録:** 人間の委譲承認に基づき Codex が `firebase deploy --only firestore:rules,storage --project nail-report-dev-ksc0000` を実行しました。
 
 ---
@@ -49,7 +49,7 @@ Firestore (default)
 - `users/{userId}/nailItems/{itemId}` — ログイン済み本人のみ read / write
 - `userId` = Firebase Auth の `uid` と一致する場合のみ許可
 
-### Phase 3（実装済み・update hardening は deploy 承認待ち）: 公開共有リンク
+### Phase 3（実装済み・update hardening deploy 済み）: 公開共有リンク
 
 ```
 Firestore (default)
@@ -370,6 +370,7 @@ Firestore Security Rules は以下の Human Gate に該当します。
 | A6 | `publicSamples` コレクション方針の確定 | 低 | G1 | ⬜ 未完了 |
 | A7 | Phase 3 rules の Rules Playground 確認 | **高** | G6 | ✅ 完了 2026-05-17 |
 | A8 | Phase 3 rules の `firebase deploy` 実行 | **高** | G15 | ✅ 完了 2026-05-17 |
+| A9 | Phase 3 update hardening の `firebase deploy` 実行 | **高** | G6/G15 | ✅ 完了 2026-06-07 |
 
 ---
 
@@ -380,6 +381,7 @@ Firestore Security Rules は以下の Human Gate に該当します。
 | 1 | 2026-05-01 | Phase 0 (deny-all) | `firebase deploy --only firestore:rules --project nail-report-dev-ksc0000` | 人間 (ksc0000) | ✅ 成功 |
 | 2 | 2026-05-14 | Phase 1 (認証ユーザー個人データ) | `firebase deploy --only firestore:rules,storage --project nail-report-dev-ksc0000` | Codex（ksc0000 承認） | ✅ 成功 |
 | 3 | 2026-05-17 | Phase 3 (publicShares 公開共有リンク) | `firebase deploy --only firestore:rules --project nail-report-dev-ksc0000` | Codex（ksc0000 承認） | ✅ 成功 |
+| 4 | 2026-06-07 | Phase 3 update hardening (publicShares revoke-only update) | `firebase deploy --only firestore:rules --project nail-report-dev-ksc0000` | Codex（ksc0000 承認） | ✅ 成功 |
 
 ---
 

@@ -50,7 +50,7 @@ service cloud.firestore {
     // }
 
     // ================================================================
-    // Phase 3 (active; hardened update rule pending deploy approval — Human Gate G6/G15):
+    // Phase 3 (active; hardened update rule deployed 2026-06-07 — Human Gate G6/G15):
     //   Public share links — unlisted snapshot sharing MVP.
     //   isEnabled:true shares are readable by unauthenticated users.
     //   Owner can create shares and revoke enabled shares only.
