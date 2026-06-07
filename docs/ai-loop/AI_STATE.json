@@ -1,0 +1,15 @@
+{
+  "current_phase": "2.0",
+  "max_iterations": 3,
+  "human_review_every": 1,
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "constraints": [
+    "no-new-npm-deps",
+    "small-PRs",
+    "no-firestore-rules",
+    "no-storage-rules",
+    "no-main-tsx",
+    "no-commands-scripts"
+  ]
+}
