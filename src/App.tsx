@@ -3,13 +3,25 @@ import { auth, signInWithGoogle, signOutUser, onAuthStateChanged } from './lib/a
 import type { User } from './lib/auth'
 import { addNailItem, updateNailItem, deleteNailItem, fetchNailItems } from './lib/firestore'
 import type { NailItemDoc } from './lib/firestore'
-import { createPublicShare, disablePublicShare, getPublicShare } from './lib/publicShares'
+import {
+  createPublicShare,
+  disablePublicShare,
+  fetchPublicSharesForOwner,
+  getPublicShare,
+} from './lib/publicShares'
 import type { PublicShareDocWithId, PublicShareItemSnapshot } from './lib/publicShares'
 import { uploadNailImage, deleteNailImage } from './lib/storage'
 import './App.css'
 
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
   [...items].sort((a, b) => {
+    const ta = (a.updatedAt ?? a.createdAt)?.seconds ?? 0
+    const tb = (b.updatedAt ?? b.createdAt)?.seconds ?? 0
+    return tb - ta
+  })
+
+const sortPublicShares = (shares: PublicShareDocWithId[]): PublicShareDocWithId[] =>
+  [...shares].sort((a, b) => {
     const ta = (a.updatedAt ?? a.createdAt)?.seconds ?? 0
     const tb = (b.updatedAt ?? b.createdAt)?.seconds ?? 0
     return tb - ta
@@ -161,6 +173,8 @@ function App() {
   const [nailImageFile, setNailImageFile] = useState<File | null>(null)
   const [nailImagePreview, setNailImagePreview] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [detailItemId, setDetailItemId] = useState<string | null>(null)
+  const [comparisonItemIds, setComparisonItemIds] = useState<string[]>([])
   const [nailLoading, setNailLoading] = useState(false)
   const [nailError, setNailError] = useState('')
   const [nailItemsUserId, setNailItemsUserId] = useState<string | null>(null)
@@ -172,11 +186,16 @@ function App() {
   const [isCreatingShare, setIsCreatingShare] = useState(false)
   const [shareError, setShareError] = useState('')
   const [shareStatusMessage, setShareStatusMessage] = useState('')
+  const [publicShares, setPublicShares] = useState<PublicShareDocWithId[]>([])
+  const [publicSharesUserId, setPublicSharesUserId] = useState<string | null>(null)
+  const [shareActionId, setShareActionId] = useState<string | null>(null)
   const [publicShare, setPublicShare] = useState<PublicShareDocWithId | null>(null)
   const [publicShareState, setPublicShareState] = useState<PublicShareViewState>(
     isPublicSharePage ? 'loading' : 'idle'
   )
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const uploadInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const detailCloseButtonRef = useRef<HTMLButtonElement>(null)
   const previewUrlRef = useRef<string | null>(null)
 
   useEffect(() => () => {
@@ -249,8 +268,22 @@ function App() {
     if (!nextUser) {
       setNailItems([])
       setNailItemsUserId(null)
+      setPublicShares([])
+      setPublicSharesUserId(null)
+      setDetailItemId(null)
+      setComparisonItemIds([])
     }
   }), [isPublicSharePage])
+
+  useEffect(() => {
+    if (!detailItemId) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDetailItemId(null)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    detailCloseButtonRef.current?.focus()
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [detailItemId])
 
   useEffect(() => {
     if (isPublicSharePage) return
@@ -271,6 +304,26 @@ function App() {
     return () => { didCancel = true }
   }, [isPublicSharePage, user])
 
+  useEffect(() => {
+    if (isPublicSharePage) return
+    if (!user) return
+    let didCancel = false
+    fetchPublicSharesForOwner(user.uid)
+      .then(shares => {
+        if (didCancel) return
+        setPublicShares(sortPublicShares(shares))
+        setPublicSharesUserId(user.uid)
+      })
+      .catch((e: unknown) => {
+        console.error('public shares fetch failed', e)
+        if (didCancel) return
+        setPublicShares([])
+        setPublicSharesUserId(user.uid)
+        setShareError('共有リンクの取得に失敗しました。')
+      })
+    return () => { didCancel = true }
+  }, [isPublicSharePage, user])
+
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
   const MAX_FILE_BYTES = 5 * 1024 * 1024
 
@@ -287,6 +340,11 @@ function App() {
     setNailImagePreview(null)
   }
 
+  const clearImageInputs = () => {
+    if (uploadInputRef.current) uploadInputRef.current.value = ''
+    if (cameraInputRef.current) cameraInputRef.current.value = ''
+  }
+
   const handleNailFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
     if (!file) { setNailImageFile(null); clearPreview(); setNailError(''); return }
@@ -295,7 +353,7 @@ function App() {
       setNailError(err)
       setNailImageFile(null)
       clearPreview()
-      if (fileInputRef.current) fileInputRef.current.value = ''
+      clearImageInputs()
       return
     }
     setNailError('')
@@ -310,7 +368,7 @@ function App() {
     setNailImageFile(null)
     clearPreview()
     setNailError('')
-    if (fileInputRef.current) fileInputRef.current.value = ''
+    clearImageInputs()
   }
 
   const parseTags = (s: string): string[] =>
@@ -322,7 +380,7 @@ function App() {
     setNailMemo('')
     setNailImageFile(null)
     clearPreview()
-    if (fileInputRef.current) fileInputRef.current.value = ''
+    clearImageInputs()
     setEditingId(null)
     setNailError('')
   }
@@ -372,7 +430,7 @@ function App() {
     setNailMemo(item.memo ?? '')
     setNailImageFile(null)
     clearPreview()
-    if (fileInputRef.current) fileInputRef.current.value = ''
+    clearImageInputs()
     setNailError('')
   }
 
@@ -382,6 +440,7 @@ function App() {
     if (!window.confirm(`「${item?.title ?? 'このアイテム'}」を削除しますか？\nこの操作は取り消せません。`)) return
     const uid = user.uid
     if (editingId === itemId) resetForm()
+    setComparisonItemIds(prev => prev.filter(id => id !== itemId))
     setNailLoading(true)
     setNailError('')
     try {
@@ -399,6 +458,10 @@ function App() {
   }
 
   const editingItem = editingId ? nailItems.find(i => i.id === editingId) : null
+  const detailItem = detailItemId ? nailItems.find(i => i.id === detailItemId) : null
+  const comparisonItems = comparisonItemIds
+    .map(id => nailItems.find(item => item.id === id))
+    .filter((item): item is NailItemDoc => Boolean(item))
   const isFetching = Boolean(user && nailItemsUserId !== user.uid)
   const summary = useMemo(() => getNailSummary(nailItems), [nailItems])
 
@@ -411,6 +474,79 @@ function App() {
     if (activeMonthFilter !== null && getItemMonth(item) !== activeMonthFilter) return false
     return true
   })
+
+  const handleToggleComparisonItem = (itemId: string) => {
+    setComparisonItemIds(prev => {
+      if (prev.includes(itemId)) return prev.filter(id => id !== itemId)
+      if (prev.length < 2) return [...prev, itemId]
+      return [prev[1], itemId]
+    })
+  }
+
+  const renderComparisonItem = (item: NailItemDoc, label: string) => {
+    const createdDate = formatDate(item.createdAt)
+    const updatedDate = formatDate(item.updatedAt)
+    return (
+      <article className="comparison-card">
+        <p className="comparison-side-label">{label}</p>
+        <div className="comparison-image-frame">
+          {item.imageUrl ? (
+            <img
+              className="comparison-image"
+              src={item.imageUrl}
+              alt={item.title + ' の比較用ネイル画像'}
+            />
+          ) : (
+            <div className="comparison-no-image">画像なし</div>
+          )}
+        </div>
+        <div className="comparison-card-body">
+          <h4 className="comparison-title">{item.title}</h4>
+          <div className="comparison-section">
+            <span className="comparison-label">タグ</span>
+            {item.tags.length > 0 ? (
+              <div className="nail-item-tags">
+                {item.tags.map(t => (
+                  <span key={t} className="nail-tag">#{t}</span>
+                ))}
+              </div>
+            ) : (
+              <p className="comparison-empty">タグなし</p>
+            )}
+          </div>
+          {item.memo && (
+            <div className="comparison-section">
+              <span className="comparison-label">メモ</span>
+              <p className="comparison-memo">{item.memo}</p>
+            </div>
+          )}
+          <dl className="comparison-meta">
+            {createdDate && (
+              <div>
+                <dt>作成日</dt>
+                <dd>{createdDate}</dd>
+              </div>
+            )}
+            {updatedDate && (
+              <div>
+                <dt>更新日</dt>
+                <dd>{updatedDate}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+      </article>
+    )
+  }
+
+  const getShareUrl = (id: string): string =>
+    typeof window === 'undefined' ? `/share/${id}` : `${window.location.origin}/share/${id}`
+
+  const refreshPublicShares = async (uid: string): Promise<void> => {
+    const shares = await fetchPublicSharesForOwner(uid)
+    setPublicShares(sortPublicShares(shares))
+    setPublicSharesUserId(uid)
+  }
 
   const handleCreateShareLink = async () => {
     if (!user || filteredItems.length === 0) return
@@ -430,10 +566,11 @@ function App() {
           createdAt: item.createdAt ?? null,
         }))
       )
-      const nextShareUrl = `${window.location.origin}/share/${nextShareId}`
+      const nextShareUrl = getShareUrl(nextShareId)
       setShareId(nextShareId)
       setShareUrl(nextShareUrl)
       setShareStatusMessage('Share link created. Copy it to share this snapshot.')
+      await refreshPublicShares(user.uid)
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to create share link.'
       setShareError(message)
@@ -462,6 +599,24 @@ function App() {
     }
   }
 
+  const handleCopyManagedShareLink = async (managedShareId: string) => {
+    setShareError('')
+    setShareStatusMessage('')
+
+    if (!navigator.clipboard?.writeText) {
+      setShareError('Clipboard API is not available in this browser.')
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(getShareUrl(managedShareId))
+      setShareStatusMessage('リンクをコピーしました。')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : '共有リンクのコピーに失敗しました。'
+      setShareError(message)
+    }
+  }
+
   const handleDisableShare = async () => {
     if (!shareId) return
 
@@ -474,11 +629,36 @@ function App() {
       setShareId('')
       setShareUrl('')
       setShareStatusMessage('Share link disabled.')
+      if (user) await refreshPublicShares(user.uid)
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to disable share link.'
       setShareError(message)
     } finally {
       setIsCreatingShare(false)
+    }
+  }
+
+  const handleDisableManagedShare = async (managedShare: PublicShareDocWithId) => {
+    if (!user || !managedShare.isEnabled) return
+    if (!window.confirm(`「${managedShare.title}」の共有を停止しますか？\n停止した共有リンクは再有効化できません。`)) return
+
+    setShareActionId(managedShare.id)
+    setShareError('')
+    setShareStatusMessage('')
+
+    try {
+      await disablePublicShare(managedShare.id)
+      if (shareId === managedShare.id) {
+        setShareId('')
+        setShareUrl('')
+      }
+      await refreshPublicShares(user.uid)
+      setShareStatusMessage('共有を停止しました。')
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : '共有の停止に失敗しました。'
+      setShareError(message)
+    } finally {
+      setShareActionId(null)
     }
   }
 
@@ -567,6 +747,87 @@ function App() {
   return (
     <section id="center">
       <h1 id="app-title">Nailous</h1>
+      {detailItem && (() => {
+        const createdDate = formatDate(detailItem.createdAt)
+        const updatedDate = (detailItem.updatedAt && detailItem.createdAt &&
+          detailItem.updatedAt.seconds !== detailItem.createdAt.seconds)
+          ? formatDate(detailItem.updatedAt)
+          : null
+        return (
+          <div
+            className="nail-detail-backdrop"
+            role="presentation"
+            onClick={() => setDetailItemId(null)}
+          >
+            <div
+              className="nail-detail-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="nail-detail-title"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="nail-detail-header">
+                <p className="nail-detail-kicker">ネイル詳細</p>
+                <button
+                  ref={detailCloseButtonRef}
+                  type="button"
+                  className="nail-detail-close"
+                  onClick={() => setDetailItemId(null)}
+                  aria-label="ネイル詳細を閉じる"
+                >
+                  閉じる
+                </button>
+              </div>
+              <div className="nail-detail-image-frame">
+                {detailItem.imageUrl ? (
+                  <img
+                    className="nail-detail-image"
+                    src={detailItem.imageUrl}
+                    alt={detailItem.title + ' のネイル画像'}
+                  />
+                ) : (
+                  <div className="nail-detail-no-image">画像なし</div>
+                )}
+              </div>
+              <div className="nail-detail-body">
+                <h2 id="nail-detail-title" className="nail-detail-title">{detailItem.title}</h2>
+                <div className="nail-detail-section">
+                  <h3 className="nail-detail-label">タグ</h3>
+                  {detailItem.tags.length > 0 ? (
+                    <div className="nail-item-tags">
+                      {detailItem.tags.map(t => (
+                        <span key={t} className="nail-tag">#{t}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="nail-detail-empty">タグなし</p>
+                  )}
+                </div>
+                {detailItem.memo && (
+                  <div className="nail-detail-section">
+                    <h3 className="nail-detail-label">メモ</h3>
+                    <p className="nail-detail-memo">{detailItem.memo}</p>
+                  </div>
+                )}
+                <dl className="nail-detail-meta">
+                  {createdDate && (
+                    <div>
+                      <dt>作成日</dt>
+                      <dd>{createdDate}</dd>
+                    </div>
+                  )}
+                  {updatedDate && (
+                    <div>
+                      <dt>更新日</dt>
+                      <dd>{updatedDate}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
       <div id="auth-bar">
         {user === undefined ? null : user ? (
           <div className="auth-user">
@@ -610,13 +871,30 @@ function App() {
               maxLength={500}
             />
             <div className="nail-file-area">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleNailFileChange}
-                className="nail-file-input"
-              />
+              <div className="nail-file-options">
+                <label className="nail-file-option">
+                  <span>画像を選択</span>
+                  <input
+                    ref={uploadInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleNailFileChange}
+                    className="nail-file-input"
+                  />
+                </label>
+                <label className="nail-file-option">
+                  <span>写真を撮る</span>
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleNailFileChange}
+                    className="nail-file-input"
+                  />
+                </label>
+              </div>
+              <p className="nail-file-note">カメラが使えない場合は画像を選択してください。</p>
               {nailImageFile && nailImagePreview && (
                 <div className="nail-file-preview-area">
                   <img
@@ -799,7 +1077,90 @@ function App() {
               )}
               {shareStatusMessage && <p className="share-status">{shareStatusMessage}</p>}
               {shareError && <p className="share-error">{shareError}</p>}
+              <div className="share-management">
+                <h4 className="summary-section-title">共有リンク管理</h4>
+                {user && publicSharesUserId !== user.uid ? (
+                  <p className="share-description">共有リンクを読み込んでいます...</p>
+                ) : publicShares.length === 0 ? (
+                  <p className="share-description">共有リンクはまだありません</p>
+                ) : (
+                  <ul className="share-management-list">
+                    {publicShares.map(managedShare => {
+                      const managedShareUrl = getShareUrl(managedShare.id)
+                      const createdDate = formatDate(managedShare.createdAt)
+                      const updatedDate = formatDate(managedShare.updatedAt)
+                      return (
+                        <li key={managedShare.id} className="share-management-item">
+                          <div className="share-management-main">
+                            <div className="share-management-title-row">
+                              <span className="share-management-title">{managedShare.title}</span>
+                              <span className={`share-state ${managedShare.isEnabled ? 'share-state--enabled' : 'share-state--disabled'}`}>
+                                {managedShare.isEnabled ? '有効' : '無効'}
+                              </span>
+                            </div>
+                            <div className="share-management-dates">
+                              {createdDate && <span>作成: {createdDate}</span>}
+                              {updatedDate && <span>更新: {updatedDate}</span>}
+                            </div>
+                            <code className="share-management-url">{managedShareUrl}</code>
+                          </div>
+                          <div className="share-management-actions">
+                            <a
+                              className="btn-export share-open-link"
+                              href={managedShareUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              開く
+                            </a>
+                            <button
+                              type="button"
+                              className="btn-export"
+                              onClick={() => { void handleCopyManagedShareLink(managedShare.id) }}
+                            >
+                              リンクをコピー
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-export btn-export-danger"
+                              onClick={() => { void handleDisableManagedShare(managedShare) }}
+                              disabled={!managedShare.isEnabled || shareActionId === managedShare.id}
+                            >
+                              {shareActionId === managedShare.id ? '停止中...' : '共有を停止'}
+                            </button>
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </div>
             </div>
+          )}
+          {!isFetching && comparisonItems.length > 0 && (
+            <section className="comparison-panel" aria-labelledby="comparison-heading">
+              <div className="comparison-header">
+                <div>
+                  <h3 id="comparison-heading" className="summary-heading">ネイル比較</h3>
+                  {comparisonItems.length === 1 && (
+                    <p className="comparison-prompt">比較するネイルをもう1つ選択してください</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="btn-export"
+                  onClick={() => setComparisonItemIds([])}
+                >
+                  比較をクリア
+                </button>
+              </div>
+              {comparisonItems.length === 2 && (
+                <div className="comparison-grid">
+                  {renderComparisonItem(comparisonItems[0], '左')}
+                  {renderComparisonItem(comparisonItems[1], '右')}
+                </div>
+              )}
+            </section>
           )}
           {!isFetching && nailItems.length > 0 && (activeTagFilter !== null || activeMonthFilter !== null) && (
             <div className="filter-bar">
@@ -854,8 +1215,15 @@ function App() {
                   item.updatedAt.seconds !== item.createdAt.seconds)
                   ? formatDate(item.updatedAt)
                   : null
+                const isCompareSelected = comparisonItemIds.includes(item.id)
                 return (
-                  <li key={item.id} className={editingId === item.id ? 'editing' : ''}>
+                  <li
+                    key={item.id}
+                    className={[
+                      editingId === item.id ? 'editing' : '',
+                      isCompareSelected ? 'comparison-selected' : '',
+                    ].filter(Boolean).join(' ')}
+                  >
                     <div className="nail-card-thumb">
                       <div className="nail-thumb-placeholder">No image</div>
                       {item.imageUrl && (
@@ -886,6 +1254,14 @@ function App() {
                       )}
                     </div>
                     <div className="nail-item-actions">
+                      <button
+                        type="button"
+                        onClick={() => setDetailItemId(item.id)}
+                      >詳しく見る</button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleComparisonItem(item.id)}
+                      >{isCompareSelected ? '比較から外す' : '比較に追加'}</button>
                       <button
                         type="button"
                         onClick={() => handleStartEdit(item)}

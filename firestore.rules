@@ -13,6 +13,20 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isPublicShareOwner() {
+      return request.auth != null
+             && resource.data.ownerUid == request.auth.uid;
+    }
+
+    function changesOnlyPublicShareRevokeFields() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['isEnabled', 'updatedAt']);
+    }
+
+    function doesNotReenablePublicShare() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isEnabled'])
+             || request.resource.data.isEnabled == false;
+    }
 
     // ================================================================
     // Default deny — must remain as the first rule
@@ -50,10 +64,10 @@ service cloud.firestore {
     // }
 
     // ================================================================
-    // Phase 3 (active; hardened update rule deployed 2026-06-07 — Human Gate G6/G15):
+    // Phase 3 (active; update hardening deployed 2026-06-07 — Human Gate G6/G15):
     //   Public share links — unlisted snapshot sharing MVP.
     //   isEnabled:true shares are readable by unauthenticated users.
-    //   Owner can create shares and revoke enabled shares only.
+    //   Owner can create and revoke their own shares.
     //   Client-side delete is disallowed; revoke via isEnabled:false.
     //   memo / imageUrl are NOT stored in publicShares (enforced by app).
     //   See docs/operations/FIRESTORE_SECURITY_RULES.md Phase 3 section.
@@ -61,8 +75,9 @@ service cloud.firestore {
     // ================================================================
     //
     match /publicShares/{shareId} {
-      // Anyone can read a share that is explicitly enabled
-      allow read: if resource.data.isEnabled == true;
+      // Anyone can read enabled shares; owners can also read their disabled shares.
+      allow read: if resource.data.isEnabled == true
+                  || isPublicShareOwner();
 
       // Authenticated owner can create a share
       allow create: if request.auth != null
@@ -70,14 +85,11 @@ service cloud.firestore {
                      && request.resource.data.source == 'snapshot'
                      && request.resource.data.isEnabled == true;
 
-      // Authenticated owner can only revoke an enabled share.
-      // No other fields may be changed except updatedAt.
-      allow update: if request.auth != null
-                     && resource.data.ownerUid == request.auth.uid
-                     && resource.data.isEnabled == true
-                     && request.resource.data.isEnabled == false
-                     && request.resource.data.diff(resource.data).affectedKeys()
-                          .hasOnly(['isEnabled', 'updatedAt']);
+      // Authenticated owner can only revoke or refresh updatedAt.
+      // ownerUid/source/createdAt/title/items remain immutable after create.
+      allow update: if isPublicShareOwner()
+                     && changesOnlyPublicShareRevokeFields()
+                     && doesNotReenablePublicShare();
 
       // No client-side delete — revoke by setting isEnabled:false
       allow delete: if false;
