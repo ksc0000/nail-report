@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# AI Loop Controller: Dynamic Task Generation via Anthropic Claude API
+# AI Loop Controller: Dynamic Task Generation via Google Gemini API
 set -e
 
 ITERATIONS="${1:-1}"
@@ -15,8 +15,8 @@ NEXT_TASK_PATH="docs/ai-loop/NEXT_TASK.md"
 echo "Executing AI Loop Controller (nail-report)"
 echo "Inputs: iterations=$ITERATIONS, mode=$MODE, dry_run=$DRY_RUN, task_source=$TASK_SOURCE"
 
-if [ -z "$ANTHROPIC_API_KEY" ]; then
-  echo "Error: ANTHROPIC_API_KEY is not set."
+if [ -z "$GOOGLE_API_KEY" ]; then
+  echo "Error: GOOGLE_API_KEY is not set."
   exit 1
 fi
 
@@ -27,7 +27,6 @@ if [ ! -f "$TEMPLATE_PATH" ]; then echo "Error: Template not found at $TEMPLATE_
 SYSTEM_PROMPT="You are an AI Loop Controller for a React + TypeScript + Firebase web application (nail-report). Your goal is to read the product roadmap and current state, then generate exactly one bounded task for a worker agent (Jules). The task must be small enough for one PR (≤150 line diff), must not require macOS or PowerShell, and must not add npm dependencies. The output must be a Markdown document saved to docs/ai-loop/NEXT_TASK.md. Follow the structure of the provided template exactly."
 
 PAYLOAD=$(jq -n \
-  --arg model "claude-haiku-4-5" \
   --arg system "$SYSTEM_PROMPT" \
   --rawfile roadmap "$ROADMAP_PATH" \
   --rawfile state "$STATE_PATH" \
@@ -35,21 +34,25 @@ PAYLOAD=$(jq -n \
   --arg mode "$MODE" \
   --arg task_source "$TASK_SOURCE" \
   '{
-    model: $model,
-    system: $system,
-    messages: [{
+    system_instruction: {
+      parts: [{text: $system}]
+    },
+    contents: [{
       role: "user",
-      content: ("Please generate the next task for the AI Loop.\n\n### Current Roadmap\n" + $roadmap + "\n\n### Current State\n" + $state + "\n\n### NEXT_TASK.md Template\n" + $template + "\n\n### Execution Context\n- Mode: " + $mode + "\n- Task Source: " + $task_source + "\n- Objective: Determine the single most appropriate next step based on the roadmap and current state.\n\n### Requirements for NEXT_TASK.md\n- Use Markdown format.\n- Objective must be clear and bounded (1 PR size, ≤150 lines diff).\n- List Allowed and Forbidden files explicitly.\n- Include Acceptance criteria and Required test commands (npm run build && npm run lint).\n- The \"Worker prompt\" section should contain the detailed instructions for the worker agent.")
+      parts: [{
+        text: ("Please generate the next task for the AI Loop.\n\n### Current Roadmap\n" + $roadmap + "\n\n### Current State\n" + $state + "\n\n### NEXT_TASK.md Template\n" + $template + "\n\n### Execution Context\n- Mode: " + $mode + "\n- Task Source: " + $task_source + "\n- Objective: Determine the single most appropriate next step based on the roadmap and current state.\n\n### Requirements for NEXT_TASK.md\n- Use Markdown format.\n- Objective must be clear and bounded (1 PR size, ≤150 lines diff).\n- List Allowed and Forbidden files explicitly.\n- Include Acceptance criteria and Required test commands (npm run build && npm run lint).\n- The \"Worker prompt\" section should contain the detailed instructions for the worker agent.")
+      }]
     }],
-    max_tokens: 4096
+    generationConfig: {
+      maxOutputTokens: 4096
+    }
   }')
 
-echo "Calling Anthropic API (claude-haiku-4-5)..."
+echo "Calling Gemini API (gemini-2.0-flash)..."
 
 RESPONSE_FILE=$(mktemp)
-HTTP_RESPONSE=$(curl -s -w "%{http_code}" -o "$RESPONSE_FILE" https://api.anthropic.com/v1/messages \
-  -H "x-api-key: $ANTHROPIC_API_KEY" \
-  -H "anthropic-version: 2023-06-01" \
+HTTP_RESPONSE=$(curl -s -w "%{http_code}" -o "$RESPONSE_FILE" \
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GOOGLE_API_KEY" \
   -H "content-type: application/json" \
   -d "$PAYLOAD")
 
@@ -60,7 +63,7 @@ if [ "$HTTP_RESPONSE" -ne 200 ]; then
   exit 1
 fi
 
-NEXT_TASK_CONTENT=$(jq -r '.content[0].text' "$RESPONSE_FILE")
+NEXT_TASK_CONTENT=$(jq -r '.candidates[0].content.parts[0].text' "$RESPONSE_FILE")
 rm -f "$RESPONSE_FILE"
 
 if [ -z "$NEXT_TASK_CONTENT" ] || [ "$NEXT_TASK_CONTENT" == "null" ]; then
