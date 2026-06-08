@@ -27,7 +27,7 @@ if [ ! -f "$TEMPLATE_PATH" ]; then echo "Error: Template not found at $TEMPLATE_
 SYSTEM_PROMPT="You are an AI Loop Controller for a React + TypeScript + Firebase web application (nail-report). Your goal is to read the product roadmap and current state, then generate exactly one bounded task for a worker agent (Jules). The task must be small enough for one PR (≤150 line diff), must not require macOS or PowerShell, and must not add npm dependencies. The output must be a Markdown document saved to docs/ai-loop/NEXT_TASK.md. Follow the structure of the provided template exactly."
 
 PAYLOAD=$(jq -n \
-  --arg model "claude-3-5-haiku-20241022" \
+  --arg model "claude-haiku-4-5" \
   --arg system "$SYSTEM_PROMPT" \
   --rawfile roadmap "$ROADMAP_PATH" \
   --rawfile state "$STATE_PATH" \
@@ -44,7 +44,7 @@ PAYLOAD=$(jq -n \
     max_tokens: 4096
   }')
 
-echo "Calling Anthropic API (claude-3-5-haiku-20241022)..."
+echo "Calling Anthropic API (claude-haiku-4-5)..."
 
 RESPONSE_FILE=$(mktemp)
 HTTP_RESPONSE=$(curl -s -w "%{http_code}" -o "$RESPONSE_FILE" https://api.anthropic.com/v1/messages \
