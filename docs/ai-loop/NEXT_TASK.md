@@ -2,40 +2,40 @@
 
 ## Context
 
-The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. No tasks have been completed in this phase yet. A key constraint is to not add any new npm dependencies.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This task initiates the test coverage effort by adding unit tests for core Firebase utility functions.
 
 ## Objective
 
-Implement a loading skeleton for the nail item list to improve the user experience during data fetching. This addresses Phase 2.3 "Loading states" from the product roadmap.
+Implement initial unit tests for the helper functions in `src/lib/firestore.ts` using Vitest, focusing on mocking Firebase SDK calls.
 
 ## Allowed Scope
 
--   `src/` (except `src/main.tsx`)
--   Specifically, `src/App.tsx` for rendering logic.
--   `src/App.css` for styling the skeleton.
+- `src/lib/firestore.ts` (modifications to export functions if needed for testing)
+- `src/__tests__/firestore.test.ts` (new test file)
+- `src/` (minor adjustments if necessary to facilitate testing, except `src/main.tsx`)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   When the nail item list data is being fetched from Firestore, display a simple loading skeleton.
--   The skeleton should consist of a few placeholder elements (e.g., div rectangles) that visually represent upcoming list items.
--   Once the data is loaded (or an error occurs), the skeleton should disappear, and the actual `NailItem` components should render.
--   The implementation should be contained within `src/App.tsx` and `src/App.css`.
--   Keep diff ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing.
+- Create a new test file: `src/__tests__/firestore.test.ts`.
+- Set up `vitest` and `vi.mock` to mock Firebase SDK functions (e.g., `getFirestore`, `collection`, `doc`, `getDocs`, `addDoc`, `updateDoc`, `deleteDoc`) used within `src/lib/firestore.ts`.
+- Implement at least one basic unit test for one of the helper functions in `src/lib/firestore.ts` (e.g., `createNailItem`, `getNailItems`, `updateNailItem`, or `deleteNailItem`). The goal is to establish the testing pattern and infrastructure.
+- The diff for the entire PR must be ≤ 150 lines.
+- Run `npm run build && npm run lint && npm test` before finishing and ensure all commands pass.
+- Report follow-up items (e.g., remaining functions in `firestore.ts` that need testing, or testing for other `src/lib` files) as comments in the PR, not as additional code.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
