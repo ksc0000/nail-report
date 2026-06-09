@@ -2,17 +2,17 @@
 
 ## Context
 
-The product roadmap outlines Phase 2, focusing on stability, test coverage, and UX improvements. The current state indicates we are at the beginning of Phase 2 with no completed tasks. The goal is to enhance test coverage for core utility functions.
+The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. No tasks have been completed in this phase yet. A key constraint is to not add any new npm dependencies.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest. This task focuses on establishing a testing foundation for our Firebase-related logic.
+Implement a loading skeleton for the nail item list to improve the user experience during data fetching. This addresses Phase 2.3 "Loading states" from the product roadmap.
 
 ## Allowed Scope
 
--   `src/lib/firestore.ts` (modifications to export functions if needed for testing, but ideally no functional changes)
--   `src/__tests__/firestore.test.ts` (new file for tests)
--   `vite.config.ts` (minimal configuration changes related to Vitest if absolutely necessary, but prioritize using existing setup)
+-   `src/` (except `src/main.tsx`)
+-   Specifically, `src/App.tsx` for rendering logic.
+-   `src/App.css` for styling the skeleton.
 
 ## Forbidden Scope
 
@@ -22,17 +22,15 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 -   `package.json` deps (no new npm packages without human approval)
 -   Firebase deploy commands
 -   Secrets and credentials
--   Any files outside of `src/` except for `vite.config.ts` if strictly necessary for Vitest configuration.
 
 ## Requirements
 
--   Create a new test file, `src/__tests__/firestore.test.ts`.
--   Write comprehensive unit tests for the functions exported from `src/lib/firestore.ts`.
--   Mock Firebase SDK interactions using `vi.mock` as appropriate to ensure tests are isolated and fast.
--   Aim for good branch and statement coverage for the tested functions.
--   Keep the total diff size for the PR ≤ 150 lines.
--   Run `npm run build && npm run lint && npm test` before finishing and ensure all pass.
--   Report any follow-up items or identified issues as comments in your PR description.
+-   When the nail item list data is being fetched from Firestore, display a simple loading skeleton.
+-   The skeleton should consist of a few placeholder elements (e.g., div rectangles) that visually represent upcoming list items.
+-   Once the data is loaded (or an error occurs), the skeleton should disappear, and the actual `NailItem` components should render.
+-   The implementation should be contained within `src/App.tsx` and `src/App.css`.
+-   Keep diff ≤ 150 lines.
+-   Run `npm run build && npm run lint` before finishing.
 
 ## Output Format
 
