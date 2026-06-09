@@ -48,11 +48,11 @@ PAYLOAD=$(jq -n \
     }
   }')
 
-echo "Calling Gemini API (gemini-2.0-flash)..."
+echo "Calling Gemini API (gemini-2.5-flash)..."
 
 RESPONSE_FILE=$(mktemp)
 HTTP_RESPONSE=$(curl -s -w "%{http_code}" -o "$RESPONSE_FILE" \
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$GOOGLE_API_KEY" \
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GOOGLE_API_KEY" \
   -H "content-type: application/json" \
   -d "$PAYLOAD")
 
