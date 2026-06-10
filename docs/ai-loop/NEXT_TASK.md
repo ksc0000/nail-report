@@ -2,17 +2,18 @@
 
 ## Context
 
-The current phase is 2.0 of the product roadmap, focusing on improving stability, test coverage, and user experience. This task specifically addresses accessibility improvements under Phase 2.4, aiming to make the application more inclusive for users relying on assistive technologies.
+The product roadmap prioritizes improving stability, test coverage, and UX in Phase 2. This task focuses on **2.1 Test coverage** by adding unit tests for core Firebase helper functions. This is the first substantive task from the "Jules-ready Tasks" list, laying the groundwork for better code reliability.
 
 ## Objective
 
-Enhance the accessibility of the application by identifying all interactive elements that are solely represented by an icon (icon-only buttons) and adding appropriate `aria-label` attributes to them. The `aria-label` should clearly and concisely describe the button's action or purpose, making it understandable for screen readers.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest. This includes mocking Firebase SDK dependencies as needed.
 
 ## Allowed Scope
 
-- `src/` (excluding `src/main.tsx`)
-- All `.tsx` files within `src/components/`, `src/views/`, and any other UI-related directories where icon-only buttons or interactive icon elements might be present.
-- Modifications to existing JSX attributes.
+- `src/lib/firestore.ts` (modifications to export functions if necessary for testing, but prefer not to alter core logic)
+- `src/__tests__/firestore.test.ts` (new file for unit tests)
+- `vite.config.ts` (add test configuration if not already present)
+- `package.json` (add Vitest scripts if not already present, but **no new npm dependencies**)
 
 ## Forbidden Scope
 
@@ -22,16 +23,16 @@ Enhance the accessibility of the application by identifying all interactive elem
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- Any changes that alter the visual appearance or core functionality of the application.
 
 ## Requirements
 
-- Keep the diff ≤ 150 lines.
-- Thoroughly scan the application's UI code for all buttons or interactive elements that display only an icon and lack visible text.
-- For each identified element, add a semantically correct and descriptive `aria-label` attribute. For example, a button displaying only a trashcan icon should get `aria-label="Delete item"`.
-- Avoid adding `aria-label` to elements that already have sufficient accessible names (e.g., buttons with visible text labels).
-- Ensure no functional changes or visual regressions are introduced.
-- Run `npm run build && npm run lint` before finishing and ensure no errors or warnings are reported.
+- Keep diff ≤ 150 lines.
+- Create a new test file: `src/__tests__/firestore.test.ts`.
+- Write unit tests for at least two significant helper functions in `src/lib/firestore.ts` (e.g., `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`).
+- Ensure Firebase SDK calls are properly mocked using `vitest` and `vi.mock` to allow for isolated unit testing without actual Firebase calls.
+- Run `npm run build && npm run lint` before finishing.
+- Run `npm run test` (or equivalent Vitest command) to ensure tests pass.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
