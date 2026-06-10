@@ -2,40 +2,40 @@
 
 ## Context
 
-The `nail-report` application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This task contributes to enhancing Accessibility (2.4) by ensuring interactive elements are properly labeled for screen readers.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. A key area is adding unit tests for core helper functions.
 
 ## Objective
 
-Add `aria-label` attributes to all icon-only buttons throughout the application to improve accessibility for users of assistive technologies.
+Implement unit tests for the functions in `src/lib/firestore.ts` using Vitest. Focus on the core CRUD operations for `nailItems` and `publicShares`.
 
 ## Allowed Scope
 
--   `src/components/` (modifying existing button components or usage)
--   `src/pages/` (modifying button usage in pages)
--   `src/App.css` (only if absolutely necessary for minor styling adjustments related to adding attributes)
+- `src/lib/firestore.ts` (modifications only if necessary for testability, e.g., exporting internal functions for testing, but prefer not to alter functionality)
+- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `vitest.config.ts` (minimal modifications if absolutely required for mocking, but prefer to mock within test files)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   Identify all `<button>` elements that contain only an icon (e.g., `<Button variant="icon">` or similar patterns) and do not have visible text.
--   Add a descriptive `aria-label` attribute to each identified button. The label should clearly explain the button's action (e.g., "Delete item", "Edit item", "Add new item", "Sign out").
--   Do not add `aria-label` to buttons that already have visible text content or an `aria-labelledby` attribute.
--   Keep diff ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing.
--   Prefer concise and accurate labels.
+- Keep diff ≤ 150 lines.
+- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
+- Mock Firebase SDK dependencies (e.g., `firebase/firestore`) using `vi.mock` as needed to isolate `firestore.ts` logic.
+- Cover basic CRUD operations (add, get, update, delete) for at least `nailItems` or `publicShares` collection.
+- Run `npm run build && npm run lint && npm test` before finishing. All commands must pass.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
