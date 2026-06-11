@@ -3,19 +3,17 @@
 
 ## Context
 
-Read the roadmap, recent commits, and the current task.
-
-The current phase is 2.0, focusing on stability, test coverage, and UX. This task addresses Phase 2.1 (Test coverage).
+The product roadmap indicates that Phase 2.1 is focused on improving test coverage. The current state shows that Vitest has been chosen as the test runner and the first step is to add unit tests for `src/lib/firestore.ts` helper functions. An existing task (#139) is addressing loading skeleton accessibility, so we should avoid that area for this task.
 
 ## Objective
 
-Add unit tests for helper functions in `src/lib/firestore.ts` using Vitest. Focus on mocking Firebase Firestore interactions to test the helper logic in isolation.
+Implement unit tests for one or two core helper functions within `src/lib/firestore.ts` using Vitest. Focus on `createNailItem` and/or `getNailItems` to keep the scope small.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for minor refactoring if necessary to enable testing, e.g., exporting unexported functions, but prioritize minimal changes)
+- `src/lib/firestore.ts` (minor adjustments if necessary for testability, but primarily adding tests)
 - `src/__tests__/firestore.test.ts` (new file for tests)
-- `src/__tests__/` (other new test files if logically separate, but keep it simple)
+- `vite.config.ts` (only if absolutely necessary for Vitest configuration, aim to avoid)
 
 ## Forbidden Scope
 
@@ -29,13 +27,11 @@ Add unit tests for helper functions in `src/lib/firestore.ts` using Vitest. Focu
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
-- Add unit tests for at least one core Firestore helper function (e.g., `getNailItems`, `addNailItem`, `updateNailItem`, or `deleteNailItem`).
-- Mock the Firebase Firestore SDK using `vi.mock` to simulate successful data operations.
-- Ensure tests run correctly and pass.
+- Create a new test file `src/__tests__/firestore.test.ts`.
+- Mock Firebase SDK dependencies as needed for isolated unit testing.
+- Write tests for at least one of the following functions: `createNailItem` or `getNailItems` (or both if the diff remains small).
+- Ensure tests cover successful execution paths and basic error handling.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
