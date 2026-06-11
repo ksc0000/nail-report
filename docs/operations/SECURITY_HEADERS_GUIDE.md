@@ -9,7 +9,7 @@ The following CSP is applied to all paths (`**`):
 ```
 default-src 'self';
 script-src 'self' https://apis.google.com https://www.gstatic.com;
-connect-src 'self' https://*.googleapis.com https://*.firebaseio.com;
+connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://firebaseinstallations.googleapis.com https://www.googleapis.com;
 img-src 'self' data: blob: https://firebasestorage.googleapis.com https://*.googleusercontent.com;
 frame-src https://*.firebaseapp.com;
 style-src 'self' 'unsafe-inline';
@@ -17,6 +17,7 @@ font-src 'self';
 object-src 'none';
 base-uri 'self';
 form-action 'self';
+frame-ancestors 'none';
 ```
 
 ### Justification
@@ -24,7 +25,7 @@ form-action 'self';
 | Directive | Source | Reason |
 |-----------|--------|--------|
 | `script-src` | `https://apis.google.com`, `https://www.gstatic.com` | Required for Firebase Authentication (Google Sign-In) and internal Firebase SDK operations. |
-| `connect-src` | `https://*.googleapis.com`, `https://*.firebaseio.com` | Required for Firestore, Authentication, and Storage API calls. |
+| `connect-src` | Firebase and Google API endpoints | Required for Firestore, Authentication, Storage, and Firebase installation calls. |
 | `img-src` | `data:`, `blob:` | Required for local image previews before upload. |
 | `img-src` | `https://firebasestorage.googleapis.com` | Required to display uploaded nail images. |
 | `img-src` | `https://*.googleusercontent.com` | Required for Google account profile photos. |
@@ -37,9 +38,8 @@ form-action 'self';
 |--------|-------|---------|
 | `X-Content-Type-Options` | `nosniff` | Prevents the browser from MIME-sniffing a response away from the declared content-type. |
 | `X-Frame-Options` | `DENY` | Prevents the site from being embedded in an iframe, protecting against clickjacking. |
-| `X-XSS-Protection` | `1; mode=block` | Enables the browser's XSS filtering. |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | Controls how much referrer information is included with requests. |
-| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains; preload` | Forces the browser to only connect via HTTPS (HSTS). |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | Forces the browser to only connect via HTTPS (HSTS). `preload` is intentionally not enabled for MVP. |
 | `Permissions-Policy` | `camera=(self), microphone=(), geolocation=(), browsing-topics=()` | Restricts use of browser features. `camera` is allowed for the "Take Photo" feature. |
 
 ## Manual Smoke Test Instructions
