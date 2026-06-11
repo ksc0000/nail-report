@@ -1206,7 +1206,21 @@ function App() {
             </div>
           )}
           {isFetching ? (
-            <p className="nail-loading">Loading...</p>
+            <ul id="nail-list" className="nail-skeleton-list">
+              {[...Array(4)].map((_, i) => (
+                <li key={i} className="nail-skeleton-card">
+                  <div className="nail-skeleton-thumb shimmer" />
+                  <div className="nail-skeleton-body">
+                    <div className="nail-skeleton-title shimmer" />
+                    <div className="nail-skeleton-tags">
+                      <div className="nail-skeleton-tag shimmer" />
+                      <div className="nail-skeleton-tag shimmer" />
+                    </div>
+                    <div className="nail-skeleton-date shimmer" />
+                  </div>
+                </li>
+              ))}
+            </ul>
           ) : nailItems.length === 0 ? (
             <div className="nail-empty">
               <svg className="nail-empty-icon" aria-hidden="true" width="44" height="44" viewBox="0 0 44 44" fill="none">
