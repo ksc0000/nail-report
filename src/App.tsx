@@ -1206,7 +1206,7 @@ function App() {
             </div>
           )}
           {isFetching ? (
-            <div role="status" aria-live="polite" aria-busy="true">
+            <div role="status">
               <span className="sr-only">ネイル一覧を読み込み中...</span>
               <ul id="nail-list" className="nail-skeleton-list">
                 {[...Array(4)].map((_, i) => (
