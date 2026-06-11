@@ -7,34 +7,26 @@
 
 ## Product Vision
 
-> **[TBD — 人間が記入する]**
->
-> 例:
-> ```
-> 自分だけのネイルコレクションをかんたんに記録・整理できる、
-> ネイル好きのためのパーソナルアーカイブアプリ。
-> ```
+Nailous は、ネイル写真・メモ・タグをかんたんに残し、あとから見返し、必要な相手に共有できる、ネイル好きのためのパーソナルアーカイブです。
 
 ---
 
 ## Target Users
 
-> **[TBD — 人間が記入する]**
-
 | ユーザー種別 | 説明 |
 |------------|------|
-| 主要ターゲット | ネイルアートを日常的に楽しむ個人ユーザー |
-| サブターゲット | サロン通いの記録を残したいユーザー |
+| 主要ターゲット | ネイルを定期的に楽しみ、過去デザインを見返したい個人ユーザー |
+| サブターゲット | サロン施術の記録、色・デザイン・価格・メモを残したいユーザー |
+| 初期対象外 | サロン事業者向け CRM、予約管理、決済、スタッフ管理 |
 
 ---
 
 ## Problems to Solve
 
-> **[TBD — 人間が記入する]**
-
-1. お気に入りのネイルデザインを写真・メモとともに整理したい
-2. サロン名・価格・タグで後から検索・絞り込みしたい
-3. 自分のネイル履歴を時系列で振り返りたい
+1. ネイル写真がスマホ内に散らばり、過去デザインを探しにくい
+2. 色・季節・イベント・サロン情報を後から思い出せない
+3. 次回サロン相談時に、過去デザインを共有しにくい
+4. 自分の好みの変化や履歴を見返しにくい
 
 ---
 
@@ -51,6 +43,9 @@
 | タイトル・タグによるクライアント検索 | ✅ 完了 |
 | 作成日・更新日の表示 | ✅ 完了 |
 | 初回ユーザー向け空状態ガイド | ✅ 完了 |
+| CSV / JSON エクスポート | ✅ 完了 |
+| 共有リンク作成・停止・公開閲覧 | ✅ 完了 |
+| 本番リリース runbook / smoke checklist | ✅ 完了 |
 | Firestore Security Rules（オーナー本人のみ読み書き） | ✅ 完了 |
 | Firebase Storage Security Rules（認証済み本人のみ） | ✅ 完了 |
 
@@ -60,9 +55,7 @@
 
 - サムネイル自動生成（Cloud Storage Resize Extension）
 - AI によるタグ提案・色分析（Gemini API 連携）
-- コレクション共有・公開機能
 - モバイルアプリ（PWA / ネイティブ）
-- データエクスポート（CSV / JSON）
 - リマインダー・次回サロン予約通知
 - **3D Preview / Modeling / AR Try-on**（Phase 8〜9 — 将来フェーズ、現在未実装）
 
@@ -180,9 +173,9 @@ interface NailItem {
 
 ## AI Features
 
-> **[TBD — 人間が記入する]**
-
 現在: AI 支援**開発**ツールとして活用（プロダクト機能としての AI は未実装）
+
+商用 MVP: AI タグ提案、OCR、類似推薦は含めず、post-launch 候補として扱います。
 
 将来候補:
 - [ ] AI によるネイルタグ自動提案（色・スタイル分析）
@@ -200,7 +193,9 @@ interface NailItem {
 | 外部ライブラリ追加 | 人間の承認が必要（Human Gate G8） | 確定 |
 | CSS フレームワーク | なし（通常 CSS のみ） | 確定 |
 | バックエンド | Firebase（Auth / Firestore / Storage） | 確定 |
-| デプロイ先 | [TBD] | 未確定 |
+| デプロイ先 | Firebase Hosting | 確定 |
+| Firebase project 方針 | development / production を分離 | 確定 |
+| 本番 deploy | human 承認後のみ実行 | 確定 |
 | 対応ブラウザ | モダンブラウザ（Chrome / Safari / Firefox 最新版） | 暫定 |
 | 画像ファイル制限 | jpeg / png / webp、5MB 以下 | 確定 |
 
@@ -210,11 +205,11 @@ interface NailItem {
 
 | # | 質問 | 優先度 | 担当 |
 |---|------|--------|------|
-| Q1 | プロダクトのビジョン・ターゲットユーザーの正式定義 | 高 | 人間 |
-| Q4 | デプロイ先は何を使うか（Firebase Hosting / Vercel 等） | 中 | 人間 |
 | Q5 | モバイル対応のレベル感（レスポンシブのみ / PWA / ネイティブ） | 中 | 人間 |
+| Q1 | ✅ **解決済み** — 個人向けネイル記録・共有アーカイブとして定義（2026-06-12） | — | — |
 | Q2 | ✅ **解決済み** — Firestore + Firebase Storage で永続化（2026-05-01） | — | — |
 | Q3 | ✅ **解決済み** — Google OAuth で認証（2026-05-01） | — | — |
+| Q4 | ✅ **解決済み** — Firebase Hosting + dev/prod Firebase project 分離（2026-06-12） | — | — |
 | Q13 | ✅ **解決済み** — NailItem Firestore スキーマ確定（2026-05-01） | — | — |
 
 ---
@@ -226,3 +221,5 @@ interface NailItem {
 | [ROADMAP.md](./ROADMAP.md) | 開発ロードマップ |
 | [ACCEPTANCE_CRITERIA.md](./ACCEPTANCE_CRITERIA.md) | タスク完了基準 |
 | [HUMAN_GATES.md](../harness/HUMAN_GATES.md) | 人間確認が必要な条件 |
+| [PRODUCTION_RELEASE_RUNBOOK.md](../operations/PRODUCTION_RELEASE_RUNBOOK.md) | 本番リリース手順 |
+| [PRODUCTION_SMOKE_TEST_CHECKLIST.md](../operations/PRODUCTION_SMOKE_TEST_CHECKLIST.md) | 本番 smoke test checklist |

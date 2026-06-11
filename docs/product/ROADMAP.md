@@ -19,8 +19,8 @@
 | Phase 4 | AI-Assisted Features | 🔲 未着手 |
 | Phase 4.5 | Nail View / Camera Foundation | 🔲 推奨 next |
 | Phase 5 | Review / Export / Sharing | 🟡 進行中 |
-| Phase 6 | Security / Operations Hardening | 🔲 未着手 |
-| Phase 7 | Release Preparation | 🔲 未着手 |
+| Phase 6 | Security / Operations Hardening | 🟡 進行中 |
+| Phase 7 | Release Preparation | 🟡 進行中 |
 | Phase 8 | 3D Preview / Modeling Foundation | 🔲 未着手 |
 | Phase 9 | AR Try-on / Advanced Modeling | 🔲 未着手 |
 
@@ -237,6 +237,8 @@
 
 **Goal:** セキュリティと運用品質を強化する
 
+> Commercial MVP direction: Firebase Hosting with separate development and production Firebase projects. Production deploy remains human-approved.
+
 ### Example Issues
 
 - [ ] セキュリティヘッダーの設定（CSP 等）
@@ -260,16 +262,36 @@
 
 ## Phase 7: Release Preparation
 
-**Goal:** 本番公開の準備を完了させる
+**Goal:** 商用 MVP を Firebase Hosting で安全にリリースできる状態にする
 
-> **人間判断が必要:** 公開タイミング・デプロイ先の決定
+### 完了済みサブセット
+
+- [x] 商用 MVP スコープ決定
+- [x] プロダクト定義・対象ユーザー・問題設定決定
+- [x] 本番デプロイ先を Firebase Hosting に決定
+- [x] development / production Firebase project 分離方針決定
+- [x] 本番 release runbook 作成
+- [x] 本番 smoke test checklist 作成
+
+### Remaining Issues
+
+- [ ] Privacy Policy / Terms routes and visible links
+- [ ] User data export and deletion guidance
+- [ ] Security headers / CSP
+- [ ] Bundle size warning reduction or documented acceptance
+- [ ] Full manual QA and go/no-go decision
+
+### References
+
+- [PRODUCTION_RELEASE_RUNBOOK.md](../operations/PRODUCTION_RELEASE_RUNBOOK.md)
+- [PRODUCTION_SMOKE_TEST_CHECKLIST.md](../operations/PRODUCTION_SMOKE_TEST_CHECKLIST.md)
 
 ### Example Issues
 
-- [ ] デプロイ先の決定と設定（Firebase Hosting / Vercel / Cloudflare Pages 等）
-- [ ] カスタムドメイン設定
+- [x] デプロイ先の決定（Firebase Hosting）
+- [ ] カスタムドメイン設定（broader commercial expansion 前に推奨）
 - [ ] 本番ビルド最適化（code splitting 等）
-- [ ] アクセス解析 / モニタリング設定
+- [ ] アクセス解析 / モニタリング設定（MVP では defer）
 - [ ] README の最終整備
 
 ### Human Gates
