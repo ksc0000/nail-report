@@ -3,17 +3,18 @@
 
 ## Context
 
-The product roadmap indicates that Phase 2.1 is focused on improving test coverage. The current state shows that Vitest has been chosen as the test runner and the first step is to add unit tests for `src/lib/firestore.ts` helper functions. An existing task (#139) is addressing loading skeleton accessibility, so we should avoid that area for this task.
+The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This includes specific goals for accessibility. The current task is to make a tangible improvement in this area.
 
 ## Objective
 
-Implement unit tests for one or two core helper functions within `src/lib/firestore.ts` using Vitest. Focus on `createNailItem` and/or `getNailItems` to keep the scope small.
+Identify all icon-only buttons in the application and add appropriate `aria-label` attributes to improve accessibility for screen reader users.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor adjustments if necessary for testability, but primarily adding tests)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `vite.config.ts` (only if absolutely necessary for Vitest configuration, aim to avoid)
+- `src/components/` (modifying existing components)
+- `src/features/` (modifying existing feature components)
+- `src/App.tsx` (if any top-level buttons exist here, but prefer component-level changes)
+- `src/App.css` (minor CSS adjustments if absolutely necessary for layout, but unlikely for this task)
 
 ## Forbidden Scope
 
@@ -27,11 +28,16 @@ Implement unit tests for one or two core helper functions within `src/lib/firest
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create a new test file `src/__tests__/firestore.test.ts`.
-- Mock Firebase SDK dependencies as needed for isolated unit testing.
-- Write tests for at least one of the following functions: `createNailItem` or `getNailItems` (or both if the diff remains small).
-- Ensure tests cover successful execution paths and basic error handling.
 - Run `npm run build && npm run lint` before finishing.
+- **Acceptance Criteria:**
+    - All functional buttons that contain only an icon (no visible text) now have a descriptive `aria-label` attribute.
+    - The `aria-label` accurately describes the button's action or purpose (e.g., "Delete item", "Edit tag", "Upload image", "Back to list", "Sign out").
+    - The changes do not introduce visual regressions or break existing functionality.
+- **Required test commands:**
+    ```bash
+    npm run build
+    npm run lint
+    ```
 
 ## Output Format
 
@@ -40,4 +46,5 @@ Implement unit tests for one or two core helper functions within `src/lib/firest
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+
 ```
