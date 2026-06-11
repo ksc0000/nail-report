@@ -2,8 +2,14 @@
   "current_phase": "2.0",
   "max_iterations": 3,
   "human_review_every": 1,
-  "completed_tasks": [],
+  "completed_tasks": [
+    "AI-LOOP setup: gemini-2.0-flash → gemini-2.5-flash migration (PR #121)",
+    "AI-LOOP setup: branch protection bypass for push (PR #122)"
+  ],
   "failed_tasks": [],
+  "in_progress_tasks": [
+    "First substantive task pending (Issue #135)"
+  ],
   "constraints": [
     "no-new-npm-deps",
     "small-PRs",
