@@ -1312,6 +1312,27 @@ function App() {
               })}
             </ul>
           )}
+          <div id="help-section" className="help-section">
+            <h3 className="summary-heading">ヘルプとデータ管理</h3>
+            <div className="help-content">
+              <div className="help-item">
+                <h4 className="help-title">データのエクスポート</h4>
+                <p className="help-text">
+                  「コレクション概要」セクションのボタンから、登録済みのネイル情報をCSVまたはJSON形式でダウンロードできます。
+                </p>
+              </div>
+              <div className="help-item">
+                <h4 className="help-title">データの削除</h4>
+                <p className="help-text">
+                  各アイテムの「Delete」ボタンから個別にデータを削除できます。アカウントの退会や、すべてのデータの完全消去をご希望の場合は、お手数ですがサポートまでお問い合わせください。
+                </p>
+              </div>
+              <div className="help-links">
+                <a href="#" className="help-link">プライバシーポリシー</a>
+                <a href="#" className="help-link">利用規約</a>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </section>
