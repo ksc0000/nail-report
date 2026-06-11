@@ -1206,21 +1206,24 @@ function App() {
             </div>
           )}
           {isFetching ? (
-            <ul id="nail-list" className="nail-skeleton-list">
-              {[...Array(4)].map((_, i) => (
-                <li key={i} className="nail-skeleton-card">
-                  <div className="nail-skeleton-thumb shimmer" />
-                  <div className="nail-skeleton-body">
-                    <div className="nail-skeleton-title shimmer" />
-                    <div className="nail-skeleton-tags">
-                      <div className="nail-skeleton-tag shimmer" />
-                      <div className="nail-skeleton-tag shimmer" />
+            <div role="status" aria-live="polite" aria-busy="true">
+              <span className="sr-only">ネイル一覧を読み込み中...</span>
+              <ul id="nail-list" className="nail-skeleton-list">
+                {[...Array(4)].map((_, i) => (
+                  <li key={i} className="nail-skeleton-card" aria-hidden="true">
+                    <div className="nail-skeleton-thumb shimmer" />
+                    <div className="nail-skeleton-body">
+                      <div className="nail-skeleton-title shimmer" />
+                      <div className="nail-skeleton-tags">
+                        <div className="nail-skeleton-tag shimmer" />
+                        <div className="nail-skeleton-tag shimmer" />
+                      </div>
+                      <div className="nail-skeleton-date shimmer" />
                     </div>
-                    <div className="nail-skeleton-date shimmer" />
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : nailItems.length === 0 ? (
             <div className="nail-empty">
               <svg className="nail-empty-icon" aria-hidden="true" width="44" height="44" viewBox="0 0 44 44" fill="none">

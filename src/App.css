@@ -1399,6 +1399,18 @@
   }
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 /* Loading Skeleton */
 .nail-skeleton-card {
   display: flex;
@@ -1408,6 +1420,7 @@
   overflow: hidden;
   background: var(--social-bg);
   min-height: 280px;
+  pointer-events: none;
 }
 
 .nail-skeleton-thumb {
@@ -1476,5 +1489,11 @@
 @keyframes shimmer {
   100% {
     transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer::after {
+    animation: none;
   }
 }
