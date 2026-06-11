@@ -1324,12 +1324,8 @@ function App() {
               <div className="help-item">
                 <h4 className="help-title">データの削除</h4>
                 <p className="help-text">
-                  各アイテムの「Delete」ボタンから個別にデータを削除できます。アカウントの退会や、すべてのデータの完全消去をご希望の場合は、お手数ですがサポートまでお問い合わせください。
+                  各アイテムの「Delete」ボタンから個別にデータを削除できます。アカウントの退会や、すべてのデータの完全消去をご希望の場合は、お手数ですが kikushun0529@gmail.com までお問い合わせください。
                 </p>
-              </div>
-              <div className="help-links">
-                <a href="#" className="help-link">プライバシーポリシー</a>
-                <a href="#" className="help-link">利用規約</a>
               </div>
             </div>
           </div>
