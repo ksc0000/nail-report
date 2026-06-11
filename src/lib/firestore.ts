@@ -3,15 +3,15 @@ import {
   doc, updateDoc, deleteDoc,
   serverTimestamp,
 } from 'firebase/firestore'
-import { db } from './firebase'
+import { db } from './firebase.ts'
 import {
   buildCreateNailItemData,
   buildUpdateNailItemData,
   toNailItemDoc,
-} from './firestoreModel'
-import type { NailItem, NailItemDoc, NailItemInput } from './firestoreModel'
+} from './firestoreModel.ts'
+import type { NailItem, NailItemDoc, NailItemInput } from './firestoreModel.ts'
 
-export type { NailItem, NailItemDoc, NailItemInput } from './firestoreModel'
+export type { NailItem, NailItemDoc, NailItemInput } from './firestoreModel.ts'
 
 export const fetchNailItems = async (userId: string): Promise<NailItemDoc[]> => {
   const ref = collection(db, 'users', userId, 'nailItems')
