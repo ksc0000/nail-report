@@ -2,59 +2,57 @@
 
 ## Context
 
-The product roadmap outlines Phase 2, focusing on stability, test coverage, and UX improvements. The current state indicates that no tasks have been completed yet in this phase. The next task should contribute to Phase 2 objectives, specifically improving user experience related to error handling.
+The project is in Phase 2, focusing on improving stability, test coverage, and UX. The current focus is on adding unit tests to critical helper functions.
 
 ## Objective
 
-Implement a user-friendly error banner component to display Firestore or Storage related failures. This component should be styled clearly and integrated into the application where data fetching or storage operations can fail.
+Implement initial unit tests for helper functions within `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
--   `src/` (except `src/main.tsx`)
--   `src/components/` (new or existing components)
--   `src/lib/` (modifications to integrate the error banner, e.g., error propagation)
--   `src/App.css` (CSS for the new error banner)
--   `src/__tests__/` (new test files, if applicable for the component)
+- `src/lib/firestore.ts` (modifications to export functions for testing, if necessary)
+- `src/__tests__/firestore.test.ts` (new test file)
+- `vite.config.ts` (for Vitest configuration, if not already set up)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   Create a new React component (e.g., `ErrorBanner.tsx` in `src/components/`) that can display an error message.
--   The error banner should be dismissible by the user.
--   Integrate the `ErrorBanner` component into `src/App.tsx` or a relevant parent component that handles data fetching (e.g., fetching `nailItems` or during image upload/deletion).
--   When a Firestore or Storage operation fails (e.g., `getDocs`, `addDoc`, `uploadBytes`, `deleteObject`), capture the error and display a user-friendly message in the banner.
--   The error messages should be generic and not expose sensitive technical details (e.g., "Failed to load nail items. Please try again later." instead of "FirebaseError: permission-denied").
--   Keep diff ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing.
--   Report follow-up items as comments, not additional code.
+- Keep diff ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
 
-## Acceptance Criteria
+## Worker Prompt
 
--   A new `ErrorBanner` component is created and styled appropriately.
--   The application displays a dismissible error banner when a Firestore read/write or Firebase Storage upload/delete operation fails.
--   The error message is user-friendly and generic.
--   No new npm dependencies are added.
+Your task is to add unit tests for functions in `src/lib/firestore.ts`.
 
-## Required Test Commands
+1.  **Vitest Setup**: Ensure Vitest is correctly configured in `vite.config.ts`. If not already present, add basic Vitest configuration.
+2.  **Create Test File**: Create a new test file `src/__tests__/firestore.test.ts`.
+3.  **Implement Tests**: Write unit tests for at least one or two core functions in `src/lib/firestore.ts`. Good candidates include:
+    *   `getNailItems`
+    *   `addNailItem`
+    *   `updateNailItem`
+    *   `deleteNailItem`
+    Choose the simplest one(s) to test first to keep the diff small.
+4.  **Mock Firebase SDK**: Use `vi.mock` to mock Firebase SDK interactions (e.g., `getFirestore`, `collection`, `doc`, `getDocs`, `addDoc`, `updateDoc`, `deleteDoc`) to ensure tests are isolated and do not interact with actual Firebase services.
+5.  **Assertions**: Use Vitest's assertion library to verify the behavior of the tested functions.
+6.  **Run Tests**: Ensure all new tests pass by running `npm test`.
+7.  **Lint and Build**: Ensure `npm run lint` and `npm run build` pass.
 
-```bash
-npm install
-npm run build
-npm run lint
-```
+Keep the scope focused on initial test coverage for `firestore.ts` to ensure the PR remains small and reviewable. If `src/lib/firestore.ts` functions are not easily testable (e.g., not exported), make minimal modifications to export them while keeping backward compatibility.
