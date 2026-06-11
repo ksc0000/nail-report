@@ -11,6 +11,7 @@ import {
 } from './lib/publicShares'
 import type { PublicShareDocWithId, PublicShareItemSnapshot } from './lib/publicShares'
 import { uploadNailImage, deleteNailImage } from './lib/storage'
+import ErrorBanner from './components/ErrorBanner'
 import './App.css'
 
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
@@ -177,6 +178,7 @@ function App() {
   const [comparisonItemIds, setComparisonItemIds] = useState<string[]>([])
   const [nailLoading, setNailLoading] = useState(false)
   const [nailError, setNailError] = useState('')
+  const [bannerError, setBannerError] = useState('')
   const [nailItemsUserId, setNailItemsUserId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null)
@@ -257,6 +259,7 @@ function App() {
         console.error('public share fetch failed', e)
         if (didCancel) return
         setPublicShareState('error')
+        setBannerError('共有データの読み込みに失敗しました。')
       })
 
     return () => { didCancel = true }
@@ -300,6 +303,7 @@ function App() {
         if (didCancel) return
         setNailItems([])
         setNailItemsUserId(user.uid)
+        setBannerError('ネイル一覧の取得に失敗しました。')
       })
     return () => { didCancel = true }
   }, [isPublicSharePage, user])
@@ -320,6 +324,7 @@ function App() {
         setPublicShares([])
         setPublicSharesUserId(user.uid)
         setShareError('共有リンクの取得に失敗しました。')
+        setBannerError('共有リンクの取得に失敗しました。')
       })
     return () => { didCancel = true }
   }, [isPublicSharePage, user])
@@ -394,6 +399,7 @@ function App() {
     const uid = user.uid
     setNailLoading(true)
     setNailError('')
+    setBannerError('')
     const baseInput = { title: nailTitle.trim(), tags: parseTags(nailTags), memo: nailMemo.trim() }
     try {
       if (editingId) {
@@ -415,9 +421,12 @@ function App() {
       resetForm()
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
-      setNailError(msg.toLowerCase().includes('storage') || msg.toLowerCase().includes('permission')
-        ? '画像のアップロードに失敗しました。もう一度お試しください。'
-        : msg)
+      const isStorageError = msg.toLowerCase().includes('storage') || msg.toLowerCase().includes('permission')
+      const errorMsg = isStorageError
+        ? '画像の保存に失敗しました。通信環境を確認し、もう一度お試しください。'
+        : 'ネイルの保存に失敗しました。時間をおいて再度お試しください。'
+      setNailError(errorMsg)
+      setBannerError(errorMsg)
     } finally {
       setNailLoading(false)
     }
@@ -443,6 +452,7 @@ function App() {
     setComparisonItemIds(prev => prev.filter(id => id !== itemId))
     setNailLoading(true)
     setNailError('')
+    setBannerError('')
     try {
       if (item?.imageUrl) {
         await deleteNailImage(uid, itemId).catch(() => {})
@@ -450,8 +460,8 @@ function App() {
       await deleteNailItem(uid, itemId)
       setNailItems(sortByDate(await fetchNailItems(uid)))
       setNailItemsUserId(uid)
-    } catch (e: unknown) {
-      setNailError(String(e))
+    } catch {
+      setBannerError('ネイルの削除に失敗しました。')
     } finally {
       setNailLoading(false)
     }
@@ -554,6 +564,7 @@ function App() {
     setIsCreatingShare(true)
     setShareError('')
     setShareStatusMessage('')
+    setBannerError('')
 
     try {
       const nextShareId = await createPublicShare(
@@ -571,9 +582,10 @@ function App() {
       setShareUrl(nextShareUrl)
       setShareStatusMessage('Share link created. Copy it to share this snapshot.')
       await refreshPublicShares(user.uid)
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Failed to create share link.'
+    } catch {
+      const message = '共有リンクの作成に失敗しました。'
       setShareError(message)
+      setBannerError(message)
     } finally {
       setIsCreatingShare(false)
     }
@@ -623,6 +635,7 @@ function App() {
     setIsCreatingShare(true)
     setShareError('')
     setShareStatusMessage('')
+    setBannerError('')
 
     try {
       await disablePublicShare(shareId)
@@ -630,9 +643,10 @@ function App() {
       setShareUrl('')
       setShareStatusMessage('Share link disabled.')
       if (user) await refreshPublicShares(user.uid)
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Failed to disable share link.'
+    } catch {
+      const message = '共有の停止に失敗しました。'
       setShareError(message)
+      setBannerError(message)
     } finally {
       setIsCreatingShare(false)
     }
@@ -645,6 +659,7 @@ function App() {
     setShareActionId(managedShare.id)
     setShareError('')
     setShareStatusMessage('')
+    setBannerError('')
 
     try {
       await disablePublicShare(managedShare.id)
@@ -654,9 +669,10 @@ function App() {
       }
       await refreshPublicShares(user.uid)
       setShareStatusMessage('共有を停止しました。')
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : '共有の停止に失敗しました。'
+    } catch {
+      const message = '共有の停止に失敗しました。'
       setShareError(message)
+      setBannerError(message)
     } finally {
       setShareActionId(null)
     }
@@ -747,6 +763,7 @@ function App() {
   return (
     <section id="center">
       <h1 id="app-title">Nailous</h1>
+      <ErrorBanner message={bannerError} onClose={() => setBannerError('')} />
       {detailItem && (() => {
         const createdDate = formatDate(detailItem.createdAt)
         const updatedDate = (detailItem.updatedAt && detailItem.createdAt &&
