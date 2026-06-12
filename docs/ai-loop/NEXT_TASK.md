@@ -2,55 +2,56 @@
 
 ## Context
 
-The current focus is Phase 2 of the roadmap, which aims to improve stability, test coverage, and UX. This task specifically addresses accessibility improvements by ensuring interactive elements are properly labeled for assistive technologies.
+The product roadmap for `nail-report` is in Phase 2, focusing on stability, test coverage, and UX improvements. This task specifically addresses item `2.4 Accessibility` by enhancing screen reader support for interactive elements.
 
 ## Objective
 
-Enhance accessibility by adding `aria-label` attributes to all icon-only buttons throughout the application.
+Add `aria-label` attributes to all icon-only buttons throughout the application to improve accessibility for users relying on screen readers.
 
 ## Allowed Scope
 
--   `src/components/**/*.tsx` (or any other `src/**/*.tsx` file containing button components)
--   `src/App.css` (for minor styling adjustments if necessary, but unlikely for this task)
+- `src/` (except `src/main.tsx`) - Components containing icon-only buttons.
+- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts) - Unlikely to be modified for this task.
+- `src/__tests__/` (new test files) - Not strictly required for this task, but if a button's logic is modified, consider a test.
+- `src/App.css` (CSS improvements) - If minor layout adjustments are needed after adding attributes, but unlikely.
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   Identify all buttons that contain only an icon and no visible text label.
--   Add an appropriate `aria-label` attribute to each identified button, providing a concise, descriptive name for its function (e.g., `aria-label="Delete item"`, `aria-label="Edit tag"`).
--   Ensure the `aria-label` accurately reflects the button's action.
--   Keep diff ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing.
--   Report follow-up items as comments, not additional code.
+- Identify all buttons that contain only an icon and no visible text label.
+- Add an appropriate `aria-label` attribute to each identified button. The label should concisely describe the button's action (e.g., `aria-label="Delete item"`, `aria-label="Edit item"`, `aria-label="Share"`).
+- Keep the overall diff for the PR to ≤ 150 lines.
+- Run `npm run build && npm run lint` successfully before finishing.
+- Prefer adding tests when touching `src/lib/` files (not applicable here, but general guidance).
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
 
 ---
-
-**Acceptance Criteria:**
-
-*   All icon-only buttons in the application have a descriptive `aria-label` attribute.
-*   The application builds successfully (`npm run build`).
-*   The linter passes (`npm run lint`).
-
-**Required Test Commands:**
-
-```bash
-npm install
-npm run build
-npm run lint
+**Example icon button:**
+```tsx
+<button onClick={handleDelete}>
+  <TrashIcon aria-hidden="true" />
+</button>
 ```
+**Should become:**
+```tsx
+<button onClick={handleDelete} aria-label="Delete item">
+  <TrashIcon aria-hidden="true" />
+</button>
+```
+Ensure `aria-hidden="true"` is also present on the icon itself to prevent screen readers from announcing redundant information.
