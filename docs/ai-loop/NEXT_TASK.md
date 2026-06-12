@@ -1,43 +1,39 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This includes specific goals for accessibility. The current task is to make a tangible improvement in this area.
+The product roadmap focuses on improving stability, test coverage, and UX in Phase 2. The current state indicates we are in Phase 2.0. The first task should contribute to this phase.
 
 ## Objective
 
-Identify all icon-only buttons in the application and add appropriate `aria-label` attributes to improve accessibility for screen reader users.
+Implement unit tests for the helper functions in `src/lib/firestore.ts` using Vitest. Focus on covering basic CRUD operations and data marshalling where applicable.
 
 ## Allowed Scope
 
-- `src/components/` (modifying existing components)
-- `src/features/` (modifying existing feature components)
-- `src/App.tsx` (if any top-level buttons exist here, but prefer component-level changes)
-- `src/App.css` (minor CSS adjustments if absolutely necessary for layout, but unlikely for this task)
+- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but prefer not to alter logic)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `package.json` (only if adding a `test` script or similar, but Vitest should already be configured)
+- `vite.config.ts` (only for Vitest configuration, if necessary)
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
+- `src/main.tsx`
+- `commands/`
+- `firestore.rules`, `storage.rules`
+- `package.json` deps (no new npm packages)
 - Firebase deploy commands
 - Secrets and credentials
+- `src/App.css` or other CSS files
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
+- Create a new test file: `src/__tests__/firestore.test.ts`.
+- Mock Firebase SDK dependencies (e.g., `firebase/firestore`) using `vi.mock` as needed.
+- Write unit tests for at least two helper functions in `src/lib/firestore.ts` (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`).
+- Ensure tests cover successful execution paths and basic error handling or edge cases relevant to the function's logic.
 - Run `npm run build && npm run lint` before finishing.
-- **Acceptance Criteria:**
-    - All functional buttons that contain only an icon (no visible text) now have a descriptive `aria-label` attribute.
-    - The `aria-label` accurately describes the button's action or purpose (e.g., "Delete item", "Edit tag", "Upload image", "Back to list", "Sign out").
-    - The changes do not introduce visual regressions or break existing functionality.
-- **Required test commands:**
-    ```bash
-    npm run build
-    npm run lint
-    ```
+- Run `npm test` and ensure all new tests pass.
 
 ## Output Format
 
@@ -46,5 +42,3 @@ Identify all icon-only buttons in the application and add appropriate `aria-labe
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
-```
