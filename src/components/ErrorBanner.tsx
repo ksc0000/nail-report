@@ -17,7 +17,7 @@ const ErrorBanner: React.FC<ErrorBannerProps> = ({ message, onClose }) => {
         onClick={onClose}
         aria-label="エラーメッセージを閉じる"
       >
-        &times;
+        <span aria-hidden="true">&times;</span>
       </button>
     </div>
   );
