@@ -3,18 +3,18 @@
 
 ## Context
 
-The product roadmap for nail-report is in Phase 2, focusing on stability, test coverage, and UX improvements. This task specifically addresses accessibility enhancements as part of sub-phase 2.4.
+The team is actively working on Phase 2 of the roadmap, focusing on improving stability, test coverage, and UX. This task addresses a specific accessibility improvement from Phase 2.4.
 
 ## Objective
 
-Implement accessibility by adding `aria-label` attributes to all icon-only buttons in the application.
+Add `aria-label` attributes to all icon-only buttons throughout the application to improve accessibility for screen reader users.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
-- `src/__tests__/` (new test files)
-- `src/App.css` (CSS improvements)
+- `src/` (excluding `src/main.tsx`)
+- `src/components/` (modifying existing component files to add `aria-label` attributes)
+- `src/App.tsx` (if any top-level buttons need modification)
+- `src/lib/` (read-only for identifying button usage patterns, no modifications expected)
 
 ## Forbidden Scope
 
@@ -28,8 +28,10 @@ Implement accessibility by adding `aria-label` attributes to all icon-only butto
 ## Requirements
 
 - Keep diff ≤ 150 lines.
+- Identify all `<button>` elements that contain only an icon (e.g., `<img src="..." alt="icon description" />`, `<svg>...</svg>`, or a CSS-based icon) and add an appropriate, descriptive `aria-label` attribute.
+- The `aria-label` text should clearly describe the button's action (e.g., "Delete item", "Edit tag", "Share post").
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
+- Prefer adding tests when touching `src/lib/` files (not applicable for this UI-focused task).
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -40,27 +42,20 @@ Implement accessibility by adding `aria-label` attributes to all icon-only butto
 - Known issues or limitations
 - Suggested next task
 
+---
+
 ## Worker prompt
 
-Jules, your task is to identify and update all icon-only `<button>` elements across the `nail-report` application's `src/` directory (excluding `src/main.tsx`). For each such button, you must add an `aria-label` attribute with a clear, concise, and descriptive text value that explains the button's purpose or action.
+Implement the objective described above. Focus on identifying buttons that lack visible text but perform an action, and add a meaningful `aria-label`.
 
-For example:
-- A button with a trash can icon should receive `aria-label="Delete item"`.
-- A button with a plus icon should receive `aria-label="Add new item"`.
-- A button with a settings cog icon should receive `aria-label="Open settings"`.
+**Acceptance Criteria:**
+1.  All icon-only buttons in the application have a descriptive `aria-label` attribute.
+2.  The application builds successfully (`npm run build`).
+3.  Linter passes (`npm run lint`).
 
-Ensure that the `aria-label` content provides sufficient context for assistive technologies. Prioritize areas with common user interactions, such as navigation, CRUD operations, and form controls.
-
-### Acceptance Criteria
-
-- All icon-only buttons throughout the application have a meaningful `aria-label` attribute.
-- The `aria-label` content accurately describes the button's function.
-- No new npm packages are installed.
-- The total diff remains within the 150-line limit.
-
-### Required Test Commands
-
+**Required Test Commands:**
 ```bash
+npm install
 npm run build
 npm run lint
 ```
