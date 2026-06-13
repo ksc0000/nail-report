@@ -1,18 +1,20 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-Read the roadmap, recent commits, and the current task. Phase 2 is active, focusing on stability, test coverage, and UX. This task contributes to test coverage by adding unit tests for core Firebase helper functions.
+The product roadmap for nail-report is in Phase 2, focusing on stability, test coverage, and UX improvements. This task specifically addresses accessibility enhancements as part of sub-phase 2.4.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest, ensuring proper mocking of the Firebase SDK.
+Implement accessibility by adding `aria-label` attributes to all icon-only buttons in the application.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications only if necessary for testability, minor refactors are okay)
-- `src/__tests__/firestore.test.ts` (new file)
-- `vitest.config.ts` (minor configuration changes if absolutely necessary for Firebase mocking)
+- `src/` (except `src/main.tsx`)
+- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+- `src/__tests__/` (new test files)
+- `src/App.css` (CSS improvements)
 
 ## Forbidden Scope
 
@@ -22,16 +24,12 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/App.css` or other CSS files
 
 ## Requirements
 
-- Create a new test file: `src/__tests__/firestore.test.ts`.
-- Add unit tests for the functions exported from `src/lib/firestore.ts`.
-- Mock the Firebase SDK (Firestore specifically) using `vi.mock` to isolate the functions under test.
-- Ensure test coverage for basic CRUD operations (add, get, update, delete) as applicable to the helpers in `firestore.ts`.
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -41,3 +39,30 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+
+## Worker prompt
+
+Jules, your task is to identify and update all icon-only `<button>` elements across the `nail-report` application's `src/` directory (excluding `src/main.tsx`). For each such button, you must add an `aria-label` attribute with a clear, concise, and descriptive text value that explains the button's purpose or action.
+
+For example:
+- A button with a trash can icon should receive `aria-label="Delete item"`.
+- A button with a plus icon should receive `aria-label="Add new item"`.
+- A button with a settings cog icon should receive `aria-label="Open settings"`.
+
+Ensure that the `aria-label` content provides sufficient context for assistive technologies. Prioritize areas with common user interactions, such as navigation, CRUD operations, and form controls.
+
+### Acceptance Criteria
+
+- All icon-only buttons throughout the application have a meaningful `aria-label` attribute.
+- The `aria-label` content accurately describes the button's function.
+- No new npm packages are installed.
+- The total diff remains within the 150-line limit.
+
+### Required Test Commands
+
+```bash
+npm run build
+npm run lint
+```
+```
+```
