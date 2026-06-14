@@ -2,16 +2,17 @@
 
 ## Context
 
-The current roadmap is focused on Phase 2, which aims to improve stability, test coverage, and UX. Specifically, sub-phase 2.1 is about improving test coverage. The current task is to begin adding unit tests for core helper functions.
+The current focus is Phase 2 of the roadmap, which involves improving stability, test coverage, and UX. This task specifically addresses "2.1 Test coverage".
 
 ## Objective
 
-Implement Vitest unit tests for the helper functions within `src/lib/firestore.ts`. This task focuses on ensuring the reliability of our Firestore data operations.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications only if necessary for testability, e.g., exporting unexported functions)
+- `src/lib/firestore.ts` (modifications to export functions if needed for testing)
 - `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `vitest.config.ts` (minor adjustments for mocking, if strictly necessary and within line limit)
 
 ## Forbidden Scope
 
@@ -26,11 +27,9 @@ Implement Vitest unit tests for the helper functions within `src/lib/firestore.t
 
 - Keep diff ≤ 150 lines.
 - Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
-- Mock Firebase SDK dependencies as needed using `vitest` and `vi.mock`.
-- Focus on testing at least two distinct helper functions in `src/lib/firestore.ts` (e.g., `getNailItems` and `addNailItem` or similar core operations).
-- Ensure tests cover basic success cases and potential error scenarios if applicable.
-- Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files (this task *is* about adding tests).
+- Write unit tests for at least two helper functions in `src/lib/firestore.ts`.
+- Use Vitest for testing and mock Firebase SDK dependencies as needed.
+- Ensure `npm run build && npm run lint && npm run test` pass before finishing.
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
