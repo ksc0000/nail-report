@@ -2,6 +2,7 @@ import {
   collection, addDoc, getDocs,
   doc, updateDoc, deleteDoc,
   serverTimestamp,
+  getDoc,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import {
@@ -38,4 +39,11 @@ export const updateNailItem = async (
 export const deleteNailItem = async (userId: string, itemId: string): Promise<void> => {
   const ref = doc(db, 'users', userId, 'nailItems', itemId)
   await deleteDoc(ref)
+}
+
+export const getNailItem = async (userId: string, itemId: string): Promise<NailItemDoc | null> => {
+  const ref = doc(db, 'users', userId, 'nailItems', itemId)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return null
+  return toNailItemDoc(snap.id, snap.data() as NailItem)
 }
