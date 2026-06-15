@@ -99,6 +99,11 @@
   text-decoration: underline;
 }
 
+.auth-data-mgmt {
+  color: var(--accent) !important;
+  font-weight: 600;
+}
+
 #nail-section {
   width: 100%;
   max-width: 600px;
@@ -1560,6 +1565,17 @@
   font-size: 0.82rem;
   line-height: 1.6;
   color: var(--text);
+}
+
+.help-mailto {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.help-mailto:hover {
+  text-decoration: underline;
 }
 
 /* Legal Pages */
