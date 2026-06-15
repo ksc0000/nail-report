@@ -94,6 +94,7 @@ interface ExportedNailItem {
   tags: string
   memo: string
   imageUrl: string
+  imageSource: string
   createdAt: string
   updatedAt: string
 }
@@ -109,11 +110,12 @@ const formatNailItemForExport = (item: NailItemDoc): ExportedNailItem => ({
   tags: item.tags.join(';'),
   memo: item.memo ?? '',
   imageUrl: item.imageUrl ?? '',
+  imageSource: item.imageSource ?? 'unknown',
   createdAt: formatTimestampForExport(item.createdAt),
   updatedAt: formatTimestampForExport(item.updatedAt),
 })
 
-const CSV_HEADERS = ['id', 'title', 'tags', 'memo', 'imageUrl', 'createdAt', 'updatedAt'] as const
+const CSV_HEADERS = ['id', 'title', 'tags', 'memo', 'imageUrl', 'imageSource', 'createdAt', 'updatedAt'] as const
 
 const escapeCsvCell = (value: string): string => {
   if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`
@@ -192,6 +194,7 @@ function App() {
   const [nailMemo, setNailMemo] = useState('')
   const [nailImageFile, setNailImageFile] = useState<File | null>(null)
   const [nailImagePreview, setNailImagePreview] = useState<string | null>(null)
+  const [nailImageSource, setNailImageSource] = useState<'upload' | 'camera' | 'unknown'>('unknown')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [detailItemId, setDetailItemId] = useState<string | null>(null)
   const [isDataModalOpen, setIsDataModalOpen] = useState(false)
@@ -379,17 +382,31 @@ function App() {
 
   const handleNailFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
-    if (!file) { setNailImageFile(null); clearPreview(); setNailError(''); return }
+    if (!file) {
+      setNailImageFile(null)
+      clearPreview()
+      setNailError('')
+      setNailImageSource('unknown')
+      return
+    }
     const err = validateImageFile(file)
     if (err) {
       setNailError(err)
       setNailImageFile(null)
       clearPreview()
       clearImageInputs()
+      setNailImageSource('unknown')
       return
     }
     setNailError('')
     setNailImageFile(file)
+    if (e.target === cameraInputRef.current) {
+      setNailImageSource('camera')
+    } else if (e.target === uploadInputRef.current) {
+      setNailImageSource('upload')
+    } else {
+      setNailImageSource('unknown')
+    }
     clearPreview()
     const url = URL.createObjectURL(file)
     previewUrlRef.current = url
@@ -401,6 +418,7 @@ function App() {
     clearPreview()
     setNailError('')
     clearImageInputs()
+    setNailImageSource('unknown')
   }
 
   const parseTags = (s: string): string[] =>
@@ -413,6 +431,7 @@ function App() {
     setNailImageFile(null)
     clearPreview()
     clearImageInputs()
+    setNailImageSource('unknown')
     setEditingId(null)
     setNailError('')
   }
@@ -427,7 +446,12 @@ function App() {
     setNailLoading(true)
     setNailError('')
     setBannerError('')
-    const baseInput = { title: nailTitle.trim(), tags: parseTags(nailTags), memo: nailMemo.trim() }
+    const baseInput = {
+      title: nailTitle.trim(),
+      tags: parseTags(nailTags),
+      memo: nailMemo.trim(),
+      imageSource: nailImageSource,
+    }
     try {
       if (editingId) {
         const editingItem = nailItems.find(i => i.id === editingId)
@@ -464,6 +488,7 @@ function App() {
     setNailTitle(item.title)
     setNailTags(item.tags.join(', '))
     setNailMemo(item.memo ?? '')
+    setNailImageSource(item.imageSource ?? 'unknown')
     setNailImageFile(null)
     clearPreview()
     clearImageInputs()
