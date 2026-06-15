@@ -14,6 +14,7 @@ import { uploadNailImage, deleteNailImage } from './lib/storage'
 import ErrorBanner from './components/ErrorBanner'
 import PrivacyPolicyPage from './components/PrivacyPolicyPage'
 import TermsOfServicePage from './components/TermsOfServicePage'
+import NailImageDetailViewer from './components/NailImageDetailViewer'
 import './App.css'
 
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
@@ -209,7 +210,6 @@ function App() {
   )
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
-  const detailCloseButtonRef = useRef<HTMLButtonElement>(null)
   const dataModalCloseButtonRef = useRef<HTMLButtonElement>(null)
   const previewUrlRef = useRef<string | null>(null)
 
@@ -297,16 +297,6 @@ function App() {
       setComparisonItemIds([])
     }
   }), [isPublicSharePage])
-
-  useEffect(() => {
-    if (!detailItemId) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setDetailItemId(null)
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    detailCloseButtonRef.current?.focus()
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [detailItemId])
 
   useEffect(() => {
     if (!isDataModalOpen) return
@@ -829,87 +819,12 @@ function App() {
     <section id="center">
       <h1 id="app-title">Nailous</h1>
       <ErrorBanner message={bannerError} onClose={() => setBannerError('')} />
-      {detailItem && (() => {
-        const createdDate = formatDate(detailItem.createdAt)
-        const updatedDate = (detailItem.updatedAt && detailItem.createdAt &&
-          detailItem.updatedAt.seconds !== detailItem.createdAt.seconds)
-          ? formatDate(detailItem.updatedAt)
-          : null
-        return (
-          <div
-            className="nail-detail-backdrop"
-            role="presentation"
-            onClick={() => setDetailItemId(null)}
-          >
-            <div
-              className="nail-detail-dialog"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="nail-detail-title"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="nail-detail-header">
-                <p className="nail-detail-kicker">ネイル詳細</p>
-                <button
-                  ref={detailCloseButtonRef}
-                  type="button"
-                  className="nail-detail-close"
-                  onClick={() => setDetailItemId(null)}
-                  aria-label="ネイル詳細を閉じる"
-                >
-                  閉じる
-                </button>
-              </div>
-              <div className="nail-detail-image-frame">
-                {detailItem.imageUrl ? (
-                  <img
-                    className="nail-detail-image"
-                    src={detailItem.imageUrl}
-                    alt={detailItem.title + ' のネイル画像'}
-                  />
-                ) : (
-                  <div className="nail-detail-no-image">画像なし</div>
-                )}
-              </div>
-              <div className="nail-detail-body">
-                <h2 id="nail-detail-title" className="nail-detail-title">{detailItem.title}</h2>
-                <div className="nail-detail-section">
-                  <h3 className="nail-detail-label">タグ</h3>
-                  {detailItem.tags.length > 0 ? (
-                    <div className="nail-item-tags">
-                      {detailItem.tags.map(t => (
-                        <span key={t} className="nail-tag">#{t}</span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="nail-detail-empty">タグなし</p>
-                  )}
-                </div>
-                {detailItem.memo && (
-                  <div className="nail-detail-section">
-                    <h3 className="nail-detail-label">メモ</h3>
-                    <p className="nail-detail-memo">{detailItem.memo}</p>
-                  </div>
-                )}
-                <dl className="nail-detail-meta">
-                  {createdDate && (
-                    <div>
-                      <dt>作成日</dt>
-                      <dd>{createdDate}</dd>
-                    </div>
-                  )}
-                  {updatedDate && (
-                    <div>
-                      <dt>更新日</dt>
-                      <dd>{updatedDate}</dd>
-                    </div>
-                  )}
-                </dl>
-              </div>
-            </div>
-          </div>
-        )
-      })()}
+      {detailItem && (
+        <NailImageDetailViewer
+          item={detailItem}
+          onClose={() => setDetailItemId(null)}
+        />
+      )}
       {isDataModalOpen && (
         <div
           className="nail-detail-backdrop"
@@ -1388,7 +1303,10 @@ function App() {
                       isCompareSelected ? 'comparison-selected' : '',
                     ].filter(Boolean).join(' ')}
                   >
-                    <div className="nail-card-thumb">
+                    <div
+                      className="nail-card-thumb"
+                      onClick={() => setDetailItemId(item.id)}
+                    >
                       <div className="nail-thumb-placeholder">No image</div>
                       {item.imageUrl && (
                         <img
@@ -1399,7 +1317,10 @@ function App() {
                         />
                       )}
                     </div>
-                    <div className="nail-card-body">
+                    <div
+                      className="nail-card-body"
+                      onClick={() => setDetailItemId(item.id)}
+                    >
                       <span className="nail-item-title">{item.title}</span>
                       {item.tags.length > 0 && (
                         <div className="nail-item-tags">
