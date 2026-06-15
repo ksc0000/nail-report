@@ -11,6 +11,7 @@ const input: NailItemInput = {
   imageUrl: 'https://example.com/nail.jpg',
   tags: ['pink', 'gel'],
   memo: 'soft gradient',
+  imageSource: 'camera',
 }
 test('buildCreateNailItemData creates the Firestore write payload', () => {
   const timestamp = Symbol('serverTimestamp')
@@ -20,9 +21,16 @@ test('buildCreateNailItemData creates the Firestore write payload', () => {
     thumbnailUrl: input.imageUrl,
     tags: input.tags,
     memo: input.memo,
+    imageSource: 'camera',
     createdAt: timestamp,
     updatedAt: timestamp,
   })
+})
+test('buildCreateNailItemData defaults imageSource to unknown', () => {
+  const timestamp = Symbol('serverTimestamp')
+  const noSourceInput = { ...input, imageSource: undefined }
+  const result = buildCreateNailItemData(noSourceInput, timestamp)
+  assert.equal(result.imageSource, 'unknown')
 })
 test('buildUpdateNailItemData omits createdAt and refreshes updatedAt', () => {
   const timestamp = Symbol('serverTimestamp')
@@ -32,6 +40,7 @@ test('buildUpdateNailItemData omits createdAt and refreshes updatedAt', () => {
     thumbnailUrl: input.imageUrl,
     tags: input.tags,
     memo: input.memo,
+    imageSource: 'camera',
     updatedAt: timestamp,
   })
 })
