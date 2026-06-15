@@ -12,6 +12,8 @@ import {
 import type { PublicShareDocWithId, PublicShareItemSnapshot } from './lib/publicShares'
 import { uploadNailImage, deleteNailImage } from './lib/storage'
 import ErrorBanner from './components/ErrorBanner'
+import PrivacyPolicyPage from './components/PrivacyPolicyPage'
+import TermsOfServicePage from './components/TermsOfServicePage'
 import './App.css'
 
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
@@ -161,11 +163,20 @@ const getPublicShareIdFromPath = (pathname: string): string | null => {
 }
 
 function App() {
-  const sharePathId = useMemo(
-    () => typeof window === 'undefined' ? null : getPublicShareIdFromPath(window.location.pathname),
-    []
-  )
+  const [pathname, setPathname] = useState(typeof window === 'undefined' ? '/' : window.location.pathname)
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setPathname(window.location.pathname)
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  const sharePathId = useMemo(() => getPublicShareIdFromPath(pathname), [pathname])
   const isPublicSharePage = sharePathId !== null
+  const isPrivacyPage = pathname === '/privacy'
+  const isTermsPage = pathname === '/terms'
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [nailItems, setNailItems] = useState<NailItemDoc[]>([])
   const [nailTitle, setNailTitle] = useState('')
@@ -212,6 +223,15 @@ function App() {
 
     if (isPublicSharePage) {
       document.title = 'Shared nail collection'
+    } else if (isPrivacyPage) {
+      document.title = 'プライバシーポリシー | Nailous'
+    } else if (isTermsPage) {
+      document.title = '利用規約 | Nailous'
+    } else {
+      document.title = 'Nailous'
+    }
+
+    if (isPublicSharePage || isPrivacyPage || isTermsPage) {
       if (meta) {
         meta.setAttribute('content', 'noindex')
       } else {
@@ -220,8 +240,6 @@ function App() {
         createdMeta.content = 'noindex'
         document.head.appendChild(createdMeta)
       }
-    } else {
-      document.title = 'Nailous'
     }
 
     return () => {
@@ -234,7 +252,7 @@ function App() {
         meta.removeAttribute('content')
       }
     }
-  }, [isPublicSharePage])
+  }, [isPublicSharePage, isPrivacyPage, isTermsPage])
 
   useEffect(() => {
     if (!isPublicSharePage || !sharePathId) return
@@ -751,11 +769,46 @@ function App() {
     )
   }
 
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
+    e.preventDefault()
+    window.history.pushState({}, '', path)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+
+  const renderFooter = () => (
+    <footer className="app-footer">
+      <div className="footer-links">
+        <a href="/terms" onClick={(e) => handleLinkClick(e, '/terms')}>利用規約</a>
+        <a href="/privacy" onClick={(e) => handleLinkClick(e, '/privacy')}>プライバシーポリシー</a>
+      </div>
+      <p className="footer-copy">&copy; 2026 Nailous</p>
+    </footer>
+  )
+
   if (isPublicSharePage) {
     return (
       <section id="center">
         <h1 id="app-title">Nailous</h1>
         {renderPublicShareState()}
+        {renderFooter()}
+      </section>
+    )
+  }
+
+  if (isPrivacyPage) {
+    return (
+      <section id="center">
+        <h1 id="app-title">Nailous</h1>
+        <PrivacyPolicyPage />
+      </section>
+    )
+  }
+
+  if (isTermsPage) {
+    return (
+      <section id="center">
+        <h1 id="app-title">Nailous</h1>
+        <TermsOfServicePage />
       </section>
     )
   }
@@ -854,11 +907,18 @@ function App() {
             }}>Sign out</button>
           </div>
         ) : (
-          <button type="button" className="auth-signin" onClick={() => {
-            signInWithGoogle().catch((e: unknown) => console.error('sign-in failed', e))
-          }}>
-            Sign in with Google
-          </button>
+          <div className="auth-signin-container">
+            <button type="button" className="auth-signin" onClick={() => {
+              signInWithGoogle().catch((e: unknown) => console.error('sign-in failed', e))
+            }}>
+              Sign in with Google
+            </button>
+            <div className="auth-signin-links">
+              <a href="/terms" onClick={(e) => handleLinkClick(e, '/terms')}>利用規約</a>
+              <span>・</span>
+              <a href="/privacy" onClick={(e) => handleLinkClick(e, '/privacy')}>プライバシーポリシー</a>
+            </div>
+          </div>
         )}
       </div>
       {user && (
@@ -1331,6 +1391,7 @@ function App() {
           </div>
         </div>
       )}
+      {renderFooter()}
     </section>
   )
 }
