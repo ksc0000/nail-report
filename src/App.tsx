@@ -15,6 +15,7 @@ import ErrorBanner from './components/ErrorBanner'
 import PrivacyPolicyPage from './components/PrivacyPolicyPage'
 import TermsOfServicePage from './components/TermsOfServicePage'
 import NailImageDetailViewer from './components/NailImageDetailViewer'
+import NailComparisonPanel from './components/NailComparisonPanel'
 import './App.css'
 
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
@@ -161,13 +162,6 @@ const toggleComparisonId = (prevIds: string[], itemId: string): string[] => {
   if (prevIds.length < 2) return [...prevIds, itemId]
   return [prevIds[1], itemId]
 }
-
-const getSortedComparisonItems = (items: NailItemDoc[]): NailItemDoc[] =>
-  [...items].sort((a, b) => {
-    const ta = (a.createdAt ?? a.updatedAt)?.seconds ?? 0
-    const tb = (b.createdAt ?? b.updatedAt)?.seconds ?? 0
-    return ta - tb
-  })
 
 type PublicShareViewState = 'idle' | 'loading' | 'ready' | 'not-found' | 'disabled' | 'error'
 
@@ -502,12 +496,6 @@ function App() {
 
   const editingItem = editingId ? nailItems.find(i => i.id === editingId) : null
   const detailItem = detailItemId ? nailItems.find(i => i.id === detailItemId) : null
-  const comparisonItems = useMemo(() => {
-    const selected = comparisonItemIds
-      .map(id => nailItems.find(item => item.id === id))
-      .filter((item): item is NailItemDoc => Boolean(item))
-    return selected.length === 2 ? getSortedComparisonItems(selected) : selected
-  }, [comparisonItemIds, nailItems])
   const isFetching = Boolean(user && nailItemsUserId !== user.uid)
   const summary = useMemo(() => getNailSummary(nailItems), [nailItems])
 
@@ -523,62 +511,6 @@ function App() {
 
   const handleToggleComparisonItem = (itemId: string) => {
     setComparisonItemIds(prev => toggleComparisonId(prev, itemId))
-  }
-
-  const renderComparisonItem = (item: NailItemDoc, label: string) => {
-    const createdDate = formatDate(item.createdAt)
-    const updatedDate = formatDate(item.updatedAt)
-    return (
-      <article className="comparison-card">
-        <p className="comparison-side-label">{label}</p>
-        <div className="comparison-image-frame">
-          {item.imageUrl ? (
-            <img
-              className="comparison-image"
-              src={item.imageUrl}
-              alt={item.title + ' の比較用ネイル画像'}
-            />
-          ) : (
-            <div className="comparison-no-image">画像なし</div>
-          )}
-        </div>
-        <div className="comparison-card-body">
-          <h4 className="comparison-title">{item.title}</h4>
-          <div className="comparison-section">
-            <span className="comparison-label">タグ</span>
-            {item.tags.length > 0 ? (
-              <div className="nail-item-tags">
-                {item.tags.map(t => (
-                  <span key={t} className="nail-tag">#{t}</span>
-                ))}
-              </div>
-            ) : (
-              <p className="comparison-empty">タグなし</p>
-            )}
-          </div>
-          {item.memo && (
-            <div className="comparison-section">
-              <span className="comparison-label">メモ</span>
-              <p className="comparison-memo">{item.memo}</p>
-            </div>
-          )}
-          <dl className="comparison-meta">
-            {createdDate && (
-              <div>
-                <dt>作成日</dt>
-                <dd>{createdDate}</dd>
-              </div>
-            )}
-            {updatedDate && (
-              <div>
-                <dt>更新日</dt>
-                <dd>{updatedDate}</dd>
-              </div>
-            )}
-          </dl>
-        </div>
-      </article>
-    )
   }
 
   const getShareUrl = (id: string): string =>
@@ -1211,42 +1143,12 @@ function App() {
               </div>
             </div>
           )}
-          {!isFetching && comparisonItems.length > 0 && (
-            <section className="comparison-panel" aria-labelledby="comparison-heading">
-              <div className="comparison-header">
-                <div>
-                  <h3 id="comparison-heading" className="summary-heading">ネイル比較</h3>
-                  <p className="comparison-prompt">
-                    {comparisonItems.length === 1
-                      ? '比較するネイルをもう1つ選択してください'
-                      : '2つのネイルを日付順（前・後）で比較しています'}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="btn-export"
-                  onClick={() => setComparisonItemIds([])}
-                >
-                  比較をクリア
-                </button>
-              </div>
-              <div className="comparison-grid">
-                {comparisonItems.length === 2 ? (
-                  <>
-                    {renderComparisonItem(comparisonItems[0], '前')}
-                    {renderComparisonItem(comparisonItems[1], '後')}
-                  </>
-                ) : (
-                  <>
-                    {renderComparisonItem(comparisonItems[0], '選択中')}
-                    <div className="comparison-card-placeholder">
-                      <p>2つ目を選択してください</p>
-                    </div>
-                  </>
-                )}
-              </div>
-            </section>
-          )}
+          <NailComparisonPanel
+            comparisonItemIds={comparisonItemIds}
+            nailItems={nailItems}
+            isFetching={isFetching}
+            onClear={() => setComparisonItemIds([])}
+          />
           {!isFetching && nailItems.length > 0 && (activeTagFilter !== null || activeMonthFilter !== null) && (
             <div className="filter-bar">
               {activeTagFilter !== null && (
