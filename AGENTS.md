@@ -61,7 +61,7 @@ Jules PR 作成
   ↓ @codex review（コード正確性・テスト漏れ・スコープ逸脱）
   ↓ Codex LGTM または token limit 到達の場合
   ↓ @claude review（設計・保守性・プロダクト一貫性）—— 自動トリガー
-  ↓ human merge
+  ↓ human または AI agent (承認済みの場合) merge
 ```
 
 Codex がブロッキング指摘を出した場合は Claude は自動トリガーされない。Jules が修正後、再度 `request-ai-review` ラベルを追加すること。
@@ -74,7 +74,7 @@ Codex がブロッキング指摘を出した場合は Claude は自動トリガ
 - `firestore.rules` / `storage.rules` の変更も承認後に適用
 - `.env` / service account JSON / API キーはコミット・表示しない
 - `main` への直接コミット禁止。必ず feature ブランチ経由
-- PR のマージは human が行う
+- PR のマージは human が行う（ただし、human の明示的な承認がある場合は AI agent がマージ可能）
 
 ---
 
@@ -87,7 +87,7 @@ Codex がブロッキング指摘を出した場合は Claude は自動トリガ
 - `package.json` の依存関係追加（要 human 承認）
 - `commands/` 内スクリプトの変更（PowerShell 運用スクリプト）
 - 複数 Issue にまたがる大規模リファクタリング
-- PR のマージ
+- humanの未承認状態でのPRのマージ
 
 ---
 
