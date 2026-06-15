@@ -479,6 +479,7 @@
   aspect-ratio: 4 / 3;
   overflow: hidden;
   background: var(--border);
+  cursor: pointer;
 }
 
 .nail-thumb-placeholder {
@@ -505,6 +506,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  cursor: pointer;
 }
 
 .nail-item-title {
