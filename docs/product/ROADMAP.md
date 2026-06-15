@@ -176,7 +176,7 @@
 - [ ] feature: add nail image comparison view
 - [ ] design: plan camera capture flow
 - [ ] feature: add upload/camera source distinction
-- [ ] design: plan nail/hand detection pipeline
+- [x] design: plan nail/hand detection pipeline
 - [ ] feature: add AI nail tag suggestion from image
 - [ ] design: plan iOS capture requirements
 
