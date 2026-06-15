@@ -187,6 +187,7 @@ function App() {
   const [nailImagePreview, setNailImagePreview] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [detailItemId, setDetailItemId] = useState<string | null>(null)
+  const [isDataModalOpen, setIsDataModalOpen] = useState(false)
   const [comparisonItemIds, setComparisonItemIds] = useState<string[]>([])
   const [nailLoading, setNailLoading] = useState(false)
   const [nailError, setNailError] = useState('')
@@ -209,6 +210,7 @@ function App() {
   )
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
+  const dataModalCloseButtonRef = useRef<HTMLButtonElement>(null)
   const previewUrlRef = useRef<string | null>(null)
 
   useEffect(() => () => {
@@ -295,6 +297,16 @@ function App() {
       setComparisonItemIds([])
     }
   }), [isPublicSharePage])
+
+  useEffect(() => {
+    if (!isDataModalOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsDataModalOpen(false)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    dataModalCloseButtonRef.current?.focus()
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isDataModalOpen])
 
   useEffect(() => {
     if (isPublicSharePage) return
@@ -813,10 +825,68 @@ function App() {
           onClose={() => setDetailItemId(null)}
         />
       )}
+      {isDataModalOpen && (
+        <div
+          className="nail-detail-backdrop"
+          role="presentation"
+          onClick={() => setIsDataModalOpen(false)}
+        >
+          <div
+            className="nail-detail-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="data-mgmt-title"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="nail-detail-header">
+              <p className="nail-detail-kicker">データ管理</p>
+              <button
+                ref={dataModalCloseButtonRef}
+                type="button"
+                className="nail-detail-close"
+                onClick={() => setIsDataModalOpen(false)}
+                aria-label="データ管理を閉じる"
+              >
+                閉じる
+              </button>
+            </div>
+            <div className="nail-detail-body">
+              <h2 id="data-mgmt-title" className="nail-detail-title">ヘルプとデータ管理</h2>
+              <div className="nail-detail-section">
+                <h3 className="nail-detail-label">データのエクスポート</h3>
+                <p className="help-text">
+                  「コレクション概要」セクションにある CSV または JSON ボタンから、登録済みのネイル情報をいつでもダウンロードできます。
+                </p>
+              </div>
+              <div className="nail-detail-section">
+                <h3 className="nail-detail-label">データの削除</h3>
+                <p className="help-text">
+                  各ネイルアイテムの「Delete」ボタンから個別にデータを削除できます。
+                </p>
+                <p className="help-text">
+                  アカウントの退会および全データの完全消去をご希望の場合は、プライバシーポリシーに基づき、ご本人確認のため登録メールアドレスより下記サポート窓口までご連絡ください。
+                </p>
+                <div style={{ marginTop: '8px' }}>
+                  <a href="mailto:kikushun0529@gmail.com" className="help-mailto">
+                    kikushun0529@gmail.com
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div id="auth-bar">
         {user === undefined ? null : user ? (
           <div className="auth-user">
             <span>{user.displayName ?? user.email}</span>
+            <button
+              type="button"
+              className="auth-data-mgmt"
+              onClick={() => setIsDataModalOpen(true)}
+            >
+              データ管理
+            </button>
             <button type="button" onClick={() => {
               signOutUser().catch((e: unknown) => console.error('sign-out failed', e))
             }}>Sign out</button>
@@ -1293,23 +1363,6 @@ function App() {
               })}
             </ul>
           )}
-          <div id="help-section" className="help-section">
-            <h3 className="summary-heading">ヘルプとデータ管理</h3>
-            <div className="help-content">
-              <div className="help-item">
-                <h4 className="help-title">データのエクスポート</h4>
-                <p className="help-text">
-                  「コレクション概要」セクションのボタンから、登録済みのネイル情報をCSVまたはJSON形式でダウンロードできます。
-                </p>
-              </div>
-              <div className="help-item">
-                <h4 className="help-title">データの削除</h4>
-                <p className="help-text">
-                  各アイテムの「Delete」ボタンから個別にデータを削除できます。アカウントの退会や、すべてのデータの完全消去をご希望の場合は、お手数ですが kikushun0529@gmail.com までお問い合わせください。
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
       )}
       {renderFooter()}
