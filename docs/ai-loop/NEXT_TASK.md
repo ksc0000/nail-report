@@ -2,19 +2,18 @@
 
 ## Context
 
-The `nail-report` application is currently in Phase 2 of its roadmap, focusing on improving stability, test coverage, and user experience. A key area for improvement is accessibility. This task specifically addresses a point from Phase 2.4 Accessibility.
+The `nail-report` application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This task initiates the test coverage effort by targeting core utility functions. The current state shows that no substantive product-related tasks have been completed by the AI loop yet, making this the first implementation task.
 
 ## Objective
 
-Enhance the accessibility of the application by identifying all icon-only buttons and adding an appropriate `aria-label` attribute to each of them. This will provide context for screen reader users regarding the button's purpose.
+Implement unit tests for the helper functions located in `src/lib/firestore.ts`, specifically focusing on the `nailItems` CRUD operations (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`). Utilize Vitest as the test runner and mock Firebase SDK dependencies using `vi.mock`.
 
 ## Allowed Scope
 
--   `src/components/` (modifying existing component `.tsx` files)
--   `src/features/` (modifying existing feature component `.tsx` files)
--   `src/App.tsx` (if icon buttons are present here)
--   `src/App.css` (for minor styling adjustments if needed, though unlikely for this task)
--   Any other `.tsx` files within `src/` that contain icon-only buttons.
+-   `src/lib/firestore.ts` (minor adjustments if necessary to make functions testable)
+-   `src/__tests__/lib/firestore.test.ts` (new test file)
+-   `package.json` (only to add/modify `test` script if not present, without adding new dependencies)
+-   `vite.config.ts` (minor adjustments for Vitest configuration, e.g., `test.include`, if absolutely necessary and without adding new dependencies)
 
 ## Forbidden Scope
 
@@ -29,10 +28,10 @@ Enhance the accessibility of the application by identifying all icon-only button
 
 -   Keep diff ≤ 150 lines.
 -   Run `npm run build && npm run lint` before finishing.
--   Identify all instances of buttons that contain only an icon (e.g., `<button><Icon /></button>`) and add an `aria-label="[descriptive text]"` attribute.
--   The `aria-label` should clearly describe the button's action (e.g., "Delete item", "Edit profile", "Share link").
--   Ensure no existing `aria-label` attributes are duplicated or incorrectly modified.
--   No new components or significant UI changes are expected beyond adding the `aria-label` attributes.
+-   Add a new test file: `src/__tests__/lib/firestore.test.ts`.
+-   Mock Firebase SDK dependencies using Vitest's `vi.mock` mechanism.
+-   Ensure tests cover successful operations and basic error scenarios for the targeted functions.
+-   The `test` script in `package.json` should invoke `vitest`. If it doesn't exist, add `"test": "vitest"`.
 
 ## Output Format
 
@@ -41,9 +40,3 @@ Enhance the accessibility of the application by identifying all icon-only button
 -   Commands run and results
 -   Known issues or limitations
 -   Suggested next task
-
----
-
-**Worker prompt:**
-
-Please proceed with implementing the task described above. Focus on thoroughly identifying all icon-only buttons across the application's UI and adding meaningful `aria-label` attributes to them. Once done, ensure the application builds and passes lint checks.
