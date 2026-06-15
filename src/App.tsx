@@ -156,6 +156,19 @@ const getItemMonth = (item: NailItemDoc): string | null => {
   }
 }
 
+const toggleComparisonId = (prevIds: string[], itemId: string): string[] => {
+  if (prevIds.includes(itemId)) return prevIds.filter(id => id !== itemId)
+  if (prevIds.length < 2) return [...prevIds, itemId]
+  return [prevIds[1], itemId]
+}
+
+const getSortedComparisonItems = (items: NailItemDoc[]): NailItemDoc[] =>
+  [...items].sort((a, b) => {
+    const ta = (a.createdAt ?? a.updatedAt)?.seconds ?? 0
+    const tb = (b.createdAt ?? b.updatedAt)?.seconds ?? 0
+    return ta - tb
+  })
+
 type PublicShareViewState = 'idle' | 'loading' | 'ready' | 'not-found' | 'disabled' | 'error'
 
 const getPublicShareIdFromPath = (pathname: string): string | null => {
@@ -489,9 +502,12 @@ function App() {
 
   const editingItem = editingId ? nailItems.find(i => i.id === editingId) : null
   const detailItem = detailItemId ? nailItems.find(i => i.id === detailItemId) : null
-  const comparisonItems = comparisonItemIds
-    .map(id => nailItems.find(item => item.id === id))
-    .filter((item): item is NailItemDoc => Boolean(item))
+  const comparisonItems = useMemo(() => {
+    const selected = comparisonItemIds
+      .map(id => nailItems.find(item => item.id === id))
+      .filter((item): item is NailItemDoc => Boolean(item))
+    return selected.length === 2 ? getSortedComparisonItems(selected) : selected
+  }, [comparisonItemIds, nailItems])
   const isFetching = Boolean(user && nailItemsUserId !== user.uid)
   const summary = useMemo(() => getNailSummary(nailItems), [nailItems])
 
@@ -506,11 +522,7 @@ function App() {
   })
 
   const handleToggleComparisonItem = (itemId: string) => {
-    setComparisonItemIds(prev => {
-      if (prev.includes(itemId)) return prev.filter(id => id !== itemId)
-      if (prev.length < 2) return [...prev, itemId]
-      return [prev[1], itemId]
-    })
+    setComparisonItemIds(prev => toggleComparisonId(prev, itemId))
   }
 
   const renderComparisonItem = (item: NailItemDoc, label: string) => {
@@ -1204,9 +1216,11 @@ function App() {
               <div className="comparison-header">
                 <div>
                   <h3 id="comparison-heading" className="summary-heading">ネイル比較</h3>
-                  {comparisonItems.length === 1 && (
-                    <p className="comparison-prompt">比較するネイルをもう1つ選択してください</p>
-                  )}
+                  <p className="comparison-prompt">
+                    {comparisonItems.length === 1
+                      ? '比較するネイルをもう1つ選択してください'
+                      : '2つのネイルを日付順（前・後）で比較しています'}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -1216,12 +1230,21 @@ function App() {
                   比較をクリア
                 </button>
               </div>
-              {comparisonItems.length === 2 && (
-                <div className="comparison-grid">
-                  {renderComparisonItem(comparisonItems[0], '左')}
-                  {renderComparisonItem(comparisonItems[1], '右')}
-                </div>
-              )}
+              <div className="comparison-grid">
+                {comparisonItems.length === 2 ? (
+                  <>
+                    {renderComparisonItem(comparisonItems[0], '前')}
+                    {renderComparisonItem(comparisonItems[1], '後')}
+                  </>
+                ) : (
+                  <>
+                    {renderComparisonItem(comparisonItems[0], '選択中')}
+                    <div className="comparison-card-placeholder">
+                      <p>2つ目を選択してください</p>
+                    </div>
+                  </>
+                )}
+              </div>
             </section>
           )}
           {!isFetching && nailItems.length > 0 && (activeTagFilter !== null || activeMonthFilter !== null) && (

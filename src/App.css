@@ -854,6 +854,18 @@
   object-fit: contain;
 }
 
+.comparison-card-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.01);
+  color: #888;
+  font-size: 0.88rem;
+  aspect-ratio: 4 / 3.5;
+}
+
 .comparison-no-image {
   color: #888;
   font-size: 0.88rem;
