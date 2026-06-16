@@ -3,17 +3,17 @@
 
 ## Context
 
-The current phase of development focuses on improving stability, test coverage, and UX. This task specifically addresses the first point in Phase 2.1: Test coverage. The goal is to begin adding unit tests for the core utility functions.
+The current focus is on Phase 2 of the roadmap, specifically improving stability and test coverage. This task aims to increase test coverage for core Firebase utility functions.
 
 ## Objective
 
-Implement unit tests for the helper functions defined in `src/lib/firestore.ts` using Vitest. The tests should cover the main Firestore interaction functions for managing `nailItems` and `publicShares`.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but prefer minimal changes)
+- `src/lib/firestore.ts` (minor adjustments might be needed for testability, e.g., exporting non-exported functions, but prioritize testing existing public exports)
 - `src/__tests__/firestore.test.ts` (new file for tests)
-- `src/__tests__/setup.ts` or similar for Vitest setup if required for mocking Firebase (if not already present).
+- `src/__tests__/` (other new test files as needed for mocking setup)
 
 ## Forbidden Scope
 
@@ -27,11 +27,12 @@ Implement unit tests for the helper functions defined in `src/lib/firestore.ts` 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create a new test file, `src/__tests__/firestore.test.ts`.
-- Mock Firebase SDK dependencies as needed to perform isolated unit tests. Assume Vitest is already configured.
-- Focus on testing the public helper functions exposed by `src/lib/firestore.ts`.
-- Run `npm run build && npm run lint && npm run test` before finishing.
-- Report follow-up items as comments, not additional code.
+- Run `npm run build && npm run lint` before finishing.
+- Create a new test file: `src/__tests__/firestore.test.ts`.
+- Use Vitest for writing tests.
+- Mock Firebase SDK dependencies (e.g., `firebase/firestore`) appropriately to isolate `firestore.ts` logic.
+- Ensure key helper functions in `src/lib/firestore.ts` have basic unit test coverage (e.g., functions for adding, updating, deleting nail items).
+- Report any follow-up items as comments in the PR, not as additional code.
 
 ## Output Format
 
