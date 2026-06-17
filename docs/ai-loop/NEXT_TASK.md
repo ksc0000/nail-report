@@ -1,18 +1,19 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses Phase 2.1: Test coverage. The application currently lacks unit tests for its core utility functions.
+The product roadmap focuses on improving stability, test coverage, and UX in Phase 2. The current state indicates that test coverage is a priority.
 
 ## Objective
 
-Implement unit tests for helper functions located in `src/lib/firestore.ts` using Vitest.
+Implement Vitest unit tests for the helper functions within `src/lib/firestore.ts`. This task aims to improve the test coverage of critical data access logic.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor modifications only, if necessary for testability)
-- `src/__tests__/lib/firestore.test.ts` (new file for tests)
-- `vitest.config.ts` (only if absolutely necessary for test setup, otherwise avoid)
+- `src/lib/firestore.ts` (minor changes for testability, e.g., exporting unexported helpers)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `vite.config.ts` (if Vitest configuration needs adjustment, though it should be set up based on roadmap)
 
 ## Forbidden Scope
 
@@ -26,9 +27,11 @@ Implement unit tests for helper functions located in `src/lib/firestore.ts` usin
 ## Requirements
 
 - Keep diff ≤ 150 lines.
+- Create a new test file `src/__tests__/firestore.test.ts`.
+- Write unit tests for at least two helper functions or main functions in `src/lib/firestore.ts` that interact with Firestore. Examples might include functions for adding, updating, or fetching data.
+- Mock Firebase SDK dependencies as needed using `vitest` and `vi.mock`.
+- Ensure tests run successfully and provide meaningful coverage.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -38,32 +41,20 @@ Implement unit tests for helper functions located in `src/lib/firestore.ts` usin
 - Known issues or limitations
 - Suggested next task
 
-## Worker prompt
+## Acceptance Criteria
 
-Your task is to add unit tests for helper functions in `src/lib/firestore.ts`.
+- A new test file `src/__tests__/firestore.test.ts` is created.
+- The new test file contains unit tests for at least two functions from `src/lib/firestore.ts`.
+- Firebase dependencies are correctly mocked using `vitest` mocks.
+- `npm test` runs successfully, and the new tests pass.
+- The `firestore.ts` file remains functional and compatible with the rest of the application.
 
-1.  **Create a new test file**: Add `src/__tests__/lib/firestore.test.ts`.
-2.  **Mock Firebase SDK**: Utilize `vi.mock` from Vitest to mock Firebase Firestore SDK calls (e.g., `getFirestore`, `collection`, `doc`, `getDocs`, `addDoc`, `updateDoc`, `deleteDoc`). Focus on mocking the external dependencies so that your tests verify the logic within `firestore.ts` itself, not the Firebase SDK.
-3.  **Implement Unit Tests**:
-    *   Start by writing tests for a few key functions within `src/lib/firestore.ts`. Prioritize functions that perform CRUD operations or data transformations.
-    *   Ensure each test focuses on a single aspect of the function's behavior.
-    *   Use `expect` assertions to verify the outcomes, including successful data retrieval, correct data updates, error handling, etc.
-4.  **Verification**:
-    *   Run `npm test` to ensure all new tests pass.
-    *   Run `npm run build && npm run lint` to ensure no build or linting errors are introduced.
+## Required Test Commands
 
-Focus on adding a solid foundation of tests for a subset of functions, staying within the line limit. It is not required to achieve 100% coverage of `firestore.ts` in this single PR.
-
-**Acceptance Criteria**:
-- New file `src/__tests__/lib/firestore.test.ts` exists.
-- At least two functions from `src/lib/firestore.ts` have corresponding unit tests.
-- Firebase SDK dependencies are mocked correctly within the tests.
-- All new tests pass when `npm test` is run.
-- The PR diff is ≤ 150 lines.
-
-**Required Test Commands**:
 ```bash
-npm test
+npm install # Ensure all dependencies are present
+npm run test # Run Vitest unit tests
 npm run build
 npm run lint
+```
 ```
