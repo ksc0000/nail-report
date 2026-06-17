@@ -2,17 +2,18 @@
 
 ## Context
 
-The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and user experience. The current state indicates that test coverage is a priority within this phase. This task focuses on establishing foundational unit tests for core Firebase operations.
+The product roadmap prioritizes improving stability, test coverage, and UX in Phase 2. The current state indicates that the AI-Loop setup is complete, and the first substantive task is pending. This task focuses on improving accessibility, a key part of Phase 2 UX enhancements.
 
 ## Objective
 
-Implement unit tests for helper functions within `src/lib/firestore.ts` using Vitest, specifically targeting the CRUD operations for nail items.
+Implement the accessibility improvement: Add `aria-label` attributes to all icon-only buttons throughout the application to enhance screen reader compatibility.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to facilitate testing, if necessary, but primarily for understanding)
-- `src/__tests__/lib/firestore.test.ts` (new file for tests)
-- `vitest.config.ts` (if minor configuration is needed for mock setup)
+- `src/` (except `src/main.tsx`)
+- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+- `src/__tests__/` (new test files)
+- `src/App.css` (CSS improvements)
 
 ## Forbidden Scope
 
@@ -22,17 +23,12 @@ Implement unit tests for helper functions within `src/lib/firestore.ts` using Vi
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- Any files outside `src/` except for `vitest.config.ts` if strictly necessary.
 
 ## Requirements
 
-- Create a new test file: `src/__tests__/lib/firestore.test.ts`.
-- Add unit tests for the core `nailItems` CRUD operations in `src/lib/firestore.ts`, such as `addNailItem`, `getNailItems`, `updateNailItem`, and `deleteNailItem`.
-- Use `vitest` for the test runner and `vi.mock` to mock Firebase SDK dependencies (e.g., `firestore`, `doc`, `collection`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`).
-- Ensure tests cover basic success cases and error handling for at least two of the primary CRUD functions (e.g., `addNailItem` and `getNailItems`).
-- Keep the diff for the entire PR (including test file and any minor changes) to ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing to ensure code quality and no build errors.
-- Prefer adding tests over refactoring existing production code extensively within this task.
+- Keep diff ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -42,3 +38,32 @@ Implement unit tests for helper functions within `src/lib/firestore.ts` using Vi
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+
+---
+
+## Worker prompt
+
+Your task is to identify all buttons in the application that consist solely of an icon (without visible text) and add an appropriate `aria-label` attribute to each of them. The `aria-label` should clearly describe the button's action for screen reader users.
+
+**Steps:**
+
+1.  Review the React components in the `src/` directory to locate icon-only buttons. Common places include navigation, item actions (edit, delete), and interactive elements.
+2.  For each identified icon-only button, add an `aria-label` attribute with a descriptive text. For example, a delete button with a trash icon might get `aria-label="Delete item"`.
+3.  Ensure the `aria-label` provides sufficient context without being redundant.
+4.  Do not modify buttons that already have visible text or an `aria-labelledby` referencing visible text.
+5.  After making changes, run `npm run build` and `npm run lint` to confirm no errors or warnings were introduced.
+
+**Acceptance Criteria:**
+
+- All icon-only buttons in the application now have a meaningful `aria-label` attribute.
+- The application builds successfully without errors (`npm run build`).
+- The linter passes without warnings or errors (`npm run lint`).
+- No new npm packages were added.
+- The code changes adhere to the diff limit of 150 lines.
+
+**Required Test Commands:**
+
+```bash
+npm run build
+npm run lint
+```
