@@ -1,19 +1,19 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap focuses on improving stability, test coverage, and UX in Phase 2. The current state indicates that test coverage is a priority.
+The project is currently in Phase 2, focusing on improving stability, test coverage, and UX. The current objective is to enhance test coverage for core utility functions.
 
 ## Objective
 
-Implement Vitest unit tests for the helper functions within `src/lib/firestore.ts`. This task aims to improve the test coverage of critical data access logic.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor changes for testability, e.g., exporting unexported helpers)
+- `src/lib/firestore.ts` (modifications to export functions for testing, if necessary)
 - `src/__tests__/firestore.test.ts` (new file for tests)
-- `vite.config.ts` (if Vitest configuration needs adjustment, though it should be set up based on roadmap)
+- `src/__tests__/utils.ts` (new file for Firebase mock setup, if needed)
+- `src/App.css` (no changes expected for this task)
 
 ## Forbidden Scope
 
@@ -28,10 +28,11 @@ Implement Vitest unit tests for the helper functions within `src/lib/firestore.t
 
 - Keep diff ≤ 150 lines.
 - Create a new test file `src/__tests__/firestore.test.ts`.
-- Write unit tests for at least two helper functions or main functions in `src/lib/firestore.ts` that interact with Firestore. Examples might include functions for adding, updating, or fetching data.
+- Focus on testing the core CRUD helper functions like `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`, and any other relevant functions in `src/lib/firestore.ts`.
 - Mock Firebase SDK dependencies as needed using `vitest` and `vi.mock`.
-- Ensure tests run successfully and provide meaningful coverage.
+- Run `npm run test` to ensure tests pass.
 - Run `npm run build && npm run lint` before finishing.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -41,20 +42,17 @@ Implement Vitest unit tests for the helper functions within `src/lib/firestore.t
 - Known issues or limitations
 - Suggested next task
 
-## Acceptance Criteria
+## Worker prompt
 
-- A new test file `src/__tests__/firestore.test.ts` is created.
-- The new test file contains unit tests for at least two functions from `src/lib/firestore.ts`.
-- Firebase dependencies are correctly mocked using `vitest` mocks.
-- `npm test` runs successfully, and the new tests pass.
-- The `firestore.ts` file remains functional and compatible with the rest of the application.
+Jules, your task is to add unit tests for the functions in `src/lib/firestore.ts`.
 
-## Required Test Commands
+1.  Create a new test file: `src/__tests__/firestore.test.ts`.
+2.  Inside `firestore.test.ts`, write tests for the public helper functions exported from `src/lib/firestore.ts`.
+    *   Examples of functions to test include `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`, `getPublicShare`, `addPublicShare`, `updatePublicShare`, and `deletePublicShare`.
+3.  Use Vitest's mocking capabilities (`vi.mock`) to mock the Firebase Firestore SDK to ensure tests are isolated and do not interact with actual Firebase services. You may need to create a small utility file (e.g., `src/__tests__/utils.ts`) for common Firebase mocks if necessary.
+4.  Ensure that the tests cover typical success cases and basic error handling scenarios.
+5.  If any functions in `src/lib/firestore.ts` are not exported but need to be tested, modify `src/lib/firestore.ts` to export them temporarily for testing purposes. Revert these changes if they make the module's public API messy. Prefer testing through the public API.
+6.  Before submitting, ensure all tests pass by running `npm run test`.
+7.  Verify the project builds and lints cleanly by running `npm run build && npm run lint`.
 
-```bash
-npm install # Ensure all dependencies are present
-npm run test # Run Vitest unit tests
-npm run build
-npm run lint
-```
-```
+Remember to keep the PR focused and small (aim for ≤150 lines of diff). If mocking Firebase proves too complex for a single PR, focus on a subset of functions and note the complexity in your report.
