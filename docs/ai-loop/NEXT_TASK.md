@@ -1,19 +1,18 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The current focus is on improving stability, test coverage, and UX in Phase 2. This task specifically targets adding unit tests for core Firebase helper functions.
+The application is in Phase 2, focusing on improving stability, test coverage, and UX. This task initiates the test coverage improvements by adding unit tests for existing helper functions.
 
 ## Objective
 
-Implement unit tests for helper functions in `src/lib/firestore.ts` using Vitest, with appropriate mocking of the Firebase SDK.
+Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor changes might be needed for testability, but prioritize adding tests)
-- `src/__tests__/firestore.test.ts` (or similar new test file(s))
-- `vite.config.ts` (if Vitest configuration is missing for mocks)
+- `src/lib/firestore.ts` (minor modifications for testing setup if needed, but primarily creating tests)
+- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `vitest.config.ts` (if minor configuration changes are needed for mocking, though Vitest is already configured)
 
 ## Forbidden Scope
 
@@ -23,40 +22,23 @@ Implement unit tests for helper functions in `src/lib/firestore.ts` using Vitest
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/App.css` (CSS improvements - not relevant for this task)
-- `src/lib/storage.ts`, `src/lib/auth.ts`, `src/lib/publicShares.ts` (test these in later tasks)
+- Any files outside the `src/` directory (except potentially `vitest.config.ts` if strictly necessary for mocking Firebase SDK).
+- `src/App.css` or other UI-related files.
 
 ## Requirements
 
+- Create a new test file, `src/__tests__/firestore.test.ts`.
+- Write unit tests for at least two functions exported from `src/lib/firestore.ts`. Focus on functions that perform data manipulation or basic Firestore interactions (e.g., `addNailItem`, `updateNailItem`, `deleteNailItem`, `getNailItems`).
+- Mock the Firebase SDK as necessary to isolate the functions under test using `vi.mock`.
+- The tests should verify the correct arguments are passed to the mocked Firebase functions and handle successful outcomes. Error handling tests can be added as a follow-up.
 - Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
+- Run `npm run build && npm run lint && npm run test` before finishing.
+- Ensure the new tests pass.
 
-## Worker prompt
+## Output Format
 
-Your task is to add unit tests for the helper functions located in `src/lib/firestore.ts`.
-
-1.  **Create a new test file:** Add a new test file, for example, `src/__tests__/firestore.test.ts`.
-2.  **Focus on mocking Firebase SDK:** Utilize `vitest` and `vi.mock` to mock the Firebase Firestore SDK calls (e.g., `getFirestore`, `collection`, `doc`, `addDoc`, `updateDoc`, `deleteDoc`, `getDocs`, `query`, etc.).
-3.  **Test at least two functions:** Implement unit tests for at least two of the core helper functions in `src/lib/firestore.ts`. Good candidates include `addItem`, `updateItem`, or `deleteItem`.
-4.  **Ensure tests pass:** Verify that all new tests pass when running `npm test`.
-5.  **Do not add new dependencies:** Ensure no new npm packages are added to `package.json`.
-
-## Acceptance Criteria
-
--   A new test file (`src/__tests__/firestore.test.ts` or similar) exists.
--   At least two helper functions from `src/lib/firestore.ts` have comprehensive unit tests.
--   Firebase Firestore SDK interactions within these tests are properly mocked using `vi.mock`.
--   All new tests pass when `npm test` is executed.
--   The line diff is within the 150-line limit.
-
-## Required Test Commands
-
-```bash
-npm install
-npm test
-npm run build
-npm run lint
-```
-```
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
