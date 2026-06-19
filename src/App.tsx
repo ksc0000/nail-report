@@ -11,6 +11,7 @@ import {
 } from './lib/publicShares'
 import type { PublicShareDocWithId, PublicShareItemSnapshot } from './lib/publicShares'
 import { uploadNailImage, deleteNailImage } from './lib/storage'
+import { MAX_NAIL_TAG_LENGTH, MAX_NAIL_TAGS, parseNailTags } from './lib/nailTags'
 import ErrorBanner from './components/ErrorBanner'
 import PrivacyPolicyPage from './components/PrivacyPolicyPage'
 import TermsOfServicePage from './components/TermsOfServicePage'
@@ -421,9 +422,6 @@ function App() {
     setNailImageSource('unknown')
   }
 
-  const parseTags = (s: string): string[] =>
-    s.split(',').map(t => t.trim()).filter(Boolean)
-
   const resetForm = () => {
     setNailTitle('')
     setNailTags('')
@@ -442,13 +440,18 @@ function App() {
       const err = validateImageFile(nailImageFile)
       if (err) { setNailError(err); return }
     }
+    const parsedTags = parseNailTags(nailTags)
+    if (parsedTags.error) {
+      setNailError(parsedTags.error)
+      return
+    }
     const uid = user.uid
     setNailLoading(true)
     setNailError('')
     setBannerError('')
     const baseInput = {
       title: nailTitle.trim(),
-      tags: parseTags(nailTags),
+      tags: parsedTags.tags,
       memo: nailMemo.trim(),
       imageSource: nailImageSource,
     }
@@ -890,9 +893,12 @@ function App() {
               type="text"
               value={nailTags}
               onChange={e => setNailTags(e.target.value)}
-              placeholder="Tags (comma separated)"
+              placeholder="Tags (comma separated, max 12)"
               className="nail-input"
             />
+            <p className="nail-input-note">
+              タグはカンマ区切りで最大{MAX_NAIL_TAGS}個、1つ{MAX_NAIL_TAG_LENGTH}文字まで。
+            </p>
             <textarea
               value={nailMemo}
               onChange={e => setNailMemo(e.target.value)}
