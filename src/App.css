@@ -377,6 +377,13 @@
   margin: 0;
 }
 
+.nail-input-note {
+  font-size: 0.78rem;
+  color: #777;
+  margin: -8px 0 2px;
+  line-height: 1.5;
+}
+
 .nail-loading {
   text-align: center;
   padding: 40px 0;
