@@ -1738,3 +1738,26 @@
     gap: 12px;
   }
 }
+
+.ai-tag-btn {
+  margin-top: 4px;
+  margin-bottom: 8px;
+  padding: 6px 12px;
+  background-color: #f0f4f8;
+  color: #0366d6;
+  border: 1px solid #c8e1ff;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: fit-content;
+}
+
+.ai-tag-btn:hover:not(:disabled) {
+  background-color: #e1efff;
+}
+
+.ai-tag-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

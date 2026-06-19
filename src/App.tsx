@@ -12,6 +12,7 @@ import {
 import type { PublicShareDocWithId, PublicShareItemSnapshot } from './lib/publicShares'
 import { uploadNailImage, deleteNailImage } from './lib/storage'
 import { MAX_NAIL_TAG_LENGTH, MAX_NAIL_TAGS, parseNailTags } from './lib/nailTags'
+import { fileToGenerativePart, urlToGenerativePart, generateNailTagsFromImage } from './lib/aiUtils'
 import ErrorBanner from './components/ErrorBanner'
 import PrivacyPolicyPage from './components/PrivacyPolicyPage'
 import TermsOfServicePage from './components/TermsOfServicePage'
@@ -202,6 +203,7 @@ function App() {
   const [comparisonItemIds, setComparisonItemIds] = useState<string[]>([])
   const [nailLoading, setNailLoading] = useState(false)
   const [nailError, setNailError] = useState('')
+  const [isAIGeneratingTags, setIsAIGeneratingTags] = useState(false)
   const [bannerError, setBannerError] = useState('')
   const [nailItemsUserId, setNailItemsUserId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -437,6 +439,33 @@ function App() {
     setNailImageSource('unknown')
     setEditingId(null)
     setNailError('')
+  }
+
+  const handleGenerateTagsWithAI = async () => {
+    try {
+      setIsAIGeneratingTags(true)
+      setNailError('')
+      let imagePart
+      if (nailImageFile) {
+        imagePart = await fileToGenerativePart(nailImageFile)
+      } else if (editingItem?.imageUrl) {
+        imagePart = await urlToGenerativePart(editingItem.imageUrl)
+      } else {
+        setNailError('画像が選択されていません。')
+        return
+      }
+      
+      const generatedTags = await generateNailTagsFromImage(imagePart)
+      // Clean up the tags, ensure comma separated
+      const cleanTags = generatedTags.replace(/\n/g, '').trim()
+      setNailTags(cleanTags)
+    } catch (err: unknown) {
+      console.error('AI tag generation error:', err)
+      const message = err instanceof Error ? err.message : String(err)
+      setNailError('AIによるタグ生成に失敗しました: ' + message)
+    } finally {
+      setIsAIGeneratingTags(false)
+    }
   }
 
   const handleSubmitNailItem = async () => {
@@ -918,6 +947,16 @@ function App() {
             <p className="nail-input-note">
               タグはカンマ区切りで最大{MAX_NAIL_TAGS}個、1つ{MAX_NAIL_TAG_LENGTH}文字まで。
             </p>
+            {(nailImageFile || editingItem?.imageUrl) && (
+              <button
+                type="button"
+                className="ai-tag-btn"
+                onClick={handleGenerateTagsWithAI}
+                disabled={isAIGeneratingTags}
+              >
+                {isAIGeneratingTags ? 'AIがタグを生成中...' : '✨ 画像からAIでタグを生成'}
+              </button>
+            )}
             <textarea
               value={nailMemo}
               onChange={e => setNailMemo(e.target.value)}
@@ -952,7 +991,7 @@ function App() {
               </div>
               <p className="nail-file-note">カメラが起動しない場合は、アルバムから画像を選択してください。</p>
               <p className="nail-file-privacy-note">
-                写真はご本人のデバイスと保存先（Firebase）にのみ保管され、共有機能を使わない限り非公開です。外部のAI学習や解析には使用されません。
+                写真は非公開で保存されます。「AIでタグを生成」ボタンを押した場合のみ、画像が一時的にAIによる解析へ送信されます（AIの学習には使用されません）。
               </p>
               {nailImageFile && nailImagePreview && (
                 <div className="nail-file-preview-area">
