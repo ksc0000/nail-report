@@ -74,15 +74,15 @@ jobs:
 
             const routeNotes = {
               "agent-ready": [
-                "Choose one execution label next: `claude-ready`, `codex-ready`, or `jules-ready`.",
+                "Choose one execution label next: `codex-ready` or `jules-ready`.",
               ],
               "claude-ready": [
-                "Recommended executor: Claude Code CLI on a local branch.",
-                "Create a branch, implement the issue, run focused checks, then open a PR.",
+                "Claude routing is currently disabled for this repository.",
+                "Use `codex-ready` or `jules-ready` instead.",
               ],
               "codex-ready": [
                 "Recommended executor: Codex for implementation or a focused patch.",
-                "PR review is handled by Claude via the `request-ai-review` label (Codex is not used for review).",
+                "Review is handled by maintainer judgment and CI; do not request Claude review.",
               ],
               "jules-ready": [
                 "Recommended executor: Google Jules for small, parallelizable tasks.",
