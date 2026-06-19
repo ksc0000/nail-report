@@ -2,17 +2,17 @@
 
 ## Context
 
-The product roadmap for nail-report is in Phase 2, focusing on stability, test coverage, and UX improvements. This includes enhancing accessibility. The AI Loop has recently been set up and is now ready for its first substantive development task.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. Specifically, Phase 2.4 addresses accessibility. This task focuses on a key accessibility improvement for interactive elements.
 
 ## Objective
 
-Implement exactly one bounded task from Phase 2.4 (Accessibility) of the roadmap: Add `aria-label` attributes to all icon-only interactive elements (buttons, links that function as buttons) throughout the application.
+Identify all icon-only buttons throughout the application and add an appropriate `aria-label` attribute to each, providing a descriptive text for screen reader users.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/components/` (modifying existing components to add `aria-label`)
-- `src/App.css` (minor adjustments if needed, but primarily HTML attribute changes)
+- `src/**/*.tsx` (React components containing icon buttons)
+- `src/**/*.ts` (if utility functions are involved in rendering buttons, unlikely for this task)
+- `src/App.css` (No changes expected, but allowed if minor styling adjustments are needed due to attribute addition)
 
 ## Forbidden Scope
 
@@ -25,13 +25,11 @@ Implement exactly one bounded task from Phase 2.4 (Accessibility) of the roadmap
 
 ## Requirements
 
-- Identify all HTML `<button>` or `<a>` elements that visually present only an icon (e.g., using `<FontAwesomeIcon />`) and lack visible text.
-- Add a descriptive `aria-label` attribute to each identified element.
-- The `aria-label` text should clearly describe the action or purpose of the button/link for assistive technologies (e.g., "Edit item", "Delete image", "Add new tag").
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files. (Not applicable for this task as no `src/lib` files are being modified).
-- Report follow-up items as comments, not additional code.
+- Ensure the `aria-label` attribute accurately describes the button's action (e.g., "Delete item", "Edit tag", "Upload image").
+- The visual appearance and functionality of the buttons must remain unchanged.
+- No new npm dependencies should be added.
 
 ## Output Format
 
@@ -40,3 +38,10 @@ Implement exactly one bounded task from Phase 2.4 (Accessibility) of the roadmap
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+
+---
+**Acceptance Criteria:**
+1.  All interactive elements that are visually represented as "icon-only buttons" now include a descriptive `aria-label` attribute.
+2.  The `aria-label` content clearly conveys the button's purpose to assistive technologies.
+3.  The application's visual layout and functionality remain identical to their state before this change.
+4.  `npm run build` and `npm run lint` execute successfully without warnings or errors.
