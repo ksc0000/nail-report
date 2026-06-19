@@ -93,7 +93,7 @@ Reasons:
 
 ## 6. QA Evidence Required For #113
 
-Before commercial launch QA can call iOS capture ready, record:
+Before commercial launch QA can call iOS capture ready, use the [iPhone Safari Camera Smoke Report Template](../operations/IPHONE_SAFARI_CAMERA_SMOKE_REPORT.md) and record:
 
 - iPhone model and iOS version
 - Safari version or iOS version proxy
@@ -129,6 +129,6 @@ If these are incomplete, keep #113 open or record a conditional go / no-go.
 
 Recommended next sequence:
 
-1. `qa: run iPhone Safari camera capture smoke test`
+1. `qa: run iPhone Safari camera capture smoke test` (using the [smoke report template](../operations/IPHONE_SAFARI_CAMERA_SMOKE_REPORT.md))
 2. `ux: polish camera permission and fallback copy`
 3. `design: decide PWA vs native iOS release path`
