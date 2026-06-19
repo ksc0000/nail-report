@@ -99,6 +99,7 @@ export default defineConfig([
 | Document | Description |
 |----------|-------------|
 | [docs/operations/LOCAL_DEVELOPMENT_MANUAL.md](docs/operations/LOCAL_DEVELOPMENT_MANUAL.md) | Step-by-step local development guide including VS Code Tunnel |
+| [docs/operations/COMMERCIAL_LAUNCH_QA_REPORT.md](docs/operations/COMMERCIAL_LAUNCH_QA_REPORT.md) | Reusable QA result template for Issue #113 commercial launch |
 | [docs/operations/FIRESTORE_SECURITY_RULES.md](docs/operations/FIRESTORE_SECURITY_RULES.md) | Firestore Security Rules design, phase plan, and deploy checklist |
 | [docs/operations/PUBLIC_SHARING_PRIVACY.md](docs/operations/PUBLIC_SHARING_PRIVACY.md) | Public share links, shared/excluded fields, revoke behavior, and privacy notes |
 | [docs/operations/FIREBASE_SETUP.md](docs/operations/FIREBASE_SETUP.md) | Firebase Auth setup and verification steps |
