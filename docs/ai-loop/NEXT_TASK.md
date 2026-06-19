@@ -2,35 +2,37 @@
 
 ## Context
 
-Read the roadmap, recent commits, and the current task.
+The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. Specifically, Phase 2.1 targets increasing test coverage, starting with helper functions. This task addresses the first item in the "Jules-ready Tasks" list, focusing on test coverage for Firestore utilities.
 
 ## Objective
 
-Implement a loading skeleton for the nail item list in `src/App.tsx`.
+Implement Vitest unit tests for the helper functions within `src/lib/firestore.ts`. These tests should mock Firebase SDK interactions to ensure functionality is tested in isolation.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
-- `src/__tests__/` (new test files)
-- `src/App.css` (CSS improvements)
-- `src/components/` (new component for the skeleton)
+- `src/lib/firestore.ts` (for understanding the functions to be tested, no functional changes unless absolutely necessary for testability, and even then, minimal).
+- `src/__tests__/firestore.test.ts` (new file for the unit tests).
+- `vite.config.ts` (if minor Vitest configuration is needed, e.g., for mock paths).
+- `package.json` (ONLY if Vitest is not already in `devDependencies`; if so, add it as a `devDependency`. Otherwise, no changes to `package.json`).
 
 ## Forbidden Scope
 
 - `src/main.tsx` (entry point — do not modify)
 - `commands/` (PowerShell scripts — do not modify)
 - `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
+- Adding any new npm packages beyond Vitest itself (if it's not already installed)
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
+- Keep the overall diff ≤ 150 lines.
+- Create a new test file: `src/__tests__/firestore.test.ts`.
+- Mock Firebase Firestore SDK functions (e.g., `getFirestore`, `collection`, `doc`, `getDocs`, `setDoc`, `updateDoc`, `deleteDoc`) using `vi.mock` or similar Vitest mocking capabilities.
+- Write unit tests for at least two key helper functions in `src/lib/firestore.ts` that interact with Firestore (e.g., functions for fetching all nail items, adding a new nail item, or updating an existing one).
+- Ensure tests verify that the functions correctly call the mocked Firebase APIs with the expected arguments and handle return values as expected.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
+- If the `vitest` command is not available and Vitest is not in `devDependencies`, add it as a `devDependency` and report this change. Otherwise, assume Vitest is ready for use.
 
 ## Output Format
 
@@ -40,26 +42,17 @@ Implement a loading skeleton for the nail item list in `src/App.tsx`.
 - Known issues or limitations
 - Suggested next task
 
-## Worker prompt
+## Worker Prompt
 
-The application currently displays an empty list or a spinner while `nailItems` are being fetched from Firestore. To improve the user experience, implement a "skeleton loading" UI.
-
-1.  **Identify Loading State**: In `src/App.tsx`, identify the state that indicates when `nailItems` are being loaded.
-2.  **Create Skeleton Component**: Create a new React component, for example, `src/components/NailItemSkeleton.tsx`. This component should visually mimic the layout of a single `NailItem` card (e.g., using gray boxes for image, title, and tags). It does not need to be interactive or contain real data.
-3.  **Conditional Rendering**: In `src/App.tsx`, when `nailItems` are in a loading state, render multiple instances (e.g., 3-5) of the `NailItemSkeleton` component instead of the actual `NailItem` list or any current loading indicator.
-4.  **Styling**: Add basic CSS to `src/App.css` (or directly within `NailItemSkeleton.tsx` if using styled components or similar, though plain CSS in `App.css` is preferred for simplicity) to style the skeleton components, making them look like placeholders (e.g., `background-color: #eee; border-radius: 4px;`).
-5.  **Display Actual List**: Once `nailItems` have finished loading and data is available, switch back to rendering the actual list of `NailItem` components.
-
-**Acceptance Criteria:**
-
-*   When the application initially loads or refreshes, a visual skeleton placeholder is displayed where the nail item list would normally appear.
-*   The skeleton components should visually resemble the shape and size of the actual `NailItem` cards.
-*   Once `nailItems` data is successfully fetched, the skeleton UI is replaced by the actual list of nail items.
-*   The implementation should not add any new npm dependencies.
-
-**Required Test Commands:**
-
-```bash
-npm run build
-npm run lint
-```
+1.  **Check Vitest Installation**: Verify if Vitest is listed in `devDependencies` in `package.json`. If not, install it by running `npm install -D vitest`. If you need to do this, report it in the "Changed files list" and "Commands run" sections.
+2.  **Create Test File**: Create a new file `src/__tests__/firestore.test.ts`.
+3.  **Mock Firebase Firestore SDK**: In `src/__tests__/firestore.test.ts`, set up mocks for the necessary Firebase Firestore SDK functions that `src/lib/firestore.ts` interacts with. Focus on mocking the lowest-level interactions (e.g., `getDocs`, `setDoc`, `updateDoc`, `deleteDoc`) and the `getFirestore`, `collection`, `doc` chain.
+4.  **Identify Functions to Test**: Review `src/lib/firestore.ts` and identify at least two core helper functions that perform CRUD operations on nail items or related data in Firestore. Examples might include functions like `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`, or similar.
+5.  **Write Unit Tests**: For each identified function, write one or more unit tests in `src/__tests__/firestore.test.ts`:
+    *   Test that the function calls the correct mocked Firebase Firestore APIs.
+    *   Test that the function passes the correct arguments to these APIs.
+    *   Test that the function correctly processes and returns data based on mocked Firebase responses.
+    *   Include tests for both successful and potential error paths if applicable (e.g., `try-catch` blocks in the original function).
+6.  **Run Tests**: Execute the tests locally using `npm test` or `vitest`. Ensure all new tests pass.
+7.  **Lint and Build**: Run `npm run lint` and `npm run build` to verify no new issues are introduced.
+8.  **Report**: Summarize your changes, list all modified files, document commands run and their results, and note any limitations or suggestions.
