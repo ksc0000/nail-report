@@ -1,6 +1,9 @@
 # Security Headers & CSP Guide
 
-This document explains the security headers and Content Security Policy (CSP) configured for Firebase Hosting in `firebase.json`.
+> [!NOTE]
+> For the strategic rationale and decision-making regarding these headers for the commercial MVP, see the [Security Headers Decision Note](./SECURITY_HEADERS_DECISION.md).
+
+This document explains the technical details of the security headers and Content Security Policy (CSP) configured for Firebase Hosting in `firebase.json`.
 
 ## Content Security Policy (CSP)
 
