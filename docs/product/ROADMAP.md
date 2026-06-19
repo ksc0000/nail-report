@@ -172,13 +172,13 @@
 
 ### Example Issues
 
-- [ ] feature: add nail image detail viewer
-- [ ] feature: add nail image comparison view
-- [ ] design: plan camera capture flow
-- [ ] feature: add upload/camera source distinction
+- [x] feature: add nail image detail viewer
+- [x] feature: add nail image comparison view
+- [x] design: plan camera capture flow
+- [x] feature: add upload/camera source distinction
 - [x] design: plan nail/hand detection pipeline
 - [ ] feature: add AI nail tag suggestion from image
-- [ ] design: plan iOS capture requirements
+- [x] design: plan iOS capture requirements
 
 ### Human Gates
 

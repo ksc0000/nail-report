@@ -82,6 +82,7 @@ export default defineConfig([
 | [docs/product/ROADMAP.md](docs/product/ROADMAP.md) | Phase-by-phase development roadmap (Phase 0–9; Phase 8–9 cover 3D Preview / Modeling / AR Try-on — not yet implemented) |
 | [docs/product/NAIL_VIEW_CAMERA_FOUNDATION_PLAN.md](docs/product/NAIL_VIEW_CAMERA_FOUNDATION_PLAN.md) | Phase 4.5 plan for nail image detail, camera/upload foundation, comparison, annotation, and iOS readiness |
 | [docs/product/CAMERA_CAPTURE_FLOW_PLAN.md](docs/product/CAMERA_CAPTURE_FLOW_PLAN.md) | Camera capture flow plan for web/PWA-first NailItem image capture |
+| [docs/product/IOS_CAPTURE_REQUIREMENTS.md](docs/product/IOS_CAPTURE_REQUIREMENTS.md) | iOS Safari / PWA camera capture requirements and release gate |
 | [docs/product/ACCEPTANCE_CRITERIA.md](docs/product/ACCEPTANCE_CRITERIA.md) | Definition of done for each task type (includes 3D / Modeling / AR criteria) |
 
 ### AI Harness
