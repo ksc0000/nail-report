@@ -179,6 +179,7 @@
 - [x] design: plan nail/hand detection pipeline
 - [ ] feature: add AI nail tag suggestion from image
 - [x] design: plan iOS capture requirements
+- [x] design: decide PWA vs native iOS release path
 
 ### Human Gates
 
