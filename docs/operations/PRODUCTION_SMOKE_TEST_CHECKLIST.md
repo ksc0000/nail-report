@@ -2,6 +2,7 @@
 
 Use this checklist before and after a production Firebase Hosting release.
 Record the tested URL, Firebase project, tester, date, and result in the PR or release notes.
+For formal commercial launch QA recording, use the [Commercial Launch QA Report template](./COMMERCIAL_LAUNCH_QA_REPORT.md).
 
 ## Release Context
 
