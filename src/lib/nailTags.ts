@@ -1,9 +1,17 @@
-export const MAX_NAIL_TAGS = 12
-export const MAX_NAIL_TAG_LENGTH = 24
+export const MAX_NAIL_TAGS = 10
+export const MAX_NAIL_TAG_LENGTH = 20
+export const MAX_NAIL_TITLE_LENGTH = 50
 
 export interface NailTagParseResult {
   tags: string[]
   error: string
+}
+
+export const validateNailTitle = (title: string): string => {
+  if (title.length > MAX_NAIL_TITLE_LENGTH) {
+    return `タイトルは${MAX_NAIL_TITLE_LENGTH}文字以内にしてください。`
+  }
+  return ''
 }
 
 export const parseNailTags = (value: string): NailTagParseResult => {
