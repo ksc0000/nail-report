@@ -381,6 +381,11 @@ function App() {
     if (cameraInputRef.current) cameraInputRef.current.value = ''
   }
 
+  const navigateTo = (path: string) => {
+    window.history.pushState({}, '', path)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+
   const handleNailFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
     if (!file) {
@@ -838,9 +843,23 @@ function App() {
                 <p className="help-text">
                   アカウントの退会および全データの完全消去をご希望の場合は、プライバシーポリシーに基づき、ご本人確認のため登録メールアドレスより下記サポート窓口までご連絡ください。
                 </p>
-                <div style={{ marginTop: '8px' }}>
+                <div className="help-contact">
                   <a href="mailto:kikushun0529@gmail.com" className="help-mailto">
                     kikushun0529@gmail.com
+                  </a>
+                </div>
+              </div>
+              <div className="nail-detail-section">
+                <h3 className="nail-detail-label">ポリシーと規約</h3>
+                <p className="help-text">
+                  個人情報の取り扱い、共有範囲、削除依頼の詳細は以下から確認できます。
+                </p>
+                <div className="help-link-row">
+                  <a href="/privacy" onClick={(e) => { e.preventDefault(); setIsDataModalOpen(false); navigateTo('/privacy') }}>
+                    プライバシーポリシー
+                  </a>
+                  <a href="/terms" onClick={(e) => { e.preventDefault(); setIsDataModalOpen(false); navigateTo('/terms') }}>
+                    利用規約
                   </a>
                 </div>
               </div>
