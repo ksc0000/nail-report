@@ -248,6 +248,17 @@
   margin: 0;
 }
 
+.nail-file-privacy-note {
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: #888;
+  margin: 0;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
 #nail-form {
   background: var(--social-bg);
   border: 1px solid var(--border);

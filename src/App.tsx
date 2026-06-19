@@ -910,7 +910,7 @@ function App() {
             <div className="nail-file-area">
               <div className="nail-file-options">
                 <label className="nail-file-option">
-                  <span>画像を選択</span>
+                  <span>アルバムから選択</span>
                   <input
                     ref={uploadInputRef}
                     type="file"
@@ -920,7 +920,7 @@ function App() {
                   />
                 </label>
                 <label className="nail-file-option">
-                  <span>写真を撮る</span>
+                  <span>カメラで撮影</span>
                   <input
                     ref={cameraInputRef}
                     type="file"
@@ -931,7 +931,10 @@ function App() {
                   />
                 </label>
               </div>
-              <p className="nail-file-note">カメラが使えない場合は画像を選択してください。</p>
+              <p className="nail-file-note">カメラが起動しない場合は、アルバムから画像を選択してください。</p>
+              <p className="nail-file-privacy-note">
+                写真はご本人のデバイスと保存先（Firebase）にのみ保管され、共有機能を使わない限り非公開です。外部のAI学習や解析には使用されません。
+              </p>
               {nailImageFile && nailImagePreview && (
                 <div className="nail-file-preview-area">
                   <img
