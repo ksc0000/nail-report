@@ -1,19 +1,19 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The application needs to improve its user experience by providing clear visual feedback during data loading states. Currently, when the nail item list is being fetched from Firestore, there's no visual indication to the user that content is loading.
+The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. A key area is error handling to provide a better user experience when Firebase operations fail.
 
 ## Objective
 
-Implement a basic loading skeleton for the main nail item list that displays while the data is being fetched.
+Implement a user-friendly error banner component and integrate it to display errors encountered during Firebase Storage image uploads.
 
 ## Allowed Scope
 
-- `src/App.tsx`
-- `src/App.css`
-- `src/components/` (for a new skeleton component if needed)
+- `src/components/` (e.g., `src/components/ErrorBanner.tsx`)
+- `src/App.tsx` (for managing error state and rendering the banner)
+- Any existing component files that handle Firebase Storage interactions (e.g., a form component responsible for image upload)
+- `src/App.css` (for basic styling of the banner)
 
 ## Forbidden Scope
 
@@ -26,13 +26,16 @@ Implement a basic loading skeleton for the main nail item list that displays whi
 
 ## Requirements
 
-- Create a new, simple React functional component (e.g., `src/components/NailItemSkeleton.tsx`) to represent a single loading placeholder item, or inline the skeleton JSX directly within `App.tsx` if it's very minimal.
-- The skeleton should visually mimic the general layout of a single nail item (e.g., a placeholder image, title, and some text lines).
-- Modify `src/App.tsx` to conditionally render multiple instances of this skeleton component when the `nailItems` data is being loaded.
-- Ensure the loading state (e.g., a boolean `isLoading` variable) is correctly utilized to toggle between the skeleton and the actual list.
-- Keep the overall diff for this task ≤ 150 lines.
+- Keep diff ≤ 150 lines.
+- Create a new React component `ErrorBanner.tsx` in `src/components/` that can display an error message.
+- Implement state in `src/App.tsx` (or a suitable parent component) to hold the current error message.
+- Modify an existing component responsible for image uploads (e.g., a form where images are selected and uploaded) to `try/catch` the Firebase Storage upload call.
+- On catching an error from the Firebase Storage upload, set the error message state.
+- Render the `ErrorBanner` component conditionally in `src/App.tsx` (or the parent component) when an error message is present.
+- The banner should be dismissible (e.g., a close button or automatically hide after a few seconds).
+- Ensure the application still builds and passes lint checks.
 - Run `npm run build && npm run lint` before finishing.
-- Report any follow-up items as comments.
+- Prefer adding tests when touching `src/lib/` files. For this task, `src/lib/` files should not be directly modified, but their error output should be handled at the call site.
 
 ## Output Format
 
@@ -41,4 +44,8 @@ Implement a basic loading skeleton for the main nail item list that displays whi
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-```
+
+---
+**Suggested next task for the AI Loop:**
+
+Add Vitest + unit tests for `src/lib/firestore.ts` helpers
