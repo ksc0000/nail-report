@@ -20,6 +20,7 @@ import {
 } from './lib/nailTags'
 import { fileToGenerativePart, urlToGenerativePart, generateNailTagsFromImage } from './lib/aiUtils'
 import { isAiTagSuggestionEnabled } from './lib/featureFlags'
+import { isFirebaseConfigComplete, missingFirebaseEnvKeys } from './lib/firebaseConfigStatus'
 import ErrorBanner from './components/ErrorBanner'
 import PrivacyPolicyPage from './components/PrivacyPolicyPage'
 import TermsOfServicePage from './components/TermsOfServicePage'
@@ -176,6 +177,10 @@ const toggleComparisonId = (prevIds: string[], itemId: string): string[] => {
 
 type PublicShareViewState = 'idle' | 'loading' | 'ready' | 'not-found' | 'disabled' | 'error'
 
+const firebaseConfigErrorMessage = missingFirebaseEnvKeys.length > 0
+  ? `Firebase 設定が不足しています: ${missingFirebaseEnvKeys.join(', ')}`
+  : ''
+
 const getPublicShareIdFromPath = (pathname: string): string | null => {
   const m = pathname.match(/^\/share\/([^/]+)\/?$/)
   return m?.[1] ? decodeURIComponent(m[1]) : null
@@ -196,7 +201,9 @@ function App() {
   const isPublicSharePage = sharePathId !== null
   const isPrivacyPage = pathname === '/privacy'
   const isTermsPage = pathname === '/terms'
-  const [user, setUser] = useState<User | null | undefined>(undefined)
+  const [user, setUser] = useState<User | null | undefined>(
+    isFirebaseConfigComplete ? undefined : null
+  )
   const [nailItems, setNailItems] = useState<NailItemDoc[]>([])
   const [nailTitle, setNailTitle] = useState('')
   const [nailTags, setNailTags] = useState('')
@@ -228,6 +235,8 @@ function App() {
   const [publicShareState, setPublicShareState] = useState<PublicShareViewState>(
     isPublicSharePage ? 'loading' : 'idle'
   )
+  const publicShareDisplayState: PublicShareViewState =
+    !isFirebaseConfigComplete && isPublicSharePage ? 'error' : publicShareState
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const dataModalCloseButtonRef = useRef<HTMLButtonElement>(null)
@@ -278,6 +287,7 @@ function App() {
 
   useEffect(() => {
     if (!isPublicSharePage || !sharePathId) return
+    if (!isFirebaseConfigComplete) return
 
     let didCancel = false
 
@@ -305,18 +315,21 @@ function App() {
     return () => { didCancel = true }
   }, [isPublicSharePage, sharePathId])
 
-  useEffect(() => onAuthStateChanged(auth, nextUser => {
-    if (isPublicSharePage) return
-    setUser(nextUser)
-    if (!nextUser) {
-      setNailItems([])
-      setNailItemsUserId(null)
-      setPublicShares([])
-      setPublicSharesUserId(null)
-      setDetailItemId(null)
-      setComparisonItemIds([])
-    }
-  }), [isPublicSharePage])
+  useEffect(() => {
+    if (!isFirebaseConfigComplete) return
+    return onAuthStateChanged(auth, nextUser => {
+      if (isPublicSharePage) return
+      setUser(nextUser)
+      if (!nextUser) {
+        setNailItems([])
+        setNailItemsUserId(null)
+        setPublicShares([])
+        setPublicSharesUserId(null)
+        setDetailItemId(null)
+        setComparisonItemIds([])
+      }
+    })
+  }, [isPublicSharePage])
 
   useEffect(() => {
     if (!isDataModalOpen) return
@@ -721,10 +734,10 @@ function App() {
   }
 
   const renderPublicShareState = () => {
-    if (publicShareState === 'loading') {
+    if (publicShareDisplayState === 'loading') {
       return <p className="public-share-note">Loading shared collection...</p>
     }
-    if (publicShareState === 'not-found') {
+    if (publicShareDisplayState === 'not-found') {
       return (
         <div className="public-share-empty">
           <h2 className="public-share-heading">Shared nail collection</h2>
@@ -733,7 +746,7 @@ function App() {
         </div>
       )
     }
-    if (publicShareState === 'disabled') {
+    if (publicShareDisplayState === 'disabled') {
       return (
         <div className="public-share-empty">
           <h2 className="public-share-heading">Shared nail collection</h2>
@@ -742,11 +755,13 @@ function App() {
         </div>
       )
     }
-    if (publicShareState === 'error') {
+    if (publicShareDisplayState === 'error') {
       return (
         <div className="public-share-empty">
           <h2 className="public-share-heading">Shared nail collection</h2>
-          <p className="public-share-note">We could not load this shared collection right now.</p>
+          <p className="public-share-note">
+            {firebaseConfigErrorMessage || 'We could not load this shared collection right now.'}
+          </p>
           <a className="public-share-link" href="/">Back to home</a>
         </div>
       )
@@ -840,7 +855,12 @@ function App() {
   return (
     <section id="center">
       <h1 id="app-title">Nailous</h1>
-      <ErrorBanner message={bannerError} onClose={() => setBannerError('')} />
+      <ErrorBanner
+        message={firebaseConfigErrorMessage || bannerError}
+        onClose={() => {
+          if (!firebaseConfigErrorMessage) setBannerError('')
+        }}
+      />
       {detailItem && (
         <NailImageDetailViewer
           item={detailItem}
@@ -934,9 +954,12 @@ function App() {
           <div className="auth-signin-container">
             <button type="button" className="auth-signin" onClick={() => {
               signInWithGoogle().catch((e: unknown) => console.error('sign-in failed', e))
-            }}>
+            }} disabled={!isFirebaseConfigComplete}>
               Sign in with Google
             </button>
+            {!isFirebaseConfigComplete && (
+              <p className="auth-config-note">{firebaseConfigErrorMessage}</p>
+            )}
             <div className="auth-signin-links">
               <a href="/terms" onClick={(e) => handleLinkClick(e, '/terms')}>利用規約</a>
               <span>・</span>
