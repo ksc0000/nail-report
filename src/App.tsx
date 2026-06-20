@@ -19,6 +19,7 @@ import {
   validateNailTitle,
 } from './lib/nailTags'
 import { fileToGenerativePart, urlToGenerativePart, generateNailTagsFromImage } from './lib/aiUtils'
+import { isAiTagSuggestionEnabled } from './lib/featureFlags'
 import ErrorBanner from './components/ErrorBanner'
 import PrivacyPolicyPage from './components/PrivacyPolicyPage'
 import TermsOfServicePage from './components/TermsOfServicePage'
@@ -448,6 +449,10 @@ function App() {
   }
 
   const handleGenerateTagsWithAI = async () => {
+    if (!isAiTagSuggestionEnabled) {
+      setNailError('AIタグ生成は現在無効です。')
+      return
+    }
     try {
       setIsAIGeneratingTags(true)
       setNailError('')
@@ -962,7 +967,7 @@ function App() {
             <p className="nail-input-note">
               タグはカンマ区切りで最大{MAX_NAIL_TAGS}個、1つ{MAX_NAIL_TAG_LENGTH}文字まで。
             </p>
-            {(nailImageFile || editingItem?.imageUrl) && (
+            {isAiTagSuggestionEnabled && (nailImageFile || editingItem?.imageUrl) && (
               <button
                 type="button"
                 className="ai-tag-btn"
@@ -1005,9 +1010,11 @@ function App() {
                 </label>
               </div>
               <p className="nail-file-note">カメラが起動しない場合は、アルバムから画像を選択してください。</p>
-              <p className="nail-file-privacy-note">
-                写真は非公開で保存されます。「AIでタグを生成」ボタンを押した場合のみ、画像が一時的にAIによる解析へ送信されます（AIの学習には使用されません）。
-              </p>
+              {isAiTagSuggestionEnabled && (
+                <p className="nail-file-privacy-note">
+                  写真は非公開で保存されます。「AIでタグを生成」ボタンを押した場合のみ、画像が一時的にAIによる解析へ送信されます（AIの学習には使用されません）。
+                </p>
+              )}
               {nailImageFile && nailImagePreview && (
                 <div className="nail-file-preview-area">
                   <img

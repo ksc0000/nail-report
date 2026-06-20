@@ -177,7 +177,7 @@
 - [x] design: plan camera capture flow
 - [x] feature: add upload/camera source distinction
 - [x] design: plan nail/hand detection pipeline
-- [ ] feature: add AI nail tag suggestion from image
+- [x] feature: add AI nail tag suggestion from image
 - [x] design: plan iOS capture requirements
 - [x] design: decide PWA vs native iOS release path
 
@@ -188,6 +188,7 @@
 - G3: `imageSource` / `manualRegions` / `analysis` 等の Firestore schema 追加
 - G6: カメラ・ユーザー写真・AI 画像解析のプライバシー方針
 - G7: 外部 AI API キーが必要な場合
+- G15: commercial MVP で AI tag suggestion を有効化するかの production gate
 - G8: 画像処理 / ML / camera helper library 追加
 
 ### Done Criteria
@@ -195,7 +196,7 @@
 - [ ] NailItem の画像 detail viewer が既存データで動作する
 - [ ] 画像比較の最小 UX がスマートフォン幅で破綻しない
 - [ ] カメラ/アップロード source の方針が docs にまとまっている
-- [ ] AI tag suggestion / nail detection / iOS capture の判断材料が docs にまとまっている
+- [x] AI tag suggestion / nail detection / iOS capture の判断材料が docs にまとまっている
 - [ ] 既存の NailItem CRUD / upload / share 機能を壊していない
 - [ ] `npm run build` が成功している
 
