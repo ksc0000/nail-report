@@ -246,7 +246,7 @@
 - [x] セキュリティヘッダーの設定（CSP 等）
 - [x] 入力バリデーションの強化（tags 件数制限 UI 等）
 - [x] エラーログ / 監視の整備（[MONITORING_ERROR_LOGGING_DECISION.md](../operations/MONITORING_ERROR_LOGGING_DECISION.md)）
-- [ ] 依存関係の脆弱性スキャン
+- [x] 依存関係の脆弱性スキャン ([docs/operations/DEPENDENCY_VULNERABILITY_SCAN.md](../operations/DEPENDENCY_VULNERABILITY_SCAN.md))
 
 ### Human Gates
 
