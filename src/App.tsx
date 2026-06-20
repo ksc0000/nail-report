@@ -408,6 +408,26 @@ function App() {
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
+  const handleSignIn = async () => {
+    setBannerError('')
+    try {
+      await signInWithGoogle()
+    } catch (e: unknown) {
+      console.error('sign-in failed', e)
+      setBannerError('Google サインインに失敗しました。時間をおいて再度お試しください。')
+    }
+  }
+
+  const handleSignOut = async () => {
+    setBannerError('')
+    try {
+      await signOutUser()
+    } catch (e: unknown) {
+      console.error('sign-out failed', e)
+      setBannerError('サインアウトに失敗しました。時間をおいて再度お試しください。')
+    }
+  }
+
   const handleNailFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
     if (!file) {
@@ -938,15 +958,16 @@ function App() {
             >
               データ管理
             </button>
-            <button type="button" onClick={() => {
-              signOutUser().catch((e: unknown) => console.error('sign-out failed', e))
-            }}>Sign out</button>
+            <button type="button" onClick={handleSignOut}>Sign out</button>
           </div>
         ) : (
           <div className="auth-signin-container">
-            <button type="button" className="auth-signin" onClick={() => {
-              signInWithGoogle().catch((e: unknown) => console.error('sign-in failed', e))
-            }} disabled={!isFirebaseConfigComplete}>
+            <button
+              type="button"
+              className="auth-signin"
+              onClick={handleSignIn}
+              disabled={!isFirebaseConfigComplete}
+            >
               Sign in with Google
             </button>
             {!isFirebaseConfigComplete && (
