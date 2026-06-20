@@ -7,6 +7,10 @@ import {
   parseNailTags,
   validateNailTitle,
 } from '../src/lib/nailTags.ts'
+import {
+  getMissingFirebaseEnvKeys,
+  REQUIRED_FIREBASE_ENV_KEYS,
+} from '../src/lib/firebaseConfigStatus.ts'
 
 test('parseNailTags trims, removes hash prefixes, and drops duplicates', () => {
   assert.deepEqual(parseNailTags(' pink, #gel, Pink, , art ').tags, ['pink', 'gel', 'art'])
@@ -34,4 +38,15 @@ test('validateNailTitle rejects too long title', () => {
   const value = 'a'.repeat(MAX_NAIL_TITLE_LENGTH + 1)
   const result = validateNailTitle(value)
   assert.match(result, /文字以内/)
+})
+
+test('getMissingFirebaseEnvKeys reports blank and missing config values', () => {
+  const env = Object.fromEntries(REQUIRED_FIREBASE_ENV_KEYS.map(key => [key, 'configured']))
+  env.VITE_FIREBASE_API_KEY = ''
+  delete env.VITE_FIREBASE_APP_ID
+
+  assert.deepEqual(getMissingFirebaseEnvKeys(env), [
+    'VITE_FIREBASE_API_KEY',
+    'VITE_FIREBASE_APP_ID',
+  ])
 })
