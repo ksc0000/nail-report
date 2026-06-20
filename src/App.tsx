@@ -652,35 +652,27 @@ function App() {
     setShareError('')
     setShareStatusMessage('')
 
-    if (!navigator.clipboard?.writeText) {
-      setShareError('Clipboard API is not available in this browser.')
-      return
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareUrl)
-      setShareStatusMessage('Share link copied to clipboard.')
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Failed to copy share link.'
-      setShareError(message)
-    }
+    await copyShareUrl(shareUrl)
   }
 
   const handleCopyManagedShareLink = async (managedShareId: string) => {
     setShareError('')
     setShareStatusMessage('')
 
+    await copyShareUrl(getShareUrl(managedShareId))
+  }
+
+  const copyShareUrl = async (url: string) => {
     if (!navigator.clipboard?.writeText) {
-      setShareError('Clipboard API is not available in this browser.')
+      setShareStatusMessage('コピー機能が使えないため、表示されているURLを選択してコピーしてください。')
       return
     }
 
     try {
-      await navigator.clipboard.writeText(getShareUrl(managedShareId))
+      await navigator.clipboard.writeText(url)
       setShareStatusMessage('リンクをコピーしました。')
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : '共有リンクのコピーに失敗しました。'
-      setShareError(message)
+    } catch {
+      setShareStatusMessage('自動コピーできませんでした。表示されているURLを選択してコピーしてください。')
     }
   }
 
