@@ -1780,3 +1780,12 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.lazy-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32px 16px;
+  color: #888;
+  font-size: 14px;
+}
