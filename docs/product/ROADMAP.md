@@ -177,7 +177,7 @@
 - [x] design: plan camera capture flow
 - [x] feature: add upload/camera source distinction
 - [x] design: plan nail/hand detection pipeline
-- [x] feature: add AI nail tag suggestion from image
+- [x] feature: add AI nail tag suggestion from image (#191)
 - [x] design: plan iOS capture requirements
 - [x] design: decide PWA vs native iOS release path
 
@@ -295,7 +295,7 @@
 - [ ] 本番ビルド最適化（code splitting 等）
 - [ ] アクセス解析 / モニタリング設定（MVP では defer）
 - [x] README の最終整備
-- [ ] Record final production/preview URLs in `COMMERCIAL_LAUNCH_QA_REPORT.md` and this roadmap.
+- [x] Record final production/preview URLs in [COMMERCIAL_LAUNCH_QA_REPORT.md](../operations/COMMERCIAL_LAUNCH_QA_REPORT.md) and [DEPLOY_URL_READINESS.md](../operations/DEPLOY_URL_READINESS.md)
 
 ### Human Gates
 
@@ -319,12 +319,12 @@
 
 ### Example Issues
 
-- [ ] 技術スパイク: `model-viewer`（Web Components）vs Three.js / React Three Fiber の評価
+- [x] 技術スパイク: `model-viewer`（Web Components）vs Three.js / React Three Fiber の評価 (see [3D_LIBRARY_EVALUATION.md](./3D_LIBRARY_EVALUATION.md))
 - [ ] 静的 GLB ネイルチップモデルの用意と Firebase Storage への格納方針の決定
 - [ ] 3D プレビュー画面の実装（形状・カラー・テクスチャのプリセット選択）
 - [ ] NailItem への将来フィールド追加検討（`shape` / `color` / `texture` / `modelUrl` / `materialPreset`）
 - [ ] Firestore スキーマ拡張設計（マイグレーション戦略）
-- [ ] 3D アセットのライセンス・サイズ・配信戦略の確定
+- [x] 3D アセットのライセンス・サイズ・配信戦略の確定 (#213)
 
 ### Human Gates
 
@@ -335,7 +335,7 @@
 
 ### Done Criteria
 
-- [ ] 技術スパイクの結果が `docs/` にまとめられている
+- [x] 技術スパイクの結果が `docs/` にまとめられている
 - [ ] 静的 GLB プレビューが少なくとも 1 形状で動作する
 - [ ] プリセット（形状 / カラー / テクスチャ）が UI で選択できる
 - [ ] 3D プレビューが既存の NailItem CRUD を壊していない

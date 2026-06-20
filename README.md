@@ -85,6 +85,7 @@ export default defineConfig([
 | [docs/product/IOS_CAPTURE_REQUIREMENTS.md](docs/product/IOS_CAPTURE_REQUIREMENTS.md) | iOS Safari / PWA camera capture requirements and release gate |
 | [docs/product/IOS_RELEASE_PATH_DECISION.md](docs/product/IOS_RELEASE_PATH_DECISION.md) | Decision brief comparing PWA-first vs native-iOS-first release paths |
 | [docs/product/ACCEPTANCE_CRITERIA.md](docs/product/ACCEPTANCE_CRITERIA.md) | Definition of done for each task type (includes 3D / Modeling / AR criteria) |
+| [docs/product/3D_LIBRARY_EVALUATION.md](docs/product/3D_LIBRARY_EVALUATION.md) | Technical evaluation of 3D rendering libraries for nail chip visualization |
 
 ### AI Harness
 
