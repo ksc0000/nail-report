@@ -17,8 +17,8 @@
 | Phase 2 | Data Persistence | ✅ 完了 |
 | Phase 3 | Authentication / User Management | ✅ 完了 |
 | Phase 4 | AI-Assisted Features | 🔲 未着手 |
-| Phase 4.5 | Nail View / Camera Foundation | 🔲 推奨 next |
-| Phase 5 | Review / Export / Sharing | 🟡 進行中 |
+| Phase 4.5 | Nail View / Camera Foundation | 🟡 進行中 |
+| Phase 5 | Review / Export / Sharing | ✅ 完了 |
 | Phase 6 | Security / Operations Hardening | 🟡 進行中 |
 | Phase 7 | Release Preparation | 🟡 進行中 |
 | Phase 8 | 3D Preview / Modeling Foundation | 🔲 未着手 |
@@ -209,9 +209,9 @@
 
 ### Example Issues
 
-- [ ] CSV / JSON エクスポート
-- [ ] コレクション振り返り画面（月別・タグ別）
-- [ ] 共有 URL / 公開コレクション機能
+- [x] CSV / JSON エクスポート
+- [x] コレクション振り返り画面（月別・タグ別）
+- [x] 共有 URL / 公開コレクション機能
 
 ### 完了済みサブセット
 
@@ -242,8 +242,8 @@
 
 ### Example Issues
 
-- [ ] セキュリティヘッダーの設定（CSP 等）
-- [ ] 入力バリデーションの強化（tags 件数制限 UI 等）
+- [x] セキュリティヘッダーの設定（CSP 等）
+- [x] 入力バリデーションの強化（tags 件数制限 UI 等）
 - [ ] エラーログ / 監視の整備
 - [ ] 依存関係の脆弱性スキャン
 
@@ -276,10 +276,10 @@
 
 ### Remaining Issues
 
-- [ ] Privacy Policy / Terms routes and visible links
-- [ ] User data export and deletion guidance
-- [ ] Security headers / CSP
-- [ ] Bundle size warning reduction or documented acceptance
+- [x] Privacy Policy / Terms routes and visible links
+- [x] User data export and deletion guidance
+- [x] Security headers / CSP
+- [x] Bundle size warning reduction or documented acceptance
 - [ ] Full manual QA and go/no-go decision
 
 ### References
@@ -293,7 +293,7 @@
 - [ ] カスタムドメイン設定（broader commercial expansion 前に推奨）
 - [ ] 本番ビルド最適化（code splitting 等）
 - [ ] アクセス解析 / モニタリング設定（MVP では defer）
-- [ ] README の最終整備
+- [x] README の最終整備
 
 ### Human Gates
 

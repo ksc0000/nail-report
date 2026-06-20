@@ -28,6 +28,8 @@ npm run lint
 6. Review open blocking issues for security, legal, privacy, and QA.
 7. Confirm the production smoke checklist is ready:
    [PRODUCTION_SMOKE_TEST_CHECKLIST.md](./PRODUCTION_SMOKE_TEST_CHECKLIST.md)
+8. Confirm the production Firebase preflight checklist is complete:
+   [PRODUCTION_FIREBASE_PREFLIGHT.md](./PRODUCTION_FIREBASE_PREFLIGHT.md)
 
 ## Deploy Procedure
 
