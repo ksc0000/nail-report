@@ -84,6 +84,7 @@ export default defineConfig([
 | [docs/product/CAMERA_CAPTURE_FLOW_PLAN.md](docs/product/CAMERA_CAPTURE_FLOW_PLAN.md) | Camera capture flow plan for web/PWA-first NailItem image capture |
 | [docs/product/IOS_CAPTURE_REQUIREMENTS.md](docs/product/IOS_CAPTURE_REQUIREMENTS.md) | iOS Safari / PWA camera capture requirements and release gate |
 | [docs/product/IOS_RELEASE_PATH_DECISION.md](docs/product/IOS_RELEASE_PATH_DECISION.md) | Decision brief comparing PWA-first vs native-iOS-first release paths |
+| [docs/product/3D_LIBRARY_EVALUATION.md](docs/product/3D_LIBRARY_EVALUATION.md) | Technical evaluation of 3D libraries (model-viewer vs React Three Fiber) for future phases |
 | [docs/product/ACCEPTANCE_CRITERIA.md](docs/product/ACCEPTANCE_CRITERIA.md) | Definition of done for each task type (includes 3D / Modeling / AR criteria) |
 
 ### AI Harness
@@ -112,6 +113,7 @@ export default defineConfig([
 | [docs/operations/SECURITY_HEADERS_DECISION.md](docs/operations/SECURITY_HEADERS_DECISION.md) | Security headers decision note for the commercial MVP |
 | [docs/operations/SECURITY_HEADERS_GUIDE.md](docs/operations/SECURITY_HEADERS_GUIDE.md) | Technical guide for security headers and CSP configuration |
 | [docs/operations/DEPENDENCY_VULNERABILITY_SCAN.md](docs/operations/DEPENDENCY_VULNERABILITY_SCAN.md) | Dependency vulnerability scan process for commercial MVP release |
+| [docs/operations/DEPLOY_URL_READINESS.md](docs/operations/DEPLOY_URL_READINESS.md) | Checklist for recording and verifying production/preview deployment URLs |
 | [docs/operations/MONITORING_ERROR_LOGGING_DECISION.md](docs/operations/MONITORING_ERROR_LOGGING_DECISION.md) | Monitoring and error logging decision note for the commercial MVP |
 
 ### Design References

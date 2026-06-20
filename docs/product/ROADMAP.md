@@ -17,10 +17,10 @@
 | Phase 2 | Data Persistence | ✅ 完了 |
 | Phase 3 | Authentication / User Management | ✅ 完了 |
 | Phase 4 | AI-Assisted Features | 🔲 未着手 |
-| Phase 4.5 | Nail View / Camera Foundation | 🟡 進行中 |
+| Phase 4.5 | Nail View / Camera Foundation | ✅ 完了 |
 | Phase 5 | Review / Export / Sharing | ✅ 完了 |
-| Phase 6 | Security / Operations Hardening | 🟡 進行中 |
-| Phase 7 | Release Preparation | 🟡 進行中 |
+| Phase 6 | Security / Operations Hardening | ✅ 完了 |
+| Phase 7 | Release Preparation | ✅ 完了 |
 | Phase 8 | 3D Preview / Modeling Foundation | 🔲 未着手 |
 | Phase 9 | AR Try-on / Advanced Modeling | 🔲 未着手 |
 
