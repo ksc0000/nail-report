@@ -163,7 +163,7 @@ interface NailItem {
 **決定事項:**
 - `thumbnailUrl` を `imageUrl` と別フィールドで保持 — モバイルリスト表示でフル解像度は重い。将来 Cloud Storage Resize Extension で自動生成可能。
 - `memo` を追加 — サロン名・価格・シーンのメモニーズに対応。
-- `color` / AI フィールドはスキップ — Gemini API 連携フェーズ（Phase 4 以降）で追加。
+- `color` / AI フィールドはスキップ — AI タグ提案は既存 `tags` にユーザー確認後の文字列として保存する。
 - `tags` は `string[]` のままで構造化しない — スタイル・色・シーンを自由に分類できる柔軟性を優先。
 
 **アクセスルール（Phase 1 Security Rules 移行後）:**
@@ -173,12 +173,12 @@ interface NailItem {
 
 ## AI Features
 
-現在: AI 支援**開発**ツールとして活用（プロダクト機能としての AI は未実装）
+現在: 画像から AI タグ提案を行う UI は実装済み。ただし `VITE_ENABLE_AI_TAG_SUGGESTION=true` の時だけ表示・実行される。
 
-商用 MVP: AI タグ提案、OCR、類似推薦は含めず、post-launch 候補として扱います。
+商用 MVP: AI タグ提案を有効化するかは production gate で判断する。既定では無効にし、OCR と類似推薦は post-launch 候補として扱う。
 
 将来候補:
-- [ ] AI によるネイルタグ自動提案（色・スタイル分析）
+- [x] AI によるネイルタグ自動提案（色・スタイル分析）
 - [ ] 画像からサロン名・価格を自動読み取り（OCR）
 - [ ] 類似ネイル推薦
 
