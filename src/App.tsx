@@ -829,6 +829,9 @@ function App() {
             </div>
             <div className="nail-detail-body">
               <h2 id="data-mgmt-title" className="nail-detail-title">ヘルプとデータ管理</h2>
+              <p className="help-text">
+                登録されたデータはお客様自身のものであり、いつでもエクスポートや削除を行うことができます。
+              </p>
               <div className="nail-detail-section">
                 <h3 className="nail-detail-label">データのエクスポート</h3>
                 <p className="help-text">
