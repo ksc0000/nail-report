@@ -2,40 +2,35 @@
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. A key area is error handling to provide a better user experience when Firebase operations fail.
+The application is in Phase 2 of its roadmap, focusing on stability, test coverage, and UX improvements. This task specifically addresses accessibility.
 
 ## Objective
 
-Implement a user-friendly error banner component and integrate it to display errors encountered during Firebase Storage image uploads.
+Enhance accessibility by adding `aria-label` attributes to all icon-only buttons throughout the application.
 
 ## Allowed Scope
 
-- `src/components/` (e.g., `src/components/ErrorBanner.tsx`)
-- `src/App.tsx` (for managing error state and rendering the banner)
-- Any existing component files that handle Firebase Storage interactions (e.g., a form component responsible for image upload)
-- `src/App.css` (for basic styling of the banner)
+- `src/` (except `src/main.tsx`)
+- `src/components/` (modifying existing React components)
+- `src/App.css` (if minor layout adjustments are needed for accessibility, though unlikely)
 
 ## Forbidden Scope
 
 - `src/main.tsx` (entry point — do not modify)
 - `commands/` (PowerShell scripts — do not modify)
 - `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
+- `package.json` deps (no new npm packages)
 - Firebase deploy commands
 - Secrets and credentials
 
 ## Requirements
 
+- Identify all `<button>` elements that contain only an icon and no visible text.
+- Add a descriptive `aria-label` attribute to each identified button. The `aria-label` content should clearly convey the button's function (e.g., `aria-label="Delete item"`, `aria-label="Edit item profile"`).
+- Ensure the `aria-label` values are user-friendly and concise.
 - Keep diff ≤ 150 lines.
-- Create a new React component `ErrorBanner.tsx` in `src/components/` that can display an error message.
-- Implement state in `src/App.tsx` (or a suitable parent component) to hold the current error message.
-- Modify an existing component responsible for image uploads (e.g., a form where images are selected and uploaded) to `try/catch` the Firebase Storage upload call.
-- On catching an error from the Firebase Storage upload, set the error message state.
-- Render the `ErrorBanner` component conditionally in `src/App.tsx` (or the parent component) when an error message is present.
-- The banner should be dismissible (e.g., a close button or automatically hide after a few seconds).
-- Ensure the application still builds and passes lint checks.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files. For this task, `src/lib/` files should not be directly modified, but their error output should be handled at the call site.
+- Do not add any new npm dependencies.
 
 ## Output Format
 
@@ -46,6 +41,4 @@ Implement a user-friendly error banner component and integrate it to display err
 - Suggested next task
 
 ---
-**Suggested next task for the AI Loop:**
-
-Add Vitest + unit tests for `src/lib/firestore.ts` helpers
+**Initial AI selection rationale**: This task aligns with "Phase 2.4 Accessibility" from the roadmap. It is a small, well-defined, and self-contained task that directly improves user experience for assistive technology users. It also strictly adheres to the "no-new-npm-deps" constraint and is expected to result in a small PR.
