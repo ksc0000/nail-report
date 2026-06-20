@@ -218,6 +218,7 @@ function App() {
   const [nailLoading, setNailLoading] = useState(false)
   const [nailError, setNailError] = useState('')
   const [isAIGeneratingTags, setIsAIGeneratingTags] = useState(false)
+  const [authActionPending, setAuthActionPending] = useState(false)
   const [bannerError, setBannerError] = useState('')
   const [nailItemsUserId, setNailItemsUserId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -409,22 +410,30 @@ function App() {
   }
 
   const handleSignIn = async () => {
+    if (authActionPending) return
+    setAuthActionPending(true)
     setBannerError('')
     try {
       await signInWithGoogle()
     } catch (e: unknown) {
       console.error('sign-in failed', e)
       setBannerError('Google サインインに失敗しました。時間をおいて再度お試しください。')
+    } finally {
+      setAuthActionPending(false)
     }
   }
 
   const handleSignOut = async () => {
+    if (authActionPending) return
+    setAuthActionPending(true)
     setBannerError('')
     try {
       await signOutUser()
     } catch (e: unknown) {
       console.error('sign-out failed', e)
       setBannerError('サインアウトに失敗しました。時間をおいて再度お試しください。')
+    } finally {
+      setAuthActionPending(false)
     }
   }
 
@@ -958,7 +967,9 @@ function App() {
             >
               データ管理
             </button>
-            <button type="button" onClick={handleSignOut}>Sign out</button>
+            <button type="button" onClick={handleSignOut} disabled={authActionPending}>
+              {authActionPending ? 'Signing out...' : 'Sign out'}
+            </button>
           </div>
         ) : (
           <div className="auth-signin-container">
@@ -966,9 +977,9 @@ function App() {
               type="button"
               className="auth-signin"
               onClick={handleSignIn}
-              disabled={!isFirebaseConfigComplete}
+              disabled={!isFirebaseConfigComplete || authActionPending}
             >
-              Sign in with Google
+              {authActionPending ? 'Signing in...' : 'Sign in with Google'}
             </button>
             {!isFirebaseConfigComplete && (
               <p className="auth-config-note">{firebaseConfigErrorMessage}</p>
