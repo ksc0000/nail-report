@@ -18,6 +18,9 @@ import {
   parseNailTags,
   validateNailTitle,
 } from './lib/nailTags'
+import { fileToGenerativePart, urlToGenerativePart, generateNailTagsFromImage } from './lib/aiUtils'
+import { isAiTagSuggestionEnabled } from './lib/featureFlags'
+import { isFirebaseConfigComplete, missingFirebaseEnvKeys } from './lib/firebaseConfigStatus'
 import ErrorBanner from './components/ErrorBanner'
 import PrivacyPolicyPage from './components/PrivacyPolicyPage'
 import TermsOfServicePage from './components/TermsOfServicePage'
@@ -174,6 +177,10 @@ const toggleComparisonId = (prevIds: string[], itemId: string): string[] => {
 
 type PublicShareViewState = 'idle' | 'loading' | 'ready' | 'not-found' | 'disabled' | 'error'
 
+const firebaseConfigErrorMessage = missingFirebaseEnvKeys.length > 0
+  ? `Firebase 設定が不足しています: ${missingFirebaseEnvKeys.join(', ')}`
+  : ''
+
 const getPublicShareIdFromPath = (pathname: string): string | null => {
   const m = pathname.match(/^\/share\/([^/]+)\/?$/)
   return m?.[1] ? decodeURIComponent(m[1]) : null
@@ -194,7 +201,9 @@ function App() {
   const isPublicSharePage = sharePathId !== null
   const isPrivacyPage = pathname === '/privacy'
   const isTermsPage = pathname === '/terms'
-  const [user, setUser] = useState<User | null | undefined>(undefined)
+  const [user, setUser] = useState<User | null | undefined>(
+    isFirebaseConfigComplete ? undefined : null
+  )
   const [nailItems, setNailItems] = useState<NailItemDoc[]>([])
   const [nailTitle, setNailTitle] = useState('')
   const [nailTags, setNailTags] = useState('')
@@ -208,6 +217,8 @@ function App() {
   const [comparisonItemIds, setComparisonItemIds] = useState<string[]>([])
   const [nailLoading, setNailLoading] = useState(false)
   const [nailError, setNailError] = useState('')
+  const [isAIGeneratingTags, setIsAIGeneratingTags] = useState(false)
+  const [authActionPending, setAuthActionPending] = useState(false)
   const [bannerError, setBannerError] = useState('')
   const [nailItemsUserId, setNailItemsUserId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -225,6 +236,8 @@ function App() {
   const [publicShareState, setPublicShareState] = useState<PublicShareViewState>(
     isPublicSharePage ? 'loading' : 'idle'
   )
+  const publicShareDisplayState: PublicShareViewState =
+    !isFirebaseConfigComplete && isPublicSharePage ? 'error' : publicShareState
   const uploadInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const dataModalCloseButtonRef = useRef<HTMLButtonElement>(null)
@@ -275,6 +288,7 @@ function App() {
 
   useEffect(() => {
     if (!isPublicSharePage || !sharePathId) return
+    if (!isFirebaseConfigComplete) return
 
     let didCancel = false
 
@@ -302,18 +316,21 @@ function App() {
     return () => { didCancel = true }
   }, [isPublicSharePage, sharePathId])
 
-  useEffect(() => onAuthStateChanged(auth, nextUser => {
-    if (isPublicSharePage) return
-    setUser(nextUser)
-    if (!nextUser) {
-      setNailItems([])
-      setNailItemsUserId(null)
-      setPublicShares([])
-      setPublicSharesUserId(null)
-      setDetailItemId(null)
-      setComparisonItemIds([])
-    }
-  }), [isPublicSharePage])
+  useEffect(() => {
+    if (!isFirebaseConfigComplete) return
+    return onAuthStateChanged(auth, nextUser => {
+      if (isPublicSharePage) return
+      setUser(nextUser)
+      if (!nextUser) {
+        setNailItems([])
+        setNailItemsUserId(null)
+        setPublicShares([])
+        setPublicSharesUserId(null)
+        setDetailItemId(null)
+        setComparisonItemIds([])
+      }
+    })
+  }, [isPublicSharePage])
 
   useEffect(() => {
     if (!isDataModalOpen) return
@@ -392,6 +409,34 @@ function App() {
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
+  const handleSignIn = async () => {
+    if (authActionPending) return
+    setAuthActionPending(true)
+    setBannerError('')
+    try {
+      await signInWithGoogle()
+    } catch (e: unknown) {
+      console.error('sign-in failed', e)
+      setBannerError('Google サインインに失敗しました。時間をおいて再度お試しください。')
+    } finally {
+      setAuthActionPending(false)
+    }
+  }
+
+  const handleSignOut = async () => {
+    if (authActionPending) return
+    setAuthActionPending(true)
+    setBannerError('')
+    try {
+      await signOutUser()
+    } catch (e: unknown) {
+      console.error('sign-out failed', e)
+      setBannerError('サインアウトに失敗しました。時間をおいて再度お試しください。')
+    } finally {
+      setAuthActionPending(false)
+    }
+  }
+
   const handleNailFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
     if (!file) {
@@ -443,6 +488,37 @@ function App() {
     setNailImageSource('unknown')
     setEditingId(null)
     setNailError('')
+  }
+
+  const handleGenerateTagsWithAI = async () => {
+    if (!isAiTagSuggestionEnabled) {
+      setNailError('AIタグ生成は現在無効です。')
+      return
+    }
+    try {
+      setIsAIGeneratingTags(true)
+      setNailError('')
+      let imagePart
+      if (nailImageFile) {
+        imagePart = await fileToGenerativePart(nailImageFile)
+      } else if (editingItem?.imageUrl) {
+        imagePart = await urlToGenerativePart(editingItem.imageUrl)
+      } else {
+        setNailError('画像が選択されていません。')
+        return
+      }
+      
+      const generatedTags = await generateNailTagsFromImage(imagePart)
+      // Clean up the tags, ensure comma separated
+      const cleanTags = generatedTags.replace(/\n/g, '').trim()
+      setNailTags(cleanTags)
+    } catch (err: unknown) {
+      console.error('AI tag generation error:', err)
+      const message = err instanceof Error ? err.message : String(err)
+      setNailError('AIによるタグ生成に失敗しました: ' + message)
+    } finally {
+      setIsAIGeneratingTags(false)
+    }
   }
 
   const handleSubmitNailItem = async () => {
@@ -605,35 +681,27 @@ function App() {
     setShareError('')
     setShareStatusMessage('')
 
-    if (!navigator.clipboard?.writeText) {
-      setShareError('Clipboard API is not available in this browser.')
-      return
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareUrl)
-      setShareStatusMessage('Share link copied to clipboard.')
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Failed to copy share link.'
-      setShareError(message)
-    }
+    await copyShareUrl(shareUrl)
   }
 
   const handleCopyManagedShareLink = async (managedShareId: string) => {
     setShareError('')
     setShareStatusMessage('')
 
+    await copyShareUrl(getShareUrl(managedShareId))
+  }
+
+  const copyShareUrl = async (url: string) => {
     if (!navigator.clipboard?.writeText) {
-      setShareError('Clipboard API is not available in this browser.')
+      setShareStatusMessage('コピー機能が使えないため、表示されているURLを選択してコピーしてください。')
       return
     }
 
     try {
-      await navigator.clipboard.writeText(getShareUrl(managedShareId))
+      await navigator.clipboard.writeText(url)
       setShareStatusMessage('リンクをコピーしました。')
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : '共有リンクのコピーに失敗しました。'
-      setShareError(message)
+    } catch {
+      setShareStatusMessage('自動コピーできませんでした。表示されているURLを選択してコピーしてください。')
     }
   }
 
@@ -687,10 +755,10 @@ function App() {
   }
 
   const renderPublicShareState = () => {
-    if (publicShareState === 'loading') {
+    if (publicShareDisplayState === 'loading') {
       return <p className="public-share-note">Loading shared collection...</p>
     }
-    if (publicShareState === 'not-found') {
+    if (publicShareDisplayState === 'not-found') {
       return (
         <div className="public-share-empty">
           <h2 className="public-share-heading">Shared nail collection</h2>
@@ -699,7 +767,7 @@ function App() {
         </div>
       )
     }
-    if (publicShareState === 'disabled') {
+    if (publicShareDisplayState === 'disabled') {
       return (
         <div className="public-share-empty">
           <h2 className="public-share-heading">Shared nail collection</h2>
@@ -708,11 +776,13 @@ function App() {
         </div>
       )
     }
-    if (publicShareState === 'error') {
+    if (publicShareDisplayState === 'error') {
       return (
         <div className="public-share-empty">
           <h2 className="public-share-heading">Shared nail collection</h2>
-          <p className="public-share-note">We could not load this shared collection right now.</p>
+          <p className="public-share-note">
+            {firebaseConfigErrorMessage || 'We could not load this shared collection right now.'}
+          </p>
           <a className="public-share-link" href="/">Back to home</a>
         </div>
       )
@@ -806,7 +876,12 @@ function App() {
   return (
     <section id="center">
       <h1 id="app-title">Nailous</h1>
-      <ErrorBanner message={bannerError} onClose={() => setBannerError('')} />
+      <ErrorBanner
+        message={firebaseConfigErrorMessage || bannerError}
+        onClose={() => {
+          if (!firebaseConfigErrorMessage) setBannerError('')
+        }}
+      />
       {detailItem && (
         <NailImageDetailViewer
           item={detailItem}
@@ -892,17 +967,23 @@ function App() {
             >
               データ管理
             </button>
-            <button type="button" onClick={() => {
-              signOutUser().catch((e: unknown) => console.error('sign-out failed', e))
-            }}>Sign out</button>
+            <button type="button" onClick={handleSignOut} disabled={authActionPending}>
+              {authActionPending ? 'Signing out...' : 'Sign out'}
+            </button>
           </div>
         ) : (
           <div className="auth-signin-container">
-            <button type="button" className="auth-signin" onClick={() => {
-              signInWithGoogle().catch((e: unknown) => console.error('sign-in failed', e))
-            }}>
-              Sign in with Google
+            <button
+              type="button"
+              className="auth-signin"
+              onClick={handleSignIn}
+              disabled={!isFirebaseConfigComplete || authActionPending}
+            >
+              {authActionPending ? 'Signing in...' : 'Sign in with Google'}
             </button>
+            {!isFirebaseConfigComplete && (
+              <p className="auth-config-note">{firebaseConfigErrorMessage}</p>
+            )}
             <div className="auth-signin-links">
               <a href="/terms" onClick={(e) => handleLinkClick(e, '/terms')}>利用規約</a>
               <span>・</span>
@@ -933,6 +1014,16 @@ function App() {
             <p className="nail-input-note">
               タグはカンマ区切りで最大{MAX_NAIL_TAGS}個、1つ{MAX_NAIL_TAG_LENGTH}文字まで。
             </p>
+            {isAiTagSuggestionEnabled && (nailImageFile || editingItem?.imageUrl) && (
+              <button
+                type="button"
+                className="ai-tag-btn"
+                onClick={handleGenerateTagsWithAI}
+                disabled={isAIGeneratingTags}
+              >
+                {isAIGeneratingTags ? 'AIがタグを生成中...' : '✨ 画像からAIでタグを生成'}
+              </button>
+            )}
             <textarea
               value={nailMemo}
               onChange={e => setNailMemo(e.target.value)}
@@ -966,9 +1057,11 @@ function App() {
                 </label>
               </div>
               <p className="nail-file-note">カメラが起動しない場合は、アルバムから画像を選択してください。</p>
-              <p className="nail-file-privacy-note">
-                写真はご本人のデバイスと保存先（Firebase）にのみ保管され、共有機能を使わない限り非公開です。外部のAI学習や解析には使用されません。
-              </p>
+              {isAiTagSuggestionEnabled && (
+                <p className="nail-file-privacy-note">
+                  写真は非公開で保存されます。「AIでタグを生成」ボタンを押した場合のみ、画像が一時的にAIによる解析へ送信されます（AIの学習には使用されません）。
+                </p>
+              )}
               {nailImageFile && nailImagePreview && (
                 <div className="nail-file-preview-area">
                   <img

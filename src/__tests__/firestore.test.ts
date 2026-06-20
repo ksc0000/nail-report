@@ -4,22 +4,22 @@ import {
   addNailItem,
   updateNailItem,
   deleteNailItem,
-} from '../src/lib/firestore'
+} from '../lib/firestore'
 import * as firestore from 'firebase/firestore'
 
 // Mock firebase/firestore
 vi.mock('firebase/firestore', () => ({
-  collection: vi.fn(),
+  collection: vi.fn(() => ({ type: 'collection-ref' })),
   addDoc: vi.fn(),
   getDocs: vi.fn(),
-  doc: vi.fn(),
+  doc: vi.fn(() => ({ type: 'doc-ref' })),
   updateDoc: vi.fn(),
   deleteDoc: vi.fn(),
   serverTimestamp: vi.fn(() => 'mock-timestamp'),
 }))
 
-// Mock ./firebase
-vi.mock('../src/lib/firebase', () => ({
+// Mock ../lib/firebase
+vi.mock('../lib/firebase', () => ({
   db: { type: 'firestore' },
 }))
 
@@ -29,6 +29,7 @@ describe('firestore helper functions', () => {
   const input = {
     title: 'New Nail',
     imageUrl: 'http://example.com/image.png',
+    thumbnailUrl: 'http://example.com/thumb.png',
     tags: ['tag1'],
     memo: 'memo content',
   }
@@ -72,6 +73,11 @@ describe('firestore helper functions', () => {
         updatedAt: null,
       })
     })
+
+    it('throws error when getDocs fails', async () => {
+      vi.mocked(firestore.getDocs).mockRejectedValue(new Error('Fetch failed'))
+      await expect(fetchNailItems(userId)).rejects.toThrow('Fetch failed')
+    })
   })
 
   describe('addNailItem', () => {
@@ -86,6 +92,11 @@ describe('firestore helper functions', () => {
       expect(firestore.addDoc).toHaveBeenCalled()
       expect(result).toBe('new-item-id')
     })
+
+    it('throws error when addDoc fails', async () => {
+      vi.mocked(firestore.addDoc).mockRejectedValue(new Error('Add failed'))
+      await expect(addNailItem(userId, input)).rejects.toThrow('Add failed')
+    })
   })
 
   describe('updateNailItem', () => {
@@ -95,6 +106,11 @@ describe('firestore helper functions', () => {
       expect(firestore.doc).toHaveBeenCalledWith(expect.anything(), 'users', userId, 'nailItems', itemId)
       expect(firestore.updateDoc).toHaveBeenCalled()
     })
+
+    it('throws error when updateDoc fails', async () => {
+      vi.mocked(firestore.updateDoc).mockRejectedValue(new Error('Update failed'))
+      await expect(updateNailItem(userId, itemId, input)).rejects.toThrow('Update failed')
+    })
   })
 
   describe('deleteNailItem', () => {
@@ -103,6 +119,11 @@ describe('firestore helper functions', () => {
 
       expect(firestore.doc).toHaveBeenCalledWith(expect.anything(), 'users', userId, 'nailItems', itemId)
       expect(firestore.deleteDoc).toHaveBeenCalled()
+    })
+
+    it('throws error when deleteDoc fails', async () => {
+      vi.mocked(firestore.deleteDoc).mockRejectedValue(new Error('Delete failed'))
+      await expect(deleteNailItem(userId, itemId)).rejects.toThrow('Delete failed')
     })
   })
 })

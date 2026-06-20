@@ -177,7 +177,7 @@
 - [x] design: plan camera capture flow
 - [x] feature: add upload/camera source distinction
 - [x] design: plan nail/hand detection pipeline
-- [ ] feature: add AI nail tag suggestion from image
+- [x] feature: add AI nail tag suggestion from image
 - [x] design: plan iOS capture requirements
 - [x] design: decide PWA vs native iOS release path
 
@@ -188,6 +188,7 @@
 - G3: `imageSource` / `manualRegions` / `analysis` 等の Firestore schema 追加
 - G6: カメラ・ユーザー写真・AI 画像解析のプライバシー方針
 - G7: 外部 AI API キーが必要な場合
+- G15: commercial MVP で AI tag suggestion を有効化するかの production gate
 - G8: 画像処理 / ML / camera helper library 追加
 
 ### Done Criteria
@@ -195,7 +196,7 @@
 - [ ] NailItem の画像 detail viewer が既存データで動作する
 - [ ] 画像比較の最小 UX がスマートフォン幅で破綻しない
 - [ ] カメラ/アップロード source の方針が docs にまとまっている
-- [ ] AI tag suggestion / nail detection / iOS capture の判断材料が docs にまとまっている
+- [x] AI tag suggestion / nail detection / iOS capture の判断材料が docs にまとまっている
 - [ ] 既存の NailItem CRUD / upload / share 機能を壊していない
 - [ ] `npm run build` が成功している
 
@@ -244,8 +245,8 @@
 
 - [x] セキュリティヘッダーの設定（CSP 等）
 - [x] 入力バリデーションの強化（tags 件数制限 UI 等）
-- [ ] エラーログ / 監視の整備
-- [ ] 依存関係の脆弱性スキャン ([docs/operations/DEPENDENCY_VULNERABILITY_SCAN.md](../operations/DEPENDENCY_VULNERABILITY_SCAN.md))
+- [x] エラーログ / 監視の整備（[MONITORING_ERROR_LOGGING_DECISION.md](../operations/MONITORING_ERROR_LOGGING_DECISION.md)）
+- [x] 依存関係の脆弱性スキャン ([docs/operations/DEPENDENCY_VULNERABILITY_SCAN.md](../operations/DEPENDENCY_VULNERABILITY_SCAN.md))
 
 ### Human Gates
 
@@ -294,6 +295,7 @@
 - [ ] 本番ビルド最適化（code splitting 等）
 - [ ] アクセス解析 / モニタリング設定（MVP では defer）
 - [x] README の最終整備
+- [ ] Record final production/preview URLs in `COMMERCIAL_LAUNCH_QA_REPORT.md` and this roadmap.
 
 ### Human Gates
 

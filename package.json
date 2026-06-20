@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "test": "node --experimental-strip-types --test tests/firestoreModel.test.ts tests/nailTags.test.ts && vitest run tests/firestore.test.ts",
+    "test": "node --experimental-strip-types --test tests/firestoreModel.test.ts tests/nailTags.test.ts && vitest run src/__tests__/firestore.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {

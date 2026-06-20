@@ -23,6 +23,10 @@ This checklist must be completed and approved by a human operator before any pro
     - `VITE_FIREBASE_STORAGE_BUCKET`
     - `VITE_FIREBASE_MESSAGING_SENDER_ID`
     - `VITE_FIREBASE_APP_ID`
+- [ ] Confirm whether AI tag suggestion is enabled for this release:
+    - `VITE_ENABLE_AI_TAG_SUGGESTION=false` or unset for the default commercial MVP path.
+    - `VITE_ENABLE_AI_TAG_SUGGESTION=true` only after the AI production gate is approved.
+- [ ] If AI tag suggestion is enabled, confirm Firebase AI / Gemini backend, billing, privacy policy coverage, and rollback plan.
 
 ## 4. Auth Providers
 - [ ] Confirm Google Auth is enabled in the production Firebase Console.

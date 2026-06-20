@@ -112,6 +112,7 @@ export default defineConfig([
 | [docs/operations/SECURITY_HEADERS_DECISION.md](docs/operations/SECURITY_HEADERS_DECISION.md) | Security headers decision note for the commercial MVP |
 | [docs/operations/SECURITY_HEADERS_GUIDE.md](docs/operations/SECURITY_HEADERS_GUIDE.md) | Technical guide for security headers and CSP configuration |
 | [docs/operations/DEPENDENCY_VULNERABILITY_SCAN.md](docs/operations/DEPENDENCY_VULNERABILITY_SCAN.md) | Dependency vulnerability scan process for commercial MVP release |
+| [docs/operations/MONITORING_ERROR_LOGGING_DECISION.md](docs/operations/MONITORING_ERROR_LOGGING_DECISION.md) | Monitoring and error logging decision note for the commercial MVP |
 
 ### Design References
 

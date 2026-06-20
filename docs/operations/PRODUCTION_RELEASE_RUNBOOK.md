@@ -31,6 +31,13 @@ npm run lint
 8. Confirm the production Firebase preflight checklist is complete:
    [PRODUCTION_FIREBASE_PREFLIGHT.md](./PRODUCTION_FIREBASE_PREFLIGHT.md)
 
+## Hosting URL Types
+
+The following Firebase Hosting URLs are expected for the commercial MVP:
+
+- **Production URL:** `https://<project-id>.web.app` (or custom domain if configured). This is the primary entry point for users after a human-approved deploy.
+- **Preview Channel URL:** `https://<project-id>--<channel-id>-<hash>.web.app`. These are optional URLs generated for feature testing and must not be shared as the production link.
+
 ## Deploy Procedure
 
 Production deploy is a human-gated operation.
@@ -43,10 +50,10 @@ firebase deploy --only hosting
 
 Before running `firebase deploy`, the operator must verbally or in writing confirm:
 
-- the production Firebase project id
-- the release commit SHA
-- the production URL
-- rollback owner and communication channel
+- [ ] the production Firebase project id
+- [ ] the release commit SHA
+- [ ] the production URL (ready to be verified)
+- [ ] rollback owner and communication channel
 
 ## Post-Deploy Smoke Test
 
@@ -62,6 +69,12 @@ Run the production smoke checklist immediately after deploy:
 - Error fallback where practical
 
 Record go/no-go in the release notes or tracking issue.
+
+### URL Recording
+
+Immediately after a successful production deploy and smoke test:
+1. Record the final production URL in the [COMMERCIAL_LAUNCH_QA_REPORT.md](./COMMERCIAL_LAUNCH_QA_REPORT.md).
+2. Mark the URL recording task as complete in [docs/product/ROADMAP.md](../product/ROADMAP.md).
 
 ## Rollback
 
