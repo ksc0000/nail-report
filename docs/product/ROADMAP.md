@@ -294,6 +294,7 @@
 - [ ] 本番ビルド最適化（code splitting 等）
 - [ ] アクセス解析 / モニタリング設定（MVP では defer）
 - [x] README の最終整備
+- [ ] Record final production/preview URLs in `COMMERCIAL_LAUNCH_QA_REPORT.md` and this roadmap.
 
 ### Human Gates
 
