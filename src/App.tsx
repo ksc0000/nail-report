@@ -26,6 +26,7 @@ import PrivacyPolicyPage from './components/PrivacyPolicyPage'
 import TermsOfServicePage from './components/TermsOfServicePage'
 import NailImageDetailViewer from './components/NailImageDetailViewer'
 import NailComparisonPanel from './components/NailComparisonPanel'
+import NailItemSkeleton from './components/NailItemSkeleton'
 import './App.css'
 
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
@@ -216,11 +217,11 @@ function App() {
   const [isDataModalOpen, setIsDataModalOpen] = useState(false)
   const [comparisonItemIds, setComparisonItemIds] = useState<string[]>([])
   const [nailLoading, setNailLoading] = useState(false)
+  const [isLoadingItems, setIsLoadingItems] = useState(false)
   const [nailError, setNailError] = useState('')
   const [isAIGeneratingTags, setIsAIGeneratingTags] = useState(false)
   const [authActionPending, setAuthActionPending] = useState(false)
   const [bannerError, setBannerError] = useState('')
-  const [nailItemsUserId, setNailItemsUserId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null)
   const [activeMonthFilter, setActiveMonthFilter] = useState<string | null>(null)
@@ -323,7 +324,7 @@ function App() {
       setUser(nextUser)
       if (!nextUser) {
         setNailItems([])
-        setNailItemsUserId(null)
+
         setPublicShares([])
         setPublicSharesUserId(null)
         setDetailItemId(null)
@@ -346,18 +347,22 @@ function App() {
     if (isPublicSharePage) return
     if (!user) return
     let didCancel = false
+    Promise.resolve().then(() => {
+      if (!didCancel) setIsLoadingItems(true)
+    })
     fetchNailItems(user.uid)
       .then(items => {
         if (didCancel) return
         setNailItems(sortByDate(items))
-        setNailItemsUserId(user.uid)
       })
       .catch((e: unknown) => {
         console.error('fetch failed', e)
         if (didCancel) return
         setNailItems([])
-        setNailItemsUserId(user.uid)
         setBannerError('ネイル一覧の取得に失敗しました。')
+      })
+      .finally(() => {
+        if (!didCancel) setIsLoadingItems(false)
       })
     return () => { didCancel = true }
   }, [isPublicSharePage, user])
@@ -563,7 +568,7 @@ function App() {
         }
       }
       setNailItems(sortByDate(await fetchNailItems(uid)))
-      setNailItemsUserId(uid)
+
       resetForm()
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
@@ -606,7 +611,7 @@ function App() {
       }
       await deleteNailItem(uid, itemId)
       setNailItems(sortByDate(await fetchNailItems(uid)))
-      setNailItemsUserId(uid)
+
     } catch {
       setBannerError('ネイルの削除に失敗しました。')
     } finally {
@@ -616,7 +621,6 @@ function App() {
 
   const editingItem = editingId ? nailItems.find(i => i.id === editingId) : null
   const detailItem = detailItemId ? nailItems.find(i => i.id === detailItemId) : null
-  const isFetching = Boolean(user && nailItemsUserId !== user.uid)
   const summary = useMemo(() => getNailSummary(nailItems), [nailItems])
 
   const filteredItems = nailItems.filter(item => {
@@ -1104,7 +1108,7 @@ function App() {
             </div>
             {nailError && <p className="nail-error">{nailError}</p>}
           </div>
-          {!isFetching && nailItems.length > 0 && (
+          {!isLoadingItems && nailItems.length > 0 && (
             <div id="nail-summary">
               <h3 className="summary-heading">コレクション概要</h3>
               <div className="summary-stats">
@@ -1197,7 +1201,7 @@ function App() {
               </div>
             </div>
           )}
-          {!isFetching && (
+          {!isLoadingItems && (
             <div id="nail-share" className="share-section">
               <h3 className="summary-heading">Share collection</h3>
               <p className="share-privacy-note">
@@ -1307,10 +1311,10 @@ function App() {
           <NailComparisonPanel
             comparisonItemIds={comparisonItemIds}
             nailItems={nailItems}
-            isFetching={isFetching}
+            isFetching={isLoadingItems}
             onClear={() => setComparisonItemIds([])}
           />
-          {!isFetching && nailItems.length > 0 && (activeTagFilter !== null || activeMonthFilter !== null) && (
+          {!isLoadingItems && nailItems.length > 0 && (activeTagFilter !== null || activeMonthFilter !== null) && (
             <div className="filter-bar">
               {activeTagFilter !== null && (
                 <span className="filter-pill">タグ: #{activeTagFilter}</span>
@@ -1325,7 +1329,7 @@ function App() {
               >Clear filters</button>
             </div>
           )}
-          {!isFetching && nailItems.length > 0 && (
+          {!isLoadingItems && nailItems.length > 0 && (
             <div id="nail-search">
               <input
                 type="search"
@@ -1336,22 +1340,12 @@ function App() {
               />
             </div>
           )}
-          {isFetching ? (
+          {isLoadingItems ? (
             <div role="status">
               <span className="sr-only">ネイル一覧を読み込み中...</span>
               <ul id="nail-list" className="nail-skeleton-list">
                 {[...Array(4)].map((_, i) => (
-                  <li key={i} className="nail-skeleton-card" aria-hidden="true">
-                    <div className="nail-skeleton-thumb shimmer" />
-                    <div className="nail-skeleton-body">
-                      <div className="nail-skeleton-title shimmer" />
-                      <div className="nail-skeleton-tags">
-                        <div className="nail-skeleton-tag shimmer" />
-                        <div className="nail-skeleton-tag shimmer" />
-                      </div>
-                      <div className="nail-skeleton-date shimmer" />
-                    </div>
-                  </li>
+                  <NailItemSkeleton key={i} />
                 ))}
               </ul>
             </div>
