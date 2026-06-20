@@ -11,7 +11,13 @@ import {
 } from './lib/publicShares'
 import type { PublicShareDocWithId, PublicShareItemSnapshot } from './lib/publicShares'
 import { uploadNailImage, deleteNailImage } from './lib/storage'
-import { MAX_NAIL_TAG_LENGTH, MAX_NAIL_TAGS, parseNailTags } from './lib/nailTags'
+import {
+  MAX_NAIL_TAG_LENGTH,
+  MAX_NAIL_TAGS,
+  MAX_NAIL_TITLE_LENGTH,
+  parseNailTags,
+  validateNailTitle,
+} from './lib/nailTags'
 import ErrorBanner from './components/ErrorBanner'
 import PrivacyPolicyPage from './components/PrivacyPolicyPage'
 import TermsOfServicePage from './components/TermsOfServicePage'
@@ -441,6 +447,11 @@ function App() {
 
   const handleSubmitNailItem = async () => {
     if (!user || nailTitle.trim() === '') return
+    const titleErr = validateNailTitle(nailTitle.trim())
+    if (titleErr) {
+      setNailError(titleErr)
+      return
+    }
     if (nailImageFile) {
       const err = validateImageFile(nailImageFile)
       if (err) { setNailError(err); return }
@@ -910,12 +921,13 @@ function App() {
               onChange={e => setNailTitle(e.target.value)}
               placeholder="Title *"
               className="nail-input"
+              maxLength={MAX_NAIL_TITLE_LENGTH}
             />
             <input
               type="text"
               value={nailTags}
               onChange={e => setNailTags(e.target.value)}
-              placeholder="Tags (comma separated, max 12)"
+              placeholder="Tags (comma separated, max 10)"
               className="nail-input"
             />
             <p className="nail-input-note">
