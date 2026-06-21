@@ -1,46 +1,46 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap for `nail-report` outlines a clear path through several phases. Phase 1 is complete, and Phase 2, focused on improving stability, test coverage, and UX, is currently active. The immediate goal is to enhance test coverage, specifically for core utility functions.
+The product roadmap indicates Phase 2.1 is focused on improving test coverage. This task initiates that effort by adding unit tests for core Firestore helper functions. The `src/lib/firestore.ts` file contains critical logic for interacting with the `nailItems` and `publicShares` collections.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest. Focus on covering basic CRUD operations and data marshalling functions.
+Implement unit tests for two key Firestore helper functions: `getNailItems` and `addNailItem` within `src/lib/firestore.ts`. These tests should mock Firebase SDK dependencies to isolate the logic being tested.
 
 ## Allowed Scope
 
--   `src/lib/firestore.ts` (modifications to export functions if needed for testing, but prioritize testing existing exports)
--   `src/__tests__/firestore.test.ts` (new file for tests)
--   `package.json` (only if adding `vitest` as a `devDependency` is absolutely required and fits within the line limit and `no-new-npm-deps` constraint, but assume it's already present for testing)
--   `vite.config.ts` (if minimal Vitest configuration is required)
+- `src/lib/firestore.ts` (for minor adjustments if needed to enable testing, e.g., dependency injection, though prefer not to modify)
+- `src/__tests__/lib/firestore.test.ts` (new file)
+- `package.json` (only if a `test` or `test:unit` script for Vitest is missing and needs to be added, but assume Vitest is already configured)
+- `vite.config.ts` (for Vitest configuration if necessary, but assume existing setup)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` (do not add *new* npm packages beyond what's implied for Vitest setup, if any)
--   Firebase deploy commands
--   Secrets and credentials
--   `src/App.css`
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no *new* npm packages without human approval; assume Vitest is already an existing dev dependency or its setup is part of this phase)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   Keep diff ≤ 150 lines.
--   Add a new test file `src/__tests__/firestore.test.ts`.
--   Cover key functions in `src/lib/firestore.ts` such as `createNailItem`, `getNailItems`, `updateNailItem`, and `deleteNailItem` (or similar core helpers).
--   Use Vitest for testing and mock Firebase SDK where necessary (e.g., Firestore functions).
--   Ensure tests are isolated and do not interact with live Firebase resources.
--   Run `npm run build && npm run lint && npm run test` before finishing.
--   Report follow-up items as comments, not additional code.
+- Create a new test file at `src/__tests__/lib/firestore.test.ts`.
+- Mock Firebase SDK functions that `getNailItems` and `addNailItem` depend on (e.g., `collection`, `query`, `getDocs`, `addDoc`, `Timestamp`).
+- Write at least one positive test case and one edge/error case for `getNailItems`.
+- Write at least one positive test case for `addNailItem`.
+- The tests should verify the correct invocation of Firebase SDK methods and the transformation/handling of data by the helper functions.
+- Keep the overall diff ≤ 150 lines.
+- Run `npm run build && npm run lint && npm run test` before finishing.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
-```
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
+
+---
+**Suggested next task for the AI Loop:** Add Vitest unit tests for `updateNailItem` and `deleteNailItem` in `src/lib/firestore.ts`.
