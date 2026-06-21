@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
 import { auth, signInWithGoogle, signOutUser, onAuthStateChanged } from './lib/auth'
 import type { User } from './lib/auth'
 import { addNailItem, updateNailItem, deleteNailItem, fetchNailItems } from './lib/firestore'
@@ -22,10 +22,10 @@ import { fileToGenerativePart, urlToGenerativePart, generateNailTagsFromImage } 
 import { isAiTagSuggestionEnabled } from './lib/featureFlags'
 import { isFirebaseConfigComplete, missingFirebaseEnvKeys } from './lib/firebaseConfigStatus'
 import ErrorBanner from './components/ErrorBanner'
-import PrivacyPolicyPage from './components/PrivacyPolicyPage'
-import TermsOfServicePage from './components/TermsOfServicePage'
-import NailImageDetailViewer from './components/NailImageDetailViewer'
-import NailComparisonPanel from './components/NailComparisonPanel'
+const PrivacyPolicyPage = lazy(() => import('./components/PrivacyPolicyPage'))
+const TermsOfServicePage = lazy(() => import('./components/TermsOfServicePage'))
+const NailImageDetailViewer = lazy(() => import('./components/NailImageDetailViewer'))
+const NailComparisonPanel = lazy(() => import('./components/NailComparisonPanel'))
 import './App.css'
 
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
@@ -859,7 +859,9 @@ function App() {
     return (
       <section id="center">
         <h1 id="app-title">Nailous</h1>
-        <PrivacyPolicyPage />
+        <Suspense fallback={<div className="lazy-loading">読み込み中...</div>}>
+          <PrivacyPolicyPage />
+        </Suspense>
       </section>
     )
   }
@@ -868,7 +870,9 @@ function App() {
     return (
       <section id="center">
         <h1 id="app-title">Nailous</h1>
-        <TermsOfServicePage />
+        <Suspense fallback={<div className="lazy-loading">読み込み中...</div>}>
+          <TermsOfServicePage />
+        </Suspense>
       </section>
     )
   }
@@ -883,10 +887,12 @@ function App() {
         }}
       />
       {detailItem && (
-        <NailImageDetailViewer
-          item={detailItem}
-          onClose={() => setDetailItemId(null)}
-        />
+        <Suspense fallback={<div className="lazy-loading">読み込み中...</div>}>
+          <NailImageDetailViewer
+            item={detailItem}
+            onClose={() => setDetailItemId(null)}
+          />
+        </Suspense>
       )}
       {isDataModalOpen && (
         <div
@@ -1304,12 +1310,14 @@ function App() {
               </div>
             </div>
           )}
-          <NailComparisonPanel
-            comparisonItemIds={comparisonItemIds}
-            nailItems={nailItems}
-            isFetching={isFetching}
-            onClear={() => setComparisonItemIds([])}
-          />
+          <Suspense fallback={<div className="lazy-loading">読み込み中...</div>}>
+            <NailComparisonPanel
+              comparisonItemIds={comparisonItemIds}
+              nailItems={nailItems}
+              isFetching={isFetching}
+              onClear={() => setComparisonItemIds([])}
+            />
+          </Suspense>
           {!isFetching && nailItems.length > 0 && (activeTagFilter !== null || activeMonthFilter !== null) && (
             <div className="filter-bar">
               {activeTagFilter !== null && (
