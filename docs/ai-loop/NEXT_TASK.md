@@ -2,45 +2,64 @@
 
 ## Context
 
-The product roadmap indicates Phase 2.1 is focused on improving test coverage. This task initiates that effort by adding unit tests for core Firestore helper functions. The `src/lib/firestore.ts` file contains critical logic for interacting with the `nailItems` and `publicShares` collections.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This task focuses on enhancing accessibility by adding `aria-label` attributes to icon-only buttons, as outlined in section 2.4 of the roadmap. This is a small, bounded task to incrementally improve the application's accessibility for screen reader users.
 
 ## Objective
 
-Implement unit tests for two key Firestore helper functions: `getNailItems` and `addNailItem` within `src/lib/firestore.ts`. These tests should mock Firebase SDK dependencies to isolate the logic being tested.
+Identify all icon-only buttons in the application and add appropriate `aria-label` attributes to improve accessibility.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for minor adjustments if needed to enable testing, e.g., dependency injection, though prefer not to modify)
-- `src/__tests__/lib/firestore.test.ts` (new file)
-- `package.json` (only if a `test` or `test:unit` script for Vitest is missing and needs to be added, but assume Vitest is already configured)
-- `vite.config.ts` (for Vitest configuration if necessary, but assume existing setup)
+-   `src/` (except `src/main.tsx`) - specifically component files containing icon-only buttons.
+-   `src/App.css` (only if absolutely necessary for layout adjustments related to labels, but this should be avoided as the task is purely semantic).
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no *new* npm packages without human approval; assume Vitest is already an existing dev dependency or its setup is part of this phase)
-- Firebase deploy commands
-- Secrets and credentials
+-   `src/main.tsx` (entry point — do not modify)
+-   `commands/` (PowerShell scripts — do not modify)
+-   `firestore.rules`, `storage.rules` (require human approval)
+-   `package.json` deps (no new npm packages without human approval)
+-   Firebase deploy commands
+-   Secrets and credentials
 
 ## Requirements
 
-- Create a new test file at `src/__tests__/lib/firestore.test.ts`.
-- Mock Firebase SDK functions that `getNailItems` and `addNailItem` depend on (e.g., `collection`, `query`, `getDocs`, `addDoc`, `Timestamp`).
-- Write at least one positive test case and one edge/error case for `getNailItems`.
-- Write at least one positive test case for `addNailItem`.
-- The tests should verify the correct invocation of Firebase SDK methods and the transformation/handling of data by the helper functions.
-- Keep the overall diff ≤ 150 lines.
-- Run `npm run build && npm run lint && npm run test` before finishing.
+-   Keep diff ≤ 150 lines.
+-   Run `npm run build && npm run lint` before finishing.
+-   Prefer adding tests when touching `src/lib/` files (not applicable for this UI task).
+-   Report follow-up items as comments, not additional code.
 
 ## Output Format
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+-   Summary of what changed
+-   Changed files list
+-   Commands run and results
+-   Known issues or limitations
+-   Suggested next task
 
----
-**Suggested next task for the AI Loop:** Add Vitest unit tests for `updateNailItem` and `deleteNailItem` in `src/lib/firestore.ts`.
+## Worker prompt
+
+1.  **Identify Icon-Only Buttons:** Traverse the `src/` directory to locate all HTML `<button>` elements that primarily use an icon (e.g., `<FaEdit />`, `<FaTrash />`, `<MdAdd />`) for their visual representation and do not have visible text labels.
+2.  **Add `aria-label`:** For each identified icon-only button, add an `aria-label` attribute. The value of this attribute should be a concise, descriptive phrase that explains the button's action to screen reader users.
+    *   Examples:
+        *   An edit icon button should have `aria-label="Edit item"`.
+        *   A delete icon button should have `aria-label="Delete item"`.
+        *   An add icon button might have `aria-label="Add new item"` or `aria-label="Create new entry"`.
+        *   A close or dismiss icon button should have `aria-label="Close"`.
+3.  **Prioritize:** Start with commonly used components or those in the main UI views before moving to less frequently accessed parts of the application.
+4.  **No Visual Changes:** Ensure that adding `aria-label` does not introduce any visual regressions or changes in functionality. It is purely an accessibility enhancement.
+5.  **Adherence to Constraints:** Strictly adhere to the allowed scope, forbidden scope, and diff size limits.
+
+**Acceptance Criteria:**
+
+*   All identified icon-only buttons in the application have an `aria-label` attribute.
+*   The `aria-label` values accurately describe the button's purpose.
+*   No new npm packages have been added.
+*   No visual changes or functional regressions have been introduced.
+
+**Required Test Commands:**
+
+```bash
+npm run build
+npm run lint
+```
