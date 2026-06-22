@@ -75,6 +75,30 @@ const NailImageDetailViewer: React.FC<NailImageDetailViewerProps> = ({ item, onC
             <div className="nail-detail-no-image">画像なし</div>
           )}
         </div>
+        {item.imageUrl && (
+          <section className="nail-charm-panel" aria-labelledby="nail-charm-title">
+            <div className="nail-charm-copy">
+              <p className="nail-detail-kicker">Nail Charm</p>
+              <h3 id="nail-charm-title" className="nail-charm-title">浮遊ビュー</h3>
+            </div>
+            <div className="nail-charm-stage" aria-hidden="true">
+              <span className="nail-charm-orbit nail-charm-orbit--one" />
+              <span className="nail-charm-orbit nail-charm-orbit--two" />
+              {['left', 'center', 'right'].map((position) => (
+                <div key={position} className={`nail-charm-shell nail-charm-shell--${position}`}>
+                  <div className="nail-charm-chip">
+                    <img
+                      className="nail-charm-image"
+                      src={item.imageUrl}
+                      alt=""
+                    />
+                    <span className="nail-charm-shine" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
         <div className="nail-detail-body">
           <h2 id="nail-detail-title" className="nail-detail-title">
             {item.title}
