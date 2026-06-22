@@ -2,17 +2,19 @@
 
 ## Context
 
-The current phase is "2.0 Active", focusing on stability, test coverage, and UX. The roadmap includes improving accessibility. This task aims to address a specific accessibility improvement for icon-only buttons.
+The current phase of the roadmap is `2.0`, focusing on improving stability, test coverage, and UX. The immediate goal is to enhance test coverage. This task focuses on adding unit tests for existing helper functions within the `src/lib/firestore.ts` file, a key component for data management.
 
 ## Objective
 
-Add `aria-label` attributes to all icon-only buttons throughout the application to improve accessibility for screen reader users.
+Implement Vitest unit tests for the helper functions defined in `src/lib/firestore.ts`. These tests should cover the core logic of the Firestore interaction functions, ensuring their stability and correctness. Focus on mocking Firebase SDK dependencies as needed to create isolated unit tests.
 
 ## Allowed Scope
 
-- `src/components/` (modifying existing components to add `aria-label`)
-- `src/` (any other component file that contains icon-only buttons)
-- `src/App.css` (if minor layout adjustments are needed due to attribute changes, though unlikely)
+- `src/lib/firestore.ts` (minor modifications only, if strictly necessary for testability, e.g., exporting unexported helpers)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `src/__tests__/utils.ts` (optional: for common test mocks/helpers if deemed necessary and small)
+- `vite.config.ts` (if minor Vitest configuration adjustments are needed, but prioritize existing setup)
+- `package.json` (only for ensuring a `test` script is present, no new dependencies)
 
 ## Forbidden Scope
 
@@ -22,15 +24,14 @@ Add `aria-label` attributes to all icon-only buttons throughout the application 
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/lib/` files (not relevant for this task)
-- `src/__tests__/` (not required for this UI-only change)
 
 ## Requirements
 
-- Identify all buttons that contain only an icon (no visible text label).
-- Add a descriptive `aria-label` attribute to each identified button. The label should clearly convey the button's purpose (e.g., "Delete item", "Edit item", "Add tag", "Sign out").
-- Ensure `aria-label` values are user-friendly and concise.
 - Keep diff ≤ 150 lines.
+- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
+- Mock Firebase SDK dependencies (e.g., `firebase/firestore`, `firebase/auth`) using `vitest.mock` to ensure tests are isolated and don't interact with actual Firebase services.
+- Write unit tests for at least two significant helper functions within `src/lib/firestore.ts`.
+- Ensure tests cover success cases and common error scenarios.
 - Run `npm run build && npm run lint` before finishing.
 - Report follow-up items as comments, not additional code.
 
@@ -42,32 +43,25 @@ Add `aria-label` attributes to all icon-only buttons throughout the application 
 - Known issues or limitations
 - Suggested next task
 
-## Worker prompt
+---
 
-Implement the addition of `aria-label` attributes to all icon-only buttons in the `nail-report` application.
+**Worker Prompt:** Implement unit tests for `src/lib/firestore.ts` helpers.
 
-1.  **Identify Icon-Only Buttons:** Systematically go through components in `src/components/` and other relevant `src/` files to locate `<button>` elements that primarily use an icon (e.g., an SVG or an icon font) as their content and do not have a visible text label.
-2.  **Add `aria-label`:** For each identified button, add an `aria-label` attribute with a concise, descriptive text that explains its function. For example:
-    *   A trash can icon button to delete an item might get `aria-label="Delete nail item"`.
-    *   A pencil icon button to edit an item might get `aria-label="Edit nail item"`.
-    *   A plus icon button to add a new item might get `aria-label="Add new nail item"`.
-    *   A share icon button might get `aria-label="Share item"`.
-    *   A sign-out icon button might get `aria-label="Sign out"`.
-3.  **Review and Test:** Manually review the application in a browser to ensure all relevant buttons have been updated. Consider using browser developer tools to inspect the accessibility tree (if available) or a screen reader extension to verify the `aria-label`s are correctly announced.
-4.  **Lint and Build:** Run `npm run lint` and `npm run build` to ensure no errors or warnings are introduced.
+**Example functions to test (prioritize based on complexity/importance):**
+- Functions related to creating, reading, updating, or deleting nail items.
+- Functions interacting with `publicShares` if they exist in `firestore.ts`.
 
-**Example of change:**
+Ensure tests use appropriate mocking for Firebase functions (e.g., `getDocs`, `addDoc`, `updateDoc`, `deleteDoc`).
 
-```diff
---- a/src/components/SomeComponent.tsx
-+++ b/src/components/SomeComponent.tsx
-@@ -10,7 +10,7 @@
-     return (
-         <div>
-             <button
--                onClick={handleDeleteItem}
-+                onClick={handleDeleteItem} aria-label="Delete item"
-                 className="icon-button"
-             >
-                 <TrashIcon />
+**Acceptance Criteria:**
+- A new file `src/__tests__/firestore.test.ts` exists.
+- This file contains at least two `describe` blocks, each covering a distinct helper function from `src/lib/firestore.ts`.
+- Each `describe` block contains multiple `it` blocks for different test cases (e.g., success, error, edge cases).
+- Firebase SDK functions are mocked using `vitest.mock` to prevent actual network calls.
+
+**Required Test Commands:**
+```bash
+npm test # Or 'npm run test' depending on package.json script
+npm run build
+npm run lint
 ```
