@@ -22,6 +22,7 @@ import { fileToGenerativePart, urlToGenerativePart, generateNailTagsFromImage } 
 import { isAiTagSuggestionEnabled } from './lib/featureFlags'
 import { isFirebaseConfigComplete, missingFirebaseEnvKeys } from './lib/firebaseConfigStatus'
 import ErrorBanner from './components/ErrorBanner'
+import heroImage from './assets/hero.png'
 const PrivacyPolicyPage = lazy(() => import('./components/PrivacyPolicyPage'))
 const TermsOfServicePage = lazy(() => import('./components/TermsOfServicePage'))
 const NailImageDetailViewer = lazy(() => import('./components/NailImageDetailViewer'))
@@ -878,7 +879,7 @@ function App() {
   }
 
   return (
-    <section id="center">
+    <section id="center" className={user ? undefined : 'is-signed-out'}>
       <h1 id="app-title">Nailous</h1>
       <ErrorBanner
         message={firebaseConfigErrorMessage || bannerError}
@@ -962,42 +963,92 @@ function App() {
           </div>
         </div>
       )}
-      <div id="auth-bar">
-        {user === undefined ? null : user ? (
-          <div className="auth-user">
-            <span>{user.displayName ?? user.email}</span>
-            <button
-              type="button"
-              className="auth-data-mgmt"
-              onClick={() => setIsDataModalOpen(true)}
-            >
-              データ管理
-            </button>
-            <button type="button" onClick={handleSignOut} disabled={authActionPending}>
-              {authActionPending ? 'Signing out...' : 'Sign out'}
-            </button>
-          </div>
-        ) : (
-          <div className="auth-signin-container">
-            <button
-              type="button"
-              className="auth-signin"
-              onClick={handleSignIn}
-              disabled={!isFirebaseConfigComplete || authActionPending}
-            >
-              {authActionPending ? 'Signing in...' : 'Sign in with Google'}
-            </button>
-            {!isFirebaseConfigComplete && (
-              <p className="auth-config-note">{firebaseConfigErrorMessage}</p>
-            )}
-            <div className="auth-signin-links">
-              <a href="/terms" onClick={(e) => handleLinkClick(e, '/terms')}>利用規約</a>
-              <span>・</span>
-              <a href="/privacy" onClick={(e) => handleLinkClick(e, '/privacy')}>プライバシーポリシー</a>
+      {user !== null && (
+        <div id="auth-bar">
+          {user === undefined ? null : user ? (
+            <div className="auth-user">
+              <span>{user.displayName ?? user.email}</span>
+              <button
+                type="button"
+                className="auth-data-mgmt"
+                onClick={() => setIsDataModalOpen(true)}
+              >
+                データ管理
+              </button>
+              <button type="button" onClick={handleSignOut} disabled={authActionPending}>
+                {authActionPending ? 'Signing out...' : 'Sign out'}
+              </button>
             </div>
-          </div>
-        )}
-      </div>
+          ) : null}
+        </div>
+      )}
+      {user === null && (
+        <div className="landing-shell" aria-label="Nailous preview">
+          <section className="landing-hero">
+            <div className="landing-copy">
+              <p className="landing-kicker">Nail charm studio</p>
+              <h2 className="landing-title">
+                <span>ネイルを、</span>
+                <span>浮かぶ作品に。</span>
+              </h2>
+              <p className="landing-lead">
+                Nailous はネイル写真をただ保存するだけでなく、形・色・質感を読み取り、
+                共有しやすい美しいビューへ育てていくための場所です。
+              </p>
+              <div className="landing-actions">
+                <button
+                  type="button"
+                  className="auth-signin landing-signin"
+                  onClick={handleSignIn}
+                  disabled={!isFirebaseConfigComplete || authActionPending}
+                >
+                  {authActionPending ? 'Signing in...' : 'Sign in with Google'}
+                </button>
+                <span className="landing-action-note">保存・比較・共有をはじめる</span>
+              </div>
+              {!isFirebaseConfigComplete && (
+                <p className="auth-config-note">{firebaseConfigErrorMessage}</p>
+              )}
+            </div>
+
+            <div className="landing-showcase" aria-hidden="true">
+              <img className="landing-orbit-base" src={heroImage} alt="" />
+              <div className="landing-charm landing-charm-rose">
+                <span className="landing-charm-shine" />
+              </div>
+              <div className="landing-charm landing-charm-pearl">
+                <span className="landing-charm-shine" />
+              </div>
+              <div className="landing-charm landing-charm-ink">
+                <span className="landing-charm-shine" />
+              </div>
+              <div className="landing-detection-frame">
+                <span />
+                <span />
+                <span />
+              </div>
+            </div>
+          </section>
+
+          <section className="landing-steps" aria-label="Nailous experience">
+            <article>
+              <span className="landing-step-index">01</span>
+              <h3>View</h3>
+              <p>チップだけが浮くショーウィンドウのように、写真からネイルの主役感を引き出します。</p>
+            </article>
+            <article>
+              <span className="landing-step-index">02</span>
+              <h3>Detect</h3>
+              <p>輪郭・長さ・艶・立体感を扱えるように、まずは手動補正しやすい検出体験から育てます。</p>
+            </article>
+            <article>
+              <span className="landing-step-index">03</span>
+              <h3>Share</h3>
+              <p>お気に入りのビューをコレクションやSNSへ運びやすい形で整えていきます。</p>
+            </article>
+          </section>
+        </div>
+      )}
       {user && (
         <div id="nail-section">
           <div id="nail-form">
