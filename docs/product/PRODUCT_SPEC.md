@@ -223,6 +223,7 @@ interface NailItem {
 | ドキュメント | 内容 |
 |---|---|
 | [ROADMAP.md](./ROADMAP.md) | 開発ロードマップ |
+| [3D_ASSET_DELIVERY_STRATEGY.md](./3D_ASSET_DELIVERY_STRATEGY.md) | 3D アセット配信戦略 |
 | [ACCEPTANCE_CRITERIA.md](./ACCEPTANCE_CRITERIA.md) | タスク完了基準 |
 | [HUMAN_GATES.md](../harness/HUMAN_GATES.md) | 人間確認が必要な条件 |
 | [PRODUCTION_RELEASE_RUNBOOK.md](../operations/PRODUCTION_RELEASE_RUNBOOK.md) | 本番リリース手順 |

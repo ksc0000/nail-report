@@ -326,7 +326,7 @@
 - [ ] 3D プレビュー画面の実装（形状・カラー・テクスチャのプリセット選択）
 - [ ] NailItem への将来フィールド追加検討（`shape` / `color` / `texture` / `modelUrl` / `materialPreset`）
 - [ ] Firestore スキーマ拡張設計（マイグレーション戦略）
-- [ ] 3D アセットのライセンス・サイズ・配信戦略の確定
+- [x] 3D アセットのライセンス・サイズ・配信戦略の確定（[3D_ASSET_DELIVERY_STRATEGY.md](./3D_ASSET_DELIVERY_STRATEGY.md)）
 
 ### Human Gates
 
@@ -397,5 +397,6 @@
 | ドキュメント | 内容 |
 |---|---|
 | [PRODUCT_SPEC.md](./PRODUCT_SPEC.md) | プロダクト仕様 |
+| [3D_ASSET_DELIVERY_STRATEGY.md](./3D_ASSET_DELIVERY_STRATEGY.md) | 3D アセット配信戦略 |
 | [ACCEPTANCE_CRITERIA.md](./ACCEPTANCE_CRITERIA.md) | タスク完了基準 |
 | [HUMAN_GATES.md](../harness/HUMAN_GATES.md) | 人間確認が必要な条件 |
