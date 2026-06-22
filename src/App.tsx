@@ -22,7 +22,6 @@ import { fileToGenerativePart, urlToGenerativePart, generateNailTagsFromImage } 
 import { isAiTagSuggestionEnabled } from './lib/featureFlags'
 import { isFirebaseConfigComplete, missingFirebaseEnvKeys } from './lib/firebaseConfigStatus'
 import ErrorBanner from './components/ErrorBanner'
-import heroImage from './assets/hero.png'
 const PrivacyPolicyPage = lazy(() => import('./components/PrivacyPolicyPage'))
 const TermsOfServicePage = lazy(() => import('./components/TermsOfServicePage'))
 const NailImageDetailViewer = lazy(() => import('./components/NailImageDetailViewer'))
@@ -983,17 +982,36 @@ function App() {
         </div>
       )}
       {user === null && (
-        <div className="landing-shell" aria-label="Nailous preview">
+        <div className="landing-shell" aria-label="Nailous jewelry box preview">
+          <div className="landing-topbar" aria-hidden="true">
+            <span>SPHERE</span>
+            <span>20 / 30</span>
+          </div>
+
           <section className="landing-hero">
-            <div className="landing-copy">
-              <p className="landing-kicker">Nail charm studio</p>
-              <h2 className="landing-title">
-                <span>ネイルを、</span>
-                <span>浮かぶ作品に。</span>
-              </h2>
-              <p className="landing-lead">
-                Nailous はネイル写真をただ保存するだけでなく、形・色・質感を読み取り、
-                共有しやすい美しいビューへ育てていくための場所です。
+            <div className="landing-title-block">
+              <p className="landing-kicker">YOUR NAIL COLLECTION</p>
+              <h2 className="landing-title">NAILOUS</h2>
+              <p className="landing-lead">Glass case for every nail you loved.</p>
+            </div>
+
+            <div className="landing-showcase" aria-hidden="true">
+              {[
+                'pearl', 'rose', 'lilac', 'opal', 'champagne', 'mint',
+                'coral', 'ivory', 'violet', 'blush', 'shell', 'moon',
+              ].map(charm => (
+                <span key={charm} className={`landing-charm landing-charm-${charm}`}>
+                  <span className="landing-charm-face" />
+                </span>
+              ))}
+              <div className="landing-stage" />
+            </div>
+
+            <div className="landing-panel">
+              <p className="landing-panel-kicker">GLASS CASE</p>
+              <h3>ネイルを宝石箱のように集める。</h3>
+              <p>
+                写真を保存するだけでなく、形・色・艶が浮かぶコレクションとして眺められるホームへ。
               </p>
               <div className="landing-actions">
                 <button
@@ -1006,47 +1024,23 @@ function App() {
                 </button>
                 <span className="landing-action-note">保存・比較・共有をはじめる</span>
               </div>
+              <div className="landing-legal-links">
+                <a href="/terms" onClick={(e) => handleLinkClick(e, '/terms')}>利用規約</a>
+                <span>・</span>
+                <a href="/privacy" onClick={(e) => handleLinkClick(e, '/privacy')}>プライバシーポリシー</a>
+              </div>
               {!isFirebaseConfigComplete && (
                 <p className="auth-config-note">{firebaseConfigErrorMessage}</p>
               )}
             </div>
-
-            <div className="landing-showcase" aria-hidden="true">
-              <img className="landing-orbit-base" src={heroImage} alt="" />
-              <div className="landing-charm landing-charm-rose">
-                <span className="landing-charm-shine" />
-              </div>
-              <div className="landing-charm landing-charm-pearl">
-                <span className="landing-charm-shine" />
-              </div>
-              <div className="landing-charm landing-charm-ink">
-                <span className="landing-charm-shine" />
-              </div>
-              <div className="landing-detection-frame">
-                <span />
-                <span />
-                <span />
-              </div>
-            </div>
           </section>
 
-          <section className="landing-steps" aria-label="Nailous experience">
-            <article>
-              <span className="landing-step-index">01</span>
-              <h3>View</h3>
-              <p>チップだけが浮くショーウィンドウのように、写真からネイルの主役感を引き出します。</p>
-            </article>
-            <article>
-              <span className="landing-step-index">02</span>
-              <h3>Detect</h3>
-              <p>輪郭・長さ・艶・立体感を扱えるように、まずは手動補正しやすい検出体験から育てます。</p>
-            </article>
-            <article>
-              <span className="landing-step-index">03</span>
-              <h3>Share</h3>
-              <p>お気に入りのビューをコレクションやSNSへ運びやすい形で整えていきます。</p>
-            </article>
-          </section>
+          <div className="landing-skin-selector" aria-hidden="true">
+            <span className="active">Glass</span>
+            <span>Snow Globe</span>
+            <span>Velvet</span>
+            <span>Showcase</span>
+          </div>
         </div>
       )}
       {user && (
