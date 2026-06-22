@@ -294,7 +294,7 @@
 
 - [x] デプロイ先の決定（Firebase Hosting）
 - [x] カスタムドメイン設定方針決定（商用 MVP 初回リリースでは defer）
-- [ ] 本番ビルド最適化（code splitting 等）
+- [x] 本番ビルド最適化方針の記録（[CODE_SPLITTING_STRATEGY.md](../operations/CODE_SPLITTING_STRATEGY.md)）
 - [ ] アクセス解析 / モニタリング設定（MVP では defer）
 - [x] README の最終整備
 - [x] Record final initial production URL direction in `COMMERCIAL_LAUNCH_QA_REPORT.md` and this roadmap.
