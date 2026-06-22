@@ -254,7 +254,7 @@ function App() {
     let createdMeta: HTMLMetaElement | null = null
 
     if (isPublicSharePage) {
-      document.title = 'Shared nail collection'
+      document.title = 'Shared collection | Nailous'
     } else if (isPrivacyPage) {
       document.title = 'プライバシーポリシー | Nailous'
     } else if (isTermsPage) {
@@ -761,7 +761,7 @@ function App() {
     if (publicShareDisplayState === 'not-found') {
       return (
         <div className="public-share-empty">
-          <h2 className="public-share-heading">Shared nail collection</h2>
+          <h2 className="public-share-heading">Shared Nailous collection</h2>
           <p className="public-share-note">This shared collection could not be found.</p>
           <a className="public-share-link" href="/">Back to home</a>
         </div>
@@ -770,7 +770,7 @@ function App() {
     if (publicShareDisplayState === 'disabled') {
       return (
         <div className="public-share-empty">
-          <h2 className="public-share-heading">Shared nail collection</h2>
+          <h2 className="public-share-heading">Shared Nailous collection</h2>
           <p className="public-share-note">This shared collection is no longer available.</p>
           <a className="public-share-link" href="/">Back to home</a>
         </div>
@@ -779,7 +779,7 @@ function App() {
     if (publicShareDisplayState === 'error') {
       return (
         <div className="public-share-empty">
-          <h2 className="public-share-heading">Shared nail collection</h2>
+          <h2 className="public-share-heading">Shared Nailous collection</h2>
           <p className="public-share-note">
             {firebaseConfigErrorMessage || 'We could not load this shared collection right now.'}
           </p>
@@ -792,7 +792,7 @@ function App() {
     return (
       <div id="public-share-page">
         <div className="public-share-header">
-          <p className="public-share-kicker">Shared nail collection</p>
+          <p className="public-share-kicker">Shared Nailous collection</p>
           <h2 className="public-share-heading">{publicShare.title}</h2>
           <p className="public-share-note">
             {publicShare.items.length} items shared. This page is read-only and does not include memo or image data.
@@ -1183,7 +1183,7 @@ function App() {
                     type="button"
                     className="btn-export"
                     onClick={() => downloadTextFile(
-                      `nail-report-export-${getExportDateStamp()}.csv`,
+                      `nailous-export-${getExportDateStamp()}.csv`,
                       toCsv(nailItems),
                       'text/csv;charset=utf-8;'
                     )}
@@ -1193,7 +1193,7 @@ function App() {
                     type="button"
                     className="btn-export"
                     onClick={() => downloadTextFile(
-                      `nail-report-export-${getExportDateStamp()}.json`,
+                      `nailous-export-${getExportDateStamp()}.json`,
                       toJson(nailItems),
                       'application/json'
                     )}

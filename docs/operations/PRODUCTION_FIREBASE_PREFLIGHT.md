@@ -6,6 +6,7 @@ This checklist must be completed and approved by a human operator before any pro
 
 ## 1. Project Setup
 - [ ] Confirm the current Firebase project is the **Production** project (e.g., `nailous-prod`).
+- [ ] Confirm the production Firebase project name and Hosting site use the `nailous` brand.
 - [ ] Verify that no development or staging data exists in the production Firestore/Storage.
 - [ ] Ensure the billing account is active and limits are set if necessary.
 
@@ -30,7 +31,7 @@ This checklist must be completed and approved by a human operator before any pro
 
 ## 4. Auth Providers
 - [ ] Confirm Google Auth is enabled in the production Firebase Console.
-- [ ] Verify that the production URL (and custom domain) is added to the "Authorized domains" list in Firebase Auth settings.
+- [ ] Verify that `nailous-prod.web.app`, `nailous-prod.firebaseapp.com`, and the custom domain if used are added to the "Authorized domains" list in Firebase Auth settings.
 
 ## 5. Firestore & Storage Rules
 - [ ] Review `firestore.rules` for production readiness (no open access, user-specific locks).
@@ -41,6 +42,7 @@ This checklist must be completed and approved by a human operator before any pro
     ```
 
 ## 6. Custom Domain (Optional)
+- [ ] Decide the launch domain. Recommended order: `nailous.app`, `nailous.jp`, then a practical fallback such as `nailous-nail.app` if the shorter domains are unavailable.
 - [ ] If using a custom domain, confirm DNS records are propagated.
 - [ ] Verify SSL certificate status in the Firebase Hosting console.
 
