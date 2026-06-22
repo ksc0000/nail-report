@@ -2,38 +2,37 @@
 
 ## Context
 
-The nail-report application is currently in Phase 2, focusing on improving stability, test coverage, and UX. A key part of this phase is adding comprehensive test coverage, starting with core utility functions. This task specifically targets the Firebase Firestore helper functions.
+The product roadmap indicates that Phase 2 is active, focusing on stability, test coverage, and UX improvements. This task specifically addresses the "2.3 Loading states" goal by implementing a visual loading indicator for the main nail item list.
 
 ## Objective
 
-Add Vitest unit tests for the helper functions implemented in `src/lib/firestore.ts`.
+Implement a loading skeleton component for the nail item list in `src/App.tsx` to display while data is being fetched. This will improve the perceived performance and user experience during initial data loading or refreshes.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions for testing if necessary, or minor fixes)
-- `src/__tests__/firestore.test.ts` (new file for unit tests)
-- `src/__tests__/` (other new test files as needed for mocks)
-- `package.json` (minor devDependencies adjustments if strictly necessary for testing, e.g., `@testing-library/react` if needed for component mocks, but avoid new core dependencies)
-- `vite.config.ts` (adjustments for Vitest configuration if needed for mocking Firebase SDK)
+- `src/App.tsx` (to integrate the skeleton and manage its visibility)
+- `src/components/` (to create a new `NailItemSkeleton.tsx` component, if necessary)
+- `src/App.css` (to add styling for the skeleton component)
+- `src/styles/` (to create a new CSS module for the skeleton, if necessary)
 
 ## Forbidden Scope
 
 - `src/main.tsx` (entry point — do not modify)
 - `commands/` (PowerShell scripts — do not modify)
 - `firestore.rules`, `storage.rules` (require human approval)
-- New npm packages in `dependencies` (only `devDependencies` if essential for testing)
+- `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create a new test file `src/__tests__/firestore.test.ts`.
-- Ensure all relevant helper functions within `src/lib/firestore.ts` are covered by unit tests.
-- Use `vitest` and `vi.mock` to mock Firebase SDK dependencies (e.g., `firebase/firestore`).
-- Focus on testing the logic within `firestore.ts`, not the Firebase SDK itself.
-- Run `npm run build && npm run lint && npm test` before finishing.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files. (Not applicable for this UI task).
 - Report follow-up items as comments, not additional code.
+- **Implement a placeholder loading skeleton:** The skeleton should visually represent the layout of a nail item (e.g., a grey rectangle for an image, a few lines for text) to indicate content is loading.
+- **Integrate into `src/App.tsx`:** The skeleton should be conditionally rendered when nail items are being fetched, replacing or appearing before the actual list of nail items.
+- **No new npm dependencies:** The implementation should use existing project dependencies and plain CSS.
 
 ## Output Format
 
@@ -42,26 +41,3 @@ Add Vitest unit tests for the helper functions implemented in `src/lib/firestore
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
----
-### **WORKER OUTPUT (to be filled by Jules)**
-
-## Summary of what changed
-*(Jules will fill this)*
-
-## Changed files list
-*(Jules will fill this)*
-
-## Commands run and results
-```bash
-# (Jules will run these commands and paste results here)
-npm run build
-npm run lint
-npm test
-```
-
-## Known issues or limitations
-*(Jules will fill this)*
-
-## Suggested next task
-Add loading skeleton to nail item list (`src/App.tsx`). This aligns with Phase 2.3 (Loading states) of the roadmap.
