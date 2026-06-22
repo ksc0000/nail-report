@@ -196,9 +196,9 @@ interface NailItem {
 | デプロイ先 | Firebase Hosting | 確定 |
 | Firebase project 方針 | development / production を分離 | 確定 |
 | アプリ名 | Nailous | 確定 |
-| 推奨 production Firebase project ID | `nailous-prod` | 暫定確定 |
-| 初期 production URL | `https://nailous-prod.web.app` | production project 作成後に確定 |
-| カスタムドメイン | `nailous` 関連ドメインを取得後、Firebase Hosting に接続 | human gate |
+| production Firebase project ID | `nailous-prod` | 確定 |
+| 初期 production URL | `https://nailous-prod.web.app` | production project 作成後に使用 |
+| カスタムドメイン | 商用 MVP 初回リリースでは defer。`nailous` 関連ドメイン取得後に Firebase Hosting へ接続 | post-launch / human gate |
 | 本番 deploy | human 承認後のみ実行 | 確定 |
 | 対応ブラウザ | モダンブラウザ（Chrome / Safari / Firefox 最新版） | 暫定 |
 | 画像ファイル制限 | jpeg / png / webp、5MB 以下 | 確定 |

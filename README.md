@@ -6,9 +6,9 @@ Commercial MVP release direction:
 
 - App name: `Nailous`
 - Production host: Firebase Hosting
-- Recommended production Firebase project ID: `nailous-prod`
-- Initial Firebase Hosting URL: `https://nailous-prod.web.app`
-- Custom domain: decide and configure after the domain is acquired and DNS ownership can be verified
+- Production Firebase project ID: `nailous-prod`
+- Launch Firebase Hosting URL: `https://nailous-prod.web.app`
+- Custom domain: deferred until after the commercial MVP launch, unless a human operator acquires and verifies a `nailous` domain before go/no-go
 
 ## Development
 
