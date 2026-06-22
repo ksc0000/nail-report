@@ -116,6 +116,7 @@ export default defineConfig([
 | [docs/operations/PRODUCTION_FIREBASE_PREFLIGHT.md](docs/operations/PRODUCTION_FIREBASE_PREFLIGHT.md) | Production Firebase preflight checklist for project, auth, rules, and rollback readiness |
 | [docs/operations/IPHONE_SAFARI_CAMERA_SMOKE_REPORT.md](docs/operations/IPHONE_SAFARI_CAMERA_SMOKE_REPORT.md) | Focused iPhone Safari camera/upload smoke report template for Issue #113 |
 | [docs/operations/BUNDLE_SIZE_WARNING_ACCEPTANCE.md](docs/operations/BUNDLE_SIZE_WARNING_ACCEPTANCE.md) | Documented acceptance of current production bundle size for commercial MVP |
+| [docs/operations/CODE_SPLITTING_STRATEGY.md](docs/operations/CODE_SPLITTING_STRATEGY.md) | Current lazy-loading state and future bundle optimization strategy |
 | [docs/operations/FIRESTORE_SECURITY_RULES.md](docs/operations/FIRESTORE_SECURITY_RULES.md) | Firestore Security Rules design, phase plan, and deploy checklist |
 | [docs/operations/PUBLIC_SHARING_PRIVACY.md](docs/operations/PUBLIC_SHARING_PRIVACY.md) | Public share links, shared/excluded fields, revoke behavior, and privacy notes |
 | [docs/operations/FIREBASE_SETUP.md](docs/operations/FIREBASE_SETUP.md) | Firebase Auth setup and verification steps |
