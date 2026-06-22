@@ -1,6 +1,18 @@
-# React + TypeScript + Vite
+# Nailous
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Nailous is a Firebase-backed personal nail archive for saving nail photos, tags, and notes, then reviewing or sharing selected collections.
+
+Commercial MVP release direction:
+
+- App name: `Nailous`
+- Production host: Firebase Hosting
+- Recommended production Firebase project ID: `nailous-prod`
+- Initial Firebase Hosting URL: `https://nailous-prod.web.app`
+- Custom domain: decide and configure after the domain is acquired and DNS ownership can be verified
+
+## Development
+
+This app uses React, TypeScript, Vite, and Firebase.
 
 Currently, two official plugins are available:
 
