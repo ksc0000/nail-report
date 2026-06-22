@@ -4,7 +4,9 @@ This report template is for recording the QA results for the commercial launch o
 Copy this template into a new PR or issue comment when performing QA.
 
 ## QA Environment
-- **URL:** [e.g., https://nailous-production.web.app]
+- **Planned production URL:** https://nailous-prod.web.app
+- **Custom domain:** Deferred for the commercial MVP initial release unless a human operator acquires and verifies a Nailous domain before go/no-go.
+- **Tested URL:** [Actual production or approved preview URL]
 - **Tester:** [Name]
 - **Date:** [YYYY-MM-DD]
 - **Build/Commit:** [SHA or version]

@@ -272,6 +272,8 @@
 - [x] プロダクト定義・対象ユーザー・問題設定決定
 - [x] 本番デプロイ先を Firebase Hosting に決定
 - [x] development / production Firebase project 分離方針決定
+- [x] 初期 production URL 方針決定（`https://nailous-prod.web.app`）
+- [x] カスタムドメインは商用 MVP 初回リリースでは defer
 - [x] 本番 release runbook 作成
 - [x] 本番 smoke test checklist 作成
 
@@ -291,11 +293,11 @@
 ### Example Issues
 
 - [x] デプロイ先の決定（Firebase Hosting）
-- [ ] カスタムドメイン設定（broader commercial expansion 前に推奨）
+- [x] カスタムドメイン設定方針決定（商用 MVP 初回リリースでは defer）
 - [ ] 本番ビルド最適化（code splitting 等）
 - [ ] アクセス解析 / モニタリング設定（MVP では defer）
 - [x] README の最終整備
-- [ ] Record final production/preview URLs in `COMMERCIAL_LAUNCH_QA_REPORT.md` and this roadmap.
+- [x] Record final initial production URL direction in `COMMERCIAL_LAUNCH_QA_REPORT.md` and this roadmap.
 
 ### Human Gates
 

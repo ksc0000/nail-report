@@ -8,7 +8,8 @@ For formal commercial launch QA recording, use the [Commercial Launch QA Report 
 
 - App name: Nailous
 - Production host: Firebase Hosting
-- Recommended production URL: `https://nailous-prod.web.app`
+- Initial production URL: `https://nailous-prod.web.app`
+- Custom domain: deferred for the commercial MVP initial release unless separately human-approved
 - Production Firebase project: separate from development
 - Deploy owner: human operator
 - Deploy approval: explicit human approval required

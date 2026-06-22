@@ -8,9 +8,9 @@ Do not run production deploy commands without explicit human approval.
 - App name: Nailous
 - Hosting: Firebase Hosting
 - Firebase projects: separate development and production projects
-- Recommended production project id: `nailous-prod`
+- Production project id: `nailous-prod`
 - Initial production URL: `https://nailous-prod.web.app`
-- Preferred custom domain: a short `nailous` domain after human purchase and DNS verification
+- Custom domain: deferred until after the commercial MVP launch unless a human operator completes purchase and DNS verification before go/no-go
 - Deploy owner: human operator
 - CI deploy automation: deferred for MVP
 - MVP scope: personal nail archive with Auth, CRUD, image upload, export, public sharing, and policy links
@@ -40,7 +40,7 @@ npm run lint
 The following Firebase Hosting URLs are expected for the commercial MVP:
 
 - **Production URL:** `https://<project-id>.web.app` (or custom domain if configured). This is the primary entry point for users after a human-approved deploy.
-- **Recommended Nailous production URL:** `https://nailous-prod.web.app` until a custom domain is connected.
+- **Nailous initial production URL:** `https://nailous-prod.web.app` until a custom domain is connected after launch.
 - **Preview Channel URL:** `https://<project-id>--<channel-id>-<hash>.web.app`. These are optional URLs generated for feature testing and must not be shared as the production link.
 
 ## Deploy Procedure
