@@ -79,6 +79,15 @@ type InspirationCategory = typeof INSPIRATION_CATEGORIES[number]
 const SAVED_DESIGN_FIELDS = ['Image', 'Shape', 'Color', 'Tags', 'Memo'] as const
 const APPOINTMENT_PLAN_FIELDS = ['Salon', 'Date', 'Budget', 'Request'] as const
 const PROFILE_ACTIONS = ['Data management', 'Privacy', 'Terms'] as const
+const APP_SCREENS = [
+  { id: 'home', label: 'Home' },
+  { id: 'design', label: 'Design' },
+  { id: 'inspiration', label: 'Explore' },
+  { id: 'saved', label: 'Saved' },
+  { id: 'book', label: 'Book' },
+  { id: 'profile', label: 'Profile' },
+] as const
+type AppScreenId = typeof APP_SCREENS[number]['id']
 
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
   [...items].sort((a, b) => {
@@ -290,6 +299,7 @@ function App() {
   const [publicSharesUserId, setPublicSharesUserId] = useState<string | null>(null)
   const [shareActionId, setShareActionId] = useState<string | null>(null)
   const [activeDisplayMode, setActiveDisplayMode] = useState<DisplayMode>('Glass')
+  const [activeAppScreen, setActiveAppScreen] = useState<AppScreenId>('home')
   const [publicShare, setPublicShare] = useState<PublicShareDocWithId | null>(null)
   const [publicShareState, setPublicShareState] = useState<PublicShareViewState>(
     isPublicSharePage ? 'loading' : 'idle'
@@ -300,6 +310,13 @@ function App() {
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const dataModalCloseButtonRef = useRef<HTMLButtonElement>(null)
   const previewUrlRef = useRef<string | null>(null)
+
+  const handleSelectAppScreen = (screenId: AppScreenId) => {
+    setActiveAppScreen(screenId)
+    window.requestAnimationFrame(() => {
+      document.getElementById('nail-section')?.scrollIntoView({ block: 'start' })
+    })
+  }
 
   useEffect(() => () => {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
@@ -648,6 +665,7 @@ function App() {
 
   const handleStartEdit = (item: NailItemDoc) => {
     setEditingId(item.id)
+    setActiveAppScreen('design')
     setNailTitle(item.title)
     setNailTags(item.tags.join(', '))
     setNailMemo(item.memo ?? '')
@@ -966,7 +984,7 @@ function App() {
   }
 
   return (
-    <section id="center" className={user ? undefined : 'is-signed-out'}>
+    <section id="center" className={user ? 'is-signed-in' : 'is-signed-out'}>
       <h1 id="app-title">Nailous</h1>
       <ErrorBanner
         message={firebaseConfigErrorMessage || bannerError}
@@ -1126,22 +1144,27 @@ function App() {
       )}
       {user && (
         <div id="nail-section">
-          <section className="nail-studio-hero" aria-labelledby="studio-title">
-            <div>
-              <p className="nail-studio-kicker">JEWELRY BOX STUDIO</p>
-              <h2 id="studio-title">ネイルを一つずつ、宝石箱へ。</h2>
-              <p>
-                追加した写真はあとから浮遊ビュー・比較・共有へつながります。
-                まずは今日のネイルを一つ、コレクションに入れておきましょう。
-              </p>
-            </div>
-            <div className="nail-studio-count" aria-label={`保存済みネイル ${nailItems.length} 件`}>
-              <span>{nailItems.length}</span>
-              <small>saved</small>
-            </div>
-          </section>
-          {renderDisplayModeSwitcher('studio-mode-switcher')}
-          <section className="nail-design-screen" aria-labelledby="nail-design-title">
+          {activeAppScreen === 'home' && (
+            <>
+              <section className="nail-studio-hero" aria-labelledby="studio-title">
+                <div>
+                  <p className="nail-studio-kicker">JEWELRY BOX STUDIO</p>
+                  <h2 id="studio-title">ネイルを一つずつ、宝石箱へ。</h2>
+                  <p>
+                    追加した写真はあとから浮遊ビュー・比較・共有へつながります。
+                    まずは今日のネイルを一つ、コレクションに入れておきましょう。
+                  </p>
+                </div>
+                <div className="nail-studio-count" aria-label={`保存済みネイル ${nailItems.length} 件`}>
+                  <span>{nailItems.length}</span>
+                  <small>saved</small>
+                </div>
+              </section>
+              {renderDisplayModeSwitcher('studio-mode-switcher')}
+            </>
+          )}
+          {activeAppScreen === 'design' && (
+            <section className="nail-design-screen" aria-labelledby="nail-design-title">
             <div className="nail-design-header">
               <div>
                 <p className="nail-design-kicker">NAIL DESIGN</p>
@@ -1353,6 +1376,8 @@ function App() {
               {nailError && <p className="nail-error">{nailError}</p>}
             </div>
           </section>
+          )}
+          {activeAppScreen === 'inspiration' && (
           <section className="inspiration-screen" aria-labelledby="inspiration-title">
             <div className="inspiration-header">
               <div>
@@ -1394,6 +1419,8 @@ function App() {
               ))}
             </div>
           </section>
+          )}
+          {activeAppScreen === 'saved' && (
           <section className="saved-designs-screen" aria-labelledby="saved-designs-title">
             <div className="saved-designs-header">
               <div>
@@ -1434,6 +1461,8 @@ function App() {
               </div>
             </div>
           </section>
+          )}
+          {activeAppScreen === 'book' && (
           <section className="appointment-screen" aria-labelledby="appointment-title">
             <div className="appointment-header">
               <div>
@@ -1469,6 +1498,8 @@ function App() {
               </div>
             </div>
           </section>
+          )}
+          {activeAppScreen === 'profile' && (
           <section className="profile-screen" aria-labelledby="profile-title">
             <div className="profile-header">
               <div>
@@ -1523,6 +1554,9 @@ function App() {
               </div>
             </div>
           </section>
+          )}
+          {activeAppScreen === 'home' && (
+          <>
           {!isFetching && nailItems.length > 0 && (
             <div id="nail-summary">
               <h3 className="summary-heading">コレクション概要</h3>
@@ -1893,6 +1927,26 @@ function App() {
               })}
             </ul>
           )}
+          </>
+          )}
+          <nav className="app-bottom-nav" aria-label="Jewelry Box screens">
+            {APP_SCREENS.map(screen => {
+              const isActive = activeAppScreen === screen.id
+              return (
+                <button
+                  key={screen.id}
+                  type="button"
+                  className={isActive ? 'active' : undefined}
+                  aria-current={isActive ? 'page' : undefined}
+                  aria-pressed={isActive}
+                  onClick={() => handleSelectAppScreen(screen.id)}
+                >
+                  <span className="app-bottom-nav-dot" aria-hidden="true" />
+                  <span>{screen.label}</span>
+                </button>
+              )
+            })}
+          </nav>
         </div>
       )}
       {renderFooter()}
