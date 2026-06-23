@@ -316,6 +316,16 @@
   opacity: 0.52;
 }
 
+.landing-charm--almond,
+.nail-empty-chip--almond {
+  border-radius: 72% 100% 100% 72% / 58% 82% 82% 58%;
+}
+
+.landing-charm--square,
+.nail-empty-chip--square {
+  border-radius: 18px 26px 26px 18px;
+}
+
 .landing-charm-pearl {
   --w: 118px;
   --r: 90deg;
