@@ -171,6 +171,52 @@
   display: none;
 }
 
+/* Jewelry Box surface treatments */
+
+.jb-glass-surface {
+  border: 1px solid var(--jb-glass-border);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
+    rgba(18, 10, 24, 0.58);
+  color: var(--jb-text-on-dark);
+  backdrop-filter: blur(22px);
+  box-shadow: var(--jb-shadow-panel);
+}
+
+.jb-glass-surface--light {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(248, 244, 248, 0.74)),
+    rgba(255, 255, 255, 0.72);
+  color: var(--text);
+}
+
+.jb-gold-rim {
+  border-color: color-mix(in srgb, var(--jb-gold) 34%, var(--jb-glass-border));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 0 0 1px rgba(248, 217, 77, 0.12),
+    var(--jb-shadow-glow);
+}
+
+.jb-gloss-surface {
+  position: relative;
+  overflow: hidden;
+}
+
+.jb-gloss-surface::before,
+.landing-panel::before,
+.nail-studio-hero::before,
+#nail-form::before,
+.nail-empty::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.22), transparent 24% 72%, rgba(248, 217, 77, 0.1)),
+    radial-gradient(circle at 82% 0%, rgba(248, 217, 77, 0.14), transparent 32%);
+}
+
 .landing-shell {
   width: 100%;
   min-height: 100svh;
@@ -454,7 +500,8 @@
   width: min(420px, calc(100vw - 32px));
   padding: 18px 20px 20px;
   translate: -50% 0;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--jb-gold) 24%, rgba(255, 255, 255, 0.12));
   border-radius: 20px;
   background: rgba(18, 10, 24, 0.54);
   color: rgba(255, 255, 255, 0.72);
@@ -711,12 +758,14 @@
 }
 
 .nail-studio-hero {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 18px;
   align-items: center;
   padding: 22px;
-  border: 1px solid var(--jb-glass-border);
+  border: 1px solid color-mix(in srgb, var(--jb-gold) 22%, var(--jb-glass-border));
   border-radius: 10px;
   background:
     radial-gradient(circle at 84% 8%, rgba(248, 217, 77, 0.16), transparent 24%),
@@ -933,10 +982,12 @@
 }
 
 #nail-form {
+  position: relative;
+  overflow: hidden;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(248, 244, 248, 0.82)),
     radial-gradient(circle at 90% 0%, rgba(236, 64, 122, 0.12), transparent 28%);
-  border: 1px solid color-mix(in srgb, var(--border) 74%, var(--jb-pink));
+  border: 1px solid color-mix(in srgb, var(--border) 68%, var(--jb-gold));
   border-radius: 10px;
   padding: 18px;
   display: flex;
@@ -1091,9 +1142,10 @@
 }
 
 .nail-empty {
+  position: relative;
   text-align: center;
   padding: 28px 20px 32px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid color-mix(in srgb, var(--jb-gold) 24%, rgba(255, 255, 255, 0.12));
   border-radius: 10px;
   background:
     radial-gradient(circle at 50% 30%, rgba(248, 187, 208, 0.18), transparent 32%),
