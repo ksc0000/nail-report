@@ -1806,6 +1806,10 @@ function App() {
                       </div>
                       <div className="nail-skeleton-date shimmer" />
                     </div>
+                    <div className="nail-skeleton-actions">
+                      <div className="nail-skeleton-action shimmer" />
+                      <div className="nail-skeleton-action shimmer" />
+                    </div>
                   </li>
                 ))}
               </ul>
