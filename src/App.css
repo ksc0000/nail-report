@@ -1,3 +1,5 @@
+/* App shell and authentication */
+
 #center {
   display: flex;
   flex-direction: column;
@@ -127,6 +129,8 @@
   color: var(--accent) !important;
   font-weight: 600;
 }
+
+/* Signed-out Jewelry Box home */
 
 #root:has(.is-signed-out) {
   width: 100%;
@@ -680,6 +684,8 @@
   }
 }
 
+/* Logged-in Jewelry Box studio */
+
 #nail-section {
   width: 100%;
   max-width: 920px;
@@ -757,6 +763,8 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
+
+/* Public share route */
 
 #public-share-page {
   width: 100%;
@@ -866,6 +874,8 @@
   font-size: 0.74rem;
   color: #888;
 }
+
+/* Collection search and add/edit form */
 
 #nail-search {
   margin-bottom: 16px;
@@ -1194,6 +1204,8 @@
   }
 }
 
+/* Nail collection cards */
+
 #nail-list {
   list-style: none;
   padding: 0;
@@ -1340,6 +1352,8 @@
   padding: 8px 12px;
   border-top: 1px solid var(--border);
 }
+
+/* Detail viewer and floating charm preview */
 
 .nail-detail-backdrop {
   position: fixed;
@@ -1735,6 +1749,8 @@
     animation: none;
   }
 }
+
+/* Collection summary, comparison, sharing, and filters */
 
 #nail-summary {
   background: var(--social-bg);
@@ -2398,6 +2414,8 @@
   }
 }
 
+/* Accessibility utilities */
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -2411,7 +2429,8 @@
   border-width: 0;
 }
 
-/* Loading Skeleton */
+/* Loading skeletons */
+
 .nail-skeleton-card {
   display: flex;
   flex-direction: column;
@@ -2571,7 +2590,8 @@
   text-decoration: underline;
 }
 
-/* Legal Pages */
+/* Legal pages and footer */
+
 .legal-page {
   width: 100%;
   max-width: 720px;
@@ -2677,6 +2697,8 @@
     gap: 12px;
   }
 }
+
+/* AI tag suggestion */
 
 .ai-tag-btn {
   margin-top: 4px;
