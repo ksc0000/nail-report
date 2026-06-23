@@ -22,6 +22,7 @@ import { fileToGenerativePart, urlToGenerativePart, generateNailTagsFromImage } 
 import { isAiTagSuggestionEnabled } from './lib/featureFlags'
 import { isFirebaseConfigComplete, missingFirebaseEnvKeys } from './lib/firebaseConfigStatus'
 import ErrorBanner from './components/ErrorBanner'
+import FloatingNailChip from './components/FloatingNailChip'
 const PrivacyPolicyPage = lazy(() => import('./components/PrivacyPolicyPage'))
 const TermsOfServicePage = lazy(() => import('./components/TermsOfServicePage'))
 const NailImageDetailViewer = lazy(() => import('./components/NailImageDetailViewer'))
@@ -1000,9 +1001,7 @@ function App() {
                 'pearl', 'rose', 'lilac', 'opal', 'champagne', 'mint',
                 'coral', 'ivory', 'violet', 'blush', 'shell', 'moon',
               ].map(charm => (
-                <span key={charm} className={`landing-charm landing-charm-${charm}`}>
-                  <span className="landing-charm-face" />
-                </span>
+                <FloatingNailChip key={charm} className={`landing-charm-${charm}`} />
               ))}
               <div className="landing-stage" />
             </div>
@@ -1425,9 +1424,9 @@ function App() {
           ) : nailItems.length === 0 ? (
             <div className="nail-empty">
               <div className="nail-empty-stage" aria-hidden="true">
-                <span className="nail-empty-chip nail-empty-chip--one" />
-                <span className="nail-empty-chip nail-empty-chip--two" />
-                <span className="nail-empty-chip nail-empty-chip--three" />
+                <FloatingNailChip variant="empty" className="nail-empty-chip--one" showHighlight={false} />
+                <FloatingNailChip variant="empty" className="nail-empty-chip--two" showHighlight={false} />
+                <FloatingNailChip variant="empty" className="nail-empty-chip--three" showHighlight={false} />
               </div>
               <p className="nail-empty-main">まだ宝石箱は空です</p>
               <p className="nail-empty-sub">タイトルと写真を追加すると、最初のネイルチャームがここに並びます</p>
