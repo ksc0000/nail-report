@@ -161,6 +161,7 @@ Firestore (default) / users/{userId}/nailItems/{itemId}
 | `thumbnailUrl` | `string` | ✅ | Firebase Storage URL | サムネイル画像（初期は imageUrl と同値でも可） |
 | `tags` | `string[]` | ✅ | 最大 10 件、空配列可 | スタイル・色・シーン等のタグ |
 | `memo` | `string` | ✅ | 最大 500 文字、空文字可 | サロン名・価格・シーン等のメモ |
+| `imageSource` | `string` | | upload / camera / unknown | 画像の取得元 |
 | `createdAt` | `Timestamp` | ✅ | サーバータイムスタンプ | 作成日時 |
 | `updatedAt` | `Timestamp` | ✅ | サーバータイムスタンプ | 更新日時 |
 
@@ -173,6 +174,7 @@ interface NailItem {
   thumbnailUrl: string
   tags: string[]
   memo: string
+  imageSource?: 'upload' | 'camera' | 'unknown'
   createdAt: Timestamp
   updatedAt: Timestamp
 }
@@ -241,6 +243,7 @@ interface NailItem {
 | ドキュメント | 内容 |
 |---|---|
 | [ROADMAP.md](./ROADMAP.md) | 開発ロードマップ |
+| [NAIL_ITEM_SCHEMA_AUDIT.md](./NAIL_ITEM_SCHEMA_AUDIT.md) | NailItem スキーマ詳細監査 |
 | [3D_ASSET_DELIVERY_STRATEGY.md](./3D_ASSET_DELIVERY_STRATEGY.md) | 3D アセット配信戦略 |
 | [FIRESTORE_3D_SCHEMA_DESIGN.md](./FIRESTORE_3D_SCHEMA_DESIGN.md) | Phase 8 以降の Firestore 3D フィールド設計 |
 | [ACCEPTANCE_CRITERIA.md](./ACCEPTANCE_CRITERIA.md) | タスク完了基準 |
