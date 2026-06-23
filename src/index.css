@@ -11,6 +11,26 @@
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
+  /* Jewelry Box Refresh tokens */
+  --jb-black: #050308;
+  --jb-ink: #100914;
+  --jb-plum: #241429;
+  --jb-pink: #f8bbd0;
+  --jb-rose: #ec407a;
+  --jb-gold: #f8d94d;
+  --jb-gold-soft: #fff2b8;
+  --jb-lavender: #b1a7ff;
+  --jb-mint: #c8f0df;
+  --jb-white: #fff;
+  --jb-cream: #f8f4f8;
+  --jb-glass: rgba(255, 255, 255, 0.08);
+  --jb-glass-strong: rgba(255, 255, 255, 0.16);
+  --jb-glass-border: rgba(255, 255, 255, 0.14);
+  --jb-text-on-dark: rgba(255, 255, 255, 0.78);
+  --jb-text-muted-on-dark: rgba(255, 255, 255, 0.48);
+  --jb-shadow-glow: 0 0 28px rgba(248, 187, 208, 0.14);
+  --jb-shadow-panel: 0 24px 60px rgba(0, 0, 0, 0.34);
+
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
@@ -43,6 +63,9 @@
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+    --jb-glass: rgba(255, 255, 255, 0.07);
+    --jb-glass-strong: rgba(255, 255, 255, 0.15);
+    --jb-glass-border: rgba(255, 255, 255, 0.13);
   }
 
   #social .button-icon {
