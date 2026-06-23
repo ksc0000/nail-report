@@ -201,6 +201,11 @@ function App() {
   const isPublicSharePage = sharePathId !== null
   const isPrivacyPage = pathname === '/privacy'
   const isTermsPage = pathname === '/terms'
+  const isDesignPage = pathname === '/design'
+  const isInspirationPage = pathname === '/inspiration'
+  const isSavedPage = pathname === '/saved'
+  const isBookPage = pathname === '/book'
+  const isProfilePage = pathname === '/profile'
   const [user, setUser] = useState<User | null | undefined>(
     isFirebaseConfigComplete ? undefined : null
   )
@@ -259,11 +264,21 @@ function App() {
       document.title = 'プライバシーポリシー | Nailous'
     } else if (isTermsPage) {
       document.title = '利用規約 | Nailous'
+    } else if (isDesignPage) {
+      document.title = 'Nail Design | Nailous'
+    } else if (isInspirationPage) {
+      document.title = 'Inspiration | Nailous'
+    } else if (isSavedPage) {
+      document.title = 'Saved Designs | Nailous'
+    } else if (isBookPage) {
+      document.title = 'Book Appointment | Nailous'
+    } else if (isProfilePage) {
+      document.title = 'Profile | Nailous'
     } else {
       document.title = 'Nailous'
     }
 
-    if (isPublicSharePage || isPrivacyPage || isTermsPage) {
+    if (isPublicSharePage || isPrivacyPage || isTermsPage || isDesignPage || isInspirationPage || isSavedPage || isBookPage || isProfilePage) {
       if (meta) {
         meta.setAttribute('content', 'noindex')
       } else {
@@ -284,7 +299,7 @@ function App() {
         meta.removeAttribute('content')
       }
     }
-  }, [isPublicSharePage, isPrivacyPage, isTermsPage])
+  }, [isPublicSharePage, isPrivacyPage, isTermsPage, isDesignPage, isInspirationPage, isSavedPage, isBookPage, isProfilePage])
 
   useEffect(() => {
     if (!isPublicSharePage || !sharePathId) return
@@ -845,6 +860,24 @@ function App() {
     </footer>
   )
 
+  const renderComingSoon = (title: string) => (
+    <section id="center">
+      <h1 id="app-title">Nailous</h1>
+      <div className="legal-page">
+        <h2 className="legal-title">{title}</h2>
+        <div className="legal-content">
+          <p>この機能は現在準備中です。Jewelry Box Refresh で公開予定です。</p>
+        </div>
+        <div className="legal-actions">
+          <a href="/" onClick={(e) => { e.preventDefault(); navigateTo('/') }}>
+            ホームに戻る
+          </a>
+        </div>
+      </div>
+      {renderFooter()}
+    </section>
+  )
+
   if (isPublicSharePage) {
     return (
       <section id="center">
@@ -854,6 +887,12 @@ function App() {
       </section>
     )
   }
+
+  if (isDesignPage) return renderComingSoon('Nail Design')
+  if (isInspirationPage) return renderComingSoon('Inspiration')
+  if (isSavedPage) return renderComingSoon('Saved Designs')
+  if (isBookPage) return renderComingSoon('Book Appointment')
+  if (isProfilePage) return renderComingSoon('Profile')
 
   if (isPrivacyPage) {
     return (

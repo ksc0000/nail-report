@@ -120,9 +120,42 @@ Nailous は、ネイル写真・メモ・タグをかんたんに残し、あと
 | 画面名 | 目的 | 状態 |
 |--------|------|------|
 | ログイン画面 | Google OAuth でサインイン | ✅ 完了 |
-| コレクション一覧 | NailItem カードグリッド、検索、ソート | ✅ 完了 |
+| コレクション一覧 | Home / Jewelry Box 拠点、検索、ソート | ✅ 完了 |
 | 追加 / 編集フォーム | タイトル・タグ・メモ・画像の入力 | ✅ 完了 |
 | 空状態ガイド | 初回ユーザー向けオンボーディング | ✅ 完了 |
+| Nail Design | デザイン詳細・カタログ閲覧 | 🔲 未着手 |
+| Inspiration | デザインのヒント・トレンド | 🔲 未着手 |
+| Saved Designs | お気に入り保存済みデザイン | 🔲 未着手 |
+| Book Appointment | サロン予約連携 | 🔲 未着手 |
+| Profile | ユーザー設定・プロフィール | 🔲 未着手 |
+
+---
+
+## Routing Configuration (Jewelry Box)
+
+Nailous は現在、`window.location.pathname` を使用した簡易的なルーティングを実装しています。Jewelry Box Refresh に向けて、以下のパス構成をサポートします。
+
+| 画面名 | パス | 説明 |
+|--------|------|------|
+| Home | `/` | Jewelry Box メイン一覧・検索 |
+| Nail Design | `/design` | 特定のネイルデザイン詳細またはカタログ |
+| Inspiration | `/inspiration` | デザインのヒントやトレンド |
+| Saved Designs | `/saved` | お気に入り・保存済みデザイン一覧 |
+| Book Appointment | `/book` | サロン予約・相談ページ |
+| Profile | `/profile` | ユーザープロフィール・設定 |
+| Privacy Policy | `/privacy` | プライバシーポリシー（既存） |
+| Terms of Service | `/terms` | 利用規約（既存） |
+| Public Share | `/share/:id` | 共有コレクション閲覧ページ（既存） |
+
+---
+
+## Routing Migration Risk
+
+現在の `App.tsx` 内での手動パス管理から、将来的に React Router 等のライブラリへ移行する際の主なリスクは以下の通りです。
+
+1. **State Management Complexity**: 手動ルーティングと React state が密結合しているため、移行時にナビゲーション状態の不整合が発生しやすい。
+2. **Deep Linking**: 現在の実装ではネストされたルートや複雑なクエリパラメータの処理が限定的であり、将来の AR Try-on 等の深層機能へのリンク対応に改修が必要。
+3. **SEO / SSR**: PWA としては問題ないが、将来的に Web 検索からの流入を重視する場合、現在のクライアントサイドのみのルーティングでは不十分になる可能性がある。
 
 ---
 
