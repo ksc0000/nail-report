@@ -53,14 +53,18 @@ const NailImageDetailViewer: React.FC<NailImageDetailViewerProps> = ({ item, onC
         onClick={(e) => e.stopPropagation()}
       >
         <div className="nail-detail-header">
-          <p className="nail-detail-kicker">ネイル詳細</p>
+          <div>
+            <p className="nail-detail-kicker">Jewelry Box Detail</p>
+            <p className="nail-detail-close-hint">背景クリックまたはEscで閉じる</p>
+          </div>
           <button
             ref={closeButtonRef}
             type="button"
             className="nail-detail-close"
             onClick={onClose}
-            aria-label="ネイル詳細を閉じる"
+            aria-label="ネイル詳細カードを閉じる"
           >
+            <span aria-hidden="true">×</span>
             閉じる
           </button>
         </div>

@@ -2741,6 +2741,12 @@
   cursor: pointer;
 }
 
+.nail-card-thumb:focus-visible,
+.nail-card-body:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -4px;
+}
+
 .nail-card-thumb::after {
   content: '';
   position: absolute;
@@ -2974,7 +2980,17 @@
   color: var(--accent);
 }
 
+.nail-detail-close-hint {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
 .nail-detail-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 12px;
   border: 1px solid var(--border);
   border-radius: 6px;

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { auth, signInWithGoogle, signOutUser, onAuthStateChanged } from './lib/auth'
 import type { User } from './lib/auth'
 import { addNailItem, updateNailItem, deleteNailItem, fetchNailItems } from './lib/firestore'
@@ -316,6 +317,16 @@ function App() {
     window.requestAnimationFrame(() => {
       document.getElementById('nail-section')?.scrollIntoView({ block: 'start' })
     })
+  }
+
+  const handleOpenDetailCard = (itemId: string) => {
+    setDetailItemId(itemId)
+  }
+
+  const handleDetailCardKeyDown = (event: ReactKeyboardEvent, itemId: string) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    handleOpenDetailCard(itemId)
   }
 
   useEffect(() => () => {
@@ -1850,7 +1861,11 @@ function App() {
                   >
                     <div
                       className="nail-card-thumb"
-                      onClick={() => setDetailItemId(item.id)}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`${item.title} の詳細カードを開く`}
+                      onClick={() => handleOpenDetailCard(item.id)}
+                      onKeyDown={(event) => handleDetailCardKeyDown(event, item.id)}
                     >
                       <div className="nail-thumb-placeholder" aria-hidden={Boolean(item.imageUrl)}>
                         <div className="nail-thumb-showcase">
@@ -1886,7 +1901,11 @@ function App() {
                     </div>
                     <div
                       className="nail-card-body"
-                      onClick={() => setDetailItemId(item.id)}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`${item.title} の詳細カードを開く`}
+                      onClick={() => handleOpenDetailCard(item.id)}
+                      onKeyDown={(event) => handleDetailCardKeyDown(event, item.id)}
                     >
                       <span className="nail-item-title">{item.title}</span>
                       {item.tags.length > 0 && (
@@ -1909,7 +1928,7 @@ function App() {
                       <button
                         type="button"
                         className="nail-action-primary"
-                        onClick={() => setDetailItemId(item.id)}
+                        onClick={() => handleOpenDetailCard(item.id)}
                       >詳しく見る</button>
                       <button
                         type="button"
