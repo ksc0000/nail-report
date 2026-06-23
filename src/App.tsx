@@ -77,6 +77,7 @@ const INSPIRATION_CATEGORIES = ['All', 'Daily', 'Event', 'Season', 'Salon'] as c
 type InspirationCategory = typeof INSPIRATION_CATEGORIES[number]
 
 const SAVED_DESIGN_FIELDS = ['Image', 'Shape', 'Color', 'Tags', 'Memo'] as const
+const APPOINTMENT_PLAN_FIELDS = ['Salon', 'Date', 'Budget', 'Request'] as const
 
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
   [...items].sort((a, b) => {
@@ -1428,6 +1429,41 @@ function App() {
               <div className="saved-designs-data-slots" aria-label="後続接続予定の項目">
                 {SAVED_DESIGN_FIELDS.map(field => (
                   <span key={field}>{field}</span>
+                ))}
+              </div>
+            </div>
+          </section>
+          <section className="appointment-screen" aria-labelledby="appointment-title">
+            <div className="appointment-header">
+              <div>
+                <p className="nail-design-kicker">BOOK APPOINTMENT</p>
+                <h3 id="appointment-title">次の来店を、デザインから考える。</h3>
+                <p>
+                  実予約や決済ではなく、サロンに持っていく内容を整理するための計画サーフェスです。
+                  後続フェーズでデザイン詳細やメモ保存に接続します。
+                </p>
+              </div>
+              <span className="appointment-badge">Planning only</span>
+            </div>
+            <div className="appointment-panel">
+              <div className="appointment-memo-card">
+                <div className="appointment-memo-top">
+                  <span>Next visit memo</span>
+                  <small>No booking/payment</small>
+                </div>
+                <div className="appointment-memo-lines" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <p>希望の形、色、予算、相談したいことを一箇所にまとめるための下書き領域です。</p>
+              </div>
+              <div className="appointment-plan-grid" aria-label="予約計画の項目">
+                {APPOINTMENT_PLAN_FIELDS.map(field => (
+                  <div key={field} className="appointment-plan-slot">
+                    <span>{field}</span>
+                    <small>後続フェーズで入力欄に接続</small>
+                  </div>
                 ))}
               </div>
             </div>
