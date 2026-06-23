@@ -113,6 +113,7 @@ export default defineConfig([
 |----------|-------------|
 | [docs/operations/LOCAL_DEVELOPMENT_MANUAL.md](docs/operations/LOCAL_DEVELOPMENT_MANUAL.md) | Step-by-step local development guide including VS Code Tunnel |
 | [docs/operations/COMMERCIAL_LAUNCH_QA_REPORT.md](docs/operations/COMMERCIAL_LAUNCH_QA_REPORT.md) | Reusable QA result template for Issue #113 commercial launch |
+| [docs/operations/REGRESSION_CHECKLIST.md](docs/operations/REGRESSION_CHECKLIST.md) | Consolidated regression checklist for existing MVP features |
 | [docs/operations/PRODUCTION_FIREBASE_PREFLIGHT.md](docs/operations/PRODUCTION_FIREBASE_PREFLIGHT.md) | Production Firebase preflight checklist for project, auth, rules, and rollback readiness |
 | [docs/operations/IPHONE_SAFARI_CAMERA_SMOKE_REPORT.md](docs/operations/IPHONE_SAFARI_CAMERA_SMOKE_REPORT.md) | Focused iPhone Safari camera/upload smoke report template for Issue #113 |
 | [docs/operations/BUNDLE_SIZE_WARNING_ACCEPTANCE.md](docs/operations/BUNDLE_SIZE_WARNING_ACCEPTANCE.md) | Documented acceptance of current production bundle size for commercial MVP |
