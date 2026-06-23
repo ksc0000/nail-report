@@ -78,6 +78,7 @@ type InspirationCategory = typeof INSPIRATION_CATEGORIES[number]
 
 const SAVED_DESIGN_FIELDS = ['Image', 'Shape', 'Color', 'Tags', 'Memo'] as const
 const APPOINTMENT_PLAN_FIELDS = ['Salon', 'Date', 'Budget', 'Request'] as const
+const PROFILE_ACTIONS = ['Data management', 'Privacy', 'Terms'] as const
 
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
   [...items].sort((a, b) => {
@@ -1465,6 +1466,60 @@ function App() {
                     <small>後続フェーズで入力欄に接続</small>
                   </div>
                 ))}
+              </div>
+            </div>
+          </section>
+          <section className="profile-screen" aria-labelledby="profile-title">
+            <div className="profile-header">
+              <div>
+                <p className="nail-design-kicker">PROFILE</p>
+                <h3 id="profile-title">あなたの宝石箱の状態。</h3>
+                <p>
+                  アカウント情報を増やさず、いま保存されているネイル・共有・データ管理への導線をまとめます。
+                </p>
+              </div>
+              <span className="profile-badge">Static summary</span>
+            </div>
+            <div className="profile-panel">
+              <div className="profile-card">
+                <div className="profile-avatar" aria-hidden="true">
+                  {(user.displayName ?? user.email ?? 'N').slice(0, 1).toUpperCase()}
+                </div>
+                <div className="profile-identity">
+                  <h4>{user.displayName ?? 'Nailous user'}</h4>
+                  <p>{user.email ?? 'Google account connected'}</p>
+                </div>
+                <div className="profile-actions" aria-label="プロフィール関連リンク">
+                  {PROFILE_ACTIONS.map(action => {
+                    if (action === 'Data management') {
+                      return (
+                        <button key={action} type="button" onClick={() => setIsDataModalOpen(true)}>
+                          {action}
+                        </button>
+                      )
+                    }
+                    const path = action === 'Privacy' ? '/privacy' : '/terms'
+                    return (
+                      <button key={action} type="button" onClick={() => navigateTo(path)}>
+                        {action}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              <div className="profile-stats-grid" aria-label="プロフィール概要">
+                <div className="profile-stat">
+                  <span>{nailItems.length}</span>
+                  <small>Saved nails</small>
+                </div>
+                <div className="profile-stat">
+                  <span>{publicShares.length}</span>
+                  <small>Share links</small>
+                </div>
+                <div className="profile-stat">
+                  <span>{summary.withImageCount}</span>
+                  <small>With images</small>
+                </div>
               </div>
             </div>
           </section>
