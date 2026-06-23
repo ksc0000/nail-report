@@ -131,7 +131,7 @@
 #root:has(.is-signed-out) {
   width: 100%;
   border-inline: none;
-  background: #050308;
+  background: var(--jb-black);
 }
 
 #center.is-signed-out {
@@ -142,8 +142,8 @@
   background:
     radial-gradient(circle at 50% 42%, rgba(64, 36, 80, 0.42), transparent 34%),
     radial-gradient(circle at 12% 78%, rgba(236, 64, 122, 0.14), transparent 30%),
-    #050308;
-  color: rgba(255, 255, 255, 0.78);
+    var(--jb-black);
+  color: var(--jb-text-on-dark);
 }
 
 .is-signed-out #app-title {
@@ -199,7 +199,7 @@
   background:
     radial-gradient(ellipse at 50% 0%, rgba(255, 218, 232, 0.12), transparent 46%),
     linear-gradient(180deg, rgba(89, 56, 73, 0.52), rgba(18, 8, 20, 0.92));
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--jb-glass);
 }
 
 .landing-topbar {
@@ -222,13 +222,13 @@
   padding: 6px 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--jb-glass);
   color: rgba(255, 255, 255, 0.84);
   font-size: 0.55rem;
   font-weight: 600;
   letter-spacing: 0.2em;
   backdrop-filter: blur(20px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 var(--jb-glass);
 }
 
 .landing-hero {
@@ -292,7 +292,7 @@
   width: var(--w, 96px);
   height: calc(var(--w, 96px) * 0.28);
   border-radius: 999px;
-  background: linear-gradient(90deg, #fff3bf 0 10%, #f8d94d 11% 16%, var(--tone, #f4c1d7) 17% 100%);
+  background: linear-gradient(90deg, var(--jb-gold-soft) 0 10%, var(--jb-gold) 11% 16%, var(--tone, #f4c1d7) 17% 100%);
   box-shadow:
     inset 4px 0 8px rgba(255, 255, 255, 0.42),
     inset -5px -3px 10px rgba(28, 10, 22, 0.2),
@@ -448,7 +448,7 @@
 
 .landing-panel-kicker {
   margin: 0 0 8px;
-  color: #f8bbd0;
+  color: var(--jb-pink);
   font-size: 0.58rem;
   font-weight: 700;
   letter-spacing: 0.32em;
@@ -482,7 +482,7 @@
   border-color: rgba(255, 255, 255, 0.88);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.94);
-  color: #050308;
+  color: var(--jb-black);
   font-weight: 800;
   box-shadow: 0 0 24px rgba(255, 255, 255, 0.22);
 }
@@ -530,7 +530,7 @@
 
 .landing-skin-selector span.active {
   background: rgba(255, 255, 255, 0.96);
-  color: #050308;
+  color: var(--jb-black);
   border-color: rgba(255, 255, 255, 0.96);
 }
 
@@ -695,19 +695,19 @@
   gap: 18px;
   align-items: center;
   padding: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--jb-glass-border);
   border-radius: 10px;
   background:
     radial-gradient(circle at 84% 8%, rgba(248, 217, 77, 0.16), transparent 24%),
     radial-gradient(circle at 12% 100%, rgba(236, 64, 122, 0.18), transparent 34%),
-    linear-gradient(135deg, #100914, #241429 62%, #120b18);
-  color: rgba(255, 255, 255, 0.74);
+    linear-gradient(135deg, var(--jb-ink), var(--jb-plum) 62%, #120b18);
+  color: var(--jb-text-on-dark);
   box-shadow: 0 22px 42px rgba(14, 8, 18, 0.18);
 }
 
 .nail-studio-kicker {
   margin: 0 0 8px;
-  color: #f8bbd0;
+  color: var(--jb-pink);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.28em;
@@ -733,12 +733,12 @@
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--jb-glass-strong);
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.07);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 28px rgba(248, 187, 208, 0.14);
+    var(--jb-shadow-glow);
 }
 
 .nail-studio-count span {
@@ -911,7 +911,7 @@
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(248, 244, 248, 0.82)),
     radial-gradient(circle at 90% 0%, rgba(236, 64, 122, 0.12), transparent 28%);
-  border: 1px solid color-mix(in srgb, var(--border) 74%, #f8bbd0);
+  border: 1px solid color-mix(in srgb, var(--border) 74%, var(--jb-pink));
   border-radius: 10px;
   padding: 18px;
   display: flex;
@@ -933,7 +933,7 @@
 
 .nail-input {
   padding: 11px 13px;
-  border: 1px solid color-mix(in srgb, var(--border) 78%, #f8bbd0);
+  border: 1px solid color-mix(in srgb, var(--border) 78%, var(--jb-pink));
   border-radius: 8px;
   font-size: 0.9rem;
   box-sizing: border-box;
@@ -944,7 +944,7 @@
 
 .nail-textarea {
   padding: 11px 13px;
-  border: 1px solid color-mix(in srgb, var(--border) 78%, #f8bbd0);
+  border: 1px solid color-mix(in srgb, var(--border) 78%, var(--jb-pink));
   border-radius: 8px;
   font-size: 0.9rem;
   font-family: inherit;
@@ -975,7 +975,7 @@
   gap: 6px;
   flex: 1 1 180px;
   padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--border) 70%, #f8bbd0);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, var(--jb-pink));
   border-radius: 8px;
   color: var(--text-h);
   font-size: 0.84rem;
@@ -1014,7 +1014,7 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent), #ec407a);
+  background: linear-gradient(135deg, var(--accent), var(--jb-rose));
   color: #fff;
   border: 1px solid transparent;
   border-radius: 999px;
@@ -1099,7 +1099,7 @@
   width: 118px;
   height: 30px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #fff2b8 0 14%, #f8d94d 15% 20%, var(--chip-color, #f8bbd0) 21% 100%);
+  background: linear-gradient(90deg, var(--jb-gold-soft) 0 14%, var(--jb-gold) 15% 20%, var(--chip-color, var(--jb-pink)) 21% 100%);
   box-shadow:
     inset 4px 0 8px rgba(255, 255, 255, 0.48),
     inset -5px -3px 10px rgba(28, 10, 22, 0.16),
@@ -1109,7 +1109,7 @@
 }
 
 .nail-empty-chip--one {
-  --chip-color: #b1a7ff;
+  --chip-color: var(--jb-lavender);
   left: 12%;
   top: 62px;
   transform: rotate(-9deg);
@@ -1125,7 +1125,7 @@
 }
 
 .nail-empty-chip--three {
-  --chip-color: #c8f0df;
+  --chip-color: var(--jb-mint);
   right: 10%;
   top: 86px;
   width: 106px;
