@@ -76,6 +76,8 @@ const INSPIRATION_CARDS = [
 const INSPIRATION_CATEGORIES = ['All', 'Daily', 'Event', 'Season', 'Salon'] as const
 type InspirationCategory = typeof INSPIRATION_CATEGORIES[number]
 
+const SAVED_DESIGN_FIELDS = ['Image', 'Shape', 'Color', 'Tags', 'Memo'] as const
+
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
   [...items].sort((a, b) => {
     const ta = (a.updatedAt ?? a.createdAt)?.seconds ?? 0
@@ -1388,6 +1390,46 @@ function App() {
                   </div>
                 </article>
               ))}
+            </div>
+          </section>
+          <section className="saved-designs-screen" aria-labelledby="saved-designs-title">
+            <div className="saved-designs-header">
+              <div>
+                <p className="nail-design-kicker">SAVED DESIGNS</p>
+                <h3 id="saved-designs-title">また使いたいデザインを集める。</h3>
+                <p>
+                  お気に入りの組み合わせをあとで見返すための静的サーフェスです。
+                  後続フェーズで保存済みネイルやいいね状態に接続します。
+                </p>
+              </div>
+              <span className="saved-designs-badge">Ready for data</span>
+            </div>
+            <div className="saved-designs-surface">
+              <div className="saved-designs-empty">
+                <div className="saved-designs-empty-stage" aria-hidden="true">
+                  <FloatingNailChip
+                    variant="empty"
+                    shape="almond"
+                    className="saved-designs-chip saved-designs-chip--one"
+                    showHighlight={false}
+                  />
+                  <FloatingNailChip
+                    variant="empty"
+                    shape="oval"
+                    className="saved-designs-chip saved-designs-chip--two"
+                    showHighlight={false}
+                  />
+                </div>
+                <div>
+                  <h4>保存デザインはまだありません</h4>
+                  <p>写真・形・色・タグが接続されると、ここにお気に入りのネイルカードが並びます。</p>
+                </div>
+              </div>
+              <div className="saved-designs-data-slots" aria-label="後続接続予定の項目">
+                {SAVED_DESIGN_FIELDS.map(field => (
+                  <span key={field}>{field}</span>
+                ))}
+              </div>
             </div>
           </section>
           {!isFetching && nailItems.length > 0 && (
