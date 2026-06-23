@@ -58,6 +58,15 @@ const NAIL_TEXTURES = [
 ] as const
 type NailTexture = typeof NAIL_TEXTURES[number]['id']
 
+const DECORATION_PARTS = [
+  { id: 'pearl', label: 'Pearl' },
+  { id: 'stone', label: 'Stone' },
+  { id: 'line', label: 'Gold Line' },
+  { id: 'foil', label: 'Foil' },
+  { id: 'ribbon', label: 'Ribbon' },
+] as const
+type DecorationPart = typeof DECORATION_PARTS[number]['id']
+
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
   [...items].sort((a, b) => {
     const ta = (a.updatedAt ?? a.createdAt)?.seconds ?? 0
@@ -241,6 +250,7 @@ function App() {
   const [selectedNailShape, setSelectedNailShape] = useState<NailShape>('round')
   const [selectedNailColor, setSelectedNailColor] = useState<NailColor>('blush')
   const [selectedNailTexture, setSelectedNailTexture] = useState<NailTexture>('gloss')
+  const [selectedDecorationParts, setSelectedDecorationParts] = useState<DecorationPart[]>([])
   const [nailImageFile, setNailImageFile] = useState<File | null>(null)
   const [nailImagePreview, setNailImagePreview] = useState<string | null>(null)
   const [nailImageSource, setNailImageSource] = useState<'upload' | 'camera' | 'unknown'>('unknown')
@@ -519,6 +529,7 @@ function App() {
     setSelectedNailShape('round')
     setSelectedNailColor('blush')
     setSelectedNailTexture('gloss')
+    setSelectedDecorationParts([])
     setNailImageFile(null)
     clearPreview()
     clearImageInputs()
@@ -556,6 +567,12 @@ function App() {
     } finally {
       setIsAIGeneratingTags(false)
     }
+  }
+
+  const handleToggleDecorationPart = (part: DecorationPart) => {
+    setSelectedDecorationParts(prev =>
+      prev.includes(part) ? prev.filter(p => p !== part) : [...prev, part]
+    )
   }
 
   const handleSubmitNailItem = async () => {
@@ -623,6 +640,7 @@ function App() {
     setSelectedNailShape('round')
     setSelectedNailColor('blush')
     setSelectedNailTexture('gloss')
+    setSelectedDecorationParts([])
     setNailImageSource(item.imageSource ?? 'unknown')
     setNailImageFile(null)
     clearPreview()
@@ -1201,6 +1219,33 @@ function App() {
                       </button>
                     ))}
                   </div>
+                </div>
+              </div>
+              <div className="nail-decoration-control" role="group" aria-label="デコレーションパーツ">
+                <div className="nail-control-heading">
+                  <span>Deco Parts</span>
+                  <small>複数選択できます。保存連携は後続フェーズで追加します。</small>
+                </div>
+                <div className="nail-decoration-options">
+                  {DECORATION_PARTS.map(part => {
+                    const isSelected = selectedDecorationParts.includes(part.id)
+                    return (
+                      <button
+                        key={part.id}
+                        type="button"
+                        className={`nail-decoration-option nail-decoration-option--${part.id}${isSelected ? ' nail-decoration-option--selected' : ''}`}
+                        aria-pressed={isSelected}
+                        onClick={() => handleToggleDecorationPart(part.id)}
+                      >
+                        <span className="nail-decoration-preview" aria-hidden="true">
+                          <span />
+                          <span />
+                          <span />
+                        </span>
+                        <span>{part.label}</span>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
               {isAiTagSuggestionEnabled && (nailImageFile || editingItem?.imageUrl) && (
