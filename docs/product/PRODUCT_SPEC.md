@@ -126,6 +126,50 @@ Nailous は、ネイル写真・メモ・タグをかんたんに残し、あと
 
 ---
 
+## Jewelry Box Route Map
+
+> このセクションは Phase 1 のルーティング整理です。現在の手動ルーティングを壊さず、将来のBottom Navigation実装に備えて画面IDとURL方針を定義します。
+
+### Future App Screens
+
+| Screen | Proposed route | Current implementation source | Notes |
+|---|---|---|---|
+| Home | `/` | Signed-in Jewelry Box studio hero and collection entry | Signed-out users also use `/` for the landing page. Auth state determines the visible shell. |
+| Nail Design | `/design` | `nail-design-screen`, existing add/edit form, shape/color/texture/parts controls | Route implementation is deferred; current UI remains on `/`. |
+| Inspiration | `/inspiration` | `inspiration-screen`, static Explore cards, category tabs | Static UI exists; data fetching is not required yet. |
+| Saved Designs | `/saved` | Existing `nailItems` list, search, filters, detail viewer | Premium saved/liked separation is future work. |
+| Book Appointment | `/book` | Existing memo, share, and export flows | Booking handoff is future work; no scheduling backend exists. |
+| Profile | `/profile` | Auth bar, data management modal, legal/export links | Account/settings shell is future work. |
+
+### Routes That Must Remain Supported
+
+| Existing route | Requirement |
+|---|---|
+| `/terms` | Terms page remains public and must not require auth. |
+| `/privacy` | Privacy page remains public and must not require auth. |
+| `/share/:id` | Public share route remains public and must not depend on the authenticated app shell or future bottom nav. |
+
+### Migration Risks
+
+| Risk | Mitigation |
+|---|---|
+| Manual `pathname` state and future screen state diverge | Introduce a single screen ID mapping before moving sections behind tabs. |
+| Public share route accidentally inherits authenticated UI | Keep `/share/:id` as an early route branch outside the signed-in app shell. |
+| Legal routes regress during bottom nav implementation | Keep `/terms` and `/privacy` route checks before authenticated screen rendering. |
+| Fixed bottom navigation covers forms or share actions | Reuse `--fixed-control-safe-gap` and maintain bottom content padding. |
+| Future route implementation changes too much at once | Migrate one screen at a time: Home, Nail Design, Inspiration, Saved Designs, Book Appointment, then Profile. |
+
+### Low-Risk Implementation Order
+
+1. Define screen IDs and route constants without changing rendered behavior.
+2. Add bottom navigation shell for authenticated users only.
+3. Move Home, Nail Design, and Inspiration sections behind screen selection.
+4. Move Saved Designs and Review/share-related surfaces after collection grid behavior is stable.
+5. Add Book Appointment and Profile shells as static screens.
+6. Consider a routing library only after manual route behavior and public routes are covered by regression checks.
+
+---
+
 ## Mobile Layout Baseline
 
 Jewelry Box Refresh のモバイルUIは、アプリの主利用端末をスマートフォンと見なし、390px 幅を主要な設計基準にする。iPhone SE 相当の 320px 級は下限の回帰確認対象とし、情報量を減らすのではなく、1カラム化・折り返し・安全余白で破綻を避ける。
