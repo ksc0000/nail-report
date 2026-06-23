@@ -22,11 +22,15 @@ import { fileToGenerativePart, urlToGenerativePart, generateNailTagsFromImage } 
 import { isAiTagSuggestionEnabled } from './lib/featureFlags'
 import { isFirebaseConfigComplete, missingFirebaseEnvKeys } from './lib/firebaseConfigStatus'
 import ErrorBanner from './components/ErrorBanner'
+import FloatingNailChip from './components/FloatingNailChip'
 const PrivacyPolicyPage = lazy(() => import('./components/PrivacyPolicyPage'))
 const TermsOfServicePage = lazy(() => import('./components/TermsOfServicePage'))
 const NailImageDetailViewer = lazy(() => import('./components/NailImageDetailViewer'))
 const NailComparisonPanel = lazy(() => import('./components/NailComparisonPanel'))
 import './App.css'
+
+const DISPLAY_MODES = ['Glass', 'Snow Globe', 'Velvet', 'Showcase'] as const
+type DisplayMode = typeof DISPLAY_MODES[number]
 
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
   [...items].sort((a, b) => {
@@ -232,6 +236,7 @@ function App() {
   const [publicShares, setPublicShares] = useState<PublicShareDocWithId[]>([])
   const [publicSharesUserId, setPublicSharesUserId] = useState<string | null>(null)
   const [shareActionId, setShareActionId] = useState<string | null>(null)
+  const [activeDisplayMode, setActiveDisplayMode] = useState<DisplayMode>('Glass')
   const [publicShare, setPublicShare] = useState<PublicShareDocWithId | null>(null)
   const [publicShareState, setPublicShareState] = useState<PublicShareViewState>(
     isPublicSharePage ? 'loading' : 'idle'
@@ -845,6 +850,22 @@ function App() {
     </footer>
   )
 
+  const renderDisplayModeSwitcher = (className = '') => (
+    <div className={`display-mode-switcher ${className}`.trim()} role="group" aria-label="表示モード">
+      {DISPLAY_MODES.map(mode => (
+        <button
+          key={mode}
+          type="button"
+          className={mode === activeDisplayMode ? 'active' : undefined}
+          aria-pressed={mode === activeDisplayMode}
+          onClick={() => setActiveDisplayMode(mode)}
+        >
+          {mode}
+        </button>
+      ))}
+    </div>
+  )
+
   if (isPublicSharePage) {
     return (
       <section id="center">
@@ -1000,9 +1021,7 @@ function App() {
                 'pearl', 'rose', 'lilac', 'opal', 'champagne', 'mint',
                 'coral', 'ivory', 'violet', 'blush', 'shell', 'moon',
               ].map(charm => (
-                <span key={charm} className={`landing-charm landing-charm-${charm}`}>
-                  <span className="landing-charm-face" />
-                </span>
+                <FloatingNailChip key={charm} className={`landing-charm-${charm}`} />
               ))}
               <div className="landing-stage" />
             </div>
@@ -1035,12 +1054,7 @@ function App() {
             </div>
           </section>
 
-          <div className="landing-skin-selector" aria-hidden="true">
-            <span className="active">Glass</span>
-            <span>Snow Globe</span>
-            <span>Velvet</span>
-            <span>Showcase</span>
-          </div>
+          {renderDisplayModeSwitcher('landing-mode-switcher')}
         </div>
       )}
       {user && (
@@ -1059,116 +1073,131 @@ function App() {
               <small>saved</small>
             </div>
           </section>
-          <div id="nail-form">
-            <h2 className="nail-form-title">{editingId ? 'Edit charm' : 'Add to jewelry box'}</h2>
-            <input
-              type="text"
-              value={nailTitle}
-              onChange={e => setNailTitle(e.target.value)}
-              placeholder="Title *"
-              className="nail-input"
-              maxLength={MAX_NAIL_TITLE_LENGTH}
-            />
-            <input
-              type="text"
-              value={nailTags}
-              onChange={e => setNailTags(e.target.value)}
-              placeholder="Tags (comma separated, max 10)"
-              className="nail-input"
-            />
-            <p className="nail-input-note">
-              タグはカンマ区切りで最大{MAX_NAIL_TAGS}個、1つ{MAX_NAIL_TAG_LENGTH}文字まで。
-            </p>
-            {isAiTagSuggestionEnabled && (nailImageFile || editingItem?.imageUrl) && (
-              <button
-                type="button"
-                className="ai-tag-btn"
-                onClick={handleGenerateTagsWithAI}
-                disabled={isAIGeneratingTags}
-              >
-                {isAIGeneratingTags ? 'AIがタグを生成中...' : '✨ 画像からAIでタグを生成'}
-              </button>
-            )}
-            <textarea
-              value={nailMemo}
-              onChange={e => setNailMemo(e.target.value)}
-              placeholder="Memo (salon, price, scene...)"
-              className="nail-textarea"
-              rows={3}
-              maxLength={500}
-            />
-            <div className="nail-file-area">
-              <div className="nail-file-options">
-                <label className="nail-file-option">
-                  <span>アルバムから選択</span>
-                  <input
-                    ref={uploadInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handleNailFileChange}
-                    className="nail-file-input"
-                  />
-                </label>
-                <label className="nail-file-option">
-                  <span>カメラで撮影</span>
-                  <input
-                    ref={cameraInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleNailFileChange}
-                    className="nail-file-input"
-                  />
-                </label>
+          {renderDisplayModeSwitcher('studio-mode-switcher')}
+          <section className="nail-design-screen" aria-labelledby="nail-design-title">
+            <div className="nail-design-header">
+              <div>
+                <p className="nail-design-kicker">NAIL DESIGN</p>
+                <h3 id="nail-design-title">次のネイルを記録する。</h3>
+                <p>写真・タグ・メモをまとめて、あとから浮遊ビューや共有に使える形で保存します。</p>
               </div>
-              <p className="nail-file-note">カメラが起動しない場合は、アルバムから画像を選択してください。</p>
-              {isAiTagSuggestionEnabled && (
-                <p className="nail-file-privacy-note">
-                  写真は非公開で保存されます。「AIでタグを生成」ボタンを押した場合のみ、画像が一時的にAIによる解析へ送信されます（AIの学習には使用されません）。
-                </p>
-              )}
-              {nailImageFile && nailImagePreview && (
-                <div className="nail-file-preview-area">
-                  <img
-                    className="nail-file-preview"
-                    src={nailImagePreview}
-                    alt="選択画像のプレビュー"
-                  />
-                  <div className="nail-file-info-row">
-                    <span className="nail-file-info">
-                      {nailImageFile.name}（{(nailImageFile.size / 1024 / 1024).toFixed(1)}MB）
-                    </span>
-                    <button
-                      type="button"
-                      className="nail-file-remove"
-                      onClick={handleRemoveFile}
-                    >
-                      削除
-                    </button>
-                  </div>
-                </div>
-              )}
-              {editingItem?.imageUrl && !nailImageFile && (
-                <p className="nail-file-note">現在の画像を維持します。変更するには新しい画像を選択してください。</p>
-              )}
+              <div className="nail-design-meta" aria-label="保存できる情報">
+                <span>Photo</span>
+                <span>Tags</span>
+                <span>Memo</span>
+              </div>
             </div>
-            <div className="nail-form-actions">
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={handleSubmitNailItem}
-                disabled={nailLoading || nailTitle.trim() === ''}
-              >
-                {nailLoading ? 'Saving...' : editingId ? 'Update' : 'Add'}
-              </button>
-              {editingId && (
-                <button type="button" onClick={resetForm} disabled={nailLoading}>
-                  Cancel
+            <div id="nail-form">
+              <h2 className="nail-form-title">{editingId ? 'Edit charm' : 'Add to jewelry box'}</h2>
+              <input
+                type="text"
+                value={nailTitle}
+                onChange={e => setNailTitle(e.target.value)}
+                placeholder="Title *"
+                className="nail-input"
+                maxLength={MAX_NAIL_TITLE_LENGTH}
+              />
+              <input
+                type="text"
+                value={nailTags}
+                onChange={e => setNailTags(e.target.value)}
+                placeholder="Tags (comma separated, max 10)"
+                className="nail-input"
+              />
+              <p className="nail-input-note">
+                タグはカンマ区切りで最大{MAX_NAIL_TAGS}個、1つ{MAX_NAIL_TAG_LENGTH}文字まで。
+              </p>
+              {isAiTagSuggestionEnabled && (nailImageFile || editingItem?.imageUrl) && (
+                <button
+                  type="button"
+                  className="ai-tag-btn"
+                  onClick={handleGenerateTagsWithAI}
+                  disabled={isAIGeneratingTags}
+                >
+                  {isAIGeneratingTags ? 'AIがタグを生成中...' : '✨ 画像からAIでタグを生成'}
                 </button>
               )}
+              <textarea
+                value={nailMemo}
+                onChange={e => setNailMemo(e.target.value)}
+                placeholder="Memo (salon, price, scene...)"
+                className="nail-textarea"
+                rows={3}
+                maxLength={500}
+              />
+              <div className="nail-file-area">
+                <div className="nail-file-options">
+                  <label className="nail-file-option">
+                    <span>アルバムから選択</span>
+                    <input
+                      ref={uploadInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleNailFileChange}
+                      className="nail-file-input"
+                    />
+                  </label>
+                  <label className="nail-file-option">
+                    <span>カメラで撮影</span>
+                    <input
+                      ref={cameraInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleNailFileChange}
+                      className="nail-file-input"
+                    />
+                  </label>
+                </div>
+                <p className="nail-file-note">カメラが起動しない場合は、アルバムから画像を選択してください。</p>
+                {isAiTagSuggestionEnabled && (
+                  <p className="nail-file-privacy-note">
+                    写真は非公開で保存されます。「AIでタグを生成」ボタンを押した場合のみ、画像が一時的にAIによる解析へ送信されます（AIの学習には使用されません）。
+                  </p>
+                )}
+                {nailImageFile && nailImagePreview && (
+                  <div className="nail-file-preview-area">
+                    <img
+                      className="nail-file-preview"
+                      src={nailImagePreview}
+                      alt="選択画像のプレビュー"
+                    />
+                    <div className="nail-file-info-row">
+                      <span className="nail-file-info">
+                        {nailImageFile.name}（{(nailImageFile.size / 1024 / 1024).toFixed(1)}MB）
+                      </span>
+                      <button
+                        type="button"
+                        className="nail-file-remove"
+                        onClick={handleRemoveFile}
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {editingItem?.imageUrl && !nailImageFile && (
+                  <p className="nail-file-note">現在の画像を維持します。変更するには新しい画像を選択してください。</p>
+                )}
+              </div>
+              <div className="nail-form-actions">
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleSubmitNailItem}
+                  disabled={nailLoading || nailTitle.trim() === ''}
+                >
+                  {nailLoading ? 'Saving...' : editingId ? 'Update' : 'Add'}
+                </button>
+                {editingId && (
+                  <button type="button" onClick={resetForm} disabled={nailLoading}>
+                    Cancel
+                  </button>
+                )}
+              </div>
+              {nailError && <p className="nail-error">{nailError}</p>}
             </div>
-            {nailError && <p className="nail-error">{nailError}</p>}
-          </div>
+          </section>
           {!isFetching && nailItems.length > 0 && (
             <div id="nail-summary">
               <h3 className="summary-heading">コレクション概要</h3>
@@ -1425,9 +1454,9 @@ function App() {
           ) : nailItems.length === 0 ? (
             <div className="nail-empty">
               <div className="nail-empty-stage" aria-hidden="true">
-                <span className="nail-empty-chip nail-empty-chip--one" />
-                <span className="nail-empty-chip nail-empty-chip--two" />
-                <span className="nail-empty-chip nail-empty-chip--three" />
+                <FloatingNailChip variant="empty" className="nail-empty-chip--one" showHighlight={false} />
+                <FloatingNailChip variant="empty" className="nail-empty-chip--two" showHighlight={false} />
+                <FloatingNailChip variant="empty" className="nail-empty-chip--three" showHighlight={false} />
               </div>
               <p className="nail-empty-main">まだ宝石箱は空です</p>
               <p className="nail-empty-sub">タイトルと写真を追加すると、最初のネイルチャームがここに並びます</p>
