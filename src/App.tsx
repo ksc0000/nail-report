@@ -29,6 +29,9 @@ const NailImageDetailViewer = lazy(() => import('./components/NailImageDetailVie
 const NailComparisonPanel = lazy(() => import('./components/NailComparisonPanel'))
 import './App.css'
 
+const DISPLAY_MODES = ['Glass', 'Snow Globe', 'Velvet', 'Showcase'] as const
+type DisplayMode = typeof DISPLAY_MODES[number]
+
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
   [...items].sort((a, b) => {
     const ta = (a.updatedAt ?? a.createdAt)?.seconds ?? 0
@@ -233,6 +236,7 @@ function App() {
   const [publicShares, setPublicShares] = useState<PublicShareDocWithId[]>([])
   const [publicSharesUserId, setPublicSharesUserId] = useState<string | null>(null)
   const [shareActionId, setShareActionId] = useState<string | null>(null)
+  const [activeDisplayMode, setActiveDisplayMode] = useState<DisplayMode>('Glass')
   const [publicShare, setPublicShare] = useState<PublicShareDocWithId | null>(null)
   const [publicShareState, setPublicShareState] = useState<PublicShareViewState>(
     isPublicSharePage ? 'loading' : 'idle'
@@ -846,6 +850,22 @@ function App() {
     </footer>
   )
 
+  const renderDisplayModeSwitcher = (className = '') => (
+    <div className={`display-mode-switcher ${className}`.trim()} role="group" aria-label="表示モード">
+      {DISPLAY_MODES.map(mode => (
+        <button
+          key={mode}
+          type="button"
+          className={mode === activeDisplayMode ? 'active' : undefined}
+          aria-pressed={mode === activeDisplayMode}
+          onClick={() => setActiveDisplayMode(mode)}
+        >
+          {mode}
+        </button>
+      ))}
+    </div>
+  )
+
   if (isPublicSharePage) {
     return (
       <section id="center">
@@ -1034,12 +1054,7 @@ function App() {
             </div>
           </section>
 
-          <div className="landing-skin-selector" aria-hidden="true">
-            <span className="active">Glass</span>
-            <span>Snow Globe</span>
-            <span>Velvet</span>
-            <span>Showcase</span>
-          </div>
+          {renderDisplayModeSwitcher('landing-mode-switcher')}
         </div>
       )}
       {user && (
@@ -1058,6 +1073,7 @@ function App() {
               <small>saved</small>
             </div>
           </section>
+          {renderDisplayModeSwitcher('studio-mode-switcher')}
           <div id="nail-form">
             <h2 className="nail-form-title">{editingId ? 'Edit charm' : 'Add to jewelry box'}</h2>
             <input
