@@ -3,17 +3,19 @@
 
 ## Context
 
-The AI Loop is in Phase 2 of the roadmap, focusing on improving stability, test coverage, and UX. This task addresses "2.3 Loading states" by adding a loading skeleton to improve the user experience during data fetching.
+The current focus is Phase 2 of the roadmap, which aims to improve stability, test coverage, and UX. This task specifically addresses item 2.4 Accessibility.
 
 ## Objective
 
-Implement a simple loading skeleton for the nail item list displayed in `src/App.tsx`. The skeleton should appear while the list data is being fetched, providing a visual cue to the user that content is loading.
+Add `aria-label` attributes to all icon-only interactive elements (primarily buttons and potentially links acting as buttons) throughout the application to improve accessibility for screen reader users.
 
 ## Allowed Scope
 
-- `src/App.tsx` (for implementing the skeleton logic and rendering)
-- `src/App.css` (for styling the loading skeleton)
-- Any new component files within `src/components/` if deemed necessary for the skeleton UI (e.g., `src/components/NailItemSkeleton.tsx`), though a simple direct implementation in `App.tsx` is preferred if possible.
+- `src/components/**/*.tsx`
+- `src/App.tsx`
+- `src/pages/**/*.tsx`
+- `src/lib/**/*.ts` (if any UI elements are rendered directly or helper functions create them, though unlikely for this task)
+- `src/App.css` (only if absolutely necessary for styling changes related to accessibility, but not expected)
 
 ## Forbidden Scope
 
@@ -27,40 +29,50 @@ Implement a simple loading skeleton for the nail item list displayed in `src/App
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- The skeleton should replace the existing nail item list when data is loading.
-- Implement a basic `isLoading` state within `App.tsx` if one doesn't already exist to simulate data fetching.
-- The skeleton should mimic the visual structure of one or more nail item cards (e.g., a few grey rectangles representing image, title, and tags).
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files. (Not applicable for this UI task)
+- Prefer adding tests when touching `src/lib/` files (not applicable for this UI task).
 - Report follow-up items as comments, not additional code.
-
-## Output Format
-
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
 
 ## Worker prompt
 
-Implement a loading skeleton for the nail item list in `src/App.tsx`.
+Your task is to identify all interactive elements (buttons, links styled as buttons, or any element with an `onClick` handler) that contain only an icon or an image and lack a visually apparent text label. For each such element, add a descriptive `aria-label` attribute.
 
-1.  **Locate the nail item list rendering:** Identify where the `nailItems` are mapped and rendered in `src/App.tsx`.
-2.  **Introduce a loading state:** If not already present, add a local `isLoading` state variable using `useState` in `App.tsx`. Set its initial value to `true` and update it to `false` after a simulated delay (e.g., using `setTimeout` for 1-2 seconds) to represent data fetching completion.
-3.  **Conditional Rendering:** When `isLoading` is `true`, render a placeholder skeleton UI. When `isLoading` is `false`, render the actual `nailItems` list.
-4.  **Design the Skeleton:** Create a simple skeleton structure. For example, render 3-5 `div` elements, each representing a "loading" nail item. These divs should have basic dimensions and a grey background.
-5.  **Apply CSS:** Add corresponding CSS classes and styles to `src/App.css` to give the skeleton elements their visual appearance (e.g., `background-color`, `height`, `width`, `border-radius` to mimic cards).
+**Steps:**
 
-**Acceptance Criteria:**
-*   When the application loads, a skeleton UI is visible for a short duration (e.g., 1-2 seconds) where the nail item list would normally appear.
-*   After the simulated loading period, the actual nail item list is displayed.
-*   No new npm packages are added.
-*   The diff size is within the 150-line limit.
+1.  **Identify Icon-Only Elements:** Traverse through the JSX/TSX files in `src/components`, `src/App.tsx`, and `src/pages`. Look for `<button>` elements, or `<a>` elements and `<div>`/`<span>` elements that have an `onClick` handler and contain only an `<img>`, `<svg>`, or a custom icon component, without accompanying text.
+2.  **Add `aria-label`:** For each identified element, add an `aria-label` attribute that clearly describes the action the element performs.
+    *   **Example 1:** `<button className="delete-btn"><TrashIcon /></button>` should become `<button aria-label="Delete item" className="delete-btn"><TrashIcon /></button>`.
+    *   **Example 2:** `<a onClick={handleShare}><ShareIcon /></a>` should become `<a aria-label="Share item" onClick={handleShare}><ShareIcon /></a>`.
+    *   **Example 3:** For a sign-out button with an icon, `aria-label="Sign out"`.
+    *   **Example 4:** For an image upload button, `aria-label="Upload image"`.
+3.  **Ensure Clarity:** The `aria-label` text should be concise but informative for a screen reader user, clearly conveying the element's purpose. Avoid redundant text if the icon already has `alt` text, but `aria-label` takes precedence for interactive elements.
+4.  **Verification:** After modifications, ensure the application still functions correctly and no visual regressions are introduced.
 
-**Required Test Commands:**
+## Summary of what changed
+
+Added `aria-label` attributes to various icon-only buttons and interactive elements across the application to enhance accessibility for screen reader users.
+
+## Changed files list
+
+- `src/App.tsx` (if global buttons exist there)
+- `src/components/**/*.tsx` (e.g., `src/components/NailItemCard.tsx`, `src/components/Navbar.tsx`, `src/components/ImageUpload.tsx`, etc.)
+- `src/pages/**/*.tsx` (e.g., `src/pages/Home.tsx`, `src/pages/Stats.tsx`, etc.)
+
+## Commands run and results
+
 ```bash
+npm install # To ensure all dependencies are in place if the environment is new
 npm run build
+# Build should succeed without errors.
 npm run lint
+# Linting should pass without new warnings or errors.
 ```
+
+## Known issues or limitations
+
+No known issues. The changes are purely additive to accessibility attributes and should not affect visual presentation or functionality.
+
+## Suggested next task
+
+Add Vitest + unit tests for `src/lib/firestore.ts` helpers
 ```
