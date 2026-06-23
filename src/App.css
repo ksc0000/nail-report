@@ -266,11 +266,10 @@
 }
 
 .landing-topbar span,
-.landing-skin-selector span {
+.display-mode-switcher button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
   padding: 6px 14px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
@@ -281,6 +280,28 @@
   letter-spacing: 0.2em;
   backdrop-filter: blur(20px);
   box-shadow: inset 0 1px 0 var(--jb-glass);
+}
+
+.landing-topbar span {
+  min-height: 28px;
+}
+
+.display-mode-switcher button {
+  min-height: var(--tap-target-min);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.display-mode-switcher button:hover,
+.display-mode-switcher button:focus-visible {
+  border-color: rgba(255, 255, 255, 0.36);
+  background: var(--jb-glass-strong);
+}
+
+.display-mode-switcher button:focus-visible {
+  outline: 2px solid var(--jb-pink);
+  outline-offset: 2px;
 }
 
 .landing-hero {
@@ -581,23 +602,46 @@
   color: rgba(255, 255, 255, 0.68);
 }
 
-.landing-skin-selector {
-  position: fixed;
-  left: 50%;
-  bottom: var(--fixed-control-safe-gap);
-  z-index: 10;
+.display-mode-switcher {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 7px;
+}
+
+.landing-mode-switcher {
+  position: fixed;
+  left: 50%;
+  bottom: var(--fixed-control-safe-gap);
+  z-index: 10;
   width: min(520px, calc(100vw - 24px));
   translate: -50% 0;
 }
 
-.landing-skin-selector span.active {
+.display-mode-switcher button.active,
+.display-mode-switcher button[aria-pressed='true'] {
   background: rgba(255, 255, 255, 0.96);
   color: var(--jb-black);
   border-color: rgba(255, 255, 255, 0.96);
+}
+
+.studio-mode-switcher {
+  justify-content: flex-start;
+  padding: 2px 0;
+}
+
+.studio-mode-switcher button {
+  border-color: color-mix(in srgb, var(--jb-gold) 22%, var(--border));
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text-h);
+  box-shadow: 0 10px 24px rgba(36, 20, 41, 0.08);
+}
+
+.studio-mode-switcher button.active,
+.studio-mode-switcher button[aria-pressed='true'] {
+  border-color: var(--jb-gold);
+  background: linear-gradient(135deg, var(--jb-black), var(--jb-plum));
+  color: rgba(255, 255, 255, 0.94);
 }
 
 .is-signed-out .auth-config-note {
@@ -696,7 +740,7 @@
     bottom: calc(var(--fixed-control-safe-gap) + 76px);
   }
 
-  .landing-skin-selector {
+  .landing-mode-switcher {
     bottom: var(--fixed-control-safe-gap);
   }
 }
@@ -708,8 +752,7 @@
   }
 
   .landing-topbar span,
-  .landing-skin-selector span {
-    min-height: 26px;
+  .display-mode-switcher button {
     padding: 6px 11px;
     font-size: 0.5rem;
   }
