@@ -32,6 +32,15 @@ import './App.css'
 const DISPLAY_MODES = ['Glass', 'Snow Globe', 'Velvet', 'Showcase'] as const
 type DisplayMode = typeof DISPLAY_MODES[number]
 
+const NAIL_SHAPES = [
+  { id: 'round', label: 'Round' },
+  { id: 'square', label: 'Square' },
+  { id: 'almond', label: 'Almond' },
+  { id: 'coffin', label: 'Coffin' },
+  { id: 'stiletto', label: 'Stiletto' },
+] as const
+type NailShape = typeof NAIL_SHAPES[number]['id']
+
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
   [...items].sort((a, b) => {
     const ta = (a.updatedAt ?? a.createdAt)?.seconds ?? 0
@@ -212,6 +221,7 @@ function App() {
   const [nailTitle, setNailTitle] = useState('')
   const [nailTags, setNailTags] = useState('')
   const [nailMemo, setNailMemo] = useState('')
+  const [selectedNailShape, setSelectedNailShape] = useState<NailShape>('round')
   const [nailImageFile, setNailImageFile] = useState<File | null>(null)
   const [nailImagePreview, setNailImagePreview] = useState<string | null>(null)
   const [nailImageSource, setNailImageSource] = useState<'upload' | 'camera' | 'unknown'>('unknown')
@@ -487,6 +497,7 @@ function App() {
     setNailTitle('')
     setNailTags('')
     setNailMemo('')
+    setSelectedNailShape('round')
     setNailImageFile(null)
     clearPreview()
     clearImageInputs()
@@ -588,6 +599,7 @@ function App() {
     setNailTitle(item.title)
     setNailTags(item.tags.join(', '))
     setNailMemo(item.memo ?? '')
+    setSelectedNailShape('round')
     setNailImageSource(item.imageSource ?? 'unknown')
     setNailImageFile(null)
     clearPreview()
@@ -1107,6 +1119,26 @@ function App() {
               <p className="nail-input-note">
                 タグはカンマ区切りで最大{MAX_NAIL_TAGS}個、1つ{MAX_NAIL_TAG_LENGTH}文字まで。
               </p>
+              <div className="nail-shape-control" role="group" aria-label="ネイル形状">
+                <div className="nail-control-heading">
+                  <span>Shape</span>
+                  <small>ビュー用の選択。保存連携は後続フェーズで追加します。</small>
+                </div>
+                <div className="nail-shape-options">
+                  {NAIL_SHAPES.map(shape => (
+                    <button
+                      key={shape.id}
+                      type="button"
+                      className={`nail-shape-option${selectedNailShape === shape.id ? ' nail-shape-option--selected' : ''}`}
+                      aria-pressed={selectedNailShape === shape.id}
+                      onClick={() => setSelectedNailShape(shape.id)}
+                    >
+                      <span className={`nail-shape-preview nail-shape-preview--${shape.id}`} aria-hidden="true" />
+                      <span>{shape.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
               {isAiTagSuggestionEnabled && (nailImageFile || editingItem?.imageUrl) && (
                 <button
                   type="button"
