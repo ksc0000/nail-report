@@ -67,6 +67,12 @@ const DECORATION_PARTS = [
 ] as const
 type DecorationPart = typeof DECORATION_PARTS[number]['id']
 
+const INSPIRATION_CARDS = [
+  { id: 'milk-glass', title: 'Milk glass', tone: 'blush', tags: ['soft', 'daily'] },
+  { id: 'aurora-mint', title: 'Aurora mint', tone: 'mint', tags: ['fresh', 'sheer'] },
+  { id: 'velvet-rose', title: 'Velvet rose', tone: 'rose', tags: ['date', 'gloss'] },
+] as const
+
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
   [...items].sort((a, b) => {
     const ta = (a.updatedAt ?? a.createdAt)?.seconds ?? 0
@@ -1337,6 +1343,33 @@ function App() {
                 )}
               </div>
               {nailError && <p className="nail-error">{nailError}</p>}
+            </div>
+          </section>
+          <section className="inspiration-screen" aria-labelledby="inspiration-title">
+            <div className="inspiration-header">
+              <div>
+                <p className="nail-design-kicker">INSPIRATION</p>
+                <h3 id="inspiration-title">次のムードを探す。</h3>
+                <p>保存前のアイデアを眺めるためのExplore領域です。カードは今後、実データやカテゴリに接続します。</p>
+              </div>
+              <span className="inspiration-badge">Static preview</span>
+            </div>
+            <div className="inspiration-card-grid">
+              {INSPIRATION_CARDS.map(card => (
+                <article key={card.id} className={`inspiration-card inspiration-card--${card.tone}`}>
+                  <div className="inspiration-card-stage" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                  <div className="inspiration-card-body">
+                    <h4>{card.title}</h4>
+                    <div className="inspiration-tags">
+                      {card.tags.map(tag => <span key={tag}>#{tag}</span>)}
+                    </div>
+                  </div>
+                </article>
+              ))}
             </div>
           </section>
           {!isFetching && nailItems.length > 0 && (
