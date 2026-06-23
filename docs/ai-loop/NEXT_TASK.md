@@ -1,21 +1,19 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The current focus is Phase 2 of the roadmap, which aims to improve stability, test coverage, and UX. This task specifically addresses item 2.4 Accessibility.
+The product roadmap for nail-report is in Phase 2, focusing on stability, test coverage, and UX improvements. This includes accessibility enhancements. The current state shows that initial setup tasks are complete, and we're ready for the first substantive code task.
 
 ## Objective
 
-Add `aria-label` attributes to all icon-only interactive elements (primarily buttons and potentially links acting as buttons) throughout the application to improve accessibility for screen reader users.
+Identify all icon-only buttons within the application and add an appropriate `aria-label` attribute to each of them to improve accessibility for screen reader users.
 
 ## Allowed Scope
 
-- `src/components/**/*.tsx`
-- `src/App.tsx`
-- `src/pages/**/*.tsx`
-- `src/lib/**/*.ts` (if any UI elements are rendered directly or helper functions create them, though unlikely for this task)
-- `src/App.css` (only if absolutely necessary for styling changes related to accessibility, but not expected)
+- `src/` (except `src/main.tsx`)
+- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+- `src/__tests__/` (new test files)
+- `src/App.css` (CSS improvements)
 
 ## Forbidden Scope
 
@@ -30,49 +28,36 @@ Add `aria-label` attributes to all icon-only interactive elements (primarily but
 
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files (not applicable for this UI task).
+- Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
-## Worker prompt
+## Output Format
 
-Your task is to identify all interactive elements (buttons, links styled as buttons, or any element with an `onClick` handler) that contain only an icon or an image and lack a visually apparent text label. For each such element, add a descriptive `aria-label` attribute.
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
 
-**Steps:**
+## Worker Prompt
 
-1.  **Identify Icon-Only Elements:** Traverse through the JSX/TSX files in `src/components`, `src/App.tsx`, and `src/pages`. Look for `<button>` elements, or `<a>` elements and `<div>`/`<span>` elements that have an `onClick` handler and contain only an `<img>`, `<svg>`, or a custom icon component, without accompanying text.
-2.  **Add `aria-label`:** For each identified element, add an `aria-label` attribute that clearly describes the action the element performs.
-    *   **Example 1:** `<button className="delete-btn"><TrashIcon /></button>` should become `<button aria-label="Delete item" className="delete-btn"><TrashIcon /></button>`.
-    *   **Example 2:** `<a onClick={handleShare}><ShareIcon /></a>` should become `<a aria-label="Share item" onClick={handleShare}><ShareIcon /></a>`.
-    *   **Example 3:** For a sign-out button with an icon, `aria-label="Sign out"`.
-    *   **Example 4:** For an image upload button, `aria-label="Upload image"`.
-3.  **Ensure Clarity:** The `aria-label` text should be concise but informative for a screen reader user, clearly conveying the element's purpose. Avoid redundant text if the icon already has `alt` text, but `aria-label` takes precedence for interactive elements.
-4.  **Verification:** After modifications, ensure the application still functions correctly and no visual regressions are introduced.
+Your task is to enhance the accessibility of the nail-report application by ensuring all icon-only buttons have meaningful `aria-label` attributes.
 
-## Summary of what changed
+1.  **Locate Icon-Only Buttons:** Traverse the `src/` directory (excluding `src/main.tsx`) to find all HTML `<button>` elements that contain only an icon (e.g., an `<img>`, `<svg>`, or an icon font element) and no visible text label. These buttons are typically designed to be self-explanatory visually but lack textual context for screen readers.
+2.  **Add `aria-label`:** For each identified icon-only button, add an `aria-label` attribute. The value of this attribute should be a concise, descriptive text that explains the button's action or purpose (e.g., `aria-label="Delete item"`, `aria-label="Edit nail report"`, `aria-label="Upload image"`, `aria-label="Open menu"`).
+3.  **Review existing buttons:** If any icon-only buttons already have an `aria-label`, ensure it is descriptive and accurate.
+4.  **No New Components or Logic:** This task is purely about adding the `aria-label` attribute to existing button elements. Do not introduce new components or change existing application logic.
 
-Added `aria-label` attributes to various icon-only buttons and interactive elements across the application to enhance accessibility for screen reader users.
+### Acceptance Criteria:
 
-## Changed files list
+- All icon-only buttons in the application have an `aria-label` attribute.
+- The `aria-label` values accurately describe the function of each button.
+- No new npm dependencies are introduced.
+- The `npm run build` and `npm run lint` commands complete without errors.
 
-- `src/App.tsx` (if global buttons exist there)
-- `src/components/**/*.tsx` (e.g., `src/components/NailItemCard.tsx`, `src/components/Navbar.tsx`, `src/components/ImageUpload.tsx`, etc.)
-- `src/pages/**/*.tsx` (e.g., `src/pages/Home.tsx`, `src/pages/Stats.tsx`, etc.)
-
-## Commands run and results
+### Required Test Commands:
 
 ```bash
-npm install # To ensure all dependencies are in place if the environment is new
 npm run build
-# Build should succeed without errors.
 npm run lint
-# Linting should pass without new warnings or errors.
-```
-
-## Known issues or limitations
-
-No known issues. The changes are purely additive to accessibility attributes and should not affect visual presentation or functionality.
-
-## Suggested next task
-
-Add Vitest + unit tests for `src/lib/firestore.ts` helpers
 ```
