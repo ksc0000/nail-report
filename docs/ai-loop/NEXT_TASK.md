@@ -1,47 +1,66 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. Specifically, Phase 2.3 targets "Loading states" by adding skeleton loading for the nail item list.
-
-The current state indicates that no substantive tasks have been completed from Phase 2 yet. This task aims to address one of the explicit "Jules-ready Tasks" to add a loading skeleton.
+The AI Loop is in Phase 2 of the roadmap, focusing on improving stability, test coverage, and UX. This task addresses "2.3 Loading states" by adding a loading skeleton to improve the user experience during data fetching.
 
 ## Objective
 
-Implement a basic loading skeleton UI for the nail item list in `src/App.tsx` that displays while the data is being fetched.
+Implement a simple loading skeleton for the nail item list displayed in `src/App.tsx`. The skeleton should appear while the list data is being fetched, providing a visual cue to the user that content is loading.
 
 ## Allowed Scope
 
--   `src/App.tsx`
--   `src/components/` (if a new component is deemed necessary for the skeleton, but prefer in-place changes in `App.tsx` for simplicity and small diff)
--   `src/App.css`
--   `src/assets/` (if simple SVG or image placeholders are used, but prefer CSS-only skeletons)
+- `src/App.tsx` (for implementing the skeleton logic and rendering)
+- `src/App.css` (for styling the loading skeleton)
+- Any new component files within `src/components/` if deemed necessary for the skeleton UI (e.g., `src/components/NailItemSkeleton.tsx`), though a simple direct implementation in `App.tsx` is preferred if possible.
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
--   `src/lib/` files (not relevant for this UI task)
--   `src/__tests__/` (not required for this UI task, though future tests could cover loading states)
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   Keep diff ≤ 150 lines.
--   When the nail items are loading (e.g., an `isLoading` state is true and the `nailItems` array is empty), display a simple skeleton UI.
--   The skeleton should mimic the general shape of a few nail item entries (e.g., rectangular blocks).
--   The skeleton should disappear once the `nailItems` data is loaded and rendered.
--   Ensure the solution uses CSS-only placeholders for the skeleton to avoid adding image assets.
--   Run `npm run build && npm run lint` before finishing.
--   Report follow-up items as comments, not additional code.
+- Keep diff ≤ 150 lines.
+- The skeleton should replace the existing nail item list when data is loading.
+- Implement a basic `isLoading` state within `App.tsx` if one doesn't already exist to simulate data fetching.
+- The skeleton should mimic the visual structure of one or more nail item cards (e.g., a few grey rectangles representing image, title, and tags).
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files. (Not applicable for this UI task)
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
+
+## Worker prompt
+
+Implement a loading skeleton for the nail item list in `src/App.tsx`.
+
+1.  **Locate the nail item list rendering:** Identify where the `nailItems` are mapped and rendered in `src/App.tsx`.
+2.  **Introduce a loading state:** If not already present, add a local `isLoading` state variable using `useState` in `App.tsx`. Set its initial value to `true` and update it to `false` after a simulated delay (e.g., using `setTimeout` for 1-2 seconds) to represent data fetching completion.
+3.  **Conditional Rendering:** When `isLoading` is `true`, render a placeholder skeleton UI. When `isLoading` is `false`, render the actual `nailItems` list.
+4.  **Design the Skeleton:** Create a simple skeleton structure. For example, render 3-5 `div` elements, each representing a "loading" nail item. These divs should have basic dimensions and a grey background.
+5.  **Apply CSS:** Add corresponding CSS classes and styles to `src/App.css` to give the skeleton elements their visual appearance (e.g., `background-color`, `height`, `width`, `border-radius` to mimic cards).
+
+**Acceptance Criteria:**
+*   When the application loads, a skeleton UI is visible for a short duration (e.g., 1-2 seconds) where the nail item list would normally appear.
+*   After the simulated loading period, the actual nail item list is displayed.
+*   No new npm packages are added.
+*   The diff size is within the 150-line limit.
+
+**Required Test Commands:**
+```bash
+npm run build
+npm run lint
+```
+```
