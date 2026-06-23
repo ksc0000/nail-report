@@ -32,6 +32,10 @@
   --jb-text-muted-on-dark: rgba(255, 255, 255, 0.48);
   --jb-shadow-glow: 0 0 28px rgba(248, 187, 208, 0.14);
   --jb-shadow-panel: 0 24px 60px rgba(0, 0, 0, 0.34);
+  --mobile-viewport-target: 390px;
+  --mobile-viewport-compact: 320px;
+  --tap-target-min: 44px;
+  --fixed-control-safe-gap: max(16px, env(safe-area-inset-bottom));
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;

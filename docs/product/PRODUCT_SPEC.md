@@ -126,6 +126,24 @@ Nailous は、ネイル写真・メモ・タグをかんたんに残し、あと
 
 ---
 
+## Mobile Layout Baseline
+
+Jewelry Box Refresh のモバイルUIは、アプリの主利用端末をスマートフォンと見なし、390px 幅を主要な設計基準にする。iPhone SE 相当の 320px 級は下限の回帰確認対象とし、情報量を減らすのではなく、1カラム化・折り返し・安全余白で破綻を避ける。
+
+| 項目 | 基準 |
+|------|------|
+| Primary mobile width | 390px（iPhone 12/13/14/15 系の標準幅を想定） |
+| Compact minimum check | 320px（iPhone SE 相当で主要CTA・フォーム・カードが操作可能） |
+| Tap target | 主要ボタン・フォーム送信・共有/エクスポート操作は 44px 以上 |
+| Fixed controls | 下部固定UIは `env(safe-area-inset-bottom)` を加味し、コンテンツ下端と重ねない |
+| Logged-out home | Jewelry Box の浮遊ビューを維持しつつ、390pxではサインインCTAを1カラムで表示 |
+| Logged-in studio | 390px以下ではヒーロー・フォーム・カードを1カラム化し、横スクロールを発生させない |
+| Desktop | 既存の中央寄せ最大幅と2カラムカード表示を維持し、モバイル基準の追加で情報密度を落とさない |
+
+実装上の共通基準は `src/index.css` の `--mobile-viewport-target`、`--mobile-viewport-compact`、`--tap-target-min`、`--fixed-control-safe-gap` に集約する。下部固定ナビゲーションを追加する場合も、この安全余白を再利用する。
+
+---
+
 ## Data Model Overview
 
 ### NailItem（Firestore — Phase 1 以降）
