@@ -1672,6 +1672,7 @@ function App() {
                   <li
                     key={item.id}
                     className={[
+                      item.imageUrl ? 'has-image' : 'no-image',
                       editingId === item.id ? 'editing' : '',
                       isCompareSelected ? 'comparison-selected' : '',
                     ].filter(Boolean).join(' ')}
@@ -1680,7 +1681,29 @@ function App() {
                       className="nail-card-thumb"
                       onClick={() => setDetailItemId(item.id)}
                     >
-                      <div className="nail-thumb-placeholder">No image</div>
+                      <div className="nail-thumb-placeholder" aria-hidden={Boolean(item.imageUrl)}>
+                        <div className="nail-thumb-showcase">
+                          <FloatingNailChip
+                            variant="empty"
+                            shape="almond"
+                            className="nail-thumb-chip nail-thumb-chip--one"
+                            showHighlight={false}
+                          />
+                          <FloatingNailChip
+                            variant="empty"
+                            shape="oval"
+                            className="nail-thumb-chip nail-thumb-chip--two"
+                            showHighlight={false}
+                          />
+                          <FloatingNailChip
+                            variant="empty"
+                            shape="square"
+                            className="nail-thumb-chip nail-thumb-chip--three"
+                            showHighlight={false}
+                          />
+                        </div>
+                        <span>No image</span>
+                      </div>
                       {item.imageUrl && (
                         <img
                           className="nail-thumb-img"
@@ -1714,6 +1737,7 @@ function App() {
                     <div className="nail-item-actions">
                       <button
                         type="button"
+                        className="nail-action-primary"
                         onClick={() => setDetailItemId(item.id)}
                       >詳しく見る</button>
                       <button
