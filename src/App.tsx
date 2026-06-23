@@ -1045,8 +1045,22 @@ function App() {
       )}
       {user && (
         <div id="nail-section">
+          <section className="nail-studio-hero" aria-labelledby="studio-title">
+            <div>
+              <p className="nail-studio-kicker">JEWELRY BOX STUDIO</p>
+              <h2 id="studio-title">ネイルを一つずつ、宝石箱へ。</h2>
+              <p>
+                追加した写真はあとから浮遊ビュー・比較・共有へつながります。
+                まずは今日のネイルを一つ、コレクションに入れておきましょう。
+              </p>
+            </div>
+            <div className="nail-studio-count" aria-label={`保存済みネイル ${nailItems.length} 件`}>
+              <span>{nailItems.length}</span>
+              <small>saved</small>
+            </div>
+          </section>
           <div id="nail-form">
-            <h2 className="nail-form-title">{editingId ? 'Edit Nail Item' : 'Add Nail Item'}</h2>
+            <h2 className="nail-form-title">{editingId ? 'Edit charm' : 'Add to jewelry box'}</h2>
             <input
               type="text"
               value={nailTitle}
@@ -1410,14 +1424,13 @@ function App() {
             </div>
           ) : nailItems.length === 0 ? (
             <div className="nail-empty">
-              <svg className="nail-empty-icon" aria-hidden="true" width="44" height="44" viewBox="0 0 44 44" fill="none">
-                <rect x="17" y="3" width="10" height="6" rx="2" fill="currentColor" opacity="0.35"/>
-                <rect x="15" y="9" width="14" height="3" rx="1.5" fill="currentColor" opacity="0.5"/>
-                <rect x="13" y="12" width="18" height="26" rx="5" fill="currentColor" opacity="0.12"/>
-                <rect x="13" y="12" width="18" height="10" rx="5" fill="currentColor" opacity="0.4"/>
-              </svg>
-              <p className="nail-empty-main">コレクションを始めましょう</p>
-              <p className="nail-empty-sub">上のフォームから最初のネイルを追加してください</p>
+              <div className="nail-empty-stage" aria-hidden="true">
+                <span className="nail-empty-chip nail-empty-chip--one" />
+                <span className="nail-empty-chip nail-empty-chip--two" />
+                <span className="nail-empty-chip nail-empty-chip--three" />
+              </div>
+              <p className="nail-empty-main">まだ宝石箱は空です</p>
+              <p className="nail-empty-sub">タイトルと写真を追加すると、最初のネイルチャームがここに並びます</p>
               <ul className="nail-empty-tips">
                 <li>タイトル・写真・タグ・メモを記録できます</li>
                 <li>タグや検索でいつでも素早く見つかります</li>
