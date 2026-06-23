@@ -75,6 +75,7 @@ Copy this template into a new PR or issue comment when performing QA.
 
 ## 10. Production Smoke Test
 Refer to [PRODUCTION_SMOKE_TEST_CHECKLIST.md](./PRODUCTION_SMOKE_TEST_CHECKLIST.md).
+For Jewelry Box Refresh release candidates, also complete [JEWELRY_BOX_REFRESH_RELEASE_CHECKLIST.md](./JEWELRY_BOX_REFRESH_RELEASE_CHECKLIST.md).
 
 | Test Case | Result | Evidence/Notes |
 |---|---|---|
