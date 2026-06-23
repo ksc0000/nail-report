@@ -73,6 +73,9 @@ const INSPIRATION_CARDS = [
   { id: 'velvet-rose', title: 'Velvet rose', tone: 'rose', tags: ['date', 'gloss'] },
 ] as const
 
+const INSPIRATION_CATEGORIES = ['All', 'Daily', 'Event', 'Season', 'Salon'] as const
+type InspirationCategory = typeof INSPIRATION_CATEGORIES[number]
+
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
   [...items].sort((a, b) => {
     const ta = (a.updatedAt ?? a.createdAt)?.seconds ?? 0
@@ -257,6 +260,7 @@ function App() {
   const [selectedNailColor, setSelectedNailColor] = useState<NailColor>('blush')
   const [selectedNailTexture, setSelectedNailTexture] = useState<NailTexture>('gloss')
   const [selectedDecorationParts, setSelectedDecorationParts] = useState<DecorationPart[]>([])
+  const [activeInspirationCategory, setActiveInspirationCategory] = useState<InspirationCategory>('All')
   const [nailImageFile, setNailImageFile] = useState<File | null>(null)
   const [nailImagePreview, setNailImagePreview] = useState<string | null>(null)
   const [nailImageSource, setNailImageSource] = useState<'upload' | 'camera' | 'unknown'>('unknown')
@@ -1353,6 +1357,20 @@ function App() {
                 <p>保存前のアイデアを眺めるためのExplore領域です。カードは今後、実データやカテゴリに接続します。</p>
               </div>
               <span className="inspiration-badge">Static preview</span>
+            </div>
+            <div className="inspiration-category-tabs" role="tablist" aria-label="Inspiration categories">
+              {INSPIRATION_CATEGORIES.map(category => (
+                <button
+                  key={category}
+                  type="button"
+                  role="tab"
+                  className={activeInspirationCategory === category ? 'active' : undefined}
+                  aria-selected={activeInspirationCategory === category}
+                  onClick={() => setActiveInspirationCategory(category)}
+                >
+                  {category}
+                </button>
+              ))}
             </div>
             <div className="inspiration-card-grid">
               {INSPIRATION_CARDS.map(card => (
