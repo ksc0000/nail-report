@@ -41,6 +41,23 @@ const NAIL_SHAPES = [
 ] as const
 type NailShape = typeof NAIL_SHAPES[number]['id']
 
+const NAIL_COLORS = [
+  { id: 'blush', label: 'Blush' },
+  { id: 'rose', label: 'Rose' },
+  { id: 'lavender', label: 'Lavender' },
+  { id: 'mint', label: 'Mint' },
+  { id: 'champagne', label: 'Champagne' },
+] as const
+type NailColor = typeof NAIL_COLORS[number]['id']
+
+const NAIL_TEXTURES = [
+  { id: 'gloss', label: 'Gloss' },
+  { id: 'matte', label: 'Matte' },
+  { id: 'glitter', label: 'Glitter' },
+  { id: 'chrome', label: 'Chrome' },
+] as const
+type NailTexture = typeof NAIL_TEXTURES[number]['id']
+
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
   [...items].sort((a, b) => {
     const ta = (a.updatedAt ?? a.createdAt)?.seconds ?? 0
@@ -222,6 +239,8 @@ function App() {
   const [nailTags, setNailTags] = useState('')
   const [nailMemo, setNailMemo] = useState('')
   const [selectedNailShape, setSelectedNailShape] = useState<NailShape>('round')
+  const [selectedNailColor, setSelectedNailColor] = useState<NailColor>('blush')
+  const [selectedNailTexture, setSelectedNailTexture] = useState<NailTexture>('gloss')
   const [nailImageFile, setNailImageFile] = useState<File | null>(null)
   const [nailImagePreview, setNailImagePreview] = useState<string | null>(null)
   const [nailImageSource, setNailImageSource] = useState<'upload' | 'camera' | 'unknown'>('unknown')
@@ -498,6 +517,8 @@ function App() {
     setNailTags('')
     setNailMemo('')
     setSelectedNailShape('round')
+    setSelectedNailColor('blush')
+    setSelectedNailTexture('gloss')
     setNailImageFile(null)
     clearPreview()
     clearImageInputs()
@@ -600,6 +621,8 @@ function App() {
     setNailTags(item.tags.join(', '))
     setNailMemo(item.memo ?? '')
     setSelectedNailShape('round')
+    setSelectedNailColor('blush')
+    setSelectedNailTexture('gloss')
     setNailImageSource(item.imageSource ?? 'unknown')
     setNailImageFile(null)
     clearPreview()
@@ -1137,6 +1160,47 @@ function App() {
                       <span>{shape.label}</span>
                     </button>
                   ))}
+                </div>
+              </div>
+              <div className="nail-appearance-control">
+                <div className="nail-color-control" role="group" aria-label="メインカラー">
+                  <div className="nail-control-heading">
+                    <span>Color</span>
+                    <small>メインカラー</small>
+                  </div>
+                  <div className="nail-color-options">
+                    {NAIL_COLORS.map(color => (
+                      <button
+                        key={color.id}
+                        type="button"
+                        className={`nail-color-option${selectedNailColor === color.id ? ' nail-color-option--selected' : ''}`}
+                        aria-pressed={selectedNailColor === color.id}
+                        onClick={() => setSelectedNailColor(color.id)}
+                      >
+                        <span className={`nail-color-swatch nail-color-swatch--${color.id}`} aria-hidden="true" />
+                        <span>{color.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="nail-texture-control" role="group" aria-label="質感">
+                  <div className="nail-control-heading">
+                    <span>Texture</span>
+                    <small>仕上げ</small>
+                  </div>
+                  <div className="nail-texture-options">
+                    {NAIL_TEXTURES.map(texture => (
+                      <button
+                        key={texture.id}
+                        type="button"
+                        className={`nail-texture-option nail-texture-option--${texture.id}${selectedNailTexture === texture.id ? ' nail-texture-option--selected' : ''}`}
+                        aria-pressed={selectedNailTexture === texture.id}
+                        onClick={() => setSelectedNailTexture(texture.id)}
+                      >
+                        {texture.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
               {isAiTagSuggestionEnabled && (nailImageFile || editingItem?.imageUrl) && (
