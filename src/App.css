@@ -7,6 +7,7 @@
   place-content: start;
   place-items: center;
   flex-grow: 1;
+  box-sizing: border-box;
   padding: 32px 20px calc(48px + var(--fixed-control-safe-gap));
 }
 
