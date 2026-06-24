@@ -1485,6 +1485,75 @@
   line-height: 1.65;
 }
 
+.screen-empty-state {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--jb-gold) 22%, var(--border));
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 16% 20%, rgba(248, 217, 77, 0.14), transparent 30%),
+    rgba(255, 255, 255, 0.62);
+}
+
+.screen-empty-kicker {
+  margin: 0;
+  color: var(--jb-rose);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.screen-empty-state h4 {
+  margin: 0;
+  color: var(--text-h);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.screen-empty-state p {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.screen-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.screen-empty-actions button,
+.screen-empty-state button {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid color-mix(in srgb, var(--jb-gold) 24%, var(--border));
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.74);
+  color: var(--text-h);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.screen-empty-actions button:hover,
+.screen-empty-actions button:focus-visible,
+.screen-empty-state button:hover,
+.screen-empty-state button:focus-visible {
+  border-color: color-mix(in srgb, var(--jb-gold) 48%, var(--accent-border));
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.screen-empty-actions button:focus-visible,
+.screen-empty-state button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .saved-designs-data-slots {
   display: grid;
   grid-template-columns: 1fr;
@@ -2618,6 +2687,23 @@
   height: 4px;
   border-radius: 9999px;
   background: var(--accent);
+}
+
+.nail-empty-actions {
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.nail-empty-actions button {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.nail-empty-actions button:hover,
+.nail-empty-actions button:focus-visible {
+  border-color: color-mix(in srgb, var(--jb-gold) 48%, rgba(255, 255, 255, 0.18));
+  background: rgba(255, 255, 255, 0.16);
 }
 
 @keyframes empty-chip-float {
