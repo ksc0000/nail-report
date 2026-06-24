@@ -74,6 +74,17 @@ describe('firestore helper functions', () => {
       })
     })
 
+    it('returns an empty array when no nail items are found', async () => {
+      vi.mocked(firestore.getDocs).mockResolvedValue({
+        docs: [],
+      } as unknown as never)
+
+      const result = await fetchNailItems(userId)
+
+      expect(firestore.collection).toHaveBeenCalledWith(expect.anything(), 'users', userId, 'nailItems')
+      expect(result).toEqual([])
+    })
+
     it('throws error when getDocs fails', async () => {
       vi.mocked(firestore.getDocs).mockRejectedValue(new Error('Fetch failed'))
       await expect(fetchNailItems(userId)).rejects.toThrow('Fetch failed')
@@ -89,7 +100,16 @@ describe('firestore helper functions', () => {
       const result = await addNailItem(userId, input)
 
       expect(firestore.collection).toHaveBeenCalledWith(expect.anything(), 'users', userId, 'nailItems')
-      expect(firestore.addDoc).toHaveBeenCalled()
+      expect(firestore.addDoc).toHaveBeenCalledWith(expect.anything(), {
+        title: input.title,
+        imageUrl: input.imageUrl,
+        thumbnailUrl: input.imageUrl,
+        tags: input.tags,
+        memo: input.memo,
+        imageSource: 'unknown',
+        createdAt: 'mock-timestamp',
+        updatedAt: 'mock-timestamp',
+      })
       expect(result).toBe('new-item-id')
     })
 
@@ -104,7 +124,15 @@ describe('firestore helper functions', () => {
       await updateNailItem(userId, itemId, input)
 
       expect(firestore.doc).toHaveBeenCalledWith(expect.anything(), 'users', userId, 'nailItems', itemId)
-      expect(firestore.updateDoc).toHaveBeenCalled()
+      expect(firestore.updateDoc).toHaveBeenCalledWith(expect.anything(), {
+        title: input.title,
+        imageUrl: input.imageUrl,
+        thumbnailUrl: input.imageUrl,
+        tags: input.tags,
+        memo: input.memo,
+        imageSource: 'unknown',
+        updatedAt: 'mock-timestamp',
+      })
     })
 
     it('throws error when updateDoc fails', async () => {
