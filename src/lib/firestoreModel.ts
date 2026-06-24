@@ -10,6 +10,9 @@ export interface NailItem {
   mainColor?: string
   texture?: string
   decorationParts?: string[]
+  salonName?: string
+  price?: string
+  appointmentDate?: string
   imageSource?: 'upload' | 'camera' | 'unknown'
   createdAt: Timestamp | null
   updatedAt: Timestamp | null
@@ -28,14 +31,20 @@ export interface NailItemInput {
   mainColor?: string
   texture?: string
   decorationParts?: string[]
+  salonName?: string
+  price?: string
+  appointmentDate?: string
   imageSource?: 'upload' | 'camera' | 'unknown'
 }
 
-const buildOptionalDesignFields = (input: NailItemInput) => ({
+const buildOptionalNailItemFields = (input: NailItemInput) => ({
   ...(input.shape !== undefined ? { shape: input.shape } : {}),
   ...(input.mainColor !== undefined ? { mainColor: input.mainColor } : {}),
   ...(input.texture !== undefined ? { texture: input.texture } : {}),
   ...(input.decorationParts !== undefined ? { decorationParts: input.decorationParts } : {}),
+  ...(input.salonName !== undefined ? { salonName: input.salonName } : {}),
+  ...(input.price !== undefined ? { price: input.price } : {}),
+  ...(input.appointmentDate !== undefined ? { appointmentDate: input.appointmentDate } : {}),
 })
 
 export const toNailItemDoc = (id: string, data: NailItem): NailItemDoc => ({
@@ -49,7 +58,7 @@ export const buildCreateNailItemData = (input: NailItemInput, timestamp: unknown
   thumbnailUrl: input.imageUrl,
   tags: input.tags,
   memo: input.memo,
-  ...buildOptionalDesignFields(input),
+  ...buildOptionalNailItemFields(input),
   imageSource: input.imageSource ?? 'unknown',
   createdAt: timestamp,
   updatedAt: timestamp,
@@ -61,7 +70,7 @@ export const buildUpdateNailItemData = (input: NailItemInput, timestamp: unknown
   thumbnailUrl: input.imageUrl,
   tags: input.tags,
   memo: input.memo,
-  ...buildOptionalDesignFields(input),
+  ...buildOptionalNailItemFields(input),
   imageSource: input.imageSource ?? 'unknown',
   updatedAt: timestamp,
 })

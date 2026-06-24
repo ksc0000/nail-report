@@ -22,6 +22,13 @@ const designInput: NailItemInput = {
   decorationParts: ['pearl', 'gold-line'],
 }
 
+const appointmentInput: NailItemInput = {
+  ...input,
+  salonName: 'Aoyama Nail',
+  price: '12000',
+  appointmentDate: '2026-07-12',
+}
+
 test('buildCreateNailItemData creates the Firestore write payload', () => {
   const timestamp = Symbol('serverTimestamp')
   assert.deepEqual(buildCreateNailItemData(input, timestamp), {
@@ -60,6 +67,23 @@ test('buildCreateNailItemData includes optional nail design fields when provided
   })
 })
 
+test('buildCreateNailItemData includes optional appointment fields when provided', () => {
+  const timestamp = Symbol('serverTimestamp')
+  assert.deepEqual(buildCreateNailItemData(appointmentInput, timestamp), {
+    title: appointmentInput.title,
+    imageUrl: appointmentInput.imageUrl,
+    thumbnailUrl: appointmentInput.imageUrl,
+    tags: appointmentInput.tags,
+    memo: appointmentInput.memo,
+    salonName: 'Aoyama Nail',
+    price: '12000',
+    appointmentDate: '2026-07-12',
+    imageSource: 'camera',
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  })
+})
+
 test('buildUpdateNailItemData omits createdAt and refreshes updatedAt', () => {
   const timestamp = Symbol('serverTimestamp')
   assert.deepEqual(buildUpdateNailItemData(input, timestamp), {
@@ -85,6 +109,22 @@ test('buildUpdateNailItemData includes optional nail design fields when provided
     mainColor: 'blush',
     texture: 'gloss',
     decorationParts: ['pearl', 'gold-line'],
+    imageSource: 'camera',
+    updatedAt: timestamp,
+  })
+})
+
+test('buildUpdateNailItemData includes optional appointment fields when provided', () => {
+  const timestamp = Symbol('serverTimestamp')
+  assert.deepEqual(buildUpdateNailItemData(appointmentInput, timestamp), {
+    title: appointmentInput.title,
+    imageUrl: appointmentInput.imageUrl,
+    thumbnailUrl: appointmentInput.imageUrl,
+    tags: appointmentInput.tags,
+    memo: appointmentInput.memo,
+    salonName: 'Aoyama Nail',
+    price: '12000',
+    appointmentDate: '2026-07-12',
     imageSource: 'camera',
     updatedAt: timestamp,
   })
@@ -117,4 +157,7 @@ test('toNailItemDoc safely maps old documents without optional nail design field
   assert.equal(result.mainColor, undefined)
   assert.equal(result.texture, undefined)
   assert.equal(result.decorationParts, undefined)
+  assert.equal(result.salonName, undefined)
+  assert.equal(result.price, undefined)
+  assert.equal(result.appointmentDate, undefined)
 })
