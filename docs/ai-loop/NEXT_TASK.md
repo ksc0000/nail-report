@@ -1,75 +1,46 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The `nail-report` application is currently in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. Specifically, Phase 2.1 aims to enhance test coverage, starting with unit tests for Firebase helper functions. Vitest has been chosen as the test runner, and it is assumed to be already installed and configured as a dev dependency.
-
-This task is to begin implementing unit tests for selected helper functions located in `src/lib/firestore.ts`.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This task will contribute to the "2.1 Test coverage" goal by adding unit tests for a core Firebase helper file.
 
 ## Objective
 
-Add initial unit tests for `addNailItem` and `getNailItems` helper functions within `src/lib/firestore.ts` using Vitest, ensuring Firebase SDK dependencies are mocked.
+Implement Vitest unit tests for the functions within `src/lib/firestore.ts`. This involves setting up mocks for Firebase Firestore SDK methods as needed to isolate the functions under test.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor modifications for testability, e.g., exporting unexported helpers or introducing dependency injection points if strictly necessary and small)
-- `src/__tests__/firestore.test.ts` (new file for unit tests)
+-   `src/lib/firestore.ts` (modifications to export functions if needed for testing, but prioritize testing existing exports)
+-   `src/__tests__/` (creation of `src/__tests__/firestore.test.ts` or similar for tests)
+-   `package.json` (only if adding a new script for tests, but *not* new dependencies)
+-   `vite.config.ts` (if Vitest configuration is needed, but prefer existing setup)
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` (DO NOT add new `npm install` dependencies. If `vitest` test script is missing, add it, but do not change `dependencies` or `devDependencies`.)
-- `vite.config.ts` (assume Vitest is already configured for mocking)
-- Firebase deploy commands
-- Secrets and credentials
-- Any other files not explicitly allowed.
+-   `src/main.tsx`
+-   `commands/`
+-   `firestore.rules`, `storage.rules`
+-   `package.json` deps (no new npm packages)
+-   Firebase deploy commands
+-   Secrets and credentials
+-   Any files not explicitly in "Allowed Scope"
 
 ## Requirements
 
-- **Diff Limit**: Keep the total diff ≤ 150 lines. Focus on testing 1-2 core functions initially.
-- **New Test File**: Create a new file: `src/__tests__/firestore.test.ts`.
-- **Target Functions**: Write unit tests for `addNailItem` and `getNailItems` from `src/lib/firestore.ts`.
-- **Mocking**: Mock Firebase SDK functions (e.g., `addDoc`, `getDocs`, `collection`, `query`) using `vi.mock` to isolate the logic within `firestore.ts` and prevent actual Firebase calls.
-- **Test Commands**: Before completing the task, run the following commands and ensure they pass:
-    - `npm run build`
-    - `npm run lint`
-    - `npm test` (or the equivalent command configured for Vitest, e.g., `vitest run`)
-- **Follow-up**: If any follow-up items are identified (e.g., testing more functions, broader mocking strategy), mention them as comments in your PR description.
+-   Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
+-   Write unit tests for the helper functions in `src/lib/firestore.ts` (e.g., `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`, `getPublicShares`, etc.).
+-   Use `vitest` and `vi.mock` to mock the Firebase Firestore SDK to ensure tests are isolated and do not interact with a live database.
+-   Ensure tests cover typical successful execution paths and basic error handling where applicable within the `firestore.ts` functions.
+-   Keep the total diff for the PR under 150 lines.
+-   Run `npm run build && npm run lint && npm test` before finishing.
 
 ## Output Format
 
-Please provide your output in the following Markdown format:
+-   Summary of what changed
+-   Changed files list
+-   Commands run and results
+-   Known issues or limitations
+-   Suggested next task
 
-```markdown
-### Summary
-
-[A brief description of the changes made.]
-
-### Changed Files
-
-- `path/to/file1.ts`
-- `path/to/file2.ts`
-
-### Commands Run and Results
-
-```bash
-npm run build
-# [Output]
-
-npm run lint
-# [Output]
-
-npm test
-# [Output]
-```
-
-### Known Issues or Limitations
-
-[Any known issues or limitations with the implemented solution.]
-
-### Suggested Next Task
-
-[Suggest the next logical task based on the roadmap and current changes. This will often be another small, bounded task.]
 ```
