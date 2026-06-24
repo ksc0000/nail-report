@@ -289,6 +289,8 @@ function App() {
   const [detailItemId, setDetailItemId] = useState<string | null>(null)
   const [isDataModalOpen, setIsDataModalOpen] = useState(false)
   const [comparisonItemIds, setComparisonItemIds] = useState<string[]>([])
+  const [savedItemIds, setSavedItemIds] = useState<string[]>([])
+  const [likedItemIds, setLikedItemIds] = useState<string[]>([])
   const [nailLoading, setNailLoading] = useState(false)
   const [nailError, setNailError] = useState('')
   const [isAIGeneratingTags, setIsAIGeneratingTags] = useState(false)
@@ -421,6 +423,8 @@ function App() {
         setPublicSharesUserId(null)
         setDetailItemId(null)
         setComparisonItemIds([])
+        setSavedItemIds([])
+        setLikedItemIds([])
       }
     })
   }, [isPublicSharePage])
@@ -705,6 +709,8 @@ function App() {
     const uid = user.uid
     if (editingId === itemId) resetForm()
     setComparisonItemIds(prev => prev.filter(id => id !== itemId))
+    setSavedItemIds(prev => prev.filter(id => id !== itemId))
+    setLikedItemIds(prev => prev.filter(id => id !== itemId))
     setNailLoading(true)
     setNailError('')
     setBannerError('')
@@ -726,6 +732,7 @@ function App() {
   const detailItem = detailItemId ? nailItems.find(i => i.id === detailItemId) : null
   const isFetching = Boolean(user && nailItemsUserId !== user.uid)
   const summary = useMemo(() => getNailSummary(nailItems), [nailItems])
+  const savedPreviewItems = nailItems.filter(item => savedItemIds.includes(item.id)).slice(0, 3)
 
   const filteredItems = nailItems.filter(item => {
     if (searchQuery.trim()) {
@@ -739,6 +746,18 @@ function App() {
 
   const handleToggleComparisonItem = (itemId: string) => {
     setComparisonItemIds(prev => toggleComparisonId(prev, itemId))
+  }
+
+  const handleToggleSavedItem = (itemId: string) => {
+    setSavedItemIds(prev => (
+      prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
+    ))
+  }
+
+  const handleToggleLikedItem = (itemId: string) => {
+    setLikedItemIds(prev => (
+      prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
+    ))
   }
 
   const getShareUrl = (id: string): string =>
@@ -1450,7 +1469,7 @@ function App() {
                   後続フェーズで保存済みネイルやいいね状態に接続します。
                 </p>
               </div>
-              <span className="saved-designs-badge">Ready for data</span>
+              <span className="saved-designs-badge">{savedItemIds.length} saved</span>
             </div>
             <div className="saved-designs-surface">
               <div className="saved-designs-empty">
@@ -1469,8 +1488,12 @@ function App() {
                   />
                 </div>
                 <div>
-                  <h4>保存デザインはまだありません</h4>
-                  <p>写真・形・色・タグが接続されると、ここにお気に入りのネイルカードが並びます。</p>
+                  <h4>{savedItemIds.length > 0 ? '保存したデザイン' : '保存デザインはまだありません'}</h4>
+                  <p>
+                    {savedItemIds.length > 0
+                      ? savedPreviewItems.map(item => item.title).join(' / ')
+                      : '写真・形・色・タグが接続されると、ここにお気に入りのネイルカードが並びます。'}
+                  </p>
                 </div>
               </div>
               <div className="saved-designs-data-slots" aria-label="後続接続予定の項目">
@@ -1858,6 +1881,8 @@ function App() {
                   ? formatDate(item.updatedAt)
                   : null
                 const isCompareSelected = comparisonItemIds.includes(item.id)
+                const isSaved = savedItemIds.includes(item.id)
+                const isLiked = likedItemIds.includes(item.id)
                 return (
                   <li
                     key={item.id}
@@ -1932,7 +1957,30 @@ function App() {
                         </p>
                       )}
                     </div>
-                    <div className="nail-item-actions">
+                    <div
+                      className={`nail-item-actions ${nailLoading ? 'is-loading' : ''}`}
+                      aria-busy={nailLoading}
+                    >
+                      <button
+                        type="button"
+                        className={`nail-state-action nail-save-action ${isSaved ? 'is-saved' : ''}`}
+                        aria-pressed={isSaved}
+                        disabled={nailLoading}
+                        onClick={() => handleToggleSavedItem(item.id)}
+                      >
+                        <span aria-hidden="true">{isSaved ? 'Saved' : 'Save'}</span>
+                        <small>{isSaved ? '保存済み' : '保存'}</small>
+                      </button>
+                      <button
+                        type="button"
+                        className={`nail-state-action nail-like-action ${isLiked ? 'is-liked' : ''}`}
+                        aria-pressed={isLiked}
+                        disabled={nailLoading}
+                        onClick={() => handleToggleLikedItem(item.id)}
+                      >
+                        <span aria-hidden="true">{isLiked ? 'Liked' : 'Like'}</span>
+                        <small>{isLiked ? 'いいね済み' : 'いいね'}</small>
+                      </button>
                       <button
                         type="button"
                         className="nail-action-primary"
