@@ -33,6 +33,13 @@ import './App.css'
 const DISPLAY_MODES = ['Glass', 'Snow Globe', 'Velvet', 'Showcase'] as const
 type DisplayMode = typeof DISPLAY_MODES[number]
 
+const JEWEL_MOTION_MODES = [
+  { id: 'drift', label: '漂う' },
+  { id: 'carousel', label: '回る' },
+  { id: 'showcase', label: '前後' },
+] as const
+type JewelMotionMode = typeof JEWEL_MOTION_MODES[number]['id']
+
 const DISPLAY_MODE_CLASS_NAMES: Record<DisplayMode, string> = {
   Glass: 'display-mode-glass',
   'Snow Globe': 'display-mode-snow-globe',
@@ -353,6 +360,7 @@ function App() {
   const [publicSharesUserId, setPublicSharesUserId] = useState<string | null>(null)
   const [shareActionId, setShareActionId] = useState<string | null>(null)
   const [activeDisplayMode, setActiveDisplayMode] = useState<DisplayMode>('Glass')
+  const [activeJewelMotion, setActiveJewelMotion] = useState<JewelMotionMode>('drift')
   const [activeAppScreen, setActiveAppScreen] = useState<AppScreenId>('home')
   const [publicShare, setPublicShare] = useState<PublicShareDocWithId | null>(null)
   const [publicShareState, setPublicShareState] = useState<PublicShareViewState>(
@@ -785,7 +793,7 @@ function App() {
   const summary = useMemo(() => getNailSummary(nailItems), [nailItems])
   const savedDesignItems = nailItems.filter(item => savedItemIds.includes(item.id))
   const savedPreviewItems = savedDesignItems.slice(0, 3)
-  const homeShowcaseItems = nailItems.slice(0, 7)
+  const homeShowcaseItems = nailItems
 
   const filteredItems = nailItems.filter(item => {
     if (searchQuery.trim()) {
@@ -1091,7 +1099,7 @@ function App() {
           if (!firebaseConfigErrorMessage) setBannerError('')
         }}
       />
-      {detailItem && (
+      {detailItem && activeAppScreen !== 'home' && (
         <Suspense fallback={<div className="lazy-loading">読み込み中...</div>}>
           <NailImageDetailViewer
             item={detailItem}
@@ -1247,13 +1255,13 @@ function App() {
         <div id="nail-section" className={DISPLAY_MODE_CLASS_NAMES[activeDisplayMode]}>
           {activeAppScreen === 'home' && (
             <>
-              <section className="jewel-home-stage" aria-labelledby="studio-title">
+              <section className={`jewel-home-stage jewel-motion-${activeJewelMotion}`} aria-labelledby="studio-title">
                 <div className="jewel-home-copy">
                   <p className="nail-studio-kicker">NAIL JEWEL BOX</p>
-                  <h2 id="studio-title">浮いているネイルを、そっと選ぶ。</h2>
+                  <h2 id="studio-title">スクロールして、思い出のネイルに触れる。</h2>
                   <p>
-                    思い出のネイルが小さなジュエルのように漂う場所です。
-                    気になるネイルをタッチすると、この空間のまま個別ビューが開きます。
+                    浮き方を選びながらネイルを遡り、気になるひとつをタッチ。
+                    選んだネイルだけが前へ出て、同じショーウィンドウの中に記憶が浮かびます。
                   </p>
                   <div className="jewel-home-actions">
                     <button type="button" onClick={() => handleSelectAppScreen('design')}>
@@ -1262,6 +1270,19 @@ function App() {
                     <button type="button" onClick={() => handleSelectAppScreen('profile')}>
                       保存・相談メモを見る
                     </button>
+                  </div>
+                  <div className="jewel-motion-switcher" aria-label="ネイルの浮き方">
+                    {JEWEL_MOTION_MODES.map(mode => (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        className={activeJewelMotion === mode.id ? 'is-active' : ''}
+                        onClick={() => setActiveJewelMotion(mode.id)}
+                        aria-pressed={activeJewelMotion === mode.id}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
                 <div className="jewel-orbit" aria-label="浮遊するネイル">
@@ -1275,37 +1296,97 @@ function App() {
                       <span className="jewel-nail-label">最初のネイルを記録</span>
                     </button>
                   ) : (
-                    homeShowcaseItems.map((item, index) => {
-                      const shape = isNailShape(item.shape) ? item.shape : (index % 3 === 0 ? 'almond' : index % 3 === 1 ? 'round' : 'square')
-                      const color = isNailColor(item.mainColor) ? item.mainColor : (index % 4 === 0 ? 'blush' : index % 4 === 1 ? 'rose' : index % 4 === 2 ? 'lavender' : 'champagne')
-                      const texture = isNailTexture(item.texture) ? item.texture : 'gloss'
-                      const style = {
-                        '--orbit-x': `${14 + ((index * 23) % 72)}%`,
-                        '--orbit-y': `${18 + ((index * 31) % 58)}%`,
-                        '--orbit-delay': `${index * -0.45}s`,
-                        '--orbit-scale': `${0.88 + (index % 3) * 0.08}`,
-                      } as CSSProperties
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          className="jewel-nail-button"
-                          style={style}
-                          onClick={() => handleOpenDetailCard(item.id)}
-                        >
-                          <span
-                            className={`realistic-nail realistic-nail--${shape} realistic-nail--${color} realistic-nail--${texture}`}
-                            aria-hidden="true"
-                          >
-                            {item.imageUrl && <img src={item.imageUrl} alt="" />}
-                          </span>
-                          <span className="jewel-nail-label">{item.title}</span>
-                        </button>
-                      )
-                    })
+                    <div className="jewel-orbit-scroll" aria-label="過去のネイルを横にスクロール">
+                      <div className="jewel-orbit-track">
+                        {homeShowcaseItems.map((item, index) => {
+                          const shape = isNailShape(item.shape) ? item.shape : (index % 3 === 0 ? 'almond' : index % 3 === 1 ? 'round' : 'square')
+                          const color = isNailColor(item.mainColor) ? item.mainColor : (index % 4 === 0 ? 'blush' : index % 4 === 1 ? 'rose' : index % 4 === 2 ? 'lavender' : 'champagne')
+                          const texture = isNailTexture(item.texture) ? item.texture : 'gloss'
+                          const isFocused = detailItem?.id === item.id
+                          const style = {
+                            '--orbit-delay': `${index * -0.45}s`,
+                            '--orbit-scale': `${0.92 + (index % 3) * 0.05}`,
+                          } as CSSProperties
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className={`jewel-nail-button${isFocused ? ' is-focused' : ''}`}
+                              style={style}
+                              onClick={() => handleOpenDetailCard(item.id)}
+                            >
+                              <span
+                                className={`realistic-nail realistic-nail--${shape} realistic-nail--${color} realistic-nail--${texture}`}
+                                aria-hidden="true"
+                              >
+                                {item.imageUrl && <img src={item.imageUrl} alt="" />}
+                              </span>
+                              <span className="jewel-nail-label">{item.title}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   )}
                   <span className="jewel-orbit-shadow" aria-hidden="true" />
                 </div>
+                {detailItem && (
+                  <div className="jewel-focus-window" aria-live="polite">
+                    {(() => {
+                      const focusIndex = Math.max(homeShowcaseItems.findIndex(item => item.id === detailItem.id), 0)
+                      const shape = isNailShape(detailItem.shape) ? detailItem.shape : (focusIndex % 3 === 0 ? 'almond' : focusIndex % 3 === 1 ? 'round' : 'square')
+                      const color = isNailColor(detailItem.mainColor) ? detailItem.mainColor : (focusIndex % 4 === 0 ? 'blush' : focusIndex % 4 === 1 ? 'rose' : focusIndex % 4 === 2 ? 'lavender' : 'champagne')
+                      const texture = isNailTexture(detailItem.texture) ? detailItem.texture : 'gloss'
+                      return (
+                        <>
+                          <button
+                            type="button"
+                            className="jewel-focus-close"
+                            onClick={() => setDetailItemId(null)}
+                            aria-label="選択中のネイル情報を閉じる"
+                          >
+                            閉じる
+                          </button>
+                          <div className="jewel-focus-nail">
+                            <span
+                              className={`realistic-nail realistic-nail--${shape} realistic-nail--${color} realistic-nail--${texture}`}
+                              aria-hidden="true"
+                            >
+                              {detailItem.imageUrl && <img src={detailItem.imageUrl} alt="" />}
+                            </span>
+                          </div>
+                          <div className="jewel-focus-copy">
+                            <p className="jewel-focus-kicker">Selected memory</p>
+                            <h3>{detailItem.title}</h3>
+                            {detailItem.tags.length > 0 && (
+                              <div className="jewel-focus-tags" aria-label="タグ">
+                                {detailItem.tags.slice(0, 5).map(tag => (
+                                  <span key={tag}>{tag}</span>
+                                ))}
+                              </div>
+                            )}
+                            <p>
+                              {detailItem.memo
+                                ? detailItem.memo
+                                : 'このネイルの気分、色、サロンで話したいことをここに残せます。'}
+                            </p>
+                            <div className="jewel-focus-actions">
+                              <button type="button" onClick={() => handlePlanAppointmentFromDetail(detailItem.id)}>
+                                来店メモに使う
+                              </button>
+                              <button type="button" onClick={() => handleToggleSavedItem(detailItem.id)}>
+                                {savedItemIds.includes(detailItem.id) ? '保存済み' : '保存する'}
+                              </button>
+                              <button type="button" onClick={() => handleStartEdit(detailItem)}>
+                                編集する
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+                )}
                 <p className="jewel-home-hint">{nailItems.length} memories in your box</p>
               </section>
             </>
