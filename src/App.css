@@ -3307,46 +3307,42 @@
 
 .nail-charm-shell {
   position: absolute;
-  width: 74px;
+  left: var(--charm-left, 50%);
+  top: var(--charm-top, 28%);
+  width: calc(var(--charm-base-width, 74px) * var(--charm-mode-scale, 1));
   aspect-ratio: 0.48;
+  opacity: calc(var(--charm-opacity, 1) * var(--charm-mode-opacity, 1));
   filter: drop-shadow(0 20px 16px rgba(0, 0, 0, 0.26));
+  transform:
+    translateX(var(--charm-translate-x, 0))
+    translateY(var(--charm-mode-y, 0))
+    rotate(var(--charm-rotation, 0deg));
   animation: nail-charm-float 4.8s ease-in-out infinite;
+  animation-delay: var(--charm-delay, 0s);
 }
 
 .nail-charm-shell--left {
-  left: 20%;
-  top: 32%;
-  transform: rotate(-10deg);
-  animation-delay: -1.4s;
+  --charm-translate-x: 0;
 }
 
 .nail-charm-shell--center {
-  left: 50%;
-  top: 23%;
-  width: 86px;
-  transform: translateX(-50%);
-  animation-delay: -0.3s;
+  --charm-translate-x: -50%;
 }
 
 .nail-charm-shell--right {
-  right: 18%;
-  top: 36%;
-  transform: rotate(11deg);
-  animation-delay: -2.2s;
+  --charm-translate-x: -100%;
 }
 
 .nail-detail-dialog.display-mode-snow-globe .nail-charm-shell--left {
-  left: 16%;
-  top: 40%;
+  --charm-mode-y: 5px;
 }
 
 .nail-detail-dialog.display-mode-snow-globe .nail-charm-shell--center {
-  top: 20%;
+  --charm-mode-y: -2px;
 }
 
 .nail-detail-dialog.display-mode-snow-globe .nail-charm-shell--right {
-  right: 15%;
-  top: 42%;
+  --charm-mode-y: 6px;
 }
 
 .nail-detail-dialog.display-mode-velvet .nail-charm-shell {
@@ -3354,17 +3350,15 @@
 }
 
 .nail-detail-dialog.display-mode-velvet .nail-charm-shell--left {
-  left: 18%;
-  top: 34%;
+  --charm-mode-y: 2px;
 }
 
 .nail-detail-dialog.display-mode-velvet .nail-charm-shell--center {
-  top: 24%;
+  --charm-mode-y: 1px;
 }
 
 .nail-detail-dialog.display-mode-velvet .nail-charm-shell--right {
-  right: 18%;
-  top: 34%;
+  --charm-mode-y: 2px;
 }
 
 .nail-detail-dialog.display-mode-showcase .nail-charm-orbit {
@@ -3372,22 +3366,20 @@
 }
 
 .nail-detail-dialog.display-mode-showcase .nail-charm-shell--left {
-  left: 14%;
-  top: 38%;
-  width: 66px;
-  opacity: 0.74;
+  --charm-mode-scale: 0.9;
+  --charm-mode-opacity: 0.78;
+  --charm-mode-y: 7px;
 }
 
 .nail-detail-dialog.display-mode-showcase .nail-charm-shell--center {
-  top: 16%;
-  width: 104px;
+  --charm-mode-scale: 1.2;
+  --charm-mode-y: -8px;
 }
 
 .nail-detail-dialog.display-mode-showcase .nail-charm-shell--right {
-  right: 14%;
-  top: 38%;
-  width: 66px;
-  opacity: 0.74;
+  --charm-mode-scale: 0.9;
+  --charm-mode-opacity: 0.78;
+  --charm-mode-y: 7px;
 }
 
 .nail-charm-chip {
@@ -3600,11 +3592,15 @@
   }
 
   .nail-charm-shell {
-    width: 62px;
+    width: calc(clamp(56px, var(--charm-base-width, 62px), 72px) * var(--charm-mode-scale, 1));
   }
 
   .nail-charm-shell--center {
-    width: 72px;
+    --charm-mode-scale: 1;
+  }
+
+  .nail-detail-dialog.display-mode-showcase .nail-charm-shell--center {
+    --charm-mode-scale: 1.08;
   }
 
   .nail-detail-meta {

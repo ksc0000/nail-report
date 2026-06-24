@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import type { CSSProperties } from 'react';
 import type { NailItemDoc } from '../lib/firestore';
 
 type DetailDisplayMode = 'Glass' | 'Snow Globe' | 'Velvet' | 'Showcase';
@@ -10,11 +11,75 @@ const DISPLAY_MODE_CLASS_NAMES: Record<DetailDisplayMode, string> = {
   Showcase: 'display-mode-showcase',
 };
 
+type CharmPosition = 'left' | 'center' | 'right';
+
+type CharmPlacement = {
+  position: CharmPosition;
+  style: CSSProperties & {
+    '--charm-left': string;
+    '--charm-top': string;
+    '--charm-base-width': string;
+    '--charm-rotation': string;
+    '--charm-opacity': string;
+    '--charm-delay': string;
+  };
+};
+
 interface NailImageDetailViewerProps {
   item: NailItemDoc;
   displayMode?: DetailDisplayMode;
   onClose: () => void;
 }
+
+const hashString = (value: string): number => {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+};
+
+const seededUnit = (seed: string, salt: number): number =>
+  hashString(`${seed}:${salt}`) / 0xffffffff;
+
+const buildCharmPlacements = (seed: string): CharmPlacement[] => {
+  const base = [
+    { position: 'left', left: 17, leftRange: 8, top: 31, topRange: 12, width: 70, rotation: -13 },
+    { position: 'center', left: 50, leftRange: 5, top: 20, topRange: 8, width: 86, rotation: 1 },
+    { position: 'right', left: 72, leftRange: 8, top: 33, topRange: 12, width: 70, rotation: 13 },
+  ] satisfies Array<{
+    position: CharmPosition;
+    left: number;
+    leftRange: number;
+    top: number;
+    topRange: number;
+    width: number;
+    rotation: number;
+  }>;
+
+  return base.map((slot, index) => {
+    const signed = (salt: number) => seededUnit(seed, index * 7 + salt) - 0.5;
+    const left = slot.left + signed(1) * slot.leftRange;
+    const top = slot.top + signed(2) * slot.topRange;
+    const width = slot.width + signed(3) * 10;
+    const rotation = slot.rotation + signed(4) * 9;
+    const opacity = 0.9 + seededUnit(seed, index * 7 + 5) * 0.1;
+    const delay = -seededUnit(seed, index * 7 + 6) * 3.6;
+
+    return {
+      position: slot.position,
+      style: {
+        '--charm-left': `${left.toFixed(1)}%`,
+        '--charm-top': `${top.toFixed(1)}%`,
+        '--charm-base-width': `${width.toFixed(1)}px`,
+        '--charm-rotation': `${rotation.toFixed(1)}deg`,
+        '--charm-opacity': opacity.toFixed(2),
+        '--charm-delay': `${delay.toFixed(2)}s`,
+      },
+    };
+  });
+};
 
 const formatDate = (ts: { toDate(): Date } | null | undefined): string | null => {
   if (!ts) return null;
@@ -52,6 +117,7 @@ const NailImageDetailViewer: React.FC<NailImageDetailViewerProps> = ({
     item.updatedAt.seconds !== item.createdAt.seconds
       ? formatDate(item.updatedAt)
       : null;
+  const charmPlacements = buildCharmPlacements(item.id);
 
   return (
     <div
@@ -102,8 +168,12 @@ const NailImageDetailViewer: React.FC<NailImageDetailViewerProps> = ({
             <div className="nail-charm-stage" aria-hidden="true">
               <span className="nail-charm-orbit nail-charm-orbit--one" />
               <span className="nail-charm-orbit nail-charm-orbit--two" />
-              {['left', 'center', 'right'].map((position) => (
-                <div key={position} className={`nail-charm-shell nail-charm-shell--${position}`}>
+              {charmPlacements.map(({ position, style }) => (
+                <div
+                  key={position}
+                  className={`nail-charm-shell nail-charm-shell--${position}`}
+                  style={style}
+                >
                   <div className="nail-charm-chip">
                     <img
                       className="nail-charm-image"
