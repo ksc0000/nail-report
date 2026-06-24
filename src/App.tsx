@@ -1470,6 +1470,16 @@ function App() {
                 </article>
               ))}
             </div>
+            {nailItems.length === 0 && (
+              <div className="screen-empty-state">
+                <p className="screen-empty-kicker">FIRST INSPIRATION</p>
+                <h4>気になるムードを見つけたら、まず一つ記録しましょう。</h4>
+                <p>Explore は次の候補を眺める場所です。自分の写真が増えると、ここから保存・比較・来店メモへつなげやすくなります。</p>
+                <button type="button" onClick={() => handleSelectAppScreen('design')}>
+                  ネイルを記録する
+                </button>
+              </div>
+            )}
           </section>
           )}
           {activeAppScreen === 'saved' && (
@@ -1508,6 +1518,16 @@ function App() {
                       ? savedPreviewItems.map(item => item.title).join(' / ')
                       : '写真・形・色・タグが接続されると、ここにお気に入りのネイルカードが並びます。'}
                   </p>
+                  {savedItemIds.length === 0 && (
+                    <div className="screen-empty-actions">
+                      <button type="button" onClick={() => handleSelectAppScreen('home')}>
+                        宝石箱を見る
+                      </button>
+                      <button type="button" onClick={() => handleSelectAppScreen('design')}>
+                        最初のデザインを記録
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="saved-designs-data-slots" aria-label="後続接続予定の項目">
@@ -1578,6 +1598,14 @@ function App() {
                       <span />
                     </div>
                     <p>希望の形、色、予算、相談したいことを一箇所にまとめるための下書き領域です。</p>
+                    <div className="screen-empty-actions">
+                      <button type="button" onClick={() => handleSelectAppScreen('home')}>
+                        デザインを選ぶ
+                      </button>
+                      <button type="button" onClick={() => handleSelectAppScreen('design')}>
+                        新しく記録する
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
@@ -1920,6 +1948,14 @@ function App() {
                 <li>タイトル・写真・タグ・メモを記録できます</li>
                 <li>タグや検索でいつでも素早く見つかります</li>
               </ul>
+              <div className="screen-empty-actions nail-empty-actions">
+                <button type="button" onClick={() => handleSelectAppScreen('design')}>
+                  最初のネイルを記録
+                </button>
+                <button type="button" onClick={() => handleSelectAppScreen('inspiration')}>
+                  ムードを探す
+                </button>
+              </div>
             </div>
           ) : filteredItems.length === 0 ? (
             <p className="nail-search-empty">条件に一致するアイテムがありません。</p>
