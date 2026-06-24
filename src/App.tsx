@@ -48,6 +48,7 @@ const NAIL_SHAPES = [
   { id: 'stiletto', label: 'Stiletto' },
 ] as const
 type NailShape = typeof NAIL_SHAPES[number]['id']
+const DEFAULT_NAIL_SHAPE: NailShape = 'round'
 
 const NAIL_COLORS = [
   { id: 'blush', label: 'Blush' },
@@ -57,6 +58,7 @@ const NAIL_COLORS = [
   { id: 'champagne', label: 'Champagne' },
 ] as const
 type NailColor = typeof NAIL_COLORS[number]['id']
+const DEFAULT_NAIL_COLOR: NailColor = 'blush'
 
 const NAIL_TEXTURES = [
   { id: 'gloss', label: 'Gloss' },
@@ -65,6 +67,7 @@ const NAIL_TEXTURES = [
   { id: 'chrome', label: 'Chrome' },
 ] as const
 type NailTexture = typeof NAIL_TEXTURES[number]['id']
+const DEFAULT_NAIL_TEXTURE: NailTexture = 'gloss'
 
 const DECORATION_PARTS = [
   { id: 'pearl', label: 'Pearl' },
@@ -74,6 +77,18 @@ const DECORATION_PARTS = [
   { id: 'ribbon', label: 'Ribbon' },
 ] as const
 type DecorationPart = typeof DECORATION_PARTS[number]['id']
+
+const isNailShape = (value: string | undefined): value is NailShape =>
+  NAIL_SHAPES.some(shape => shape.id === value)
+
+const isNailColor = (value: string | undefined): value is NailColor =>
+  NAIL_COLORS.some(color => color.id === value)
+
+const isNailTexture = (value: string | undefined): value is NailTexture =>
+  NAIL_TEXTURES.some(texture => texture.id === value)
+
+const isDecorationPart = (value: string): value is DecorationPart =>
+  DECORATION_PARTS.some(part => part.id === value)
 
 const INSPIRATION_CARDS = [
   { id: 'milk-glass', title: 'Milk glass', tone: 'blush', tags: ['soft', 'daily'] },
@@ -172,6 +187,10 @@ interface ExportedNailItem {
   title: string
   tags: string
   memo: string
+  shape: string
+  mainColor: string
+  texture: string
+  decorationParts: string
   salonName: string
   price: string
   appointmentDate: string
@@ -191,6 +210,10 @@ const formatNailItemForExport = (item: NailItemDoc): ExportedNailItem => ({
   title: item.title,
   tags: item.tags.join(';'),
   memo: item.memo ?? '',
+  shape: item.shape ?? '',
+  mainColor: item.mainColor ?? '',
+  texture: item.texture ?? '',
+  decorationParts: item.decorationParts?.join(';') ?? '',
   salonName: item.salonName ?? '',
   price: item.price ?? '',
   appointmentDate: item.appointmentDate ?? '',
@@ -205,6 +228,10 @@ const CSV_HEADERS = [
   'title',
   'tags',
   'memo',
+  'shape',
+  'mainColor',
+  'texture',
+  'decorationParts',
   'salonName',
   'price',
   'appointmentDate',
@@ -295,9 +322,9 @@ function App() {
   const [nailTitle, setNailTitle] = useState('')
   const [nailTags, setNailTags] = useState('')
   const [nailMemo, setNailMemo] = useState('')
-  const [selectedNailShape, setSelectedNailShape] = useState<NailShape>('round')
-  const [selectedNailColor, setSelectedNailColor] = useState<NailColor>('blush')
-  const [selectedNailTexture, setSelectedNailTexture] = useState<NailTexture>('gloss')
+  const [selectedNailShape, setSelectedNailShape] = useState<NailShape>(DEFAULT_NAIL_SHAPE)
+  const [selectedNailColor, setSelectedNailColor] = useState<NailColor>(DEFAULT_NAIL_COLOR)
+  const [selectedNailTexture, setSelectedNailTexture] = useState<NailTexture>(DEFAULT_NAIL_TEXTURE)
   const [selectedDecorationParts, setSelectedDecorationParts] = useState<DecorationPart[]>([])
   const [activeInspirationCategory, setActiveInspirationCategory] = useState<InspirationCategory>('All')
   const [nailImageFile, setNailImageFile] = useState<File | null>(null)
@@ -599,9 +626,9 @@ function App() {
     setNailTitle('')
     setNailTags('')
     setNailMemo('')
-    setSelectedNailShape('round')
-    setSelectedNailColor('blush')
-    setSelectedNailTexture('gloss')
+    setSelectedNailShape(DEFAULT_NAIL_SHAPE)
+    setSelectedNailColor(DEFAULT_NAIL_COLOR)
+    setSelectedNailTexture(DEFAULT_NAIL_TEXTURE)
     setSelectedDecorationParts([])
     setNailImageFile(null)
     clearPreview()
@@ -672,6 +699,10 @@ function App() {
       title: nailTitle.trim(),
       tags: parsedTags.tags,
       memo: nailMemo.trim(),
+      shape: selectedNailShape,
+      mainColor: selectedNailColor,
+      texture: selectedNailTexture,
+      decorationParts: selectedDecorationParts,
       imageSource: nailImageSource,
     }
     try {
@@ -711,10 +742,10 @@ function App() {
     setNailTitle(item.title)
     setNailTags(item.tags.join(', '))
     setNailMemo(item.memo ?? '')
-    setSelectedNailShape('round')
-    setSelectedNailColor('blush')
-    setSelectedNailTexture('gloss')
-    setSelectedDecorationParts([])
+    setSelectedNailShape(isNailShape(item.shape) ? item.shape : DEFAULT_NAIL_SHAPE)
+    setSelectedNailColor(isNailColor(item.mainColor) ? item.mainColor : DEFAULT_NAIL_COLOR)
+    setSelectedNailTexture(isNailTexture(item.texture) ? item.texture : DEFAULT_NAIL_TEXTURE)
+    setSelectedDecorationParts((item.decorationParts ?? []).filter(isDecorationPart))
     setNailImageSource(item.imageSource ?? 'unknown')
     setNailImageFile(null)
     clearPreview()
@@ -1270,7 +1301,7 @@ function App() {
               <div className="nail-shape-control" role="group" aria-label="ネイル形状">
                 <div className="nail-control-heading">
                   <span>Shape</span>
-                  <small>ビュー用の選択。保存連携は後続フェーズで追加します。</small>
+                  <small>ビューと記録に保存します。</small>
                 </div>
                 <div className="nail-shape-options">
                   {NAIL_SHAPES.map(shape => (
@@ -1331,7 +1362,7 @@ function App() {
               <div className="nail-decoration-control" role="group" aria-label="デコレーションパーツ">
                 <div className="nail-control-heading">
                   <span>Deco Parts</span>
-                  <small>複数選択できます。保存連携は後続フェーズで追加します。</small>
+                  <small>複数選択できます。記録に保存します。</small>
                 </div>
                 <div className="nail-decoration-options">
                   {DECORATION_PARTS.map(part => {
