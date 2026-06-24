@@ -2,8 +2,9 @@ import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
+import { isFirebaseConfigComplete } from './firebaseConfigStatus'
 
-const firebaseConfig = {
+const configuredFirebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
@@ -11,6 +12,19 @@ const firebaseConfig = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
+
+const disabledFirebaseConfig = {
+  apiKey: 'disabled-api-key',
+  authDomain: 'disabled.firebaseapp.com',
+  projectId: 'nailous-disabled',
+  storageBucket: 'nailous-disabled.appspot.com',
+  messagingSenderId: '0',
+  appId: '1:0:web:disabled',
+}
+
+const firebaseConfig = isFirebaseConfigComplete
+  ? configuredFirebaseConfig
+  : disabledFirebaseConfig
 
 export const app = initializeApp(firebaseConfig)
 
