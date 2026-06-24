@@ -2,18 +2,17 @@
 
 ## Context
 
-The current application lacks visual feedback during data fetching. When the list of nail items is loading, the user sees an empty screen until the data arrives. Improving loading states is a key part of Phase 2 of the roadmap.
+The project is currently in Phase 2, focusing on improving stability, test coverage, and UX. This task will initiate the test coverage improvements by adding unit tests for core Firebase utility functions.
 
 ## Objective
 
-Implement a loading skeleton UI for the nail item list to provide a better user experience while data is being fetched from Firebase. The skeleton should be displayed in `src/App.tsx` when `nailItems` are being loaded.
+Add unit tests for helper functions within `src/lib/firestore.ts` using Vitest. The focus should be on demonstrating how to correctly mock Firebase SDK dependencies for testing purposes.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/components/` (for a new skeleton component)
-- `src/App.tsx` (for integration logic)
-- `src/App.css` (for styling the skeleton)
+- `src/lib/firestore.ts` (minor adjustments for testability, if necessary)
+- `src/__tests__/` (specifically, create `src/__tests__/firestore.test.ts` for the new tests)
+- Any necessary `src/types/` for test mocks if type-safety requires it.
 
 ## Forbidden Scope
 
@@ -23,15 +22,16 @@ Implement a loading skeleton UI for the nail item list to provide a better user 
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
+- Modifying UI components (e.g., `src/App.tsx`, `src/components/`) beyond what's strictly necessary for test setup in `src/lib/`.
 
 ## Requirements
 
-- Create a new React component (e.g., `src/components/NailItemSkeleton.tsx`) that renders a placeholder for a single nail item. This component should visually resemble the layout of an actual `NailItem` component but with "shimmer" effects or simple grey blocks.
-- Modify `src/App.tsx` to conditionally render several instances of the `NailItemSkeleton` component when the application is in a loading state for the nail item list (e.g., `nailItems` is empty and a `isLoading` flag is true).
-- The loading state should be managed appropriately within `App.tsx` to toggle between the skeleton and the actual list.
 - Keep diff ≤ 150 lines.
+- Create a new test file: `src/__tests__/firestore.test.ts`.
+- Implement unit tests for at least one key helper function in `src/lib/firestore.ts`, such as `addNailItem` or `getNailItems`.
+- Accurately mock Firebase Firestore SDK methods (e.g., `collection`, `addDoc`, `getDocs`) using `vitest`'s mocking capabilities (`vi.mock`).
+- The tests should verify the logic of the helper function, not the actual Firebase interaction.
 - Run `npm run build && npm run lint` before finishing.
-- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
