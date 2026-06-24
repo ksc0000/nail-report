@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { auth, signInWithGoogle, signOutUser, onAuthStateChanged } from './lib/auth'
 import type { User } from './lib/auth'
 import { addNailItem, updateNailItem, deleteNailItem, fetchNailItems } from './lib/firestore'
@@ -106,11 +106,9 @@ const APP_SCREENS = [
   { id: 'home', label: 'Home' },
   { id: 'design', label: 'Design' },
   { id: 'inspiration', label: 'Explore' },
-  { id: 'saved', label: 'Saved' },
-  { id: 'book', label: 'Book' },
   { id: 'profile', label: 'Profile' },
 ] as const
-type AppScreenId = typeof APP_SCREENS[number]['id']
+type AppScreenId = typeof APP_SCREENS[number]['id'] | 'saved' | 'book'
 
 const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
   [...items].sort((a, b) => {
@@ -787,6 +785,7 @@ function App() {
   const summary = useMemo(() => getNailSummary(nailItems), [nailItems])
   const savedDesignItems = nailItems.filter(item => savedItemIds.includes(item.id))
   const savedPreviewItems = savedDesignItems.slice(0, 3)
+  const homeShowcaseItems = nailItems.slice(0, 7)
 
   const filteredItems = nailItems.filter(item => {
     if (searchQuery.trim()) {
@@ -1248,35 +1247,99 @@ function App() {
         <div id="nail-section" className={DISPLAY_MODE_CLASS_NAMES[activeDisplayMode]}>
           {activeAppScreen === 'home' && (
             <>
-              <section className="nail-studio-hero" aria-labelledby="studio-title">
-                <div>
-                  <p className="nail-studio-kicker">JEWELRY BOX STUDIO</p>
-                  <h2 id="studio-title">ネイルを一つずつ、宝石箱へ。</h2>
+              <section className="jewel-home-stage" aria-labelledby="studio-title">
+                <div className="jewel-home-copy">
+                  <p className="nail-studio-kicker">NAIL JEWEL BOX</p>
+                  <h2 id="studio-title">浮いているネイルを、そっと選ぶ。</h2>
                   <p>
-                    追加した写真はあとから浮遊ビュー・比較・共有へつながります。
-                    まずは今日のネイルを一つ、コレクションに入れておきましょう。
+                    思い出のネイルが小さなジュエルのように漂う場所です。
+                    気になるネイルをタッチすると、この空間のまま個別ビューが開きます。
                   </p>
+                  <div className="jewel-home-actions">
+                    <button type="button" onClick={() => handleSelectAppScreen('design')}>
+                      新しいネイルを作る
+                    </button>
+                    <button type="button" onClick={() => handleSelectAppScreen('profile')}>
+                      保存・相談メモを見る
+                    </button>
+                  </div>
                 </div>
-                <div className="nail-studio-count" aria-label={`保存済みネイル ${nailItems.length} 件`}>
-                  <span>{nailItems.length}</span>
-                  <small>saved</small>
+                <div className="jewel-orbit" aria-label="浮遊するネイル">
+                  {homeShowcaseItems.length === 0 ? (
+                    <button
+                      type="button"
+                      className="jewel-nail-button jewel-nail-button--empty"
+                      onClick={() => handleSelectAppScreen('design')}
+                    >
+                      <span className="realistic-nail realistic-nail--almond realistic-nail--blush realistic-nail--gloss" aria-hidden="true" />
+                      <span className="jewel-nail-label">最初のネイルを記録</span>
+                    </button>
+                  ) : (
+                    homeShowcaseItems.map((item, index) => {
+                      const shape = isNailShape(item.shape) ? item.shape : (index % 3 === 0 ? 'almond' : index % 3 === 1 ? 'round' : 'square')
+                      const color = isNailColor(item.mainColor) ? item.mainColor : (index % 4 === 0 ? 'blush' : index % 4 === 1 ? 'rose' : index % 4 === 2 ? 'lavender' : 'champagne')
+                      const texture = isNailTexture(item.texture) ? item.texture : 'gloss'
+                      const style = {
+                        '--orbit-x': `${14 + ((index * 23) % 72)}%`,
+                        '--orbit-y': `${18 + ((index * 31) % 58)}%`,
+                        '--orbit-delay': `${index * -0.45}s`,
+                        '--orbit-scale': `${0.88 + (index % 3) * 0.08}`,
+                      } as CSSProperties
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className="jewel-nail-button"
+                          style={style}
+                          onClick={() => handleOpenDetailCard(item.id)}
+                        >
+                          <span
+                            className={`realistic-nail realistic-nail--${shape} realistic-nail--${color} realistic-nail--${texture}`}
+                            aria-hidden="true"
+                          >
+                            {item.imageUrl && <img src={item.imageUrl} alt="" />}
+                          </span>
+                          <span className="jewel-nail-label">{item.title}</span>
+                        </button>
+                      )
+                    })
+                  )}
+                  <span className="jewel-orbit-shadow" aria-hidden="true" />
                 </div>
+                <p className="jewel-home-hint">{nailItems.length} memories in your box</p>
               </section>
-              {renderDisplayModeSwitcher('studio-mode-switcher')}
             </>
           )}
           {activeAppScreen === 'design' && (
             <section className="nail-design-screen" aria-labelledby="nail-design-title">
             <div className="nail-design-header">
               <div>
-                <p className="nail-design-kicker">NAIL DESIGN</p>
-                <h3 id="nail-design-title">次のネイルを記録する。</h3>
-                <p>写真・タグ・メモをまとめて、あとから浮遊ビューや共有に使える形で保存します。</p>
+                <p className="nail-design-kicker">NAIL ATELIER</p>
+                <h3 id="nail-design-title">ネイルを一つ、ジュエルとして残す。</h3>
+                <p>先に質感を見ながら整えて、最後に写真やメモを添えて保存します。</p>
               </div>
               <div className="nail-design-meta" aria-label="保存できる情報">
+                <span>Shape</span>
+                <span>Texture</span>
                 <span>Photo</span>
-                <span>Tags</span>
-                <span>Memo</span>
+              </div>
+            </div>
+            <div className="nail-atelier-preview" aria-label="作成中のネイルプレビュー">
+              <div className="nail-atelier-stage">
+                <span
+                  className={`realistic-nail realistic-nail--${selectedNailShape} realistic-nail--${selectedNailColor} realistic-nail--${selectedNailTexture}`}
+                  aria-hidden="true"
+                />
+                {selectedDecorationParts.length > 0 && (
+                  <span className="nail-atelier-deco" aria-hidden="true">
+                    {selectedDecorationParts.slice(0, 4).map(part => <i key={part} className={`nail-atelier-deco-dot nail-atelier-deco-dot--${part}`} />)}
+                  </span>
+                )}
+              </div>
+              <div className="nail-atelier-copy">
+                <span>{NAIL_SHAPES.find(shape => shape.id === selectedNailShape)?.label}</span>
+                <span>{NAIL_COLORS.find(color => color.id === selectedNailColor)?.label}</span>
+                <span>{NAIL_TEXTURES.find(texture => texture.id === selectedNailTexture)?.label}</span>
               </div>
             </div>
             <div id="nail-form">
@@ -1758,10 +1821,18 @@ function App() {
                   <small>With images</small>
                 </div>
               </div>
+              <div className="profile-shortcuts" aria-label="補助画面">
+                <button type="button" onClick={() => handleSelectAppScreen('saved')}>
+                  保存したネイル
+                </button>
+                <button type="button" onClick={() => handleSelectAppScreen('book')}>
+                  来店相談メモ
+                </button>
+              </div>
             </div>
           </section>
           )}
-          {activeAppScreen === 'home' && (
+          {activeAppScreen === 'profile' && (
           <>
           {!isFetching && nailItems.length > 0 && (
             <div id="nail-summary">
