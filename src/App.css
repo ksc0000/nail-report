@@ -1615,6 +1615,93 @@
   line-height: 1.65;
 }
 
+.appointment-selected-design {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.appointment-selected-thumb {
+  position: relative;
+  min-height: 82px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--jb-gold) 24%, var(--border));
+  border-radius: 8px;
+  background:
+    radial-gradient(ellipse at 50% 82%, rgba(84, 52, 74, 0.18), transparent 58%),
+    rgba(255, 255, 255, 0.68);
+}
+
+.appointment-selected-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.appointment-selected-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.appointment-selected-copy strong {
+  color: var(--text-h);
+  font-size: 0.96rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.appointment-selected-tags,
+.appointment-selected-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.appointment-selected-tags span {
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--jb-gold) 18%, transparent);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  color: color-mix(in srgb, var(--accent) 72%, #4b2d3d);
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.appointment-selected-copy p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.appointment-selected-actions button {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--jb-gold) 24%, var(--border));
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text-h);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.appointment-selected-actions button:hover,
+.appointment-selected-actions button:focus-visible {
+  border-color: color-mix(in srgb, var(--jb-gold) 48%, var(--accent-border));
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.appointment-selected-actions button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .appointment-plan-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3179,7 +3266,15 @@
   line-height: 1.4;
 }
 
-.nail-detail-close {
+.nail-detail-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.nail-detail-close,
+.nail-detail-plan {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -3193,11 +3288,20 @@
   cursor: pointer;
 }
 
-.nail-detail-close:hover {
+.nail-detail-plan {
+  border-color: color-mix(in srgb, var(--jb-gold) 36%, var(--border));
+  background: linear-gradient(135deg, rgba(248, 217, 77, 0.22), rgba(255, 255, 255, 0.08));
+  color: var(--text-h);
+  font-weight: 800;
+}
+
+.nail-detail-close:hover,
+.nail-detail-plan:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.nail-detail-close:focus-visible {
+.nail-detail-close:focus-visible,
+.nail-detail-plan:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -3715,6 +3819,15 @@
     max-height: calc(100vh - 24px);
   }
 
+  .nail-detail-header {
+    align-items: flex-start;
+  }
+
+  .nail-detail-header-actions {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
   .nail-detail-image-frame,
   .nail-detail-no-image {
     min-height: 180px;
@@ -3743,6 +3856,14 @@
 
   .nail-detail-meta {
     grid-template-columns: 1fr;
+  }
+
+  .appointment-selected-design {
+    grid-template-columns: 1fr;
+  }
+
+  .appointment-selected-thumb {
+    min-height: 120px;
   }
 }
 

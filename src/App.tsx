@@ -291,6 +291,7 @@ function App() {
   const [comparisonItemIds, setComparisonItemIds] = useState<string[]>([])
   const [savedItemIds, setSavedItemIds] = useState<string[]>([])
   const [likedItemIds, setLikedItemIds] = useState<string[]>([])
+  const [bookingMemoItemId, setBookingMemoItemId] = useState<string | null>(null)
   const [nailLoading, setNailLoading] = useState(false)
   const [nailError, setNailError] = useState('')
   const [isAIGeneratingTags, setIsAIGeneratingTags] = useState(false)
@@ -425,6 +426,7 @@ function App() {
         setComparisonItemIds([])
         setSavedItemIds([])
         setLikedItemIds([])
+        setBookingMemoItemId(null)
       }
     })
   }, [isPublicSharePage])
@@ -711,6 +713,7 @@ function App() {
     setComparisonItemIds(prev => prev.filter(id => id !== itemId))
     setSavedItemIds(prev => prev.filter(id => id !== itemId))
     setLikedItemIds(prev => prev.filter(id => id !== itemId))
+    if (bookingMemoItemId === itemId) setBookingMemoItemId(null)
     setNailLoading(true)
     setNailError('')
     setBannerError('')
@@ -730,6 +733,7 @@ function App() {
 
   const editingItem = editingId ? nailItems.find(i => i.id === editingId) : null
   const detailItem = detailItemId ? nailItems.find(i => i.id === detailItemId) : null
+  const bookingMemoItem = bookingMemoItemId ? nailItems.find(i => i.id === bookingMemoItemId) : null
   const isFetching = Boolean(user && nailItemsUserId !== user.uid)
   const summary = useMemo(() => getNailSummary(nailItems), [nailItems])
   const savedPreviewItems = nailItems.filter(item => savedItemIds.includes(item.id)).slice(0, 3)
@@ -758,6 +762,15 @@ function App() {
     setLikedItemIds(prev => (
       prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId]
     ))
+  }
+
+  const handlePlanAppointmentFromDetail = (itemId: string) => {
+    setBookingMemoItemId(itemId)
+    setDetailItemId(null)
+    setActiveAppScreen('book')
+    window.requestAnimationFrame(() => {
+      document.getElementById('nail-section')?.scrollIntoView({ block: 'start' })
+    })
   }
 
   const getShareUrl = (id: string): string =>
@@ -1034,6 +1047,7 @@ function App() {
           <NailImageDetailViewer
             item={detailItem}
             displayMode={activeDisplayMode}
+            onPlanAppointment={handlePlanAppointmentFromDetail}
             onClose={() => setDetailItemId(null)}
           />
         </Suspense>
@@ -1521,14 +1535,51 @@ function App() {
               <div className="appointment-memo-card">
                 <div className="appointment-memo-top">
                   <span>Next visit memo</span>
-                  <small>No booking/payment</small>
+                  <small>{bookingMemoItem ? 'Design selected' : 'No booking/payment'}</small>
                 </div>
-                <div className="appointment-memo-lines" aria-hidden="true">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                <p>希望の形、色、予算、相談したいことを一箇所にまとめるための下書き領域です。</p>
+                {bookingMemoItem ? (
+                  <div className="appointment-selected-design">
+                    <div className="appointment-selected-thumb" aria-hidden="true">
+                      {bookingMemoItem.imageUrl ? (
+                        <img src={bookingMemoItem.imageUrl} alt="" />
+                      ) : (
+                        <FloatingNailChip variant="empty" shape="oval" showHighlight={false} />
+                      )}
+                    </div>
+                    <div className="appointment-selected-copy">
+                      <strong>{bookingMemoItem.title}</strong>
+                      {bookingMemoItem.tags.length > 0 && (
+                        <div className="appointment-selected-tags">
+                          {bookingMemoItem.tags.slice(0, 4).map(tag => (
+                            <span key={tag}>#{tag}</span>
+                          ))}
+                        </div>
+                      )}
+                      <p>
+                        {bookingMemoItem.memo
+                          ? bookingMemoItem.memo
+                          : 'このデザインを次回来店時の相談メモとして使います。'}
+                      </p>
+                      <div className="appointment-selected-actions">
+                        <button type="button" onClick={() => handleOpenDetailCard(bookingMemoItem.id)}>
+                          詳細を見る
+                        </button>
+                        <button type="button" onClick={() => setBookingMemoItemId(null)}>
+                          選択を外す
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="appointment-memo-lines" aria-hidden="true">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                    <p>希望の形、色、予算、相談したいことを一箇所にまとめるための下書き領域です。</p>
+                  </>
+                )}
               </div>
               <div className="appointment-plan-grid" aria-label="予約計画の項目">
                 {APPOINTMENT_PLAN_FIELDS.map(field => (

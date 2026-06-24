@@ -28,6 +28,7 @@ type CharmPlacement = {
 interface NailImageDetailViewerProps {
   item: NailItemDoc;
   displayMode?: DetailDisplayMode;
+  onPlanAppointment?: (itemId: string) => void;
   onClose: () => void;
 }
 
@@ -97,6 +98,7 @@ const formatDate = (ts: { toDate(): Date } | null | undefined): string | null =>
 const NailImageDetailViewer: React.FC<NailImageDetailViewerProps> = ({
   item,
   displayMode = 'Glass',
+  onPlanAppointment,
   onClose,
 }) => {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -137,16 +139,27 @@ const NailImageDetailViewer: React.FC<NailImageDetailViewerProps> = ({
             <p className="nail-detail-kicker">Jewelry Box Detail</p>
             <p className="nail-detail-close-hint">背景クリックまたはEscで閉じる</p>
           </div>
-          <button
-            ref={closeButtonRef}
-            type="button"
-            className="nail-detail-close"
-            onClick={onClose}
-            aria-label="ネイル詳細カードを閉じる"
-          >
-            <span aria-hidden="true">×</span>
-            閉じる
-          </button>
+          <div className="nail-detail-header-actions">
+            {onPlanAppointment && (
+              <button
+                type="button"
+                className="nail-detail-plan"
+                onClick={() => onPlanAppointment(item.id)}
+              >
+                来店メモに使う
+              </button>
+            )}
+            <button
+              ref={closeButtonRef}
+              type="button"
+              className="nail-detail-close"
+              onClick={onClose}
+              aria-label="ネイル詳細カードを閉じる"
+            >
+              <span aria-hidden="true">×</span>
+              閉じる
+            </button>
+          </div>
         </div>
         <div className="nail-detail-image-frame">
           {item.imageUrl ? (
