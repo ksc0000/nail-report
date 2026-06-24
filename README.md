@@ -1,6 +1,27 @@
 # Nailous
 
-Nailous is a Firebase-backed personal nail archive for saving nail photos, tags, and notes, then reviewing or sharing selected collections.
+Nailous is a Firebase-backed personal nail archive evolving into a Jewelry Box experience: users can save nail photos, review them as polished cards and floating nail charms, reuse a selected design as the basis for a next-visit memo, and share selected collections when needed.
+
+## Jewelry Box Refresh
+
+The current product direction is to make Nailous feel less like a plain photo database and more like a private jewelry box for nail history.
+
+Implemented refresh elements:
+
+- Authenticated bottom navigation: Home, Design, Explore, Saved, Book, Profile
+- Premium nail card grid with image/no-image states, hover/focus/selected states, skeleton loading, Save/Like UI states, and comparison actions
+- Nail detail card with a floating `Nail Charm` view
+- Display modes: Glass, Snow Globe, Velvet, Showcase
+- Deterministic floating nail-chip placement and subtle reduced-motion-safe CSS motion
+- Detail-to-Book flow: `来店メモに使う` carries the selected design into the Book planning memo
+- 390px layout guard and ongoing mobile QA checklist coverage
+
+Near-term direction:
+
+- Keep improving faithful nail viewing before jumping to full 3D/AR
+- Add complete empty states for refreshed screens
+- Verify mobile widths with real authenticated data
+- Later, introduce a Jewel View Editor for rotation, tone adjustment, and stamp/export workflows
 
 Commercial MVP release direction:
 
@@ -14,10 +35,29 @@ Commercial MVP release direction:
 
 This app uses React, TypeScript, Vite, and Firebase.
 
-Currently, two official plugins are available:
+Core commands:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run lint
+npm run build
+npm test
+```
+
+Optional release-readiness check:
+
+```bash
+bash scripts/qa-preflight.sh
+```
+
+Important constraints:
+
+- Do not run Firebase deploy commands without explicit human approval.
+- Do not modify `firestore.rules` or `storage.rules` without explicit human approval.
+- Do not commit `.env`, service account JSON, API keys, or other secrets.
+- Do not add new dependencies without human approval.
+- `src/main.tsx` is the entry point and should not be changed for normal feature work.
+- Production deploy target is Firebase Hosting, but production deploy is human-gated.
 
 ## React Compiler
 
@@ -90,6 +130,7 @@ export default defineConfig([
 
 | Document | Description |
 |----------|-------------|
+| [docs/product/JEWELRY_BOX_REFRESH.md](docs/product/JEWELRY_BOX_REFRESH.md) | Jewelry Box Refresh concept, screen map, data boundaries, phase plan, and Jewel View direction |
 | [docs/product/PRODUCT_SPEC.md](docs/product/PRODUCT_SPEC.md) | Product vision, MVP scope, data model, open questions, future 3D/AR vision |
 | [docs/product/ROADMAP.md](docs/product/ROADMAP.md) | Phase-by-phase development roadmap (Phase 0–9; Phase 8–9 cover 3D Preview / Modeling / AR Try-on — not yet implemented) |
 | [docs/product/NAIL_VIEW_CAMERA_FOUNDATION_PLAN.md](docs/product/NAIL_VIEW_CAMERA_FOUNDATION_PLAN.md) | Phase 4.5 plan for nail image detail, camera/upload foundation, comparison, annotation, and iOS readiness |
