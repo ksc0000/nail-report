@@ -233,6 +233,31 @@ interface NailItem {
 **アクセスルール（Phase 1 Security Rules 移行後）:**
 - `users/{userId}/nailItems/{itemId}` — ログイン済み本人のみ read / write
 
+### Saved / Like Semantics（将来フェーズ）
+
+> 現在は未実装。`NailItem` の既存 Firestore スキーマには追加しない。実装時は Human Gate G3（スキーマ変更）と privacy review を通す。
+
+`isSaved` と `likeCount` は似た UI 表現になり得るが、データの意味と公開範囲を分離する。
+
+| 概念 | 型 | 所有者 | 公開範囲 | 意味 |
+|---|---|---|---|---|
+| `isSaved` | `boolean` または user-scoped membership | 閲覧中のログインユーザー | 本人のみ | そのユーザーが自分の保存リストに入れているかを表す個人状態。 |
+| `likeCount` | `number` | 共有・公開対象デザイン | 公開ビューで表示可 | 公開対象デザインに対する集計済みリアクション数。誰が押したかは公開しない。 |
+
+**決定事項:**
+- `isSaved` は social popularity ではなく personal library state として扱う。同じデザインでもユーザーごとに値が異なる。
+- `likeCount` は public aggregate として扱う。ユーザー個人の保存状態や閲覧履歴から自動算出しない。
+- 個人の `nailItems` ドキュメントにグローバルな `likeCount` を直接持たせない。本人専用データと公開ソーシャル指標を混在させると、アクセスルールとプライバシー境界が曖昧になる。
+- 公開共有されたデザインでも、誰が保存したか・誰が liked したかの user id 一覧は公開しない。重複防止用のリアクション記録が必要な場合も、本人確認と集計更新のための内部データとして扱う。
+
+**想定データ分割（実装候補）:**
+- Phase A: 保存状態だけを実装する。`users/{userId}/savedItems/{targetId}` など user-scoped なコレクションで管理し、一覧 UI では閲覧中ユーザーの membership から `isSaved` を合成する。
+- Phase B: 公開デザインを導入する。公開可能な design record と個人の `nailItems` を分け、公開 record 側に `likeCount` の集計値を持たせる。
+- Phase C: Like 操作を導入する。重複防止用の user-scoped または access-controlled reaction record を追加し、Cloud Functions またはトランザクションで `likeCount` を増減する。
+- Phase D: 共有リンクとの関係を整理する。既存 `/share/:id` は一時的・限定的な公開閲覧として維持し、social like の対象にするかは別途プロダクト判断する。
+
+この分割により、保存リスト機能は本人専用データとして先行実装でき、公開人気指標・ランキング・おすすめ等の social feature は後続フェーズで privacy boundary を保ったまま追加できる。
+
 ---
 
 ## AI Features
