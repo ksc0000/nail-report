@@ -13,6 +13,15 @@ const input: NailItemInput = {
   memo: 'soft gradient',
   imageSource: 'camera',
 }
+
+const designInput: NailItemInput = {
+  ...input,
+  shape: 'almond',
+  mainColor: 'blush',
+  texture: 'gloss',
+  decorationParts: ['pearl', 'gold-line'],
+}
+
 test('buildCreateNailItemData creates the Firestore write payload', () => {
   const timestamp = Symbol('serverTimestamp')
   assert.deepEqual(buildCreateNailItemData(input, timestamp), {
@@ -32,6 +41,25 @@ test('buildCreateNailItemData defaults imageSource to unknown', () => {
   const result = buildCreateNailItemData(noSourceInput, timestamp)
   assert.equal(result.imageSource, 'unknown')
 })
+
+test('buildCreateNailItemData includes optional nail design fields when provided', () => {
+  const timestamp = Symbol('serverTimestamp')
+  assert.deepEqual(buildCreateNailItemData(designInput, timestamp), {
+    title: designInput.title,
+    imageUrl: designInput.imageUrl,
+    thumbnailUrl: designInput.imageUrl,
+    tags: designInput.tags,
+    memo: designInput.memo,
+    shape: 'almond',
+    mainColor: 'blush',
+    texture: 'gloss',
+    decorationParts: ['pearl', 'gold-line'],
+    imageSource: 'camera',
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  })
+})
+
 test('buildUpdateNailItemData omits createdAt and refreshes updatedAt', () => {
   const timestamp = Symbol('serverTimestamp')
   assert.deepEqual(buildUpdateNailItemData(input, timestamp), {
@@ -44,6 +72,24 @@ test('buildUpdateNailItemData omits createdAt and refreshes updatedAt', () => {
     updatedAt: timestamp,
   })
 })
+
+test('buildUpdateNailItemData includes optional nail design fields when provided', () => {
+  const timestamp = Symbol('serverTimestamp')
+  assert.deepEqual(buildUpdateNailItemData(designInput, timestamp), {
+    title: designInput.title,
+    imageUrl: designInput.imageUrl,
+    thumbnailUrl: designInput.imageUrl,
+    tags: designInput.tags,
+    memo: designInput.memo,
+    shape: 'almond',
+    mainColor: 'blush',
+    texture: 'gloss',
+    decorationParts: ['pearl', 'gold-line'],
+    imageSource: 'camera',
+    updatedAt: timestamp,
+  })
+})
+
 test('toNailItemDoc keeps Firestore document fields and attaches id', () => {
   const data: NailItem = {
     ...input,
@@ -55,4 +101,20 @@ test('toNailItemDoc keeps Firestore document fields and attaches id', () => {
     id: 'nail-1',
     ...data,
   })
+})
+
+test('toNailItemDoc safely maps old documents without optional nail design fields', () => {
+  const data: NailItem = {
+    ...input,
+    thumbnailUrl: input.imageUrl,
+    createdAt: null,
+    updatedAt: null,
+  }
+
+  const result = toNailItemDoc('old-nail-1', data)
+
+  assert.equal(result.shape, undefined)
+  assert.equal(result.mainColor, undefined)
+  assert.equal(result.texture, undefined)
+  assert.equal(result.decorationParts, undefined)
 })
