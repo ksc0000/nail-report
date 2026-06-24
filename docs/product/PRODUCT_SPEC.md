@@ -311,6 +311,7 @@ interface NailItem {
 
 | ドキュメント | 内容 |
 |---|---|
+| [JEWELRY_BOX_REFRESH.md](./JEWELRY_BOX_REFRESH.md) | Jewelry Box Refresh のプロダクト仕様 |
 | [ROADMAP.md](./ROADMAP.md) | 開発ロードマップ |
 | [NAIL_ITEM_SCHEMA_AUDIT.md](./NAIL_ITEM_SCHEMA_AUDIT.md) | NailItem スキーマ詳細監査 |
 | [3D_ASSET_DELIVERY_STRATEGY.md](./3D_ASSET_DELIVERY_STRATEGY.md) | 3D アセット配信戦略 |
