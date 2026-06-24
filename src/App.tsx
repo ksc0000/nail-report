@@ -172,6 +172,9 @@ interface ExportedNailItem {
   title: string
   tags: string
   memo: string
+  salonName: string
+  price: string
+  appointmentDate: string
   imageUrl: string
   imageSource: string
   createdAt: string
@@ -188,13 +191,28 @@ const formatNailItemForExport = (item: NailItemDoc): ExportedNailItem => ({
   title: item.title,
   tags: item.tags.join(';'),
   memo: item.memo ?? '',
+  salonName: item.salonName ?? '',
+  price: item.price ?? '',
+  appointmentDate: item.appointmentDate ?? '',
   imageUrl: item.imageUrl ?? '',
   imageSource: item.imageSource ?? 'unknown',
   createdAt: formatTimestampForExport(item.createdAt),
   updatedAt: formatTimestampForExport(item.updatedAt),
 })
 
-const CSV_HEADERS = ['id', 'title', 'tags', 'memo', 'imageUrl', 'imageSource', 'createdAt', 'updatedAt'] as const
+const CSV_HEADERS = [
+  'id',
+  'title',
+  'tags',
+  'memo',
+  'salonName',
+  'price',
+  'appointmentDate',
+  'imageUrl',
+  'imageSource',
+  'createdAt',
+  'updatedAt',
+] as const
 
 const escapeCsvCell = (value: string): string => {
   if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`
