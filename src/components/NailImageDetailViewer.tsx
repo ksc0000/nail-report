@@ -1,8 +1,18 @@
 import React, { useEffect, useRef } from 'react';
 import type { NailItemDoc } from '../lib/firestore';
 
+type DetailDisplayMode = 'Glass' | 'Snow Globe' | 'Velvet' | 'Showcase';
+
+const DISPLAY_MODE_CLASS_NAMES: Record<DetailDisplayMode, string> = {
+  Glass: 'display-mode-glass',
+  'Snow Globe': 'display-mode-snow-globe',
+  Velvet: 'display-mode-velvet',
+  Showcase: 'display-mode-showcase',
+};
+
 interface NailImageDetailViewerProps {
   item: NailItemDoc;
+  displayMode?: DetailDisplayMode;
   onClose: () => void;
 }
 
@@ -19,7 +29,11 @@ const formatDate = (ts: { toDate(): Date } | null | undefined): string | null =>
   }
 };
 
-const NailImageDetailViewer: React.FC<NailImageDetailViewerProps> = ({ item, onClose }) => {
+const NailImageDetailViewer: React.FC<NailImageDetailViewerProps> = ({
+  item,
+  displayMode = 'Glass',
+  onClose,
+}) => {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -46,7 +60,7 @@ const NailImageDetailViewer: React.FC<NailImageDetailViewerProps> = ({ item, onC
       onClick={onClose}
     >
       <div
-        className="nail-detail-dialog"
+        className={`nail-detail-dialog ${DISPLAY_MODE_CLASS_NAMES[displayMode]}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="nail-detail-title"

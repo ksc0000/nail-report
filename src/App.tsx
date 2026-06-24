@@ -33,6 +33,13 @@ import './App.css'
 const DISPLAY_MODES = ['Glass', 'Snow Globe', 'Velvet', 'Showcase'] as const
 type DisplayMode = typeof DISPLAY_MODES[number]
 
+const DISPLAY_MODE_CLASS_NAMES: Record<DisplayMode, string> = {
+  Glass: 'display-mode-glass',
+  'Snow Globe': 'display-mode-snow-globe',
+  Velvet: 'display-mode-velvet',
+  Showcase: 'display-mode-showcase',
+}
+
 const NAIL_SHAPES = [
   { id: 'round', label: 'Round' },
   { id: 'square', label: 'Square' },
@@ -1007,6 +1014,7 @@ function App() {
         <Suspense fallback={<div className="lazy-loading">読み込み中...</div>}>
           <NailImageDetailViewer
             item={detailItem}
+            displayMode={activeDisplayMode}
             onClose={() => setDetailItemId(null)}
           />
         </Suspense>
@@ -1154,7 +1162,7 @@ function App() {
         </div>
       )}
       {user && (
-        <div id="nail-section">
+        <div id="nail-section" className={DISPLAY_MODE_CLASS_NAMES[activeDisplayMode]}>
           {activeAppScreen === 'home' && (
             <>
               <section className="nail-studio-hero" aria-labelledby="studio-title">
