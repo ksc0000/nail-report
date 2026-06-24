@@ -785,7 +785,8 @@ function App() {
   const bookingMemoItem = bookingMemoItemId ? nailItems.find(i => i.id === bookingMemoItemId) : null
   const isFetching = Boolean(user && nailItemsUserId !== user.uid)
   const summary = useMemo(() => getNailSummary(nailItems), [nailItems])
-  const savedPreviewItems = nailItems.filter(item => savedItemIds.includes(item.id)).slice(0, 3)
+  const savedDesignItems = nailItems.filter(item => savedItemIds.includes(item.id))
+  const savedPreviewItems = savedDesignItems.slice(0, 3)
 
   const filteredItems = nailItems.filter(item => {
     if (searchQuery.trim()) {
@@ -1538,12 +1539,15 @@ function App() {
                 <p className="nail-design-kicker">SAVED DESIGNS</p>
                 <h3 id="saved-designs-title">また使いたいデザインを集める。</h3>
                 <p>
-                  お気に入りの組み合わせをあとで見返すための静的サーフェスです。
-                  後続フェーズで保存済みネイルやいいね状態に接続します。
+                  カード上の Save から選んだ既存 NailItem をここに並べます。
+                  現在は端末セッション内の保存状態として扱い、後続フェーズで永続化します。
                 </p>
               </div>
-              <span className="saved-designs-badge">{savedItemIds.length} saved</span>
+              <span className="saved-designs-badge">{savedDesignItems.length} saved</span>
             </div>
+            <p className="saved-designs-source-note">
+              Data source: existing NailItems + session-local Save state
+            </p>
             <div className="saved-designs-surface">
               <div className="saved-designs-empty">
                 <div className="saved-designs-empty-stage" aria-hidden="true">
@@ -1561,13 +1565,13 @@ function App() {
                   />
                 </div>
                 <div>
-                  <h4>{savedItemIds.length > 0 ? '保存したデザイン' : '保存デザインはまだありません'}</h4>
+                  <h4>{savedDesignItems.length > 0 ? '保存したデザイン' : '保存デザインはまだありません'}</h4>
                   <p>
-                    {savedItemIds.length > 0
+                    {savedDesignItems.length > 0
                       ? savedPreviewItems.map(item => item.title).join(' / ')
                       : '写真・形・色・タグが接続されると、ここにお気に入りのネイルカードが並びます。'}
                   </p>
-                  {savedItemIds.length === 0 && (
+                  {savedDesignItems.length === 0 && (
                     <div className="screen-empty-actions">
                       <button type="button" onClick={() => handleSelectAppScreen('home')}>
                         宝石箱を見る
@@ -1579,11 +1583,43 @@ function App() {
                   )}
                 </div>
               </div>
-              <div className="saved-designs-data-slots" aria-label="後続接続予定の項目">
-                {SAVED_DESIGN_FIELDS.map(field => (
-                  <span key={field}>{field}</span>
-                ))}
-              </div>
+              {savedDesignItems.length > 0 ? (
+                <div className="saved-designs-card-list" aria-label="保存したデザイン">
+                  {savedDesignItems.map(item => (
+                    <article key={item.id} className="saved-design-card">
+                      <button
+                        type="button"
+                        className="saved-design-card-main"
+                        onClick={() => handleOpenDetailCard(item.id)}
+                      >
+                        <span className="saved-design-card-thumb" aria-hidden="true">
+                          {item.imageUrl ? (
+                            <img src={item.imageUrl} alt="" />
+                          ) : (
+                            <FloatingNailChip variant="empty" shape="almond" showHighlight={false} />
+                          )}
+                        </span>
+                        <span className="saved-design-card-copy">
+                          <strong>{item.title}</strong>
+                          <span>
+                            {[item.shape, item.mainColor, item.texture].filter(Boolean).join(' / ') || 'デザイン詳細は未設定'}
+                          </span>
+                        </span>
+                      </button>
+                      <div className="saved-design-card-actions">
+                        <button type="button" onClick={() => handleOpenDetailCard(item.id)}>詳細</button>
+                        <button type="button" onClick={() => handleToggleSavedItem(item.id)}>保存解除</button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="saved-designs-data-slots" aria-label="表示予定の項目">
+                  {SAVED_DESIGN_FIELDS.map(field => (
+                    <span key={field}>{field}</span>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
           )}
