@@ -895,6 +895,39 @@
   box-shadow: 0 22px 42px rgba(14, 8, 18, 0.18);
 }
 
+#nail-section.display-mode-glass .nail-studio-hero {
+  background:
+    linear-gradient(125deg, rgba(255, 255, 255, 0.2), transparent 38%),
+    radial-gradient(circle at 84% 8%, rgba(248, 217, 77, 0.16), transparent 24%),
+    radial-gradient(circle at 12% 100%, rgba(236, 64, 122, 0.18), transparent 34%),
+    linear-gradient(135deg, var(--jb-ink), var(--jb-plum) 62%, #120b18);
+}
+
+#nail-section.display-mode-snow-globe .nail-studio-hero {
+  border-color: color-mix(in srgb, #bfe9ff 48%, var(--jb-glass-border));
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.24), transparent 34%),
+    radial-gradient(circle at 80% 12%, rgba(208, 244, 255, 0.34), transparent 28%),
+    radial-gradient(circle at 16% 92%, rgba(255, 255, 255, 0.22), transparent 34%),
+    linear-gradient(135deg, #102132, #394e65 58%, #f6fbff);
+}
+
+#nail-section.display-mode-velvet .nail-studio-hero {
+  border-color: color-mix(in srgb, #f0b4cc 26%, var(--jb-glass-border));
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 28%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 9px),
+    linear-gradient(135deg, #190c18, #4a162f 56%, #130810);
+}
+
+#nail-section.display-mode-showcase .nail-studio-hero {
+  border-color: color-mix(in srgb, var(--jb-gold) 46%, var(--jb-glass-border));
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255, 245, 185, 0.32), transparent 46%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04), transparent 18% 82%, rgba(255, 255, 255, 0.04)),
+    linear-gradient(135deg, #100c12, #3b2b22 58%, #0e0a0b);
+}
+
 .nail-studio-kicker {
   margin: 0 0 8px;
   color: var(--jb-pink);
@@ -2685,6 +2718,99 @@
     radial-gradient(circle at 84% 0%, rgba(248, 217, 77, 0.2), transparent 34%);
 }
 
+#nail-section.display-mode-snow-globe #nail-list li {
+  border-color: color-mix(in srgb, #bfe9ff 46%, var(--border));
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(235, 249, 255, 0.76)),
+    rgba(255, 255, 255, 0.74);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 18px 36px rgba(36, 78, 96, 0.12);
+}
+
+#nail-section.display-mode-snow-globe #nail-list li::before {
+  background:
+    radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.74) 0 2px, transparent 3px),
+    radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.62) 0 1px, transparent 2px),
+    radial-gradient(circle at 64% 68%, rgba(206, 238, 255, 0.5) 0 2px, transparent 3px),
+    linear-gradient(125deg, rgba(255, 255, 255, 0.42), transparent 34% 72%, rgba(191, 233, 255, 0.24));
+}
+
+#nail-section.display-mode-snow-globe .nail-card-thumb {
+  background:
+    radial-gradient(circle at 50% 16%, rgba(255, 255, 255, 0.9), transparent 28%),
+    radial-gradient(ellipse at 50% 88%, rgba(60, 92, 118, 0.18), transparent 56%),
+    linear-gradient(145deg, rgba(247, 253, 255, 0.94), rgba(214, 239, 250, 0.42));
+}
+
+#nail-section.display-mode-velvet #nail-list li {
+  border-color: color-mix(in srgb, #e3a6bc 24%, #2a101d);
+  background:
+    linear-gradient(145deg, rgba(54, 20, 37, 0.96), rgba(25, 10, 20, 0.92)),
+    #1c0c17;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 20px 40px rgba(20, 8, 16, 0.24);
+}
+
+#nail-section.display-mode-velvet #nail-list li::before {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 10px),
+    linear-gradient(125deg, rgba(255, 255, 255, 0.08), transparent 32% 72%, rgba(227, 166, 188, 0.12));
+}
+
+#nail-section.display-mode-velvet .nail-card-thumb {
+  background:
+    radial-gradient(ellipse at 50% 80%, rgba(0, 0, 0, 0.34), transparent 58%),
+    linear-gradient(145deg, rgba(87, 32, 56, 0.88), rgba(24, 9, 19, 0.88));
+}
+
+#nail-section.display-mode-velvet .nail-card-body,
+#nail-section.display-mode-velvet .nail-item-title,
+#nail-section.display-mode-velvet .nail-item-memo {
+  color: rgba(255, 247, 251, 0.92);
+}
+
+#nail-section.display-mode-velvet .nail-item-date,
+#nail-section.display-mode-velvet .nail-item-tags:empty {
+  color: rgba(255, 229, 240, 0.68);
+}
+
+#nail-section.display-mode-velvet .nail-tag {
+  border-color: rgba(255, 216, 229, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 236, 244, 0.86);
+}
+
+@media (min-width: 760px) {
+  #nail-section.display-mode-showcase #nail-list {
+    grid-template-columns: minmax(320px, 1.24fr) repeat(2, minmax(210px, 0.88fr));
+  }
+
+  #nail-section.display-mode-showcase #nail-list li:first-child {
+    grid-row: span 2;
+    min-height: 480px;
+  }
+
+  #nail-section.display-mode-showcase #nail-list li:first-child .nail-card-thumb {
+    aspect-ratio: 1;
+  }
+}
+
+#nail-section.display-mode-showcase #nail-list li {
+  border-color: color-mix(in srgb, var(--jb-gold) 46%, var(--border));
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(248, 217, 77, 0.2), transparent 38%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(246, 239, 226, 0.8));
+}
+
+#nail-section.display-mode-showcase .nail-card-thumb {
+  background:
+    radial-gradient(ellipse at 50% 14%, rgba(255, 241, 174, 0.58), transparent 34%),
+    radial-gradient(ellipse at 50% 94%, rgba(45, 32, 24, 0.26), transparent 58%),
+    linear-gradient(145deg, rgba(255, 252, 238, 0.82), rgba(222, 207, 179, 0.42));
+}
+
 #nail-list li.editing {
   border-color: var(--jb-rose);
   box-shadow:
@@ -3067,6 +3193,93 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
+.nail-charm-stage::before,
+.nail-charm-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.nail-detail-dialog.display-mode-glass .nail-charm-stage {
+  background:
+    linear-gradient(130deg, rgba(255, 255, 255, 0.6), transparent 34%),
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.34), transparent 24%),
+    radial-gradient(circle at 50% 115%, rgba(78, 57, 72, 0.24), transparent 34%),
+    linear-gradient(160deg, #fff8fb 0%, #dde8eb 48%, #9aa2a8 100%);
+}
+
+.nail-detail-dialog.display-mode-snow-globe .nail-charm-stage {
+  border-color: rgba(185, 229, 247, 0.72);
+  background:
+    radial-gradient(circle at 50% 10%, rgba(255, 255, 255, 0.78), transparent 28%),
+    radial-gradient(ellipse at 50% 100%, rgba(121, 172, 204, 0.28), transparent 42%),
+    linear-gradient(160deg, #fbfeff 0%, #dceff8 50%, #8fb1c7 100%);
+}
+
+.nail-detail-dialog.display-mode-snow-globe .nail-charm-stage::before {
+  background:
+    radial-gradient(circle at 18% 28%, rgba(255, 255, 255, 0.92) 0 2px, transparent 3px),
+    radial-gradient(circle at 36% 18%, rgba(255, 255, 255, 0.74) 0 1px, transparent 2px),
+    radial-gradient(circle at 68% 34%, rgba(255, 255, 255, 0.84) 0 2px, transparent 3px),
+    radial-gradient(circle at 82% 66%, rgba(255, 255, 255, 0.68) 0 1px, transparent 2px);
+  animation: nail-snow-drift 6.2s ease-in-out infinite;
+}
+
+.nail-detail-dialog.display-mode-velvet {
+  background: #1b0c17;
+  border-color: rgba(240, 180, 204, 0.22);
+  color: rgba(255, 247, 251, 0.92);
+}
+
+.nail-detail-dialog.display-mode-velvet .nail-detail-header,
+.nail-detail-dialog.display-mode-velvet .nail-charm-panel {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.nail-detail-dialog.display-mode-velvet .nail-detail-close-hint,
+.nail-detail-dialog.display-mode-velvet .nail-detail-memo,
+.nail-detail-dialog.display-mode-velvet .nail-detail-meta,
+.nail-detail-dialog.display-mode-velvet .nail-detail-empty {
+  color: rgba(255, 229, 240, 0.7);
+}
+
+.nail-detail-dialog.display-mode-velvet .nail-charm-title,
+.nail-detail-dialog.display-mode-velvet .nail-detail-title,
+.nail-detail-dialog.display-mode-velvet .nail-detail-label {
+  color: rgba(255, 247, 251, 0.95);
+}
+
+.nail-detail-dialog.display-mode-velvet .nail-tag {
+  border-color: rgba(255, 216, 229, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 236, 244, 0.86);
+}
+
+.nail-detail-dialog.display-mode-velvet .nail-charm-stage {
+  border-color: rgba(255, 214, 229, 0.2);
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 10px),
+    radial-gradient(ellipse at 50% 100%, rgba(0, 0, 0, 0.36), transparent 44%),
+    linear-gradient(160deg, #4c1830 0%, #230d1b 52%, #11060e 100%);
+}
+
+.nail-detail-dialog.display-mode-showcase .nail-charm-stage {
+  border-color: color-mix(in srgb, var(--jb-gold) 44%, var(--border));
+  background:
+    radial-gradient(ellipse at 50% 8%, rgba(255, 241, 174, 0.72), transparent 38%),
+    radial-gradient(ellipse at 50% 95%, rgba(39, 29, 21, 0.42), transparent 50%),
+    linear-gradient(160deg, #fff8dc 0%, #d7c49d 48%, #2a2019 100%);
+}
+
+.nail-detail-dialog.display-mode-showcase .nail-charm-stage::after {
+  inset: auto 16% 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(24, 16, 12, 0.22);
+  filter: blur(8px);
+}
+
 .nail-charm-orbit {
   position: absolute;
   border-radius: 999px;
@@ -3120,6 +3333,61 @@
   top: 36%;
   transform: rotate(11deg);
   animation-delay: -2.2s;
+}
+
+.nail-detail-dialog.display-mode-snow-globe .nail-charm-shell--left {
+  left: 16%;
+  top: 40%;
+}
+
+.nail-detail-dialog.display-mode-snow-globe .nail-charm-shell--center {
+  top: 20%;
+}
+
+.nail-detail-dialog.display-mode-snow-globe .nail-charm-shell--right {
+  right: 15%;
+  top: 42%;
+}
+
+.nail-detail-dialog.display-mode-velvet .nail-charm-shell {
+  filter: drop-shadow(0 22px 18px rgba(0, 0, 0, 0.42));
+}
+
+.nail-detail-dialog.display-mode-velvet .nail-charm-shell--left {
+  left: 18%;
+  top: 34%;
+}
+
+.nail-detail-dialog.display-mode-velvet .nail-charm-shell--center {
+  top: 24%;
+}
+
+.nail-detail-dialog.display-mode-velvet .nail-charm-shell--right {
+  right: 18%;
+  top: 34%;
+}
+
+.nail-detail-dialog.display-mode-showcase .nail-charm-orbit {
+  opacity: 0.24;
+}
+
+.nail-detail-dialog.display-mode-showcase .nail-charm-shell--left {
+  left: 14%;
+  top: 38%;
+  width: 66px;
+  opacity: 0.74;
+}
+
+.nail-detail-dialog.display-mode-showcase .nail-charm-shell--center {
+  top: 16%;
+  width: 104px;
+}
+
+.nail-detail-dialog.display-mode-showcase .nail-charm-shell--right {
+  right: 14%;
+  top: 38%;
+  width: 66px;
+  opacity: 0.74;
 }
 
 .nail-charm-chip {
@@ -3366,9 +3634,22 @@
   }
 }
 
+@keyframes nail-snow-drift {
+  0%,
+  100% {
+    translate: 0 -4px;
+    opacity: 0.78;
+  }
+  50% {
+    translate: 0 8px;
+    opacity: 0.96;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nail-charm-shell,
-  .nail-charm-shine {
+  .nail-charm-shine,
+  .nail-detail-dialog.display-mode-snow-globe .nail-charm-stage::before {
     animation: none;
   }
 }
