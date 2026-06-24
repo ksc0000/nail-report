@@ -37,6 +37,43 @@ export interface NailItemInput {
   imageSource?: 'upload' | 'camera' | 'unknown'
 }
 
+type OptionalNailItemFields = Pick<
+  NailItem,
+  | 'shape'
+  | 'mainColor'
+  | 'texture'
+  | 'decorationParts'
+  | 'salonName'
+  | 'price'
+  | 'appointmentDate'
+>
+
+export const NAIL_ITEM_OPTIONAL_FIELD_DEFAULTS: OptionalNailItemFields = {
+  shape: undefined,
+  mainColor: undefined,
+  texture: undefined,
+  decorationParts: undefined,
+  salonName: undefined,
+  price: undefined,
+  appointmentDate: undefined,
+}
+
+const toOptionalString = (value: unknown): string | undefined =>
+  typeof value === 'string' ? value : undefined
+
+const toOptionalStringArray = (value: unknown): string[] | undefined =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : undefined
+
+const mapOptionalNailItemFields = (data: NailItem): OptionalNailItemFields => ({
+  shape: toOptionalString(data.shape),
+  mainColor: toOptionalString(data.mainColor),
+  texture: toOptionalString(data.texture),
+  decorationParts: toOptionalStringArray(data.decorationParts),
+  salonName: toOptionalString(data.salonName),
+  price: toOptionalString(data.price),
+  appointmentDate: toOptionalString(data.appointmentDate),
+})
+
 const buildOptionalNailItemFields = (input: NailItemInput) => ({
   ...(input.shape !== undefined ? { shape: input.shape } : {}),
   ...(input.mainColor !== undefined ? { mainColor: input.mainColor } : {}),
@@ -50,6 +87,8 @@ const buildOptionalNailItemFields = (input: NailItemInput) => ({
 export const toNailItemDoc = (id: string, data: NailItem): NailItemDoc => ({
   id,
   ...data,
+  ...NAIL_ITEM_OPTIONAL_FIELD_DEFAULTS,
+  ...mapOptionalNailItemFields(data),
 })
 
 export const buildCreateNailItemData = (input: NailItemInput, timestamp: unknown) => ({

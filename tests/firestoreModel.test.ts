@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import {
   buildCreateNailItemData,
   buildUpdateNailItemData,
+  NAIL_ITEM_OPTIONAL_FIELD_DEFAULTS,
   toNailItemDoc,
 } from '../src/lib/firestoreModel.ts'
 import type { NailItem, NailItemInput } from '../src/lib/firestoreModel.ts'
@@ -140,6 +141,19 @@ test('toNailItemDoc keeps Firestore document fields and attaches id', () => {
   assert.deepEqual(toNailItemDoc('nail-1', data), {
     id: 'nail-1',
     ...data,
+    ...NAIL_ITEM_OPTIONAL_FIELD_DEFAULTS,
+  })
+})
+
+test('NAIL_ITEM_OPTIONAL_FIELD_DEFAULTS documents missing optional field defaults', () => {
+  assert.deepEqual(NAIL_ITEM_OPTIONAL_FIELD_DEFAULTS, {
+    shape: undefined,
+    mainColor: undefined,
+    texture: undefined,
+    decorationParts: undefined,
+    salonName: undefined,
+    price: undefined,
+    appointmentDate: undefined,
   })
 })
 
@@ -157,6 +171,53 @@ test('toNailItemDoc safely maps old documents without optional nail design field
   assert.equal(result.mainColor, undefined)
   assert.equal(result.texture, undefined)
   assert.equal(result.decorationParts, undefined)
+  assert.equal(result.salonName, undefined)
+  assert.equal(result.price, undefined)
+  assert.equal(result.appointmentDate, undefined)
+})
+
+test('toNailItemDoc maps new documents with optional nail item fields', () => {
+  const data: NailItem = {
+    ...input,
+    thumbnailUrl: input.imageUrl,
+    shape: 'almond',
+    mainColor: 'blush',
+    texture: 'gloss',
+    decorationParts: ['pearl', 'gold-line'],
+    salonName: 'Aoyama Nail',
+    price: '12000',
+    appointmentDate: '2026-07-12',
+    createdAt: null,
+    updatedAt: null,
+  }
+
+  assert.deepEqual(toNailItemDoc('new-nail-1', data), {
+    id: 'new-nail-1',
+    ...data,
+  })
+})
+
+test('toNailItemDoc ignores invalid optional field values from Firestore', () => {
+  const data = {
+    ...input,
+    thumbnailUrl: input.imageUrl,
+    shape: 123,
+    mainColor: null,
+    texture: { value: 'gloss' },
+    decorationParts: ['pearl', 12, 'gold-line'],
+    salonName: false,
+    price: 12000,
+    appointmentDate: ['2026-07-12'],
+    createdAt: null,
+    updatedAt: null,
+  } as unknown as NailItem
+
+  const result = toNailItemDoc('mixed-nail-1', data)
+
+  assert.equal(result.shape, undefined)
+  assert.equal(result.mainColor, undefined)
+  assert.equal(result.texture, undefined)
+  assert.deepEqual(result.decorationParts, ['pearl', 'gold-line'])
   assert.equal(result.salonName, undefined)
   assert.equal(result.price, undefined)
   assert.equal(result.appointmentDate, undefined)
