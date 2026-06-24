@@ -32,6 +32,12 @@ For Jewelry Box Refresh release readiness, use the [Jewelry Box Refresh Release 
 | Privacy/Terms | Open Privacy Policy and Terms links once implemented. | Links are visible, routes load, and text matches the approved policy draft. |
 | Error fallback | Temporarily test with a failed network or invalid share URL if practical. | User-facing error states are understandable and do not expose sensitive details. |
 
+## 390px Width QA Notes
+
+- 2026-06-24 Codex pass: added a root `box-sizing: border-box` guard so the centered app shell keeps padding inside the 390px viewport width.
+- Automated scope: CSS/layout review plus build, lint, unit tests, and QA preflight.
+- Remaining human/device scope: signed-in Jewelry Box screens with real auth and test NailItems at 390px width, including Home, Design, Explore, Saved, Book, and Profile.
+
 ## Go / No-Go
 
 - Go: all critical flows pass, or only documented non-blocking issues remain.
