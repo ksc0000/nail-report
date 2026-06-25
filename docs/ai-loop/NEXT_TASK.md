@@ -2,56 +2,69 @@
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses the accessibility goal within Phase 2.4 by enhancing keyboard navigation and screen reader support.
+Read the roadmap, recent commits, and the current task.
 
 ## Objective
 
-Add `aria-label` attributes to all icon-only buttons in the application to improve accessibility for users relying on screen readers or keyboard navigation.
+Implement exactly one bounded task from Phase 2 of the roadmap.
 
 ## Allowed Scope
 
--   `src/` (except `src/main.tsx`)
--   `src/components/` (modifying existing components to add `aria-label`)
--   `src/App.tsx` (if it contains icon buttons directly)
--   `src/App.css` (no changes expected for this task)
+- `src/` (except `src/main.tsx`)
+- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+- `src/__tests__/` (new test files)
+- `src/App.css` (CSS improvements)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   Keep diff ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing.
--   Prefer adding tests when touching `src/lib/` files (not applicable for this UI-focused task).
--   Report follow-up items as comments, not additional code.
+- Keep diff ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
-## Worker Prompt
+## Output Format
 
-Implement the following steps:
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
 
-1.  **Identify Icon-Only Buttons:** Traverse the application's UI components and identify all `<button>` elements that only contain an icon (e.g., using a library icon component or an `<img>` tag) and do not have visible text.
-2.  **Determine Appropriate `aria-label`:** For each identified button, determine a concise and descriptive `aria-label` value that clearly communicates the button's purpose to a screen reader user (e.g., "Delete item", "Edit item", "Add new tag").
-3.  **Add `aria-label` Attribute:** Add the determined `aria-label` attribute to each identified icon-only button element.
-4.  **Verify Accessibility (Manual):**
-    *   Visually inspect the UI to ensure no unexpected changes occurred.
-    *   (Optional but recommended) Test basic keyboard navigation to confirm buttons are focusable and clickable using `Enter` or `Space`.
-    *   (Optional but recommended) Use browser developer tools (e.g., Chrome Lighthouse or Accessibility Tree in Firefox/Chrome) to verify the `aria-label` is correctly exposed.
+---
+
+# Worker prompt
+
+## Objective
+
+Add Vitest unit tests for helper functions within `src/lib/firestore.ts`.
+
+## Details
+
+The goal is to improve test coverage for the core Firestore operations.
+
+1.  **Create a new test file:** Create `src/__tests__/firestore.test.ts`.
+2.  **Mock Firebase SDK:** Use Vitest's `vi.mock` to mock Firebase SDK dependencies (e.g., `firebase/firestore`) to isolate `src/lib/firestore.ts` functions for testing. You may need to mock `firebase/auth` if authentication-related context is used in `firestore.ts` helpers.
+3.  **Implement Unit Tests:** Focus on adding tests for the key helper functions that perform CRUD operations on the `nailItems` collection (e.g., functions for adding, getting, updating, and deleting nail items).
+4.  **Coverage:** Aim for good test coverage for the functions you are testing.
 
 ## Acceptance Criteria
 
--   All icon-only buttons within the application now have a descriptive `aria-label` attribute.
--   The application builds successfully (`npm run build`).
--   The linter passes without errors (`npm run lint`).
+-   A new test file `src/__tests__/firestore.test.ts` is created and contains unit tests.
+-   Key helper functions in `src/lib/firestore.ts` are covered by these tests.
+-   Tests pass successfully when `npm test` is run.
+-   The new code adheres to existing linting rules and the project builds successfully.
 
 ## Required Test Commands
 
-```bash
-npm run build
-npm run lint
-```
+-   `npm test`
+-   `npm run build`
+-   `npm run lint`
