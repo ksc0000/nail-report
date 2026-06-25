@@ -1,20 +1,18 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The `nail-report` application is currently in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This task specifically addresses "2.1 Test coverage" by adding unit tests for core Firebase helper functions.
+The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This task targets the "Loading states" objective (2.3) by enhancing the user experience during data fetching.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest. This task includes setting up Vitest if it's not already fully configured for testing, though the roadmap indicates Vitest is the chosen test runner.
+Implement a skeleton loading state for the nail item list within `src/App.tsx` or its directly related components. When the application is fetching the list of nail items, a placeholder skeleton UI should be displayed instead of an empty screen or an immediate list.
 
 ## Allowed Scope
 
--   `src/lib/firestore.ts` (modifications to export functions for testing if necessary, but primarily for understanding what to test)
--   `src/__tests__/lib/firestore.test.ts` (new file for tests)
--   `vite.config.ts` (minimal configuration for Vitest if absolutely required, e.g., for aliases or setup files, but prefer to assume it's mostly ready)
--   `package.json` (only for adding `test` script if not present, no new dependencies)
+-   `src/App.tsx`
+-   `src/components/` (if a new component for the skeleton is created, or an existing list component is modified)
+-   `src/App.css` (for styling the skeleton)
 
 ## Forbidden Scope
 
@@ -24,15 +22,14 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 -   `package.json` deps (no new npm packages without human approval)
 -   Firebase deploy commands
 -   Secrets and credentials
--   Any file not explicitly mentioned in "Allowed Scope"
 
 ## Requirements
 
 -   Keep diff ≤ 150 lines.
+-   Display a simple placeholder/skeleton UI while the nail items are being fetched.
+-   The skeleton should disappear and be replaced by the actual list once data is loaded.
+-   No new npm dependencies are allowed.
 -   Run `npm run build && npm run lint` before finishing.
--   Add tests for `src/lib/firestore.ts` helper functions (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`).
--   Mock Firebase SDK using `vi.mock` to isolate tests from actual Firebase interactions.
--   Ensure tests run successfully using `npm test` or `vitest`.
 
 ## Output Format
 
@@ -44,29 +41,26 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 
 ## Worker prompt
 
-Your task is to add unit tests for the Firebase Firestore helper functions located in `src/lib/firestore.ts`.
+Jules, your task is to implement a loading skeleton for the nail item list.
 
-1.  **Verify Vitest Setup:**
-    *   Check `package.json` for Vitest scripts (e.g., `"test": "vitest"`). If absent, add a minimal `test` script.
-    *   Ensure `vite.config.ts` has basic Vitest configuration, if not, add a minimal `test` property to the defineConfig object to enable Vitest.
+1.  **Identify Data Fetching:** Locate where the nail item data is fetched in `src/App.tsx` or its immediate child components that render the list.
+2.  **Manage Loading State:** Introduce or utilize an existing loading state variable (e.g., `isLoadingItems`) to track the data fetching status.
+3.  **Implement Skeleton UI:**
+    *   When `isLoadingItems` is `true`, render a simple visual placeholder (e.g., a few grey rectangles or lines) that mimics the general layout of a nail item in the list.
+    *   When `isLoadingItems` is `false`, render the actual `NailItemList` component as usual.
+4.  **Styling:** Add minimal CSS to `src/App.css` to style the skeleton elements. Focus on making them visually distinct but simple (e.g., `background-color: #f0f0f0; border-radius: 4px; height: 60px; margin-bottom: 8px;`).
+5.  **Testing:** Manually verify that the skeleton appears on initial load (or slow network conditions) and disappears once data is fetched.
+6.  **Cleanup:** Ensure no unnecessary code or commented-out sections remain.
 
-2.  **Create Test File:**
-    *   Create a new file: `src/__tests__/lib/firestore.test.ts`.
+**Acceptance Criteria:**
 
-3.  **Implement Mocking:**
-    *   Use `vi.mock('firebase/firestore')` and `vi.mock('firebase/app')` to mock Firebase Firestore and App SDK functions.
-    *   Mock relevant Firestore functions (e.g., `collection`, `doc`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`) to simulate their behavior without real database calls.
+-   A loading skeleton is visibly displayed while nail item data is being fetched.
+-   The skeleton is replaced by the actual list once data loading is complete.
+-   The solution adheres to the diff size and forbidden scope constraints.
 
-4.  **Write Unit Tests:**
-    *   For each major helper function in `src/lib/firestore.ts` (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`), write at least one positive test case.
-    *   Consider adding one or two basic error handling tests if applicable (e.g., what happens if a Firestore operation rejects).
+**Required Test Commands:**
 
-5.  **Run Tests:**
-    *   Execute `npm test` (or `vitest`) and ensure all new tests pass.
-
-6.  **Lint and Build:**
-    *   Run `npm run lint` and `npm run build` to confirm there are no new linting errors or build issues.
-
-```
-```
+```bash
+npm run build
+npm run lint
 ```
