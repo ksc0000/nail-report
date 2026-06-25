@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react'
-import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react'
+import type {
+  CSSProperties,
+  KeyboardEvent as ReactKeyboardEvent,
+  PointerEvent as ReactPointerEvent,
+} from 'react'
 import { auth, signInWithGoogle, signOutUser, onAuthStateChanged } from './lib/auth'
 import type { User } from './lib/auth'
 import { addNailItem, updateNailItem, deleteNailItem, fetchNailItems } from './lib/firestore'
@@ -34,9 +38,9 @@ const DISPLAY_MODES = ['Glass', 'Snow Globe', 'Velvet', 'Showcase'] as const
 type DisplayMode = typeof DISPLAY_MODES[number]
 
 const JEWEL_MOTION_MODES = [
-  { id: 'drift', label: '漂う' },
-  { id: 'carousel', label: '回る' },
-  { id: 'showcase', label: '前後' },
+  { id: 'drift', label: 'Float', icon: 'float' },
+  { id: 'carousel', label: 'Orbit', icon: 'orbit' },
+  { id: 'showcase', label: 'Compare', icon: 'compare' },
 ] as const
 type JewelMotionMode = typeof JEWEL_MOTION_MODES[number]['id']
 
@@ -361,6 +365,7 @@ function App() {
   const [shareActionId, setShareActionId] = useState<string | null>(null)
   const [activeDisplayMode, setActiveDisplayMode] = useState<DisplayMode>('Glass')
   const [activeJewelMotion, setActiveJewelMotion] = useState<JewelMotionMode>('drift')
+  const [recentlyAddedNailId, setRecentlyAddedNailId] = useState<string | null>(null)
   const [activeAppScreen, setActiveAppScreen] = useState<AppScreenId>('home')
   const [publicShare, setPublicShare] = useState<PublicShareDocWithId | null>(null)
   const [publicShareState, setPublicShareState] = useState<PublicShareViewState>(
@@ -384,6 +389,19 @@ function App() {
     setDetailItemId(itemId)
   }
 
+  const handleJewelStagePointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2
+    const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2
+    event.currentTarget.style.setProperty('--pointer-x', x.toFixed(3))
+    event.currentTarget.style.setProperty('--pointer-y', y.toFixed(3))
+  }
+
+  const handleJewelStagePointerLeave = (event: ReactPointerEvent<HTMLElement>) => {
+    event.currentTarget.style.setProperty('--pointer-x', '0')
+    event.currentTarget.style.setProperty('--pointer-y', '0')
+  }
+
   const handleDetailCardKeyDown = (event: ReactKeyboardEvent, itemId: string) => {
     if (event.key !== 'Enter' && event.key !== ' ') return
     event.preventDefault()
@@ -393,6 +411,12 @@ function App() {
   useEffect(() => () => {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
   }, [])
+
+  useEffect(() => {
+    if (!recentlyAddedNailId) return
+    const timeoutId = window.setTimeout(() => setRecentlyAddedNailId(null), 2600)
+    return () => window.clearTimeout(timeoutId)
+  }, [recentlyAddedNailId])
 
   useEffect(() => {
     const previousTitle = document.title
@@ -514,7 +538,7 @@ function App() {
 
   useEffect(() => {
     if (isPublicSharePage) return
-    if (!user) return
+    if (!user || activeAppScreen !== 'profile') return
     let didCancel = false
     fetchPublicSharesForOwner(user.uid)
       .then(shares => {
@@ -528,10 +552,9 @@ function App() {
         setPublicShares([])
         setPublicSharesUserId(user.uid)
         setShareError('共有リンクの取得に失敗しました。')
-        setBannerError('共有リンクの取得に失敗しました。')
       })
     return () => { didCancel = true }
-  }, [isPublicSharePage, user])
+  }, [activeAppScreen, isPublicSharePage, user])
 
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
   const MAX_FILE_BYTES = 5 * 1024 * 1024
@@ -712,6 +735,8 @@ function App() {
       imageSource: nailImageSource,
     }
     try {
+      let savedItemId: string | null = editingId
+      const isCreatingNewItem = editingId === null
       if (editingId) {
         const editingItem = nailItems.find(i => i.id === editingId)
         let imageUrl = editingItem?.imageUrl ?? ''
@@ -721,6 +746,7 @@ function App() {
         await updateNailItem(uid, editingId, { ...baseInput, imageUrl })
       } else {
         const itemId = await addNailItem(uid, { ...baseInput, imageUrl: '' })
+        savedItemId = itemId
         if (nailImageFile) {
           const imageUrl = await uploadNailImage(uid, itemId, nailImageFile)
           await updateNailItem(uid, itemId, { ...baseInput, imageUrl })
@@ -729,6 +755,14 @@ function App() {
       setNailItems(sortByDate(await fetchNailItems(uid)))
       setNailItemsUserId(uid)
       resetForm()
+      if (isCreatingNewItem && savedItemId) {
+        setRecentlyAddedNailId(savedItemId)
+        setDetailItemId(null)
+        setActiveAppScreen('home')
+        window.requestAnimationFrame(() => {
+          document.getElementById('nail-section')?.scrollIntoView({ block: 'start' })
+        })
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
       const isStorageError = msg.toLowerCase().includes('storage') || msg.toLowerCase().includes('permission')
@@ -1181,16 +1215,24 @@ function App() {
         <div id="auth-bar">
           {user === undefined ? null : user ? (
             <div className="auth-user">
-              <span>{user.displayName ?? user.email}</span>
               <button
                 type="button"
-                className="auth-data-mgmt"
+                className="icon-button auth-data-mgmt"
                 onClick={() => setIsDataModalOpen(true)}
+                aria-label="ヘルプとデータ管理"
+                title="Data"
               >
-                データ管理
+                <span className="mono-icon mono-icon-settings" aria-hidden="true" />
               </button>
-              <button type="button" onClick={handleSignOut} disabled={authActionPending}>
-                {authActionPending ? 'Signing out...' : 'Sign out'}
+              <button
+                type="button"
+                className="icon-button"
+                onClick={handleSignOut}
+                disabled={authActionPending}
+                aria-label="サインアウト"
+                title="Sign out"
+              >
+                <span className="mono-icon mono-icon-exit" aria-hidden="true" />
               </button>
             </div>
           ) : null}
@@ -1255,20 +1297,33 @@ function App() {
         <div id="nail-section" className={DISPLAY_MODE_CLASS_NAMES[activeDisplayMode]}>
           {activeAppScreen === 'home' && (
             <>
-              <section className={`jewel-home-stage jewel-motion-${activeJewelMotion}`} aria-labelledby="studio-title">
+              <section
+                className={`jewel-home-stage jewel-motion-${activeJewelMotion}${detailItem ? ' has-open-detail' : ''}${recentlyAddedNailId ? ' has-new-arrival' : ''}`}
+                aria-labelledby="studio-title"
+                onPointerMove={handleJewelStagePointerMove}
+                onPointerLeave={handleJewelStagePointerLeave}
+              >
                 <div className="jewel-home-copy">
-                  <p className="nail-studio-kicker">NAIL JEWEL BOX</p>
-                  <h2 id="studio-title">スクロールして、思い出のネイルに触れる。</h2>
-                  <p>
-                    浮き方を選びながらネイルを遡り、気になるひとつをタッチ。
-                    選んだネイルだけが前へ出て、同じショーウィンドウの中に記憶が浮かびます。
-                  </p>
+                  <p className="nail-studio-kicker">NAILOUS</p>
+                  <h2 id="studio-title">Collection</h2>
                   <div className="jewel-home-actions">
-                    <button type="button" onClick={() => handleSelectAppScreen('design')}>
-                      新しいネイルを作る
+                    <button
+                      type="button"
+                      className="jewel-icon-action"
+                      onClick={() => handleSelectAppScreen('design')}
+                      aria-label="新しいネイルを追加"
+                      title="Add"
+                    >
+                      <span className="mono-icon mono-icon-plus" aria-hidden="true" />
                     </button>
-                    <button type="button" onClick={() => handleSelectAppScreen('profile')}>
-                      保存・相談メモを見る
+                    <button
+                      type="button"
+                      className="jewel-icon-action"
+                      onClick={() => handleSelectAppScreen('profile')}
+                      aria-label="保存と相談メモを見る"
+                      title="Memo"
+                    >
+                      <span className="mono-icon mono-icon-note" aria-hidden="true" />
                     </button>
                   </div>
                   <div className="jewel-motion-switcher" aria-label="ネイルの浮き方">
@@ -1279,8 +1334,10 @@ function App() {
                         className={activeJewelMotion === mode.id ? 'is-active' : ''}
                         onClick={() => setActiveJewelMotion(mode.id)}
                         aria-pressed={activeJewelMotion === mode.id}
+                        aria-label={mode.label}
+                        title={mode.label}
                       >
-                        {mode.label}
+                        <span className={`motion-glyph motion-glyph--${mode.icon}`} aria-hidden="true" />
                       </button>
                     ))}
                   </div>
@@ -1303,6 +1360,7 @@ function App() {
                           const color = isNailColor(item.mainColor) ? item.mainColor : (index % 4 === 0 ? 'blush' : index % 4 === 1 ? 'rose' : index % 4 === 2 ? 'lavender' : 'champagne')
                           const texture = isNailTexture(item.texture) ? item.texture : 'gloss'
                           const isFocused = detailItem?.id === item.id
+                          const isNewlyAdded = recentlyAddedNailId === item.id
                           const style = {
                             '--orbit-delay': `${index * -0.45}s`,
                             '--orbit-scale': `${0.92 + (index % 3) * 0.05}`,
@@ -1311,7 +1369,7 @@ function App() {
                             <button
                               key={item.id}
                               type="button"
-                              className={`jewel-nail-button${isFocused ? ' is-focused' : ''}`}
+                              className={`jewel-nail-button${isFocused ? ' is-focused' : ''}${isNewlyAdded ? ' is-newly-added' : ''}`}
                               style={style}
                               onClick={() => handleOpenDetailCard(item.id)}
                             >
@@ -1331,7 +1389,18 @@ function App() {
                   <span className="jewel-orbit-shadow" aria-hidden="true" />
                 </div>
                 {detailItem && (
-                  <div className="jewel-focus-window" aria-live="polite">
+                  <div
+                    className="jewel-focus-overlay"
+                    role="presentation"
+                    onClick={() => setDetailItemId(null)}
+                  >
+                  <div
+                    className="jewel-focus-window"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="jewel-focus-title"
+                    onClick={e => e.stopPropagation()}
+                  >
                     {(() => {
                       const focusIndex = Math.max(homeShowcaseItems.findIndex(item => item.id === detailItem.id), 0)
                       const shape = isNailShape(detailItem.shape) ? detailItem.shape : (focusIndex % 3 === 0 ? 'almond' : focusIndex % 3 === 1 ? 'round' : 'square')
@@ -1345,7 +1414,7 @@ function App() {
                             onClick={() => setDetailItemId(null)}
                             aria-label="選択中のネイル情報を閉じる"
                           >
-                            閉じる
+                            <span className="mono-icon mono-icon-close" aria-hidden="true" />
                           </button>
                           <div className="jewel-focus-nail">
                             <span
@@ -1357,7 +1426,7 @@ function App() {
                           </div>
                           <div className="jewel-focus-copy">
                             <p className="jewel-focus-kicker">Selected memory</p>
-                            <h3>{detailItem.title}</h3>
+                            <h3 id="jewel-focus-title">{detailItem.title}</h3>
                             {detailItem.tags.length > 0 && (
                               <div className="jewel-focus-tags" aria-label="タグ">
                                 {detailItem.tags.slice(0, 5).map(tag => (
@@ -1385,6 +1454,7 @@ function App() {
                         </>
                       )
                     })()}
+                  </div>
                   </div>
                 )}
                 <p className="jewel-home-hint">{nailItems.length} memories in your box</p>
