@@ -2,18 +2,18 @@
 
 ## Context
 
-Read the roadmap, recent commits, and the current task.
+The current focus is Phase 2 of the roadmap, which aims to improve stability, test coverage, and UX. This task specifically addresses accessibility improvements by ensuring interactive elements are properly labeled for assistive technologies.
 
 ## Objective
 
-Implement exactly one bounded task from Phase 2 of the roadmap.
+Add an `aria-label` attribute to all icon-only buttons throughout the application to improve accessibility.
 
 ## Allowed Scope
 
 - `src/` (except `src/main.tsx`)
-- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
-- `src/__tests__/` (new test files)
-- `src/App.css` (CSS improvements)
+- `src/components/` (modifying existing component files)
+- `src/views/` (modifying existing view files)
+- `src/App.tsx`
 
 ## Forbidden Scope
 
@@ -31,40 +31,32 @@ Implement exactly one bounded task from Phase 2 of the roadmap.
 - Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
-## Output Format
+## Worker prompt
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+### Task: Add `aria-label` to icon-only buttons
 
----
+1.  **Identify Icon-Only Buttons**: Traverse the application's UI, focusing on components in `src/components/`, views in `src/views/`, and `src/App.tsx`. Look for `<button>` elements that contain only an icon (e.g., an SVG or an `<i>` tag with an icon class) and no visible text.
+2.  **Add `aria-label` Attribute**: For each identified icon-only button, add an `aria-label` attribute.
+    *   The value of `aria-label` must be a concise, descriptive text that explains the button's action to a screen reader user.
+    *   **Examples**:
+        *   A button with a trash can icon for deletion should have `aria-label="Delete item"`.
+        *   A button with a pencil icon for editing should have `aria-label="Edit item"`.
+        *   A button with an "X" icon for closing a dialog should have `aria-label="Close dialog"`.
+        *   A button with an upload cloud icon for image upload should have `aria-label="Upload image"`.
+        *   A button with a plus icon for adding a new item should have `aria-label="Add new item"`.
+3.  **Do Not Modify Buttons With Visible Text**: Only add `aria-label` to buttons that *do not* have visible text content (i.e., they rely solely on an icon for their meaning). Buttons that already have descriptive text visible to all users do not need an `aria-label` (unless the visible text is insufficient, which is out of scope for this task).
+4.  **No New Components or Styling**: This task is strictly about adding the `aria-label` attribute to existing elements. Do not create new components, change existing styling, or refactor component logic unless directly necessary for adding the attribute.
 
-# Worker prompt
+### Acceptance Criteria
 
-## Objective
+- All icon-only buttons in the application have an appropriate `aria-label` attribute.
+- The `aria-label` values accurately describe the button's function.
+- No new npm packages are added.
+- The diff is within the 150-line limit.
 
-Add Vitest unit tests for helper functions within `src/lib/firestore.ts`.
+### Required test commands
 
-## Details
-
-The goal is to improve test coverage for the core Firestore operations.
-
-1.  **Create a new test file:** Create `src/__tests__/firestore.test.ts`.
-2.  **Mock Firebase SDK:** Use Vitest's `vi.mock` to mock Firebase SDK dependencies (e.g., `firebase/firestore`) to isolate `src/lib/firestore.ts` functions for testing. You may need to mock `firebase/auth` if authentication-related context is used in `firestore.ts` helpers.
-3.  **Implement Unit Tests:** Focus on adding tests for the key helper functions that perform CRUD operations on the `nailItems` collection (e.g., functions for adding, getting, updating, and deleting nail items).
-4.  **Coverage:** Aim for good test coverage for the functions you are testing.
-
-## Acceptance Criteria
-
--   A new test file `src/__tests__/firestore.test.ts` is created and contains unit tests.
--   Key helper functions in `src/lib/firestore.ts` are covered by these tests.
--   Tests pass successfully when `npm test` is run.
--   The new code adheres to existing linting rules and the project builds successfully.
-
-## Required Test Commands
-
--   `npm test`
--   `npm run build`
--   `npm run lint`
+```bash
+npm run build
+npm run lint
+```
