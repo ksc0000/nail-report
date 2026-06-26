@@ -1,20 +1,18 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap outlines Phase 2, focusing on improving stability, test coverage, and UX. This task contributes to Phase 2.4 Accessibility by ensuring interactive elements are properly labeled for assistive technologies.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This task will initiate the test coverage efforts by adding unit tests for core Firebase helper functions.
 
 ## Objective
 
-Identify all icon-only buttons throughout the application and add appropriate `aria-label` attributes to them to improve accessibility.
+Implement Vitest unit tests for selected helper functions in `src/lib/firestore.ts`, specifically focusing on `addItem` and `deleteItem`. This includes setting up Firebase SDK mocking using `vitest` and `vi.mock`.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/components/` (modifying existing component files)
-- `src/App.tsx` (if icon-only buttons are present here)
-- `src/App.css` (no changes expected for this task, but allowed)
+- `src/lib/firestore.ts` (minor adjustments for testability, if necessary)
+- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `vite.config.ts` (minor modifications for Vitest setup if not already complete)
 
 ## Forbidden Scope
 
@@ -29,33 +27,16 @@ Identify all icon-only buttons throughout the application and add appropriate `a
 
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files. (Not applicable for this UI-focused task)
+- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
+- Add unit tests for `addItem` and `deleteItem` functions within `src/lib/firestore.ts`.
+- Implement mocking for Firebase SDK dependencies using `vitest` and `vi.mock` to ensure tests run in isolation without actual Firebase calls.
+- Ensure `npm run test` successfully executes the newly added tests.
 - Report follow-up items as comments, not additional code.
 
-## Worker Prompt
+## Output Format
 
-1.  **Identify Icon-Only Buttons**: Traverse the application's React components, focusing on areas with interactive buttons that only display an icon (e.g., delete, edit, share, add, close, navigation icons).
-2.  **Add `aria-label`**: For each identified icon-only button, add an `aria-label` prop with a concise, descriptive text that explains the button's action.
-    *   **Example**: Change `<button onClick={handleDelete}><DeleteIcon /></button>` to `<button onClick={handleDelete} aria-label="Delete item"><DeleteIcon /></button>`.
-3.  **Prioritize Core UI**: Start with key interaction areas such as the nail item list, image upload dialogs, tag management, and any navigation elements.
-4.  **No Visual Changes**: The `aria-label` attribute should not introduce any visible changes to the UI.
-5.  **Review existing attributes**: If a button already has a visually hidden text span or a title attribute that serves the same purpose, evaluate if `aria-label` is still necessary or if it would be redundant. Prefer `aria-label` for screen reader accessibility.
-
-## Acceptance Criteria
-
-- All icon-only buttons in the main application flow (CRUD, tag management, image handling) have a descriptive `aria-label` attribute.
-- The application builds successfully.
-- No new npm packages are added.
-
-## Required Test Commands
-
-```bash
-npm install
-npm run build
-npm run lint
-```
-
-## Suggested next task
-
-Add unit tests for `src/lib/auth.ts` helper functions.
-```
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
