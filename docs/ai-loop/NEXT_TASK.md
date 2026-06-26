@@ -1,48 +1,43 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The application is in Phase 2, focusing on improving stability, test coverage, and UX. The current sub-phase prioritizes test coverage. This task is to begin adding unit tests for core helper functions.
+The product roadmap for `nail-report` is in Phase 2, focusing on stability, test coverage, and UX improvements. This task specifically addresses "2.4 Accessibility" by improving the usability for assistive technologies.
 
 ## Objective
 
-Implement unit tests for selected helper functions within `src/lib/firestore.ts` using Vitest.
+Enhance the accessibility of the `nail-report` application by adding `aria-label` attributes to all icon-only buttons that lack visible text.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor adjustments for testability, if necessary)
-- `src/__tests__/firestore.test.ts` (new file)
-- `vite.config.ts` (if Vitest setup for mocks is needed, but prefer in-test mocks)
+-   `src/components/` (modifying existing React components)
+-   Any other `.tsx` file within `src/` (except `src/main.tsx`) where icon-only buttons are rendered.
+-   `src/App.css` (minor adjustments if absolutely necessary for layout, but unlikely for this task)
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
-- Firebase deploy commands
-- Secrets and credentials
+-   `src/main.tsx` (entry point — do not modify)
+-   `commands/` (PowerShell scripts — do not modify)
+-   `firestore.rules`, `storage.rules` (require human approval)
+-   `package.json` deps (no new npm packages without human approval)
+-   Firebase deploy commands
+-   Secrets and credentials
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- Add new test files under `src/__tests__/`.
-- Ensure Firebase SDK calls are properly mocked using `vitest`.
-- Focus on testing the logic *within* the `firestore.ts` helper functions, not the Firebase SDK itself.
+-   Identify all `<button>` elements that contain only an icon (e.g., SVG, `react-icons` component) and no visible text content.
+-   Add a descriptive `aria-label` attribute to each identified button. The label should clearly explain the button's action (e.g., `aria-label="Edit item"`, `aria-label="Delete item"`, `aria-label="Upload image"`, `aria-label="Sign out"`).
+-   Keep diff ≤ 150 lines.
+-   Run `npm run build && npm run lint` before finishing.
+-   Prefer adding tests when touching `src/lib/` files. (Not applicable to this task as `src/lib/` files are unlikely to contain UI buttons).
+-   Report follow-up items as comments, not additional code.
 
-## Worker prompt
+## Output Format
 
-Your task is to add unit tests for the Firestore helper functions.
-
-1.  **Create a new test file:** Create `src/__tests__/firestore.test.ts`.
-2.  **Mock Firebase SDK:** Inside `firestore.test.ts`, use `vi.mock` to mock the Firebase Firestore SDK functions that are called by `src/lib/firestore.ts`. This includes functions like `getFirestore`, `collection`, `doc`, `getDocs`, `addDoc`, `updateDoc`, and `deleteDoc`. Ensure the mocks return predictable data or throw controlled errors.
-3.  **Test `getNailItems`:** Write at least one unit test for the `getNailItems` function in `src/lib/firestore.ts`.
-    *   Test that it correctly calls the mocked Firestore methods.
-    *   Test that it transforms and returns data as expected from the mocked responses.
-    *   Consider a test case for when no items are returned.
-4.  **Test `addNailItem`:** Write at least one unit test for the `addNailItem` function in `src/lib/firestore.ts`.
-    *   Test that it correctly calls the mocked Firestore `addDoc` method with the expected data.
-    *   Test that it handles a successful addition and returns the expected result (e.g., an ID).
-5.  **Run tests:** Ensure all new tests pass by running `npm test`.
-6.  **Lint and Build:** Verify the project still builds and passes lint checks: `npm run build && npm run lint`.
+-   Summary of what changed
+-   Changed files list
+-   Commands run and results
+-   Known issues or limitations
+-   Suggested next task
+```
