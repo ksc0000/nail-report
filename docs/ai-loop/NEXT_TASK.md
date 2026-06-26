@@ -1,66 +1,71 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This task targets the "Loading states" objective (2.3) by enhancing the user experience during data fetching.
+The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. Specifically, Phase 2.2 addresses "Error handling UX" by aiming to show user-friendly error banners.
+
+This is the first substantive task for the AI loop.
 
 ## Objective
 
-Implement a skeleton loading state for the nail item list within `src/App.tsx` or its directly related components. When the application is fetching the list of nail items, a placeholder skeleton UI should be displayed instead of an empty screen or an immediate list.
+Implement a new React component for displaying user-friendly, dismissible error banners and integrate it to handle Firebase Firestore and Storage-related errors within the application.
 
 ## Allowed Scope
 
--   `src/App.tsx`
--   `src/components/` (if a new component for the skeleton is created, or an existing list component is modified)
--   `src/App.css` (for styling the skeleton)
+- `src/` (create new component files, modify existing components to display the banner)
+- `src/App.css` (for styling the banner)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   Keep diff ≤ 150 lines.
--   Display a simple placeholder/skeleton UI while the nail items are being fetched.
--   The skeleton should disappear and be replaced by the actual list once data is loaded.
--   No new npm dependencies are allowed.
--   Run `npm run build && npm run lint` before finishing.
+- Create a new, reusable React component for an error banner.
+- The banner should display a user-friendly error message.
+- The banner must be dismissible by the user (e.g., with a close button).
+- Integrate this banner to display errors originating from Firebase Firestore and Storage operations (e.g., failed item creation/update, image upload/deletion).
+- Initially, focus on displaying a generic message like "An error occurred: [specific error message]" for these Firebase errors.
+- Do not implement retry functionality in this task.
+- Keep diff ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files (though this task focuses on UI integration).
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
 
 ## Worker prompt
 
-Jules, your task is to implement a loading skeleton for the nail item list.
+Create a new React component, for example `src/components/ErrorBanner.tsx`, that displays a user-friendly error message and can be dismissed.
 
-1.  **Identify Data Fetching:** Locate where the nail item data is fetched in `src/App.tsx` or its immediate child components that render the list.
-2.  **Manage Loading State:** Introduce or utilize an existing loading state variable (e.g., `isLoadingItems`) to track the data fetching status.
-3.  **Implement Skeleton UI:**
-    *   When `isLoadingItems` is `true`, render a simple visual placeholder (e.g., a few grey rectangles or lines) that mimics the general layout of a nail item in the list.
-    *   When `isLoadingItems` is `false`, render the actual `NailItemList` component as usual.
-4.  **Styling:** Add minimal CSS to `src/App.css` to style the skeleton elements. Focus on making them visually distinct but simple (e.g., `background-color: #f0f0f0; border-radius: 4px; height: 60px; margin-bottom: 8px;`).
-5.  **Testing:** Manually verify that the skeleton appears on initial load (or slow network conditions) and disappears once data is fetched.
-6.  **Cleanup:** Ensure no unnecessary code or commented-out sections remain.
+Integrate this `ErrorBanner` component into `src/App.tsx` or other relevant parent components where Firebase Firestore and Storage operations are performed. The goal is to catch and display errors that occur during operations such as adding, updating, or deleting `nailItems` or uploading/deleting images.
 
-**Acceptance Criteria:**
+For this task, ensure the banner shows a simple message like "Error: [actual error message]" and has a clear way for the user to close it. Do not add any retry logic or complex error parsing beyond displaying the message itself.
 
--   A loading skeleton is visibly displayed while nail item data is being fetched.
--   The skeleton is replaced by the actual list once data loading is complete.
--   The solution adheres to the diff size and forbidden scope constraints.
+### Acceptance Criteria
 
-**Required Test Commands:**
+- A new `ErrorBanner` component exists.
+- The `ErrorBanner` component is integrated into the application to display real-time errors from Firestore/Storage operations.
+- The error banner is visible to the user when an error occurs.
+- The error banner can be dismissed by the user.
+
+### Required test commands
 
 ```bash
 npm run build
 npm run lint
+```
+```
 ```
