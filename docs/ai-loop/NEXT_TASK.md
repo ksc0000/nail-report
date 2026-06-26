@@ -1,18 +1,20 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The application needs improved test coverage, starting with core Firebase helper functions. This task focuses on adding unit tests for Firestore-related utilities.
+The product roadmap outlines Phase 2, focusing on improving stability, test coverage, and UX. This task contributes to Phase 2.4 Accessibility by ensuring interactive elements are properly labeled for assistive technologies.
 
 ## Objective
 
-Implement unit tests for key helper functions in `src/lib/firestore.ts` using Vitest and mocked Firebase SDK.
+Identify all icon-only buttons throughout the application and add appropriate `aria-label` attributes to them to improve accessibility.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor adjustments if necessary to improve testability, but the focus is on adding tests)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `src/App.css` (No changes expected, but allowed as per general scope)
+- `src/` (except `src/main.tsx`)
+- `src/components/` (modifying existing component files)
+- `src/App.tsx` (if icon-only buttons are present here)
+- `src/App.css` (no changes expected for this task, but allowed)
 
 ## Forbidden Scope
 
@@ -27,35 +29,33 @@ Implement unit tests for key helper functions in `src/lib/firestore.ts` using Vi
 
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
+- Prefer adding tests when touching `src/lib/` files. (Not applicable for this UI-focused task)
 - Report follow-up items as comments, not additional code.
 
-## Worker prompt
+## Worker Prompt
 
-Implement unit tests for the `firestore.ts` helper functions.
+1.  **Identify Icon-Only Buttons**: Traverse the application's React components, focusing on areas with interactive buttons that only display an icon (e.g., delete, edit, share, add, close, navigation icons).
+2.  **Add `aria-label`**: For each identified icon-only button, add an `aria-label` prop with a concise, descriptive text that explains the button's action.
+    *   **Example**: Change `<button onClick={handleDelete}><DeleteIcon /></button>` to `<button onClick={handleDelete} aria-label="Delete item"><DeleteIcon /></button>`.
+3.  **Prioritize Core UI**: Start with key interaction areas such as the nail item list, image upload dialogs, tag management, and any navigation elements.
+4.  **No Visual Changes**: The `aria-label` attribute should not introduce any visible changes to the UI.
+5.  **Review existing attributes**: If a button already has a visually hidden text span or a title attribute that serves the same purpose, evaluate if `aria-label` is still necessary or if it would be redundant. Prefer `aria-label` for screen reader accessibility.
 
-1.  Create a new test file `src/__tests__/firestore.test.ts`.
-2.  Add tests for at least two core helper functions from `src/lib/firestore.ts`, such as `getNailItems` and `addNailItem`.
-3.  Ensure the tests mock Firebase SDK dependencies using `vi.mock` from Vitest to isolate the functions under test from actual Firebase calls.
-4.  Cover basic success cases for these functions. Consider adding simple error case tests if easily achievable within the line limit.
+## Acceptance Criteria
 
-### Acceptance Criteria:
-- A new file `src/__tests__/firestore.test.ts` exists.
-- This file contains `vitest` unit tests.
-- At least two functions from `src/lib/firestore.ts` (e.g., `getNailItems`, `addNailItem`) have basic success path tests implemented.
-- Firebase SDK calls are mocked using `vi.mock` to prevent actual Firebase interactions during tests.
+- All icon-only buttons in the main application flow (CRUD, tag management, image handling) have a descriptive `aria-label` attribute.
+- The application builds successfully.
+- No new npm packages are added.
 
-### Required Test Commands:
+## Required Test Commands
+
 ```bash
-npm test
+npm install
 npm run build
 npm run lint
 ```
 
-## Output Format
+## Suggested next task
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+Add unit tests for `src/lib/auth.ts` helper functions.
+```
