@@ -2,42 +2,47 @@
 
 ## Context
 
-The `nail-report` application needs improved test coverage, starting with core Firebase helper functions. `src/lib/firestore.ts` contains crucial functions for interacting with the Firestore database. Vitest is the chosen test runner for the project.
+The application needs improved test coverage as part of Phase 2 of the roadmap, focusing on stability. This task addresses the need for unit tests for core Firebase interaction helpers. Vitest is already configured for testing.
 
 ## Objective
 
-Add unit tests for the `getNailItems` and `addNailItem` helper functions within `src/lib/firestore.ts`. These tests should verify their correct interaction with the Firestore SDK, using mock implementations where necessary to isolate logic.
+Implement unit tests for helper functions in `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
--   `src/lib/firestore.ts` (modifications only if necessary for testability, e.g., exporting internal functions)
--   `src/__tests__/lib/firestore.test.ts` (new test file)
--   `package.json` (only if Vitest or testing utilities are missing from `devDependencies`, but *only* if adding *existing* packages, not new ones. *Prefer to assume Vitest is already installed*.)
+- `src/lib/firestore.ts` (for understanding functions, minor refactoring to enable testing if absolutely necessary, but focus is on testing existing logic)
+- `src/__tests__/` (e.g., `src/__tests__/firestore.test.ts` for new test files)
+- `package.json` (only for adding/modifying existing `scripts` if `npm run test` is not yet defined, no new `dependencies` or `devDependencies`)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no *new* npm packages that are not already present in `node_modules` without human approval)
--   Firebase deploy commands
--   Secrets and credentials
--   Any file not explicitly mentioned in "Allowed Scope"
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   Create a new test file `src/__tests__/lib/firestore.test.ts`.
--   Write unit tests for `getNailItems` and `addNailItem` functions from `src/lib/firestore.ts`.
--   Mock Firebase SDK interactions (e.g., `firebase/firestore` functions) using `vi.mock` to ensure tests are isolated and do not require a live Firebase connection.
--   Ensure tests cover successful operations and potential error paths for these functions.
--   Keep the total diff for this PR ≤ 150 lines.
--   Run `npm run build && npm run lint && npm run test` before finishing.
--   Report follow-up items as comments in the PR, not additional code.
+- Keep diff ≤ 150 lines.
+- Run `npm run build && npm run lint && npm run test` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
+
+## Worker prompt
+
+The application needs improved test coverage, especially for its core Firebase interactions. Your task is to add unit tests for the helper functions located in `src/lib/firestore.ts`.
+
+1.  **Create a new test file**: Create a new file named `src/__tests__/firestore.test.ts`.
+2.  **Mock Firebase SDK**: Utilize `vi.mock` from Vitest to mock Firebase SDK functions and services (e.g., `firebase/firestore`). This ensures tests are isolated and do not interact with a live Firebase project.
+3.  **Test helper functions**: Write unit tests for at least two key functions within `src/lib/firestore.ts` that interact with Firestore (e.g., `addNailItem`, `updateNailItem`, `getNailItems`, `deleteNailItem`, `subscribeToNailItems`). Focus on both successful execution and potential error handling scenarios.
+4.  **Assertions**: Use Vitest's assertion library (`expect`) to verify function behavior, return values, and mock calls.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
