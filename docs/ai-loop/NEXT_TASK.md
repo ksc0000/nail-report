@@ -1,20 +1,19 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-Read the roadmap, recent commits, and the current task.
+The product roadmap outlines Phase 2: "Improve stability, test coverage, and UX." The current state shows that no specific feature tasks are in progress, allowing us to pick the next bounded task. The first task in Phase 2 focuses on improving test coverage.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest. Focus on key functions like `addNailItem`, `getNailItem`, `updateNailItem`, and `deleteNailItem`, ensuring proper mocking of Firebase SDK calls.
+Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. Focus on a few key, independent functions to keep the PR small.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
-- `src/__tests__/` (new test files)
-- `src/App.css` (CSS improvements)
+- `src/lib/firestore.ts` (modifications to export functions if needed for testing)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `src/__mocks__/firebase.ts` (new file for mocking Firebase SDK, if necessary)
+- `package.json` (only if necessary to add `test` script; no new dependencies)
 
 ## Forbidden Scope
 
@@ -27,10 +26,13 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint && npm run test` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
+- Create a new test file: `src/__tests__/firestore.test.ts`.
+- Add unit tests for at least two independent helper functions in `src/lib/firestore.ts`. Examples include `addNailItem` or `getNailItems`.
+- Mock Firebase SDK dependencies as needed using `vitest`'s mocking capabilities.
+- Ensure the tests can run successfully with `npm run test`.
+- Keep the diff ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing.
+- Report follow-up items (e.g., remaining functions to test) as comments, not additional code.
 
 ## Output Format
 
@@ -39,4 +41,3 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-```
