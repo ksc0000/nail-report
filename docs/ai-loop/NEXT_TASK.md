@@ -1,17 +1,20 @@
-# Worker Prompt
+```markdown
+# Worker Prompt Template
 
 ## Context
 
-The `nail-report` application is currently in Phase 2, focusing on improving stability, test coverage, and user experience (UX). A critical aspect of UX improvement is accessibility, ensuring the application is usable by a wider range of users, including those relying on screen readers. This task specifically addresses enhancing the accessibility of interactive elements.
+Read the roadmap, recent commits, and the current task.
 
 ## Objective
 
-Enhance the application's accessibility by identifying all buttons that display only an icon (i.e., icon-only buttons) throughout the UI and adding an appropriate, descriptive `aria-label` attribute to each of them. This will provide screen reader users with meaningful context about the button's function.
+Implement unit tests for helper functions in `src/lib/firestore.ts` using Vitest, focusing on core CRUD operations. This task directly addresses Phase 2.1 Test coverage from the roadmap.
 
 ## Allowed Scope
 
-- Any `.tsx` or `.ts` files within `src/` (excluding `src/main.tsx`) where icon-only buttons are defined. This will primarily involve modifying existing component files to add the `aria-label` attribute.
-- `src/App.css` for minor styling adjustments if absolutely necessary, but it is unlikely to be required for this specific task.
+- `src/lib/firestore.ts` (for testing purposes; minor refactoring for testability is permitted if strictly necessary and within diff limits, but the primary goal is to *test* its existing functionality)
+- `src/__tests__/lib/firestore.test.ts` (new file for tests)
+- `vite.config.ts` (to ensure Vitest is correctly configured, if necessary)
+- `package.json` (to ensure the `test` script runs Vitest, if necessary, but *no new npm dependencies*)
 
 ## Forbidden Scope
 
@@ -24,16 +27,20 @@ Enhance the application's accessibility by identifying all buttons that display 
 
 ## Requirements
 
+- Create a new test file: `src/__tests__/lib/firestore.test.ts`.
+- Write unit tests for at least the `addItem` and `updateItem` functions within `src/lib/firestore.ts`.
+- Mock Firebase SDK dependencies (e.g., `firebase/firestore`) using `vi.mock` to ensure tests are isolated and do not interact with actual Firebase services.
+- Ensure all tests pass when running `npm run test`.
 - Keep diff ≤ 150 lines.
-- **Identify all `<button>` elements that visually contain only an icon** and do not have accompanying visible text (e.g., a button with an `<i>` or `<svg>` element inside, but no text content).
-- **Add an `aria-label` attribute** to each identified icon-only button element.
-- The `aria-label` text must be **concise, accurate, and descriptive of the button's specific action or purpose** (e.g., "Delete nail item", "Edit tag", "Upload image", "Go back", "Sign out").
-- Ensure the application remains fully functional, visually consistent, and responsive after the changes.
-- Run `npm run build && npm run lint` before finishing and confirm that there are no new errors or warnings.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
-- Summary of what changed (e.g., "Added aria-labels to 7 icon-only buttons across various components.")
-- Changed files list (e.g., `src/components/NailItemCard.tsx`, `src/components/Header.tsx`, `src/App.tsx`)
-- Commands run and results (e.g., output from `npm run build`, `npm run lint`)
-- Known
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
+```
