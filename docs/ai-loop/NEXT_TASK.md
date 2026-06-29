@@ -3,34 +3,56 @@
 
 ## Context
 
-The product roadmap for nail-report aims to improve stability, test coverage, and UX in Phase 2. This task focuses on enhancing the user experience by addressing loading states. Currently, the nail item list might appear blank while data is being fetched.
+The current phase is 2.0, focusing on improving stability, test coverage, and UX. The roadmap explicitly calls for unit tests for Firestore helper functions. This task will initiate test coverage for the core data access layer.
 
 ## Objective
 
-Implement a skeleton loading UI for the nail item list displayed in `src/App.tsx`. When nail items are being fetched, the application should display a simplified, placeholder version of the list items to provide a better visual cue to the user.
+Add Vitest unit tests for the helper functions in `src/lib/firestore.ts`, focusing on mocking the Firebase Firestore SDK.
 
 ## Allowed Scope
 
--   `src/App.tsx` (for conditional rendering of the skeleton)
--   `src/App.css` (for styling the skeleton components)
--   New components within `src/components/` (e.g., `src/components/NailItemSkeleton.tsx` if a dedicated component is preferred)
+- `src/lib/firestore.ts` (minor modifications only, if needed to improve testability)
+- `src/lib/__tests__/firestore.test.ts` (new file)
+- `vitest.config.ts` (only if absolutely necessary for mocking setup, but prefer existing configuration)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   Keep diff ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing.
--   The skeleton UI should visually resemble the layout of a single nail item (e.g., placeholders for an image, title, and a few tags).
--   The skeleton should be displayed only when the nail item data is actively loading.
--   Ensure the implementation does not introduce any new npm dependencies.
+- Keep diff ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
+
+## Worker prompt
+
+Implement unit tests for `src/lib/firestore.ts` by performing the following steps:
+
+1.  **Create a new test file:** Add a new file at `src/lib/__tests__/firestore.test.ts`.
+2.  **Mock Firebase Firestore SDK:** Use `vi.mock` to mock the necessary functions from `firebase/firestore` (e.g., `collection`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`, `doc`, `query`, `where`) to simulate their behavior without making actual calls to Firebase.
+3.  **Write unit tests:** Implement unit tests for at least the primary CRUD (Create, Read, Update, Delete) helper functions found in `src/lib/firestore.ts` related to `nailItems` and `publicShares`. Focus on testing the logic within these functions, assuming the Firebase SDK methods behave as mocked.
+4.  **Ensure test isolation:** Each test should be independent and clean up any mocks or test data if necessary.
+
+### Acceptance Criteria
+
+-   A new file `src/lib/__tests__/firestore.test.ts` is created.
+-   The new file contains unit tests for at least `addNailItem`, `getNailItems`, `updateNailItem`, and `deleteNailItem` (or similar core CRUD functions from `src/lib/firestore.ts` if names differ).
+-   Firebase Firestore SDK functions are effectively mocked using `vi.mock`.
+-   All new tests pass successfully.
+
+### Required test commands
+
+```bash
+npm run test
+npm run build && npm run lint
+```
 
 ## Output Format
 
@@ -39,5 +61,4 @@ Implement a skeleton loading UI for the nail item list displayed in `src/App.tsx
 -   Commands run and results
 -   Known issues or limitations
 -   Suggested next task
-
 ```
