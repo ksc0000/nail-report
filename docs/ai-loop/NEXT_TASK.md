@@ -1,18 +1,18 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The application is in Phase 2 of its roadmap, focusing on stability, test coverage, and UX. The current focus is on improving test coverage for core utility functions.
+The current phase is 2.0, focusing on improving stability, test coverage, and UX. This task targets Phase 2.4 Accessibility by addressing basic screen reader usability.
 
 ## Objective
 
-Add unit tests for the Firebase Firestore helper functions located in `src/lib/firestore.ts` using Vitest.
+Implement accessibility improvements by adding `aria-label` attributes to all icon-only buttons within the application.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (read-only for understanding function signatures and logic)
-- `src/__tests__/firestore.test.ts` (new file for tests)
+- `src/` (except `src/main.tsx`)
+- `src/components/` (likely where most button changes will occur)
+- `src/features/` (if any feature-specific components contain icon buttons)
 
 ## Forbidden Scope
 
@@ -25,12 +25,11 @@ Add unit tests for the Firebase Firestore helper functions located in `src/lib/f
 
 ## Requirements
 
-- Create a new test file: `src/__tests__/firestore.test.ts`.
-- Write unit tests for the main CRUD helper functions in `src/lib/firestore.ts`. Specifically, target `addNailItem`, `updateNailItem`, `deleteNailItem`, `getNailItems`, and `getNailItem`.
-- Mock Firebase SDK calls (e.g., `getFirestore`, `collection`, `doc`, `addDoc`, `updateDoc`, `deleteDoc`, `getDocs`, `getDoc`) using `vitest`'s mocking capabilities to isolate the logic of the helper functions.
-- Ensure tests cover successful operations for each targeted helper function.
-- Keep the overall diff below 150 lines. Focus on essential tests for core functionality rather than comprehensive error handling or edge cases in this task.
-- Run `npm run build && npm run lint` before finishing.
+- Identify all `<button>` elements that primarily use an icon for their visual representation and lack a visible text label.
+- Add a descriptive `aria-label` attribute to each identified icon-only button. The `aria-label` text should clearly communicate the button's action or purpose to assistive technologies (e.g., "Delete item", "Edit item", "Share report", "Upload image", "Back", "Close").
+- Ensure the changes adhere to the ≤ 150 lines diff constraint. Prioritize common or easily identifiable icon buttons.
+- Run `npm run build && npm run lint` before finishing to ensure no build or linting errors are introduced.
+- Do not add any new npm dependencies.
 
 ## Output Format
 
@@ -39,4 +38,3 @@ Add unit tests for the Firebase Firestore helper functions located in `src/lib/f
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-```
