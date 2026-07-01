@@ -2,18 +2,17 @@
 
 ## Context
 
-Read the roadmap, recent commits, and the current task. Phase 2 of the roadmap is active, focusing on stability, test coverage, and UX improvements. This task specifically addresses accessibility improvements under section 2.4.
+The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. A key initial step in Phase 2.1 is to add unit tests for Firebase helper functions. This task specifically targets the `firestore.ts` helpers.
 
 ## Objective
 
-Implement exactly one bounded task from Phase 2 of the roadmap: Add `aria-label` attributes to all existing icon-only buttons in the application to improve accessibility for screen reader users.
+Implement Vitest unit tests for selected helper functions in `src/lib/firestore.ts`, focusing on a few straightforward functions to establish the testing pattern.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/components/` (modifying existing component files to add `aria-label` attributes to button elements)
-- `src/App.tsx` (if icon buttons are present directly in the main app component)
-- Any other `.tsx` or `.jsx` files containing button elements that are icon-only.
+- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but prioritize testing existing exports)
+- `src/__tests__/` (new test file, e.g., `src/__tests__/firestore.test.ts`)
+- `vitest.config.ts` (if minor configuration is required for mocks, but prefer minimal changes)
 
 ## Forbidden Scope
 
@@ -23,15 +22,16 @@ Implement exactly one bounded task from Phase 2 of the roadmap: Add `aria-label`
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
+- `src/App.tsx` or other UI components
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Identify all `button` elements that exclusively use an icon (e.g., `<button><Icon /></button>`) and do not have visible text.
-- For each identified button, add a descriptive `aria-label` attribute. The `aria-label` should clearly state the button's action (e.g., `aria-label="Delete item"`, `aria-label="Edit tag"`).
+- Create a new test file, `src/__tests__/firestore.test.ts`.
+- Add unit tests for at least two simple, exportable functions within `src/lib/firestore.ts`. Examples might include `getNailItem` or `createNailItem` (mocking Firebase SDK calls).
+- Use `vitest` for testing and `vi.mock` for mocking Firebase dependencies (e.g., `firebase/firestore`).
+- Ensure tests cover basic success cases for the chosen functions.
+- Keep the overall diff size ≤ 150 lines, including the new test file and any minor changes to `firestore.ts` if necessary for testability.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files (N/A for this task, as it's a UI/UX accessibility improvement).
-- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -40,3 +40,6 @@ Implement exactly one bounded task from Phase 2 of the roadmap: Add `aria-label`
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+
+---
+**Suggested next task:** Add Vitest unit tests for `src/lib/storage.ts` helper functions.
