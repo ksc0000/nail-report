@@ -2,17 +2,18 @@
 
 ## Context
 
-The product roadmap for `nail-report` is actively in Phase 2, focusing on improving stability, test coverage, and UX. A key area for improvement is adding comprehensive unit tests for core helper functions, starting with Firestore operations. This task aims to establish unit testing for one of the Firestore helper functions using Vitest.
+Read the roadmap, recent commits, and the current task. Phase 2 of the roadmap is active, focusing on stability, test coverage, and UX improvements. This task specifically addresses accessibility improvements under section 2.4.
 
 ## Objective
 
-Implement unit tests for the `getNailItems` function located in `src/lib/firestore.ts` using Vitest. This involves setting up the test file, mocking necessary Firebase SDK modules, and writing tests to verify the function's behavior, including successful data retrieval and basic error handling.
+Implement exactly one bounded task from Phase 2 of the roadmap: Add `aria-label` attributes to all existing icon-only buttons in the application to improve accessibility for screen reader users.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor modifications for testability if needed, but primarily test *against* it)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `vite.config.ts` (if Vitest setup is not complete for this scope)
+- `src/` (except `src/main.tsx`)
+- `src/components/` (modifying existing component files to add `aria-label` attributes to button elements)
+- `src/App.tsx` (if icon buttons are present directly in the main app component)
+- Any other `.tsx` or `.jsx` files containing button elements that are icon-only.
 
 ## Forbidden Scope
 
@@ -26,8 +27,10 @@ Implement unit tests for the `getNailItems` function located in `src/lib/firesto
 ## Requirements
 
 - Keep diff ≤ 150 lines.
+- Identify all `button` elements that exclusively use an icon (e.g., `<button><Icon /></button>`) and do not have visible text.
+- For each identified button, add a descriptive `aria-label` attribute. The `aria-label` should clearly state the button's action (e.g., `aria-label="Delete item"`, `aria-label="Edit tag"`).
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
+- Prefer adding tests when touching `src/lib/` files (N/A for this task, as it's a UI/UX accessibility improvement).
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -37,33 +40,3 @@ Implement unit tests for the `getNailItems` function located in `src/lib/firesto
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
----
-
-## Worker Prompt
-
-Your task is to add unit tests for the `getNailItems` function within `src/lib/firestore.ts`.
-
-1.  **Ensure Vitest Setup**: Verify that Vitest is configured to run tests within `src/lib` and `src/__tests__`. If `vite.config.ts` needs minor adjustments to include `src/__tests__` in its test runner configuration, make those.
-2.  **Create Test File**: Create a new test file at `src/__tests__/firestore.test.ts`.
-3.  **Mock Firebase SDK**: Utilize `vi.mock` to mock the `firebase/firestore` module and its relevant functions (e.g., `collection`, `query`, `getDocs`, `onSnapshot` depending on `getNailItems` implementation). Focus on mocking what `getNailItems` directly uses.
-4.  **Implement Tests for `getNailItems`**:
-    *   Write a test case to ensure `getNailItems` correctly fetches and transforms a list of nail items when the underlying Firebase call succeeds.
-    *   Write a test case to verify how `getNailItems` handles an error or empty result from the Firebase SDK (e.g., ensuring it returns an empty array or throws an expected error).
-    *   If `getNailItems` uses `onSnapshot` for real-time updates, ensure to test its subscription and unsubscription mechanisms. If it's a one-time `getDocs` call, focus on that.
-5.  **Verify Calls**: Use Vitest's `toHaveBeenCalledWith` or similar matchers to assert that `firebase/firestore` functions are called with the correct arguments.
-
-**Acceptance Criteria:**
-
-- A new file `src/__tests__/firestore.test.ts` exists.
-- This new file contains at least two distinct test cases for the `getNailItems` function.
-- The tests mock the `firebase/firestore` module correctly to isolate the `getNailItems` logic.
-- All tests pass when running `npm test`.
-
-**Required Test Commands:**
-
-```bash
-npm test
-npm run build
-npm run lint
-```
