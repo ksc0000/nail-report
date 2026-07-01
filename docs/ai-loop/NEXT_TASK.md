@@ -2,41 +2,39 @@
 
 ## Context
 
-The `nail-report` application is moving into Phase 2, focusing on improving stability, test coverage, and UX. This task initiates the test coverage effort by adding unit tests for core Firebase Firestore helper functions.
+The application needs to improve its accessibility. A key part of this is ensuring that users relying on screen readers can understand the function of interactive elements, especially buttons that consist only of icons without visible text labels.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest. Focus initially on the CRUD operations for `nailItems`. This involves mocking the Firebase Firestore SDK to ensure tests are isolated and fast.
+Identify all buttons in the application that are represented solely by an icon (i.e., they have no visible text content) and add a descriptive `aria-label` attribute to each of them. The `aria-label` should clearly state the button's purpose (e.g., "Delete item", "Edit profile", "Add new tag").
 
 ## Allowed Scope
 
--   `src/lib/firestore.ts` (modifications to export functions if needed for testing, or minor refactors for testability)
--   `src/__tests__/firestore.test.ts` (new file for tests)
--   `src/lib/` (any new mock files if necessary)
--   `vite.config.ts` (minimal changes for test setup if Vitest is not fully configured yet, e.g., adding test environment)
+- `src/` (any file within `src/` except `src/main.tsx`)
+- `src/components/` (likely place for many icon buttons)
+- `src/App.tsx` (if it contains icon-only buttons)
+- `src/lib/` (if helper functions are used to render buttons, but unlikely for this task)
+- `src/__tests__/` (no new tests required for this task, as it's a UI attribute)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval; Vitest is assumed to be available)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   Keep diff ≤ 150 lines.
--   Create a new test file: `src/__tests__/firestore.test.ts`.
--   Write tests for at least the `addNailItem`, `getNailItems`, `updateNailItem`, and `deleteNailItem` functions in `src/lib/firestore.ts`.
--   Mock the Firebase Firestore SDK (e.g., `getFirestore`, `collection`, `doc`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`) to ensure tests are isolated and do not interact with a live Firebase project.
--   Ensure tests cover successful operations and basic error handling where applicable (e.g., promises rejecting).
--   Run `npm run build && npm run lint && npm test` before finishing.
+- Keep diff ≤ 150 lines. Focus on adding `aria-label` attributes to existing button elements.
+- Each `aria-label` should be concise and accurately describe the button's action.
+- Run `npm run build && npm run lint` before finishing to ensure code quality and no build errors.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
