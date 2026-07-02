@@ -15,6 +15,7 @@ final class NailRecord {
     var salon: String = ""
     var priceYen: Int?
     var memo: String = ""
+    var tags: [String] = []
 
     init(
         title: String,
@@ -23,7 +24,8 @@ final class NailRecord {
         photoData: Data,
         salon: String = "",
         priceYen: Int? = nil,
-        memo: String = ""
+        memo: String = "",
+        tags: [String] = []
     ) {
         self.id = UUID()
         self.title = title
@@ -34,6 +36,7 @@ final class NailRecord {
         self.salon = salon
         self.priceYen = priceYen
         self.memo = memo
+        self.tags = tags
     }
 
     var shape: NailShape { NailShape(rawValue: shapeRaw) ?? .squoval }

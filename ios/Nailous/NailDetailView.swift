@@ -52,6 +52,23 @@ struct NailDetailView: View {
                     .foregroundStyle(.white.opacity(0.45))
                     .padding(.bottom, 12)
 
+                if let record, !record.tags.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 6) {
+                            ForEach(record.tags, id: \.self) { tag in
+                                Text("#\(tag)")
+                                    .font(.system(size: 11.5, weight: .medium))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(Capsule().fill(Color(red: 0.83, green: 0.54, blue: 0.61).opacity(0.28)))
+                                    .foregroundStyle(Color(red: 0.96, green: 0.8, blue: 0.86))
+                            }
+                        }
+                        .padding(.horizontal, 24)
+                    }
+                    .padding(.bottom, 10)
+                }
+
                 if let record, !record.salon.isEmpty || record.priceYen != nil || !record.memo.isEmpty {
                     VStack(spacing: 6) {
                         HStack(spacing: 8) {

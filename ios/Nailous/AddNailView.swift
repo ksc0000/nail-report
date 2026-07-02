@@ -17,6 +17,7 @@ struct AddNailView: View {
     @State private var salon = ""
     @State private var priceText = ""
     @State private var memo = ""
+    @State private var tagsText = ""
 
     private var previewAppearance: NailAppearance {
         if let texture {
@@ -79,6 +80,7 @@ struct AddNailView: View {
 
                             VStack(spacing: 10) {
                                 storyField("タイトル（例: 深海ネイル）", text: $title)
+                                storyField("タグ（カンマ区切り。例: ピンク, マグネット）", text: $tagsText)
                                 storyField("サロン名（任意）", text: $salon)
                                 storyField("価格（任意・円）", text: $priceText)
                                     .keyboardType(.numberPad)
@@ -183,7 +185,11 @@ struct AddNailView: View {
             photoData: jpeg,
             salon: salon.trimmingCharacters(in: .whitespacesAndNewlines),
             priceYen: Int(priceText.trimmingCharacters(in: .whitespaces)),
-            memo: memo.trimmingCharacters(in: .whitespacesAndNewlines)
+            memo: memo.trimmingCharacters(in: .whitespacesAndNewlines),
+            tags: tagsText
+                .split(whereSeparator: { $0 == "," || $0 == "、" })
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
         )
         modelContext.insert(record)
         UINotificationFeedbackGenerator().notificationOccurred(.success)

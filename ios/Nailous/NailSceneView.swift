@@ -1,3 +1,4 @@
+import CoreMotion
 import SceneKit
 import SwiftUI
 
@@ -48,12 +49,18 @@ struct NailSceneView: UIViewRepresentable {
         cameraNode.position = SCNVector3(0, 0, 9.2)
         scene.rootNode.addChildNode(cameraNode)
 
+        // Key light sits on a rig so device tilt can sweep the highlight
+        // across the gel — the way light moves on a real tip in your hand.
+        let lightRig = SCNNode()
         let key = SCNNode()
         key.light = SCNLight()
         key.light?.type = .directional
         key.light?.intensity = 700
         key.eulerAngles = SCNVector3(-0.5, 0.35, 0)
-        scene.rootNode.addChildNode(key)
+        lightRig.addChildNode(key)
+        scene.rootNode.addChildNode(lightRig)
+        context.coordinator.lightRig = lightRig
+        context.coordinator.startMotionUpdates()
 
         let ambient = SCNNode()
         ambient.light = SCNLight()
@@ -93,8 +100,41 @@ struct NailSceneView: UIViewRepresentable {
 
     final class Coordinator: NSObject {
         var spinNode: SCNNode?
+        var lightRig: SCNNode?
         private var contentNode: SCNNode?
         private var currentKey: String?
+        private let motion = CMMotionManager()
+        private var referenceAttitude: CMAttitude?
+
+        deinit {
+            motion.stopDeviceMotionUpdates()
+        }
+
+        /// Tilting the phone sweeps the key light, so the gloss streak moves
+        /// like on a real nail tip. No-op where device motion is unavailable
+        /// (e.g. the simulator).
+        func startMotionUpdates() {
+            guard motion.isDeviceMotionAvailable, !motion.isDeviceMotionActive else { return }
+            motion.deviceMotionUpdateInterval = 1.0 / 30.0
+            motion.startDeviceMotionUpdates(using: .xArbitraryZVertical, to: .main) { [weak self] deviceMotion, _ in
+                guard let self, let deviceMotion else { return }
+                if self.referenceAttitude == nil {
+                    self.referenceAttitude = deviceMotion.attitude.copy() as? CMAttitude
+                }
+                let attitude = deviceMotion.attitude
+                if let reference = self.referenceAttitude {
+                    attitude.multiply(byInverseOf: reference)
+                }
+                let clamp: (Double, Double) -> Float = { value, limit in
+                    Float(min(limit, max(-limit, value)))
+                }
+                self.lightRig?.eulerAngles = SCNVector3(
+                    clamp(attitude.pitch, 0.6) * 0.8,
+                    clamp(attitude.roll, 0.6) * 0.8,
+                    0
+                )
+            }
+        }
 
         /// Per-finger tip sizes (width, length), thumb → pinky, like a press-on set.
         private static let fingerSpecs: [(w: Float, l: Float)] = [

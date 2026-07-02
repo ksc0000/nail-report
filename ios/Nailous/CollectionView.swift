@@ -7,6 +7,7 @@ struct CollectionView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \NailRecord.createdAt, order: .reverse) private var records: [NailRecord]
     @State private var isAdding = false
+    @State private var glowingID: UUID?
 
     private let columns = [GridItem(.adaptive(minimum: 100), spacing: 18)]
 
@@ -36,6 +37,13 @@ struct CollectionView: View {
                                         } label: {
                                             VStack(spacing: 10) {
                                                 NailThumbnail(image: texture, nailShape: record.shape)
+                                                    .shadow(
+                                                        color: glowingID == record.id
+                                                            ? Color(red: 0.95, green: 0.7, blue: 0.78).opacity(0.85)
+                                                            : .clear,
+                                                        radius: 18
+                                                    )
+                                                    .scaleEffect(glowingID == record.id ? 1.07 : 1)
                                                 Text(record.title)
                                                     .font(.system(size: 12))
                                                     .lineLimit(1)
@@ -68,6 +76,17 @@ struct CollectionView: View {
             .toolbarColorScheme(.dark, for: .navigationBar)
             .sheet(isPresented: $isAdding) {
                 AddNailView()
+            }
+            .onChange(of: records.first?.id) { _, newID in
+                // Welcome glow for a nail that just joined the box.
+                guard let newID,
+                      let newest = records.first,
+                      Date().timeIntervalSince(newest.createdAt) < 8 else { return }
+                withAnimation(.easeInOut(duration: 0.7)) { glowingID = newID }
+                Task {
+                    try? await Task.sleep(for: .seconds(2.2))
+                    withAnimation(.easeInOut(duration: 0.9)) { glowingID = nil }
+                }
             }
         }
         .preferredColorScheme(.dark)
