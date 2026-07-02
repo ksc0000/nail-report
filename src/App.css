@@ -1710,12 +1710,11 @@
 .realistic-nail::after {
   content: '';
   position: absolute;
-  inset: 6px;
+  inset: 0;
   border-radius: inherit;
   background:
-    linear-gradient(90deg, transparent 0 72%, rgba(255, 255, 255, 0.18) 78%, transparent 90%),
-    radial-gradient(ellipse at 50% 96%, rgba(255, 255, 255, 0.28), transparent 18%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+    linear-gradient(90deg, transparent 0 72%, rgba(255, 255, 255, 0.16) 80%, transparent 92%),
+    radial-gradient(ellipse at 50% 96%, rgba(255, 255, 255, 0.26), transparent 20%);
   opacity: 0.82;
   pointer-events: none;
 }

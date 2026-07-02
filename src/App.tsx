@@ -4,7 +4,8 @@ import type {
   KeyboardEvent as ReactKeyboardEvent,
   PointerEvent as ReactPointerEvent,
 } from 'react'
-import { auth, signInWithGoogle, signOutUser, onAuthStateChanged } from './lib/auth'
+import { auth, signInWithGoogle, signOutUser, onAuthStateChanged, completeRedirectSignIn } from './lib/auth'
+const InteractiveNail3D = lazy(() => import('./components/InteractiveNail3D'))
 import type { User } from './lib/auth'
 import { addNailItem, updateNailItem, deleteNailItem, fetchNailItems } from './lib/firestore'
 import type { NailItemDoc } from './lib/firestore'
@@ -486,6 +487,15 @@ function App() {
 
     return () => { didCancel = true }
   }, [isPublicSharePage, sharePathId])
+
+  useEffect(() => {
+    if (!isFirebaseConfigComplete) return
+    // Finish a redirect-based sign-in (Safari / iOS) after returning from Google.
+    completeRedirectSignIn().catch((e: unknown) => {
+      console.error('redirect sign-in failed', e)
+      setBannerError('Google サインインに失敗しました。時間をおいて再度お試しください。')
+    })
+  }, [])
 
   useEffect(() => {
     if (!isFirebaseConfigComplete) return
@@ -1091,6 +1101,16 @@ function App() {
       ))}
     </div>
   )
+
+  if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('nail3d') === '1') {
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: '#0d0a10' }}>
+        <Suspense fallback={null}>
+          <InteractiveNail3D tone="#eab6c6" />
+        </Suspense>
+      </div>
+    )
+  }
 
   if (isPublicSharePage) {
     return (
