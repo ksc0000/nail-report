@@ -1,0 +1,177 @@
+import SwiftData
+import SwiftUI
+
+/// Home = the jewelry box. Saved nails sit on the shelf as nail-shaped jewels;
+/// tapping one opens the spinnable stage. The"＋" starts the capture flow.
+struct CollectionView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \NailRecord.createdAt, order: .reverse) private var records: [NailRecord]
+    @State private var isAdding = false
+
+    private let columns = [GridItem(.adaptive(minimum: 100), spacing: 18)]
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                StageBackground()
+
+                ScrollView {
+                    VStack(spacing: 24) {
+                        header
+
+                        if records.isEmpty {
+                            emptyState
+                        } else {
+                            LazyVGrid(columns: columns, spacing: 26) {
+                                ForEach(records) { record in
+                                    if let appearance = record.appearance,
+                                       let texture = record.texture {
+                                        NavigationLink {
+                                            NailDetailView(
+                                                appearance: appearance,
+                                                title: record.title,
+                                                subtitle: record.createdAt.formatted(.dateTime.year().month().day()),
+                                                record: record
+                                            )
+                                        } label: {
+                                            VStack(spacing: 10) {
+                                                NailThumbnail(image: texture, nailShape: record.shape)
+                                                Text(record.title)
+                                                    .font(.system(size: 12))
+                                                    .lineLimit(1)
+                                                    .foregroundStyle(.white.opacity(0.75))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 24)
+                            .animation(.spring(duration: 0.5, bounce: 0.3), value: records.count)
+                        }
+
+                        sampleSection
+                    }
+                    .padding(.bottom, 48)
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        isAdding = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.white)
+                    }
+                }
+            }
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .sheet(isPresented: $isAdding) {
+                AddNailView()
+            }
+        }
+        .preferredColorScheme(.dark)
+        .task {
+            seedIfRequested()
+            if UserDefaults.standard.string(forKey: "openAdd") == "1" {
+                isAdding = true
+            }
+        }
+    }
+
+    private var header: some View {
+        VStack(spacing: 4) {
+            Text("NAILOUS")
+                .font(.system(size: 12, weight: .semibold))
+                .kerning(5)
+                .foregroundStyle(.white.opacity(0.5))
+            Text("宝石箱")
+                .font(.system(size: 26, weight: .medium, design: .serif))
+                .foregroundStyle(.white)
+            if !records.isEmpty {
+                Text("\(records.count) 個のネイル")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.45))
+            }
+        }
+        .padding(.top, 10)
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 34))
+                .foregroundStyle(Color(red: 0.9, green: 0.68, blue: 0.76))
+            Text("最初のネイルを宝石箱へ")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(.white)
+            Text("サロン帰りの写真を選ぶだけで、\nあなたのネイルが回せる宝石になります。")
+                .font(.system(size: 13))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.6))
+                .lineSpacing(3)
+            Button {
+                isAdding = true
+            } label: {
+                Text("ネイルを記録する")
+                    .font(.system(size: 15, weight: .semibold))
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 12)
+                    .background(Capsule().fill(Color(red: 0.83, green: 0.54, blue: 0.61)))
+                    .foregroundStyle(.white)
+            }
+            .padding(.top, 6)
+        }
+        .padding(.vertical, 30)
+    }
+
+    private var sampleSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("サンプルデザイン")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.5))
+                .padding(.horizontal, 24)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 18) {
+                    ForEach(NailStyle.samples) { style in
+                        NavigationLink {
+                            NailDetailView(
+                                appearance: style.appearance,
+                                title: style.label,
+                                subtitle: "サンプル"
+                            )
+                        } label: {
+                            VStack(spacing: 10) {
+                                NailThumbnail(image: style.texture, nailShape: .squoval)
+                                Text(style.label)
+                                    .font(.system(size: 12))
+                                    .lineLimit(1)
+                                    .foregroundStyle(.white.opacity(0.75))
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 6)
+            }
+        }
+    }
+
+    /// `-seedDemo 1` launch argument inserts one demo record so the collection
+    /// UI can be verified headlessly in the simulator.
+    private func seedIfRequested() {
+        guard UserDefaults.standard.string(forKey: "seedDemo") == "1", records.isEmpty else { return }
+        let sample = NailStyle.samples[3]
+        guard let jpeg = sample.texture.jpegData(compressionQuality: 0.85) else { return }
+        modelContext.insert(
+            NailRecord(title: "深海ネイル", shape: .oval, finish: .gloss, photoData: jpeg)
+        )
+        let second = NailStyle.samples[1]
+        if let jpeg2 = second.texture.jpegData(compressionQuality: 0.85) {
+            modelContext.insert(
+                NailRecord(title: "グレージュ", shape: .squoval, finish: .gloss, photoData: jpeg2)
+            )
+        }
+    }
+}
