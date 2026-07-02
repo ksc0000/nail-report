@@ -2,18 +2,16 @@
 
 ## Context
 
-The product roadmap for nail-report is focused on improving stability, test coverage, and UX in Phase 2. This task specifically addresses an accessibility improvement. The current state shows that initial AI Loop setup is complete, and no substantive development tasks have been started yet.
+The product roadmap for `nail-report` is in Phase 2, focusing on stability, test coverage, and UX improvements. This task specifically addresses an accessibility improvement from Phase 2.4.
 
 ## Objective
 
-Enhance the accessibility of the application by adding `aria-label` attributes to all icon-only buttons throughout the application. This ensures screen reader users understand the purpose of each button.
+Identify all icon-only buttons within the application and add an appropriate `aria-label` attribute to each for improved accessibility.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/components/` (modifying existing components)
-- `src/pages/` (modifying existing page components)
-- `src/App.css` (if minor styling adjustments are needed, but not expected)
+- `src/` (specifically component files containing icon-only buttons)
+- `src/App.css` (if minor styling adjustments are needed, unlikely for this task)
 
 ## Forbidden Scope
 
@@ -23,15 +21,14 @@ Enhance the accessibility of the application by adding `aria-label` attributes t
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/lib/` (not expected for this task)
 
 ## Requirements
 
-- Identify all buttons that contain only an icon (or an icon and minimal visual text hidden from screen readers) and do not have an explicit text label.
-- Add a descriptive `aria-label` attribute to each identified button. The label should clearly convey the button's action (e.g., "Delete item", "Edit tag", "Share report", "Sign out").
-- Ensure the `aria-label` text is concise and accurately reflects the button's function.
-- Keep the diff ≤ 150 lines.
+- Keep diff ≤ 150 lines.
+- For each `button` element that only contains an icon (and no visible text label), add an `aria-label` attribute with a descriptive text value corresponding to the button's action (e.g., `aria-label="Delete item"`, `aria-label="Edit item"`).
 - Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files (not applicable for this task).
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
