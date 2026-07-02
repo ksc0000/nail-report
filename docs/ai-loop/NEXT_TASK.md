@@ -2,17 +2,17 @@
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. The current state indicates that no specific Phase 2 task has been completed yet by the AI Loop. This task aims to kickstart the test coverage efforts by adding unit tests for core Firebase helper functions.
+The product roadmap indicates that Phase 2.1 (Test coverage) is active, with the goal of adding unit tests for Firebase helper functions using Vitest. The current state shows no specific roadmap tasks have been completed by Jules yet. This task focuses on establishing foundational unit tests for Firestore helper functions.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest. This directly addresses the "2.1 Test coverage" goal of the roadmap.
+Implement Vitest unit tests for helper functions defined in `src/lib/firestore.ts`. The task should focus on testing the logic of these functions, mocking Firebase SDK interactions as necessary.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for potential minor refactoring to enable testing, though primarily adding tests)
-- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
-- `vite.config.ts` (if Vitest configuration is required)
+- `src/lib/firestore.ts` (minor adjustments if needed for testability, but primarily for understanding what to test)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `vite.config.ts` (if minor Vitest configuration adjustments are absolutely necessary, but prioritize existing setup)
 
 ## Forbidden Scope
 
@@ -22,17 +22,13 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/App.tsx` or other UI components (focus solely on `firestore.ts` helpers)
 
 ## Requirements
 
-- Create a new test file (e.g., `src/__tests__/firestore.test.ts`).
-- Write unit tests for at least the `addNailItem`, `getNailItems`, `updateNailItem`, and `deleteNailItem` functions in `src/lib/firestore.ts`.
-- Mock the Firebase SDK dependencies (Firestore and potentially Auth if relevant to `firestore.ts` functions) using `vi.mock` as needed, ensuring tests are isolated and do not interact with actual Firebase services.
 - Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint && npm run test` before finishing. All commands must pass without errors.
-- Ensure the existing `firestore.ts` functions are not broken by any changes.
-- Add meaningful assertions for success and failure cases where applicable.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -41,3 +37,30 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+
+## Worker Prompt
+
+Your task is to add unit tests for the helper functions located in `src/lib/firestore.ts`.
+
+1.  **Create a new test file:** Add `src/__tests__/firestore.test.ts`.
+2.  **Identify key functions:** Examine `src/lib/firestore.ts` and choose 2-3 core helper functions (e.g., for creating, reading, updating, or deleting nail items) to test.
+3.  **Implement unit tests:**
+    *   Write `describe` and `it` blocks for the chosen functions.
+    *   Mock Firebase SDK interactions (e.g., `firebase/firestore`, `firebase/app`) using `vi.mock()` as specified in the roadmap. Do not make actual calls to Firebase during tests.
+    *   Focus on testing the internal logic, argument handling, and return values of the helper functions.
+    *   Ensure tests cover basic success cases and relevant error paths or edge cases (e.g., invalid input if applicable).
+
+### Acceptance Criteria
+
+- A new file `src/__tests__/firestore.test.ts` is created.
+- This file contains unit tests for at least 2-3 helper functions from `src/lib/firestore.ts`.
+- Firebase SDK dependencies are properly mocked within the tests.
+- All new tests pass when running `npm test`.
+
+### Required Test Commands
+
+```bash
+npm install # Ensure dependencies are up to date
+npm run test # Verify all tests pass, including the new ones
+npm run build && npm run lint # Ensure the project builds and lints correctly
+```
