@@ -3,17 +3,17 @@
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses the "2.4 Accessibility" goal by enhancing keyboard navigation and screen reader support. The application currently has icon-only buttons that lack proper labeling for assistive technologies.
+The application is in Phase 2, focusing on improving stability, test coverage, and UX. This task initiates the test coverage sub-phase by adding unit tests for core Firebase Firestore helper functions.
 
 ## Objective
 
-Identify and add an `aria-label` attribute to all icon-only buttons throughout the application to improve accessibility for screen reader users.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/**/*.tsx` (React components)
-- `src/**/*.ts` (Helper files if component logic needs minor adjustment, though unlikely for this task)
-- `src/App.css` (if any minor styling adjustments are incidentally needed, though unlikely)
+- `src/lib/firestore.ts` (modifications to export functions if necessary for testing)
+- `src/__tests__/firestore.test.ts` (new test file)
+- `src/__tests__/` (other new test files as needed for `firestore.ts`)
 
 ## Forbidden Scope
 
@@ -28,59 +28,44 @@ Identify and add an `aria-label` attribute to all icon-only buttons throughout t
 
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files (not applicable for this UI task).
+- Run `npm run test` and ensure all new tests pass.
+- Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
 ## Worker prompt
 
-Your task is to improve the accessibility of the `nail-report` application by adding `aria-label` attributes to all icon-only buttons.
+Your task is to add unit tests for the functions defined in `src/lib/firestore.ts`.
 
-1.  **Identify Icon-Only Buttons**: Systematically go through the application's UI, focusing on areas like:
-    *   Nail item list (e.g., edit, delete buttons)
-    *   Nail item detail view (e.g., edit, delete, back buttons)
-    *   Tag management interface (e.g., add, edit, delete tag buttons)
-    *   Image upload/management (e.g., delete image button)
-    *   Navigation buttons (if any are icon-only)
-    *   Any other interactive elements that are visually just icons but function as buttons.
+1.  **Create a new test file**: Create `src/__tests__/firestore.test.ts`.
+2.  **Implement Unit Tests**:
+    *   Identify the main helper functions in `src/lib/firestore.ts` responsible for interacting with Firestore (e.g., functions for adding, updating, deleting, or fetching `nailItems`).
+    *   Write unit tests for these functions.
+    *   Use Vitest's mocking capabilities (`vi.mock`) to mock Firebase SDK imports (e.g., `firebase/firestore`) to ensure tests are isolated and do not require an active Firebase project connection.
+    *   Focus on verifying the correct Firestore methods are called with the expected arguments and that the functions handle successful operations and potential errors gracefully.
+    *   Ensure a reasonable level of test coverage for the core logic in `src/lib/firestore.ts`.
+3.  **Run Tests and Linters**:
+    *   Execute `npm run test` to verify your new tests pass.
+    *   Execute `npm run build && npm run lint` to ensure no build or linting errors are introduced.
 
-2.  **Add `aria-label`**: For each identified button, add an `aria-label` attribute with a concise and descriptive text that explains the button's purpose.
-    *   **Example**: Change `<button><TrashIcon /></button>` to `<button aria-label="Delete nail item"><TrashIcon /></button>`.
-    *   The `aria-label` should accurately describe what action the button performs.
+**Example functions to target (if they exist in `src/lib/firestore.ts`):**
+*   `addNailItem(userId, itemData)`
+*   `updateNailItem(userId, itemId, updatedData)`
+*   `deleteNailItem(userId, itemId)`
+*   `getNailItems(userId)`
+*   `subscribeToNailItems(userId, callback)`
 
-3.  **Review**: Ensure that no icon-only buttons are missed and that the `aria-label` texts are appropriate.
+### Summary of what changed
+[Jules will fill this out]
 
-### Acceptance Criteria
+### Changed files list
+[Jules will fill this out]
 
-- All `button` elements that display only an icon (or an image used as an icon) and lack visible text will have a meaningful `aria-label` attribute.
-- The application remains fully functional and visually unchanged for sighted users.
+### Commands run and results
+[Jules will fill this out]
 
-### Required Test Commands
+### Known issues or limitations
+[Jules will fill this out]
 
-- `npm run build`
-- `npm run lint`
-
-### Example of a desired change:
-
-```diff
---- a/src/components/NailItemCard.tsx
-+++ b/src/components/NailItemCard.tsx
-@@ -20,7 +20,7 @@
-         <div className="flex space-x-2">
-           <button
-             onClick={() => onEdit(item)}
--            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-+            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-+            aria-label="Edit nail item"
-           >
-             <EditIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-           </button>
-           <button
-             onClick={() => onDelete(item.id)}
--            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-+            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-+            aria-label="Delete nail item"
-           >
-             <TrashIcon className="w-5 h-5 text-red-500" />
-           </button>
-```
+### Suggested next task
+[Jules will fill this out]
 ```
