@@ -2,16 +2,17 @@
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. Specifically, we're addressing section 2.4 Accessibility. This task aims to enhance the user experience for assistive technologies by making interactive elements more descriptive.
+The product roadmap for nail-report is currently in Phase 2, focusing on improving stability, test coverage, and UX. This task contributes to sub-phase 2.1, which aims to add unit tests for key application logic.
 
 ## Objective
 
-Add `aria-label` attributes to all icon-only buttons throughout the application. This will provide meaningful descriptions for screen reader users, improving accessibility.
+Implement unit tests for helper functions within `src/lib/firestore.ts` using Vitest. This task should focus on setting up the testing environment for Firestore helpers, including mocking the Firebase SDK, and writing tests for at least one or two specific functions within `src/lib/firestore.ts`.
 
 ## Allowed Scope
 
-- `src/` (components, views, etc., where icon-only buttons are rendered)
-- `src/App.css` (for minor styling adjustments if absolutely necessary, but not the primary focus)
+- `src/lib/firestore.ts` (minor adjustments if needed for testability)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `vite.config.ts` (if Vitest setup for mocks is required, but prefer to add mocks directly in the test file)
 
 ## Forbidden Scope
 
@@ -24,11 +25,14 @@ Add `aria-label` attributes to all icon-only buttons throughout the application.
 
 ## Requirements
 
-- Identify all buttons that contain only an icon (no visible text label) and add an appropriate `aria-label` attribute.
-- The `aria-label` should clearly describe the button's action or purpose.
-- Keep the total line diff for the PR to ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing and ensure no new errors or warnings are introduced.
-- Report follow-up items as comments in the PR, not additional code.
+- Keep diff ≤ 150 lines.
+- Create `src/__tests__/firestore.test.ts`.
+- Use Vitest for testing.
+- Mock the Firebase SDK as needed (e.g., `firebase/firestore`, `firebase/app`) using `vi.mock` to ensure tests run in isolation without hitting actual Firebase services.
+- Write unit tests for at least one or two functions in `src/lib/firestore.ts` (e.g., `addNailItem`, `getNailItems`). Focus on the core logic and interaction with mocked Firestore methods.
+- Ensure all tests pass.
+- Run `npm run build && npm run lint` before finishing.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
