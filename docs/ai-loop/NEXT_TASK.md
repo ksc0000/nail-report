@@ -1,19 +1,18 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product is in Phase 2, focusing on improving stability, test coverage, and UX. This task directly addresses the "2.1 Test coverage" goal by adding foundational unit tests for core Firebase operations.
+The `nail-report` application is currently in Phase 2, focusing on stability, test coverage, and UX improvements. This task specifically addresses Phase 2.4: Accessibility. Many icon-only buttons in the application currently lack descriptive text for screen readers, hindering accessibility.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest, focusing on mocking Firebase SDK interactions.
+Identify all icon-only buttons throughout the application and add appropriate `aria-label` attributes to each to improve accessibility for users relying on screen readers.
 
 ## Allowed Scope
 
 - `src/` (except `src/main.tsx`)
-- `src/lib/firestore.ts` (to export functions if needed for testing, or add minor adjustments for testability)
-- `src/__tests__/` (new test files, specifically `src/__tests__/firestore.test.ts`)
-- `src/App.css` (CSS improvements - not applicable for this task but listed for completeness)
+- Specifically: Any `.tsx` or `.jsx` component files where icon buttons are rendered (e.g., `src/components/**/*.tsx`, `src/App.tsx`).
 
 ## Forbidden Scope
 
@@ -28,8 +27,8 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
+- For each icon-only button, add an `aria-label` attribute that clearly describes the button's action (e.g., `<button aria-label="Delete item">...</button>`).
+- Ensure the `aria-label` text is concise and accurately reflects the button's function.
 
 ## Output Format
 
@@ -41,19 +40,20 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 
 ## Worker Prompt
 
-Your task is to add comprehensive unit tests for the Firebase Firestore helper functions located in `src/lib/firestore.ts`.
+Implement the objective outlined above. Your task is to locate all interactive elements that consist solely of an icon (e.g., `<button><IconComponent /></button>`) and add a meaningful `aria-label` attribute to the button element. Focus on user-facing controls like edit, delete, add, sign out, or navigation buttons. Do not add `aria-label` to buttons that already contain visible text.
 
-1.  **Create a new test file:** Create `src/__tests__/firestore.test.ts`.
-2.  **Utilize Vitest:** Assume Vitest is configured and available as a dev dependency. Do NOT add `vitest` or any other new npm package to `package.json`.
-3.  **Mock Firebase SDK:** Use `vi.mock` to mock Firebase Firestore SDK functions (e.g., `getFirestore`, `collection`, `doc`, `addDoc`, `setDoc`, `deleteDoc`, `getDocs`, etc.) to isolate the functions under test.
-4.  **Target functions:** Write unit tests for the following key functions within `src/lib/firestore.ts`:
-    *   `addItem` (ensuring data is correctly passed to `addDoc`)
-    *   `updateItem` (ensuring data and ID are correctly passed to `setDoc`)
-    *   `deleteItem` (ensuring ID is correctly passed to `deleteDoc`)
-    *   `getItemsForUser` (mocking the query and snapshot to return expected data)
-5.  **Test Cases:**
-    *   Ensure successful execution for each function.
-    *   Test error handling if the existing functions include explicit `try/catch` blocks (or mock Firebase functions to throw errors).
-    *   Verify the arguments passed to the mocked Firebase functions are correct.
-6.  **Run Tests:** Execute `npm run test` and ensure all new tests pass.
-7.  **Lint and Build:** Before submitting, run `npm run build` and `npm run lint` to confirm no build errors or linting issues are introduced.
+Example:
+```tsx
+// Before
+<button onClick={handleDelete}>
+  <TrashIcon />
+</button>
+
+// After
+<button onClick={handleDelete} aria-label="Delete item">
+  <TrashIcon />
+</button>
+```
+
+Remember to run `npm run build && npm run lint` to verify your changes before completing the task.
+```
