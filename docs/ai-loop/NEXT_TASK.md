@@ -1,43 +1,45 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap indicates that Phase 2.1 is focused on improving test coverage, specifically starting with unit tests for Firestore helper functions using Vitest. The current state shows "First substantive task pending". This task is a direct implementation of that roadmap item.
+The AI Loop is initiating Phase 2, focusing on improving stability, test coverage, and UX. This first substantive task will lay the groundwork for better code quality by adding unit tests to critical helper functions.
 
 ## Objective
 
-Implement unit tests for helper functions within `src/lib/firestore.ts`, leveraging Vitest as the test runner.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for understanding and referencing existing functions)
-- `src/__tests__/` (for creating new test files, e.g., `src/__tests__/firestore.test.ts`)
+-   `src/lib/firestore.ts` (read only, no modifications to existing functionality)
+-   `src/__tests__/` (create new test files, e.g., `src/__tests__/lib/firestore.test.ts`)
+-   `package.json` (read only, no dependency modifications)
+-   `vite.config.ts` (read only, Vitest should already be configured)
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (do not add new npm packages, Vitest is assumed to be installed and configured as per roadmap)
-- Firebase deploy commands
-- Secrets and credentials
+-   `src/main.tsx` (entry point — do not modify)
+-   `commands/` (PowerShell scripts — do not modify)
+-   `firestore.rules`, `storage.rules` (require human approval)
+-   `package.json` (no new npm packages or dependency modifications)
+-   Firebase deploy commands
+-   Secrets and credentials
+-   Any files outside of `src/` except where explicitly allowed.
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Create at least one new test file, for example, `src/__tests__/firestore.test.ts`.
-- Write unit tests for some of the key helper functions exported from `src/lib/firestore.ts`. Focus on functions that interact directly with Firestore (e.g., `addNailItem`, `getNailItems`, `updateNailItem`).
-- Ensure Firebase SDK dependencies (Firestore instances, collection/doc references) are mocked appropriately to achieve isolated unit testing.
-- Tests should cover both successful operations and relevant error paths, where applicable and feasible within the line limit.
-- Run `npm run build && npm run lint` before finishing.
-- Run tests (`npm test` or `vitest`) and ensure they pass.
+-   Create a new test file, e.g., `src/__tests__/lib/firestore.test.ts`.
+-   Write unit tests for key helper functions exported from `src/lib/firestore.ts`. Focus on testing their behavior with mock Firebase SDK interactions.
+-   Mock Firebase SDK functions (e.g., `getDoc`, `setDoc`, `collection`, `query`, `where`, `getDocs`, `deleteDoc`) as needed using `vi.mock`.
+-   Aim for good coverage of the `firestore.ts` helpers.
+-   Keep the total diff to approximately 100-150 lines (new test file + mocks + test cases).
+-   Run `npm run test` to ensure tests pass.
+-   Run `npm run build && npm run lint` before finishing.
+-   Report follow-up items as comments, not additional code.
 
 ## Output Format
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
-```
+-   Summary of what changed
+-   Changed files list
+-   Commands run and results
+-   Known issues or limitations
+-   Suggested next task
