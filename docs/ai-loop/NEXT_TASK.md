@@ -2,18 +2,16 @@
 
 ## Context
 
-The current phase is 2.0, focusing on improving stability, test coverage, and UX. The current task is to begin implementing unit tests for the application's core logic.
+The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. Specifically, we're addressing section 2.4 Accessibility. This task aims to enhance the user experience for assistive technologies by making interactive elements more descriptive.
 
 ## Objective
 
-Implement unit tests for one or more helper functions within `src/lib/firestore.ts` using Vitest. This task focuses specifically on the Firestore-related utilities, ensuring their reliability and paving the way for further test coverage.
+Add `aria-label` attributes to all icon-only buttons throughout the application. This will provide meaningful descriptions for screen reader users, improving accessibility.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor modifications for testability, if necessary)
-- `src/__tests__/` (create new test files, e.g., `src/__tests__/firestore.test.ts`)
-- `vite.config.ts` (if Vitest configuration is not already complete for `src/lib` files)
-- `package.json` (only to ensure `vitest` scripts are present, no new dependencies)
+- `src/` (components, views, etc., where icon-only buttons are rendered)
+- `src/App.css` (for minor styling adjustments if absolutely necessary, but not the primary focus)
 
 ## Forbidden Scope
 
@@ -26,13 +24,11 @@ Implement unit tests for one or more helper functions within `src/lib/firestore.
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Create a new test file for `firestore.ts` helpers within `src/__tests__/`.
-- Use Vitest and mock Firebase SDK dependencies as needed (e.g., `vi.mock('firebase/firestore')`).
-- Write at least one passing test for a helper function in `src/lib/firestore.ts` (e.g., `getNailItem`, `addNailItem`, `updateNailItem`, `deleteNailItem`).
-- Run `npm run test` and ensure new tests pass.
-- Run `npm run build && npm run lint` before finishing.
-- Report follow-up items as comments, not additional code.
+- Identify all buttons that contain only an icon (no visible text label) and add an appropriate `aria-label` attribute.
+- The `aria-label` should clearly describe the button's action or purpose.
+- Keep the total line diff for the PR to ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing and ensure no new errors or warnings are introduced.
+- Report follow-up items as comments in the PR, not additional code.
 
 ## Output Format
 
