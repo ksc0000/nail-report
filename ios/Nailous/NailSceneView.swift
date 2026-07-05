@@ -75,6 +75,9 @@ struct NailSceneView: UIViewRepresentable {
     var layout: SetLayout = .arc
     var motion: AutoMotion = .off
     var theme: StageTheme = .glass
+    /// Set-mode interactions: long-press copies a tip, tap pastes onto one.
+    var onTipLongPress: ((Int) -> Void)? = nil
+    var onTipTap: ((Int) -> Void)? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -165,6 +168,22 @@ struct NailSceneView: UIViewRepresentable {
         )
         doubleTap.numberOfTapsRequired = 2
         view.addGestureRecognizer(doubleTap)
+
+        let singleTap = UITapGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleTap(_:))
+        )
+        singleTap.require(toFail: doubleTap)
+        view.addGestureRecognizer(singleTap)
+
+        let longPress = UILongPressGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleLongPress(_:))
+        )
+        view.addGestureRecognizer(longPress)
+
+        context.coordinator.onTipLongPress = onTipLongPress
+        context.coordinator.onTipTap = onTipTap
         return view
     }
 
@@ -172,9 +191,13 @@ struct NailSceneView: UIViewRepresentable {
         context.coordinator.rebuildPlate(appearance: appearance, setAppearances: setAppearances, shape: shape, mode: mode, layout: layout)
         context.coordinator.updateMotion(motion, stageMode: mode)
         context.coordinator.applyTheme(theme)
+        context.coordinator.onTipLongPress = onTipLongPress
+        context.coordinator.onTipTap = onTipTap
     }
 
     final class Coordinator: NSObject {
+        var onTipLongPress: ((Int) -> Void)?
+        var onTipTap: ((Int) -> Void)?
         var spinNode: SCNNode?
         var lightRig: SCNNode?
         var orbitNode: SCNNode?
@@ -272,6 +295,7 @@ struct NailSceneView: UIViewRepresentable {
                 let fi = Float(index) - 2
                 let appearance = appearances[index % appearances.count]
                 let node = SCNNode(geometry: makePlate(appearance: appearance, shape: shape))
+                node.name = "tip-\(index)"
                 node.scale = SCNVector3(spec.w, spec.l, spec.w)
                 switch layout {
                 case .arc:
@@ -443,6 +467,38 @@ struct NailSceneView: UIViewRepresentable {
             default:
                 break
             }
+        }
+
+        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+            guard let view = gesture.view as? SCNView else { return }
+            if let index = tipIndex(at: gesture.location(in: view), in: view) {
+                onTipTap?(index)
+            }
+        }
+
+        @objc func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+            guard gesture.state == .began, let view = gesture.view as? SCNView else { return }
+            if let index = tipIndex(at: gesture.location(in: view), in: view) {
+                onTipLongPress?(index)
+            }
+        }
+
+        private func tipIndex(at point: CGPoint, in view: SCNView) -> Int? {
+            let hits = view.hitTest(
+                point,
+                options: [SCNHitTestOption.searchMode: SCNHitTestSearchMode.all.rawValue]
+            )
+            for hit in hits {
+                var node: SCNNode? = hit.node
+                while let current = node {
+                    if let name = current.name, name.hasPrefix("tip-"),
+                       let index = Int(name.dropFirst(4)) {
+                        return index
+                    }
+                    node = current.parent
+                }
+            }
+            return nil
         }
 
         /// Double tap: spring everything home — pose and zoom.

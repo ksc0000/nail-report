@@ -50,7 +50,9 @@ final class NailRecord {
     var texture: UIImage? { UIImage(data: photoData) }
 
     var appearance: NailAppearance? {
-        texture.map { NailAppearance(id: id.uuidString, texture: $0, finish: finish) }
+        texture.map {
+            NailAppearance(id: "\(id.uuidString)-\(photoData.hashValue)", texture: $0, finish: finish)
+        }
     }
 
     /// Appearances for the five-piece set view; nil unless this record holds
@@ -59,7 +61,7 @@ final class NailRecord {
         guard fingerPhotoData.count > 1 else { return nil }
         let list = fingerPhotoData.enumerated().compactMap { index, data in
             UIImage(data: data).map {
-                NailAppearance(id: "\(id.uuidString)-f\(index)", texture: $0, finish: finish)
+                NailAppearance(id: "\(id.uuidString)-f\(index)-\(data.hashValue)", texture: $0, finish: finish)
             }
         }
         return list.count > 1 ? list : nil

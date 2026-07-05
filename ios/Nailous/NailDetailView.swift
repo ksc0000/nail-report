@@ -14,6 +14,7 @@ struct NailDetailView: View {
     @State private var layout: SetLayout = .arc
     @State private var motion: AutoMotion = .off
     @State private var theme: StageTheme = .glass
+    @State private var stampSource: Int?
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingDelete = false
@@ -56,11 +57,42 @@ struct NailDetailView: View {
                     setAppearances: record?.setAppearances,
                     layout: layout,
                     motion: motion,
-                    theme: theme
+                    theme: theme,
+                    onTipLongPress: { index in
+                        guard mode == .set, record?.setAppearances != nil else { return }
+                        stampSource = index
+                        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                    },
+                    onTipTap: { index in
+                        guard let source = stampSource else { return }
+                        defer { stampSource = nil }
+                        guard let record,
+                              record.fingerPhotoData.indices.contains(source),
+                              record.fingerPhotoData.indices.contains(index),
+                              source != index else { return }
+                        record.fingerPhotoData[index] = record.fingerPhotoData[source]
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    }
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .top) {
+                    if stampSource != nil {
+                        HStack(spacing: 10) {
+                            Text("スタンプ中：貼り付け先の爪をタップ")
+                                .font(.system(size: 12.5, weight: .medium))
+                                .foregroundStyle(.white)
+                            Button("キャンセル") { stampSource = nil }
+                                .font(.system(size: 12.5, weight: .semibold))
+                                .foregroundStyle(Color(red: 0.96, green: 0.75, blue: 0.82))
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(Capsule().fill(Color(red: 0.83, green: 0.54, blue: 0.61).opacity(0.55)))
+                        .padding(.top, 6)
+                    }
+                }
 
-                Text("ドラッグで回転")
+                Text(mode == .set && record != nil ? "ドラッグで回転・長押しでスタンプコピー" : "ドラッグで回転")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.45))
                     .padding(.bottom, 12)
