@@ -60,10 +60,14 @@ extension UIImage {
     }
 }
 
-/// Bottom sheet shown after tapping the stamp button: preview + copy + share.
+/// Bottom sheet shown after tapping the stamp button: preview + copy + share
+/// + a seamless turntable-loop video for Stories.
 struct StampSheet: View {
     let image: UIImage
+    var makeVideo: (() async throws -> URL)?
     @State private var copied = false
+    @State private var isExportingVideo = false
+    @State private var videoURL: URL?
 
     var body: some View {
         ZStack {
@@ -129,7 +133,50 @@ struct StampSheet: View {
                         }
                     }
                 }
-                .padding(.bottom, 24)
+
+                if makeVideo != nil {
+                    Group {
+                        if let videoURL {
+                            ShareLink(item: videoURL) {
+                                Label("動画を共有（写真に保存→ストーリーへ）", systemImage: "film")
+                                    .font(.system(size: 13.5, weight: .semibold))
+                                    .padding(.horizontal, 18)
+                                    .padding(.vertical, 11)
+                                    .background(Capsule().fill(Color(red: 0.55, green: 0.45, blue: 0.75)))
+                                    .foregroundStyle(.white)
+                            }
+                        } else if isExportingVideo {
+                            HStack(spacing: 8) {
+                                ProgressView().tint(.white)
+                                Text("回転動画を作成中…")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.white.opacity(0.75))
+                            }
+                            .padding(.vertical, 11)
+                        } else {
+                            Button {
+                                guard let makeVideo else { return }
+                                isExportingVideo = true
+                                Task {
+                                    defer { isExportingVideo = false }
+                                    videoURL = try? await makeVideo()
+                                    if videoURL != nil {
+                                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                                    }
+                                }
+                            } label: {
+                                Label("回転動画を作成（3秒ループ）", systemImage: "film")
+                                    .font(.system(size: 13.5, weight: .semibold))
+                                    .padding(.horizontal, 18)
+                                    .padding(.vertical, 11)
+                                    .background(Capsule().fill(Color.white.opacity(0.15)))
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(minLength: 20)
             }
         }
         .preferredColorScheme(.dark)

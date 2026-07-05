@@ -309,7 +309,7 @@ struct NailSceneView: UIViewRepresentable {
         }
 
         /// Per-finger tip sizes (width, length), thumb → pinky, like a press-on set.
-        private static let fingerSpecs: [(w: Float, l: Float)] = [
+        static let fingerSpecs: [(w: Float, l: Float)] = [
             (1.06, 0.88), (0.88, 1.0), (0.94, 1.06), (0.86, 1.0), (0.70, 0.84),
         ]
 
@@ -331,7 +331,7 @@ struct NailSceneView: UIViewRepresentable {
             contentNode = node
         }
 
-        private static func makePlate(appearance: NailAppearance, shape: NailShape) -> SCNGeometry {
+        static func makePlate(appearance: NailAppearance, shape: NailShape) -> SCNGeometry {
             let geometry = NailGeometry.makeGeometry(shape: shape)
             geometry.materials = [makeMaterial(appearance: appearance)]
             return geometry
@@ -339,7 +339,7 @@ struct NailSceneView: UIViewRepresentable {
 
         /// Five tips fanned in a shallow arc, middle finger front and tallest —
         /// the way a press-on set is presented.
-        private static func makeTipSet(appearances: [NailAppearance], shape: NailShape, layout: SetLayout) -> SCNNode {
+        static func makeTipSet(appearances: [NailAppearance], shape: NailShape, layout: SetLayout) -> SCNNode {
             let group = SCNNode()
             for (index, spec) in fingerSpecs.enumerated() {
                 let fi = Float(index) - 2
@@ -426,7 +426,7 @@ struct NailSceneView: UIViewRepresentable {
             spinNode.runAction(SCNAction.repeatForever(spin), forKey: "turntable")
         }
 
-        private static func makeMaterial(appearance: NailAppearance) -> SCNMaterial {
+        static func makeMaterial(appearance: NailAppearance) -> SCNMaterial {
             let material = SCNMaterial()
             material.lightingModel = .physicallyBased
             material.diffuse.contents = appearance.texture

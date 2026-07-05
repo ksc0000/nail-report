@@ -250,8 +250,20 @@ struct NailDetailView: View {
         }
         .sheet(isPresented: $showStampSheet) {
             if let stampImage {
-                StampSheet(image: stampImage)
-                    .presentationDetents([.height(440)])
+                StampSheet(
+                    image: stampImage,
+                    makeVideo: { [appearance, shape, mode, layout, theme] in
+                        try await StampVideoExporter.export(
+                            appearance: appearance,
+                            setAppearances: record?.setAppearances,
+                            shape: shape,
+                            mode: mode,
+                            layout: layout,
+                            theme: theme
+                        )
+                    }
+                )
+                .presentationDetents([.height(500)])
             }
         }
         .confirmationDialog("この記録を削除しますか？", isPresented: $confirmingDelete, titleVisibility: .visible) {
