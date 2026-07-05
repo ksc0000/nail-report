@@ -1,19 +1,48 @@
+import CoreImage
+import CoreImage.CIFilterBuiltins
 import SwiftUI
+import Vision
 
-/// Position the photo under a nail-shaped window: drag to move, pinch to zoom,
-/// then bake the visible region into the 512×768 nail texture.
+/// A fingertip (= nail) candidate detected in the photo.
+private struct DetectedNail: Identifiable {
+    let id = UUID()
+    let center: CGPoint // image coords, top-left origin, in image points
+    let cropHeight: CGFloat // suggested crop height in image points
+    let axisAngle: CGFloat // finger DIP→TIP direction vs straight-up, radians
+}
+
+/// Position the photo under a nail-shaped window: whole-hand photos get
+/// fingertip auto-detection (tap a marker to jump-zoom onto that nail), then
+/// drag / pinch to fine-tune, and bake the window into the 512×768 texture.
 struct PhotoCropView: View {
     let image: UIImage
-    let nailShape: NailShape
+    @Binding var nailShape: NailShape
     let onConfirm: (UIImage) -> Void
+    var onConfirmSet: (([UIImage]) -> Void)?
     let onCancel: () -> Void
 
     @State private var zoom: CGFloat = 1
     @State private var zoomAnchor: CGFloat = 1
     @State private var offset: CGSize = .zero
     @State private var offsetAnchor: CGSize = .zero
+    @State private var rotation: CGFloat = 0
+    @State private var rotationAnchor: CGFloat = 0
+    @State private var detectedNails: [DetectedNail] = []
+    @State private var previewTexture: UIImage?
+    @State private var collected: [UIImage] = []
+    @State private var sortedNails: [DetectedNail] = []
+    @State private var currentIndex: Int = 0
 
     private let window = CGSize(width: 216, height: 324) // 2:3, matches texture
+    private let maxZoom: CGFloat = 16
+
+    private var currentTarget: DetectedNail? {
+        sortedNails.indices.contains(currentIndex) ? sortedNails[currentIndex] : nil
+    }
+
+    private var allCollected: Bool {
+        !sortedNails.isEmpty && collected.count >= min(5, sortedNails.count)
+    }
 
     /// Aspect-fill scale that makes the photo just cover the window at zoom 1.
     private var fillScale: CGFloat {
@@ -31,6 +60,7 @@ struct PhotoCropView: View {
                 Image(uiImage: image)
                     .resizable()
                     .frame(width: image.size.width * scale, height: image.size.height * scale)
+                    .rotationEffect(.radians(rotation))
                     .position(center)
                     .offset(offset)
 
@@ -50,30 +80,180 @@ struct PhotoCropView: View {
                     .frame(width: window.width, height: window.height)
                     .allowsHitTesting(false)
 
+                // Fingertip markers — tap to jump onto that nail
+                ForEach(detectedNails) { nail in
+                    Button {
+                        if let index = sortedNails.firstIndex(where: { $0.id == nail.id }) {
+                            currentIndex = index
+                        }
+                        focus(on: nail)
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .strokeBorder(
+                                    nail.id == currentTarget?.id
+                                        ? Color(red: 0.95, green: 0.62, blue: 0.72)
+                                        : .white.opacity(0.9),
+                                    lineWidth: nail.id == currentTarget?.id ? 3 : 1.5
+                                )
+                                .frame(width: 26, height: 26)
+                            Circle()
+                                .fill(Color(red: 0.95, green: 0.62, blue: 0.72).opacity(0.85))
+                                .frame(width: 10, height: 10)
+                        }
+                        .shadow(color: .black.opacity(0.6), radius: 4)
+                    }
+                    .position(markerPosition(for: nail, center: center, scale: scale))
+                }
+
                 VStack {
-                    Text("ドラッグとピンチで、爪に入れたい部分を合わせます")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.white.opacity(0.75))
-                        .padding(.top, 18)
+                    Text(
+                        sortedNails.isEmpty
+                            ? "ドラッグとピンチで、爪に入れたい部分を合わせます"
+                            : allCollected
+                                ? "全部そろいました。「完了」でセットにします"
+                                : "\(collected.count + 1)本目：枠に合わせて「この爪を追加」"
+                    )
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Capsule().fill(Color.black.opacity(0.45)))
+                    .padding(.top, 14)
+
+                    HStack(spacing: 6) {
+                        ForEach(NailShape.allCases) { candidate in
+                            Button {
+                                nailShape = candidate
+                            } label: {
+                                Text(candidate.label)
+                                    .font(.system(size: 11.5, weight: .medium))
+                                    .padding(.horizontal, 11)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        Capsule().fill(
+                                            nailShape == candidate
+                                                ? Color.white.opacity(0.92)
+                                                : Color.black.opacity(0.45)
+                                        )
+                                    )
+                                    .foregroundStyle(
+                                        nailShape == candidate
+                                            ? Color(red: 0.2, green: 0.1, blue: 0.18)
+                                            : .white.opacity(0.8)
+                                    )
+                            }
+                        }
+                    }
+                    .padding(.top, 8)
+
                     Spacer()
-                    HStack(spacing: 14) {
+
+                    if let previewTexture {
+                        HStack {
+                            Spacer()
+                            VStack(spacing: 4) {
+                                NailSceneView(
+                                    appearance: NailAppearance(
+                                        id: "crop-preview-\(previewTexture.hashValue)",
+                                        texture: previewTexture,
+                                        finish: .gloss
+                                    ),
+                                    shape: nailShape,
+                                    mode: .single
+                                )
+                                .frame(width: 96, height: 150)
+                                .allowsHitTesting(false)
+                                Text("プレビュー")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.white.opacity(0.6))
+                            }
+                            .padding(8)
+                            .background(RoundedRectangle(cornerRadius: 14).fill(Color.black.opacity(0.45)))
+                            .padding(.trailing, 14)
+                        }
+                        .padding(.bottom, 6)
+                    }
+                    if !collected.isEmpty {
+                        HStack(spacing: 8) {
+                            ForEach(Array(collected.enumerated()), id: \.offset) { index, texture in
+                                Image(uiImage: texture)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 34, height: 51)
+                                    .clipShape(RoundedRectangle(cornerRadius: 7))
+                                    .overlay(
+                                        Text("\(index + 1)")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundStyle(.white)
+                                            .padding(3),
+                                        alignment: .topLeading
+                                    )
+                            }
+                        }
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 12)
+                        .background(Capsule().fill(Color.black.opacity(0.4)))
+                        .padding(.bottom, 8)
+                    }
+
+                    HStack(spacing: 10) {
                         Button(action: onCancel) {
                             Text("キャンセル")
-                                .font(.system(size: 15, weight: .medium))
-                                .padding(.horizontal, 24)
+                                .font(.system(size: 14, weight: .medium))
+                                .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
                                 .background(Capsule().fill(Color.white.opacity(0.12)))
                                 .foregroundStyle(.white)
                         }
-                        Button {
-                            onConfirm(bakeTexture())
-                        } label: {
-                            Text("この位置で決定")
-                                .font(.system(size: 15, weight: .semibold))
-                                .padding(.horizontal, 28)
-                                .padding(.vertical, 12)
-                                .background(Capsule().fill(Color(red: 0.83, green: 0.54, blue: 0.61)))
-                                .foregroundStyle(.white)
+                        if collected.count < 5 {
+                            Button(action: addCurrentNail) {
+                                Text(sortedNails.isEmpty ? "この爪を追加" : "この爪を追加（\(min(collected.count + 1, 5))本目）")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .padding(.horizontal, 18)
+                                    .padding(.vertical, 12)
+                                    .background(
+                                        Capsule().fill(
+                                            allCollected
+                                                ? Color.white.opacity(0.22)
+                                                : Color(red: 0.83, green: 0.54, blue: 0.61)
+                                        )
+                                    )
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                        if collected.isEmpty && sortedNails.isEmpty {
+                            Button {
+                                onConfirm(bakeCurrent())
+                            } label: {
+                                Text("この位置で決定")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 12)
+                                    .background(Capsule().fill(Color(red: 0.83, green: 0.54, blue: 0.61)))
+                                    .foregroundStyle(.white)
+                            }
+                        } else if !collected.isEmpty {
+                            Button {
+                                if collected.count > 1, let onConfirmSet {
+                                    onConfirmSet(collected)
+                                } else if let single = collected.first {
+                                    onConfirm(single)
+                                }
+                            } label: {
+                                Text("完了（\(collected.count)本）")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 12)
+                                    .background(
+                                        Capsule().fill(
+                                            allCollected
+                                                ? Color(red: 0.83, green: 0.54, blue: 0.61)
+                                                : Color.white.opacity(0.22)
+                                        )
+                                    )
+                                    .foregroundStyle(.white)
+                            }
                         }
                     }
                     .padding(.bottom, 30)
@@ -82,15 +262,22 @@ struct PhotoCropView: View {
             .contentShape(Rectangle())
             .gesture(
                 SimultaneousGesture(
-                    MagnificationGesture()
-                        .onChanged { value in
-                            zoom = min(6, max(1, zoomAnchor * value))
-                            offset = clampedOffset(offset)
-                        }
-                        .onEnded { _ in
-                            zoomAnchor = zoom
-                            offsetAnchor = offset
-                        },
+                    SimultaneousGesture(
+                        MagnificationGesture()
+                            .onChanged { value in
+                                let pivot = anchorImagePointAtWindowCenter()
+                                zoom = min(maxZoom, max(1, zoomAnchor * value))
+                                offset = clampedOffset(offsetKeeping(pivot, atWindowCenterWithZoom: zoom, rotation: rotation))
+                            }
+                            .onEnded { _ in commitAnchors() },
+                        RotationGesture()
+                            .onChanged { value in
+                                let pivot = anchorImagePointAtWindowCenter()
+                                rotation = rotationAnchor + CGFloat(value.radians)
+                                offset = clampedOffset(offsetKeeping(pivot, atWindowCenterWithZoom: zoom, rotation: rotation))
+                            }
+                            .onEnded { _ in commitAnchors() }
+                    ),
                     DragGesture()
                         .onChanged { value in
                             offset = clampedOffset(
@@ -100,48 +287,273 @@ struct PhotoCropView: View {
                                 )
                             )
                         }
-                        .onEnded { _ in offsetAnchor = offset }
+                        .onEnded { _ in commitAnchors() }
                 )
             )
         }
         .preferredColorScheme(.dark)
+        .task {
+            detectedNails = await Self.detectNails(in: image)
+            // Guided tour: thumb → pinky (left → right in the photo), starting
+            // zoomed on the first nail so "決定 at full view" can't happen.
+            sortedNails = detectedNails.sorted { $0.center.x < $1.center.x }
+            if let first = sortedNails.first {
+                currentIndex = 0
+                focus(on: first)
+            } else {
+                previewTexture = bakeCurrent()
+            }
+        }
     }
 
-    /// Keeps the photo covering the crop window.
-    private func clampedOffset(_ proposed: CGSize) -> CGSize {
-        let scale = fillScale * zoom
-        let maxX = max(0, (image.size.width * scale - window.width) / 2)
-        let maxY = max(0, (image.size.height * scale - window.height) / 2)
+    private func addCurrentNail() {
+        collected.append(bakeCurrent())
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        // advance to the next detected nail
+        if currentIndex + 1 < sortedNails.count {
+            currentIndex += 1
+            focus(on: sortedNails[currentIndex])
+        }
+    }
+
+    // MARK: - Geometry
+
+    /// View transform: T(p) = R_rotation((p - imgCenter) * scale) + center + offset
+    private func markerPosition(for nail: DetectedNail, center: CGPoint, scale: CGFloat) -> CGPoint {
+        let dx = (nail.center.x - image.size.width / 2) * scale
+        let dy = (nail.center.y - image.size.height / 2) * scale
+        let rx = dx * cos(rotation) - dy * sin(rotation)
+        let ry = dx * sin(rotation) + dy * cos(rotation)
+        return CGPoint(x: center.x + rx + offset.width, y: center.y + ry + offset.height)
+    }
+
+    /// Offset that places image point `p` at the window center for the given
+    /// zoom and rotation.
+    private func offsetKeeping(_ p: CGPoint, atWindowCenterWithZoom newZoom: CGFloat, rotation angle: CGFloat) -> CGSize {
+        let s = fillScale * newZoom
+        let dx = (p.x - image.size.width / 2) * s
+        let dy = (p.y - image.size.height / 2) * s
+        let rx = dx * cos(angle) - dy * sin(angle)
+        let ry = dx * sin(angle) + dy * cos(angle)
+        return CGSize(width: -rx, height: -ry)
+    }
+
+    /// Image point currently under the window center, from the gesture anchors.
+    private func anchorImagePointAtWindowCenter() -> CGPoint {
+        let s = fillScale * zoomAnchor
+        let rx = -offsetAnchor.width
+        let ry = -offsetAnchor.height
+        let dx = rx * cos(-rotationAnchor) - ry * sin(-rotationAnchor)
+        let dy = rx * sin(-rotationAnchor) + ry * cos(-rotationAnchor)
+        return CGPoint(x: image.size.width / 2 + dx / s, y: image.size.height / 2 + dy / s)
+    }
+
+    private func commitAnchors() {
+        zoomAnchor = zoom
+        offsetAnchor = offset
+        rotationAnchor = rotation
+        previewTexture = bakeCurrent()
+    }
+
+    private func focus(on nail: DetectedNail) {
+        let targetScale = window.height / nail.cropHeight
+        let newZoom = min(maxZoom, max(1, targetScale / fillScale))
+        let newRotation = -nail.axisAngle // finger axis → straight up
+        let newOffset = offsetKeeping(nail.center, atWindowCenterWithZoom: newZoom, rotation: newRotation)
+        withAnimation(.spring(duration: 0.5)) {
+            zoom = newZoom
+            rotation = newRotation
+            offset = newOffset
+        }
+        zoomAnchor = newZoom
+        rotationAnchor = newRotation
+        offsetAnchor = newOffset
+        previewTexture = bakeTexture(zoom: newZoom, rotation: newRotation, offset: newOffset)
+    }
+
+    /// Keeps the photo (its rotated bounding box) covering the crop window.
+    private func clampedOffset(_ proposed: CGSize, zoom zoomOverride: CGFloat? = nil) -> CGSize {
+        let scale = fillScale * (zoomOverride ?? zoom)
+        let w = image.size.width * scale
+        let h = image.size.height * scale
+        let boundW = abs(w * cos(rotation)) + abs(h * sin(rotation))
+        let boundH = abs(w * sin(rotation)) + abs(h * cos(rotation))
+        let maxX = max(0, (boundW - window.width) / 2)
+        let maxY = max(0, (boundH - window.height) / 2)
         return CGSize(
             width: min(maxX, max(-maxX, proposed.width)),
             height: min(maxY, max(-maxY, proposed.height))
         )
     }
 
-    /// Renders the window region of the positioned photo into the texture size.
-    private func bakeTexture() -> UIImage {
+    /// Renders the window region of the positioned (zoomed, rotated) photo
+    /// into the texture size, applying the same transform chain as the view.
+    /// 1024×1536 keeps fine detail (glitter, art) crisp on the full-screen nail.
+    private func bakeTexture(zoom: CGFloat, rotation: CGFloat, offset: CGSize) -> UIImage {
+        let target = CGSize(width: 1024, height: 1536)
+        let k = window.width / target.width // window pts per target px
         let scale = fillScale * zoom
-        let cropSize = CGSize(width: window.width / scale, height: window.height / scale)
-        let centerX = image.size.width / 2 - offset.width / scale
-        let centerY = image.size.height / 2 - offset.height / scale
-        let cropRect = CGRect(
-            x: centerX - cropSize.width / 2,
-            y: centerY - cropSize.height / 2,
-            width: cropSize.width,
-            height: cropSize.height
-        )
-
-        let target = CGSize(width: 512, height: 768)
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
-        return UIGraphicsImageRenderer(size: target, format: format).image { _ in
-            let renderScale = target.width / cropRect.width
-            let drawSize = CGSize(
-                width: image.size.width * renderScale,
-                height: image.size.height * renderScale
-            )
-            let origin = CGPoint(x: -cropRect.minX * renderScale, y: -cropRect.minY * renderScale)
-            image.draw(in: CGRect(origin: origin, size: drawSize))
+        let baked = UIGraphicsImageRenderer(size: target, format: format).image { ctx in
+            let cg = ctx.cgContext
+            cg.interpolationQuality = .high
+            cg.translateBy(x: target.width / 2, y: target.height / 2)
+            cg.scaleBy(x: 1 / k, y: 1 / k)
+            cg.translateBy(x: offset.width, y: offset.height)
+            cg.rotate(by: rotation)
+            cg.scaleBy(x: scale, y: scale)
+            cg.translateBy(x: -image.size.width / 2, y: -image.size.height / 2)
+            image.draw(in: CGRect(origin: .zero, size: image.size))
+        }
+        // Upscale factor from the source region to the texture: beyond ~1.4x
+        // the result blurs, so recover perceived detail with a light sharpen.
+        let sourceRegionWidth = window.width / scale
+        let upscale = target.width / max(1, sourceRegionWidth)
+        guard upscale > 1.4 else { return baked }
+        return Self.sharpened(baked, amount: min(0.55, 0.18 * upscale))
+    }
+
+    private static let ciContext = CIContext()
+
+    private static func sharpened(_ image: UIImage, amount: Double) -> UIImage {
+        guard let input = CIImage(image: image) else { return image }
+        let filter = CIFilter.sharpenLuminance()
+        filter.inputImage = input
+        filter.sharpness = Float(amount)
+        guard let output = filter.outputImage,
+              let cgImage = ciContext.createCGImage(output, from: input.extent) else { return image }
+        return UIImage(cgImage: cgImage)
+    }
+
+    private func bakeCurrent() -> UIImage {
+        bakeTexture(zoom: zoom, rotation: rotation, offset: offset)
+    }
+
+    /// Auto-bake one detected nail (same jump the marker tap performs).
+    private func autoBake(_ nail: DetectedNail) -> UIImage {
+        let targetScale = window.height / nail.cropHeight
+        let z = min(maxZoom, max(1, targetScale / fillScale))
+        let r = -nail.axisAngle
+        let o = offsetKeeping(nail.center, atWindowCenterWithZoom: z, rotation: r)
+        return bakeTexture(zoom: z, rotation: r, offset: o)
+    }
+
+    // MARK: - Fingertip detection
+
+    /// Finds fingertips with Vision hand-pose detection. Hand pose expects
+    /// upright hands, so the photo is tried in four orientations (fingers
+    /// down / sideways happen a lot in nail photos) and results are merged
+    /// back into the displayed image's coordinate space.
+    private static func detectNails(in image: UIImage) async -> [DetectedNail] {
+        let detectionImage = normalizedForDetection(image)
+        guard let cgImage = detectionImage.cgImage else { return [] }
+        let displaySize = image.size
+        return await Task.detached(priority: .userInitiated) { () -> [DetectedNail] in
+            // (orientation Vision applies, inverse map back to display space)
+            let attempts: [(CGImagePropertyOrientation, (CGPoint) -> CGPoint)] = [
+                (.up, { $0 }),
+                (.right, { CGPoint(x: 1 - $0.y, y: $0.x) }),
+                (.left, { CGPoint(x: $0.y, y: 1 - $0.x) }),
+                (.down, { CGPoint(x: 1 - $0.x, y: 1 - $0.y) }),
+            ]
+            var merged: [DetectedNail] = []
+            for (orientation, unmap) in attempts {
+                let found = runHandPose(
+                    cgImage: cgImage,
+                    orientation: orientation,
+                    unmap: unmap,
+                    displaySize: displaySize
+                )
+                for nail in found {
+                    let isDuplicate = merged.contains { existing in
+                        let d = hypot(existing.center.x - nail.center.x, existing.center.y - nail.center.y)
+                        return d < max(existing.cropHeight, nail.cropHeight) * 0.6
+                    }
+                    if !isDuplicate { merged.append(nail) }
+                }
+                if merged.count >= 5 { break }
+            }
+            return merged
+        }.value
+    }
+
+    /// One hand-pose pass at a given orientation; points are unmapped back to
+    /// the displayed image space before sizes/angles are computed.
+    private static func runHandPose(
+        cgImage: CGImage,
+        orientation: CGImagePropertyOrientation,
+        unmap: (CGPoint) -> CGPoint,
+        displaySize: CGSize
+    ) -> [DetectedNail] {
+        let request = VNDetectHumanHandPoseRequest()
+        request.maximumHandCount = 2
+        let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation, options: [:])
+        try? handler.perform([request])
+        guard let observations = request.results, !observations.isEmpty else { return [] }
+
+        let jointPairs: [(VNHumanHandPoseObservation.JointName, VNHumanHandPoseObservation.JointName)] = [
+            (.thumbTip, .thumbIP),
+            (.indexTip, .indexDIP),
+            (.middleTip, .middleDIP),
+            (.ringTip, .ringDIP),
+            (.littleTip, .littleDIP),
+        ]
+
+        var nails: [DetectedNail] = []
+        for observation in observations {
+            for (tipName, dipName) in jointPairs {
+                guard let tip = try? observation.recognizedPoint(tipName), tip.confidence > 0.35,
+                      let dip = try? observation.recognizedPoint(dipName), dip.confidence > 0.2
+                else { continue }
+                // Vision: normalized, bottom-left origin → display space (top-left origin)
+                let tipNorm = unmap(CGPoint(x: tip.location.x, y: tip.location.y))
+                let dipNorm = unmap(CGPoint(x: dip.location.x, y: dip.location.y))
+                let tipPoint = CGPoint(x: tipNorm.x * displaySize.width, y: (1 - tipNorm.y) * displaySize.height)
+                let dipPoint = CGPoint(x: dipNorm.x * displaySize.width, y: (1 - dipNorm.y) * displaySize.height)
+                let vx = tipPoint.x - dipPoint.x
+                let vy = tipPoint.y - dipPoint.y
+                let segment = hypot(vx, vy)
+                guard segment > 4 else { continue }
+                let axisAngle = atan2(vx, -vy)
+                let nailCenter = CGPoint(
+                    x: tipPoint.x - vx * 0.32,
+                    y: tipPoint.y - vy * 0.32
+                )
+                nails.append(
+                    DetectedNail(center: nailCenter, cropHeight: segment * 1.2, axisAngle: axisAngle)
+                )
+            }
+        }
+        return nails
+    }
+
+    /// Bakes EXIF orientation out and downsizes for fast multi-pass detection.
+    private static func normalizedForDetection(_ image: UIImage) -> UIImage {
+        let maxDimension: CGFloat = 1800
+        let scale = min(1, maxDimension / max(image.size.width, image.size.height))
+        if scale == 1 && image.imageOrientation == .up { return image }
+        let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
+    }
+}
+
+private extension CGImagePropertyOrientation {
+    init(_ orientation: UIImage.Orientation) {
+        switch orientation {
+        case .up: self = .up
+        case .down: self = .down
+        case .left: self = .left
+        case .right: self = .right
+        case .upMirrored: self = .upMirrored
+        case .downMirrored: self = .downMirrored
+        case .leftMirrored: self = .leftMirrored
+        case .rightMirrored: self = .rightMirrored
+        @unknown default: self = .up
         }
     }
 }

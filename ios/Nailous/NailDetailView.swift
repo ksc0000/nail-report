@@ -11,6 +11,8 @@ struct NailDetailView: View {
 
     @State private var shape: NailShape
     @State private var mode: StageMode = .single
+    @State private var layout: SetLayout = .arc
+    @State private var motion: AutoMotion = .off
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingDelete = false
@@ -21,6 +23,8 @@ struct NailDetailView: View {
         self.subtitle = subtitle
         self.record = record
         _shape = State(initialValue: record?.shape ?? .squoval)
+        // A whole-hand capture opens as the five-piece set by default.
+        _mode = State(initialValue: (record?.setAppearances?.count ?? 0) > 1 ? .set : .single)
     }
 
     var body: some View {
@@ -44,8 +48,15 @@ struct NailDetailView: View {
                 }
                 .padding(.top, 6)
 
-                NailSceneView(appearance: appearance, shape: shape, mode: mode)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                NailSceneView(
+                    appearance: appearance,
+                    shape: shape,
+                    mode: mode,
+                    setAppearances: record?.setAppearances,
+                    layout: layout,
+                    motion: motion
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 Text("ドラッグで回転")
                     .font(.caption)
@@ -94,17 +105,35 @@ struct NailDetailView: View {
                     .padding(.bottom, 14)
                 }
 
-                HStack(spacing: 8) {
-                    ForEach(StageMode.allCases) { candidate in
-                        StagePill(label: candidate.label, isOn: mode == candidate) {
-                            mode = candidate
+                VStack(spacing: 8) {
+                    HStack(spacing: 8) {
+                        ForEach(StageMode.allCases) { candidate in
+                            StagePill(label: candidate.label, isOn: mode == candidate) {
+                                mode = candidate
+                            }
+                        }
+                        StagePill(label: motion.label, isOn: motion != .off) {
+                            motion = motion.next
+                        }
+                    }
+                    if mode == .set {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(SetLayout.allCases) { candidate in
+                                    StagePill(label: candidate.label, isOn: layout == candidate) {
+                                        layout = candidate
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
                         }
                     }
                     if record == nil {
-                        Spacer().frame(width: 10)
-                        ForEach(NailShape.allCases) { candidate in
-                            StagePill(label: candidate.label, isOn: shape == candidate) {
-                                shape = candidate
+                        HStack(spacing: 8) {
+                            ForEach(NailShape.allCases) { candidate in
+                                StagePill(label: candidate.label, isOn: shape == candidate) {
+                                    shape = candidate
+                                }
                             }
                         }
                     }

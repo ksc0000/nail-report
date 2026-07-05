@@ -22,10 +22,58 @@ enum StageMode: String, CaseIterable, Identifiable {
     }
 }
 
+/// How the five-piece set is arranged on stage.
+enum SetLayout: String, CaseIterable, Identifiable {
+    case arc
+    case curve
+    case cascade
+    case circle
+    case line
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .arc: return "アーチ"
+        case .curve: return "カーブ"
+        case .cascade: return "カスケード"
+        case .circle: return "サークル"
+        case .line: return "ライン"
+        }
+    }
+}
+
+/// Idle motion applied to the stage.
+enum AutoMotion: String, CaseIterable {
+    case off
+    case turntable
+    case orbit
+
+    var next: AutoMotion {
+        switch self {
+        case .off: return .turntable
+        case .turntable: return .orbit
+        case .orbit: return .off
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .off: return "▶ 回転"
+        case .turntable: return "⟳ ターン中"
+        case .orbit: return "◎ 周回中"
+        }
+    }
+}
+
 struct NailSceneView: UIViewRepresentable {
     var appearance: NailAppearance
     var shape: NailShape
     var mode: StageMode
+    /// When present, the five-piece set uses these per finger (cycled if fewer).
+    var setAppearances: [NailAppearance]? = nil
+    var layout: SetLayout = .arc
+    var motion: AutoMotion = .off
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -68,13 +116,21 @@ struct NailSceneView: UIViewRepresentable {
         ambient.light?.intensity = 220
         scene.rootNode.addChildNode(ambient)
 
+        // orbitNode (revolves) → orbitArm (radius offset) → floatNode (bob) →
+        // spinNode (user rotation) → nail content
+        let orbitNode = SCNNode()
+        let orbitArm = SCNNode()
         let floatNode = SCNNode()
         let spinNode = SCNNode()
         // Rest pose: a slight three-quarter view so the C-curve reads as 3D
         // before the first touch.
         spinNode.eulerAngles = SCNVector3(-0.1, 0.42, 0)
         floatNode.addChildNode(spinNode)
-        scene.rootNode.addChildNode(floatNode)
+        orbitArm.addChildNode(floatNode)
+        orbitNode.addChildNode(orbitArm)
+        scene.rootNode.addChildNode(orbitNode)
+        context.coordinator.orbitNode = orbitNode
+        context.coordinator.orbitArm = orbitArm
 
         let bob = SCNAction.sequence([
             SCNAction.moveBy(x: 0, y: 0.09, z: 0, duration: 1.9),
@@ -84,7 +140,8 @@ struct NailSceneView: UIViewRepresentable {
         floatNode.runAction(SCNAction.repeatForever(bob))
 
         context.coordinator.spinNode = spinNode
-        context.coordinator.rebuildPlate(appearance: appearance, shape: shape, mode: mode)
+        context.coordinator.rebuildPlate(appearance: appearance, setAppearances: setAppearances, shape: shape, mode: mode, layout: layout)
+        context.coordinator.updateMotion(motion, stageMode: mode)
 
         let pan = UIPanGestureRecognizer(
             target: context.coordinator,
@@ -95,12 +152,15 @@ struct NailSceneView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: SCNView, context: Context) {
-        context.coordinator.rebuildPlate(appearance: appearance, shape: shape, mode: mode)
+        context.coordinator.rebuildPlate(appearance: appearance, setAppearances: setAppearances, shape: shape, mode: mode, layout: layout)
+        context.coordinator.updateMotion(motion, stageMode: mode)
     }
 
     final class Coordinator: NSObject {
         var spinNode: SCNNode?
         var lightRig: SCNNode?
+        var orbitNode: SCNNode?
+        var orbitArm: SCNNode?
         private var contentNode: SCNNode?
         private var currentKey: String?
         private let motion = CMMotionManager()
@@ -141,8 +201,9 @@ struct NailSceneView: UIViewRepresentable {
             (1.06, 0.88), (0.88, 1.0), (0.94, 1.06), (0.86, 1.0), (0.70, 0.84),
         ]
 
-        func rebuildPlate(appearance: NailAppearance, shape: NailShape, mode: StageMode) {
-            let key = "\(appearance.id)/\(shape.rawValue)/\(mode.rawValue)"
+        func rebuildPlate(appearance: NailAppearance, setAppearances: [NailAppearance]?, shape: NailShape, mode: StageMode, layout: SetLayout) {
+            let setKey = setAppearances?.map(\.id).joined(separator: "+") ?? ""
+            let key = "\(appearance.id)/\(setKey)/\(shape.rawValue)/\(mode.rawValue)/\(layout.rawValue)"
             guard key != currentKey, let spinNode else { return }
             currentKey = key
 
@@ -152,7 +213,7 @@ struct NailSceneView: UIViewRepresentable {
             case .single:
                 node = SCNNode(geometry: Self.makePlate(appearance: appearance, shape: shape))
             case .set:
-                node = Self.makeTipSet(appearance: appearance, shape: shape)
+                node = Self.makeTipSet(appearances: setAppearances ?? [appearance], shape: shape, layout: layout)
             }
             spinNode.addChildNode(node)
             contentNode = node
@@ -166,24 +227,98 @@ struct NailSceneView: UIViewRepresentable {
 
         /// Five tips fanned in a shallow arc, middle finger front and tallest —
         /// the way a press-on set is presented.
-        private static func makeTipSet(appearance: NailAppearance, shape: NailShape) -> SCNNode {
+        private static func makeTipSet(appearances: [NailAppearance], shape: NailShape, layout: SetLayout) -> SCNNode {
             let group = SCNNode()
             for (index, spec) in fingerSpecs.enumerated() {
                 let fi = Float(index) - 2
+                let appearance = appearances[index % appearances.count]
                 let node = SCNNode(geometry: makePlate(appearance: appearance, shape: shape))
                 node.scale = SCNVector3(spec.w, spec.l, spec.w)
-                node.position = SCNVector3(fi * 1.52, -0.16 * fi * fi, -0.03 * abs(fi))
-                node.eulerAngles.z = -fi * 0.055
+                switch layout {
+                case .arc:
+                    node.position = SCNVector3(fi * 1.52, -0.16 * fi * fi, -0.03 * abs(fi))
+                    node.eulerAngles.z = -fi * 0.055
+                case .curve:
+                    // Nails standing on a circular orbit receding into depth:
+                    // centre nail nearest the camera, ends curving away and
+                    // turning outward along the ring's tangent.
+                    let step: Float = 0.35
+                    let radius: Float = 4.7
+                    let angle = fi * step
+                    node.position = SCNVector3(
+                        radius * sin(angle),
+                        0,
+                        radius * cos(angle) - radius
+                    )
+                    node.eulerAngles.y = angle
+                    node.eulerAngles.z = 0
+                case .cascade:
+                    node.position = SCNVector3(fi * 1.34, -fi * 0.62, -0.02 * abs(fi))
+                    node.eulerAngles.z = -0.1
+                case .circle:
+                    let angle = Float(index) / 5 * 2 * Float.pi
+                    let radius: Float = 1.62
+                    node.position = SCNVector3(radius * sin(angle), radius * cos(angle), 0)
+                    node.eulerAngles.z = -angle
+                case .line:
+                    node.position = SCNVector3(fi * 1.5, 0, 0)
+                    node.eulerAngles.z = 0
+                }
                 group.addChildNode(node)
             }
-            group.scale = SCNVector3(0.44, 0.44, 0.44)
+            let groupScale: Float = layout == .circle ? 0.4 : 0.44
+            group.scale = SCNVector3(groupScale, groupScale, groupScale)
             return group
+        }
+
+        private var currentMotion: AutoMotion = .off
+
+        func updateMotion(_ motion: AutoMotion, stageMode: StageMode) {
+            guard motion != currentMotion else { return }
+            currentMotion = motion
+            spinNode?.removeAction(forKey: "turntable")
+            orbitNode?.removeAction(forKey: "orbit")
+
+            switch motion {
+            case .off:
+                settleOrbit()
+            case .turntable:
+                settleOrbit()
+                startTurntable()
+            case .orbit:
+                // Swing out to the orbit radius, then revolve around the stage
+                // centre — a slow concentric drift past the camera.
+                let radius: Float = stageMode == .set ? 0.7 : 1.5
+                let out = SCNAction.move(to: SCNVector3(radius, 0, 0), duration: 0.8)
+                out.timingMode = .easeInEaseOut
+                orbitArm?.runAction(out)
+                let revolve = SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 16)
+                orbitNode?.runAction(SCNAction.repeatForever(revolve), forKey: "orbit")
+            }
+        }
+
+        private func settleOrbit() {
+            guard let orbitNode, let orbitArm else { return }
+            let home = SCNAction.move(to: SCNVector3Zero, duration: 0.6)
+            home.timingMode = .easeInEaseOut
+            orbitArm.runAction(home)
+            let level = SCNAction.rotateTo(x: 0, y: 0, z: 0, duration: 0.6, usesShortestUnitArc: true)
+            level.timingMode = .easeInEaseOut
+            orbitNode.runAction(level)
+        }
+
+        private func startTurntable() {
+            guard let spinNode, spinNode.action(forKey: "turntable") == nil else { return }
+            let spin = SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 10)
+            spinNode.runAction(SCNAction.repeatForever(spin), forKey: "turntable")
         }
 
         private static func makeMaterial(appearance: NailAppearance) -> SCNMaterial {
             let material = SCNMaterial()
             material.lightingModel = .physicallyBased
             material.diffuse.contents = appearance.texture
+            material.diffuse.maxAnisotropy = 8
+            material.diffuse.mipFilter = .linear
             material.metalness.contents = 0.0
             material.isDoubleSided = true
             switch appearance.finish {
@@ -211,6 +346,10 @@ struct NailSceneView: UIViewRepresentable {
                 let tiltedX = spinNode.eulerAngles.x + Float(delta.y) * 0.008
                 spinNode.eulerAngles.x = min(0.5, max(-0.5, tiltedX))
             case .ended:
+                if currentMotion == .turntable {
+                    startTurntable()
+                    return
+                }
                 let velocity = gesture.velocity(in: view)
                 let spin = SCNAction.rotateBy(
                     x: 0,

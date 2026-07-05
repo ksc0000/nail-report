@@ -16,6 +16,9 @@ final class NailRecord {
     var priceYen: Int?
     var memo: String = ""
     var tags: [String] = []
+    /// Per-finger textures (left→right in the source photo) when a whole hand
+    /// was captured at once. Empty for single-nail records.
+    var fingerPhotoData: [Data] = []
 
     init(
         title: String,
@@ -25,7 +28,8 @@ final class NailRecord {
         salon: String = "",
         priceYen: Int? = nil,
         memo: String = "",
-        tags: [String] = []
+        tags: [String] = [],
+        fingerPhotoData: [Data] = []
     ) {
         self.id = UUID()
         self.title = title
@@ -37,6 +41,7 @@ final class NailRecord {
         self.priceYen = priceYen
         self.memo = memo
         self.tags = tags
+        self.fingerPhotoData = fingerPhotoData
     }
 
     var shape: NailShape { NailShape(rawValue: shapeRaw) ?? .squoval }
@@ -46,6 +51,18 @@ final class NailRecord {
 
     var appearance: NailAppearance? {
         texture.map { NailAppearance(id: id.uuidString, texture: $0, finish: finish) }
+    }
+
+    /// Appearances for the five-piece set view; nil unless this record holds
+    /// multiple finger textures.
+    var setAppearances: [NailAppearance]? {
+        guard fingerPhotoData.count > 1 else { return nil }
+        let list = fingerPhotoData.enumerated().compactMap { index, data in
+            UIImage(data: data).map {
+                NailAppearance(id: "\(id.uuidString)-f\(index)", texture: $0, finish: finish)
+            }
+        }
+        return list.count > 1 ? list : nil
     }
 }
 
