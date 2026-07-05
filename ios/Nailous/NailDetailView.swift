@@ -13,6 +13,7 @@ struct NailDetailView: View {
     @State private var mode: StageMode = .single
     @State private var layout: SetLayout = .arc
     @State private var motion: AutoMotion = .off
+    @State private var theme: StageTheme = .glass
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingDelete = false
@@ -29,7 +30,7 @@ struct NailDetailView: View {
 
     var body: some View {
         ZStack {
-            StageBackground()
+            StageBackground(theme: theme)
 
             VStack(spacing: 0) {
                 VStack(spacing: 4) {
@@ -54,7 +55,8 @@ struct NailDetailView: View {
                     mode: mode,
                     setAppearances: record?.setAppearances,
                     layout: layout,
-                    motion: motion
+                    motion: motion,
+                    theme: theme
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -116,6 +118,16 @@ struct NailDetailView: View {
                             motion = motion.next
                         }
                     }
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(StageTheme.allCases) { candidate in
+                                StagePill(label: candidate.label, isOn: theme == candidate) {
+                                    theme = candidate
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
                     if mode == .set {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
@@ -166,16 +178,38 @@ struct NailDetailView: View {
 
 /// Shared dark stage backdrop.
 struct StageBackground: View {
+    var theme: StageTheme = .glass
+
     var body: some View {
-        RadialGradient(
-            colors: [
-                Color(red: 0.16, green: 0.09, blue: 0.15),
-                Color(red: 0.04, green: 0.02, blue: 0.05),
-            ],
-            center: .center,
-            startRadius: 40,
-            endRadius: 480
-        )
+        Group {
+            if let backdrop = theme.backdropImage {
+                // AI-generated backdrop (bg_<theme>.png in the bundle), dimmed
+                // and vignetted so the nail stays the hero.
+                GeometryReader { proxy in
+                    Image(uiImage: backdrop)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                        .clipped()
+                        .overlay(Color.black.opacity(0.3))
+                        .overlay(
+                            RadialGradient(
+                                colors: [.clear, .black.opacity(0.55)],
+                                center: .center,
+                                startRadius: 120,
+                                endRadius: 520
+                            )
+                        )
+                }
+            } else {
+                RadialGradient(
+                    colors: theme.gradientColors,
+                    center: .center,
+                    startRadius: 40,
+                    endRadius: 480
+                )
+            }
+        }
         .ignoresSafeArea()
     }
 }

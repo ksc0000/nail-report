@@ -74,6 +74,7 @@ struct NailSceneView: UIViewRepresentable {
     var setAppearances: [NailAppearance]? = nil
     var layout: SetLayout = .arc
     var motion: AutoMotion = .off
+    var theme: StageTheme = .glass
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -85,9 +86,10 @@ struct NailSceneView: UIViewRepresentable {
 
         let scene = SCNScene()
         scene.background.contents = UIColor.clear
-        scene.lightingEnvironment.contents = StudioEnvironment.image
         scene.lightingEnvironment.intensity = 1.6
         view.scene = scene
+        context.coordinator.scene = scene
+        context.coordinator.applyTheme(theme)
 
         let camera = SCNCamera()
         camera.fieldOfView = 30
@@ -96,6 +98,7 @@ struct NailSceneView: UIViewRepresentable {
         cameraNode.camera = camera
         cameraNode.position = SCNVector3(0, 0, 9.2)
         scene.rootNode.addChildNode(cameraNode)
+        context.coordinator.cameraNode = cameraNode
 
         // Key light sits on a rig so device tilt can sweep the highlight
         // across the gel — the way light moves on a real tip in your hand.
@@ -125,6 +128,7 @@ struct NailSceneView: UIViewRepresentable {
         // Rest pose: a slight three-quarter view so the C-curve reads as 3D
         // before the first touch.
         spinNode.eulerAngles = SCNVector3(-0.1, 0.42, 0)
+        context.coordinator.restOrientation = spinNode.orientation
         floatNode.addChildNode(spinNode)
         orbitArm.addChildNode(floatNode)
         orbitNode.addChildNode(orbitArm)
@@ -148,12 +152,26 @@ struct NailSceneView: UIViewRepresentable {
             action: #selector(Coordinator.handlePan(_:))
         )
         view.addGestureRecognizer(pan)
+
+        let pinch = UIPinchGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handlePinch(_:))
+        )
+        view.addGestureRecognizer(pinch)
+
+        let doubleTap = UITapGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleDoubleTap(_:))
+        )
+        doubleTap.numberOfTapsRequired = 2
+        view.addGestureRecognizer(doubleTap)
         return view
     }
 
     func updateUIView(_ uiView: SCNView, context: Context) {
         context.coordinator.rebuildPlate(appearance: appearance, setAppearances: setAppearances, shape: shape, mode: mode, layout: layout)
         context.coordinator.updateMotion(motion, stageMode: mode)
+        context.coordinator.applyTheme(theme)
     }
 
     final class Coordinator: NSObject {
@@ -161,6 +179,27 @@ struct NailSceneView: UIViewRepresentable {
         var lightRig: SCNNode?
         var orbitNode: SCNNode?
         var orbitArm: SCNNode?
+        var cameraNode: SCNNode?
+        weak var scene: SCNScene?
+        var restOrientation = SCNQuaternion(0, 0, 0, 1)
+        private var particleNode: SCNNode?
+        private var currentTheme: StageTheme?
+        private var cameraAnchorZ: Float = 9.2
+
+        func applyTheme(_ theme: StageTheme) {
+            guard theme != currentTheme, let scene else { return }
+            currentTheme = theme
+            scene.lightingEnvironment.contents = StageEnvironment.image(for: theme)
+            particleNode?.removeFromParentNode()
+            particleNode = nil
+            if let system = StageEnvironment.particles(for: theme) {
+                let node = SCNNode()
+                node.position = SCNVector3(0, 0, -2.4)
+                node.addParticleSystem(system)
+                scene.rootNode.addChildNode(node)
+                particleNode = node
+            }
+        }
         private var contentNode: SCNNode?
         private var currentKey: String?
         private let motion = CMMotionManager()
@@ -334,6 +373,8 @@ struct NailSceneView: UIViewRepresentable {
             return material
         }
 
+        private var lastAxis = SCNVector3(0, 1, 0)
+
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
             guard let spinNode, let view = gesture.view else { return }
             switch gesture.state {
@@ -342,19 +383,18 @@ struct NailSceneView: UIViewRepresentable {
             case .changed:
                 let delta = gesture.translation(in: view)
                 gesture.setTranslation(.zero, in: view)
-                spinNode.eulerAngles.y += Float(delta.x) * 0.011
-                let tiltedX = spinNode.eulerAngles.x + Float(delta.y) * 0.008
-                spinNode.eulerAngles.x = min(0.5, max(-0.5, tiltedX))
+                applyTrackball(dx: Float(delta.x), dy: Float(delta.y))
             case .ended:
                 if currentMotion == .turntable {
                     startTurntable()
                     return
                 }
                 let velocity = gesture.velocity(in: view)
-                let spin = SCNAction.rotateBy(
-                    x: 0,
-                    y: CGFloat(velocity.x) * 0.0011,
-                    z: 0,
+                let speed = sqrt(velocity.x * velocity.x + velocity.y * velocity.y)
+                guard speed > 60 else { return }
+                let spin = SCNAction.rotate(
+                    by: CGFloat(speed) * 0.001,
+                    around: lastAxis,
                     duration: 0.9
                 )
                 spin.timingMode = .easeOut
@@ -362,6 +402,60 @@ struct NailSceneView: UIViewRepresentable {
             default:
                 break
             }
+        }
+
+        /// Free trackball rotation: the drag direction rotates the model about
+        /// the perpendicular screen axis, so diagonal drags tumble diagonally.
+        private func applyTrackball(dx: Float, dy: Float) {
+            guard let spinNode else { return }
+            let angle = sqrt(dx * dx + dy * dy) * 0.009
+            guard angle > 0.0001 else { return }
+            let length = sqrt(dx * dx + dy * dy)
+            let axis = SCNVector3(dy / length, dx / length, 0)
+            lastAxis = axis
+            let half = angle / 2
+            let rotation = SCNQuaternion(
+                axis.x * sin(half),
+                axis.y * sin(half),
+                axis.z * sin(half),
+                cos(half)
+            )
+            spinNode.orientation = Self.multiply(rotation, spinNode.orientation)
+        }
+
+        private static func multiply(_ l: SCNQuaternion, _ r: SCNQuaternion) -> SCNQuaternion {
+            SCNQuaternion(
+                l.w * r.x + l.x * r.w + l.y * r.z - l.z * r.y,
+                l.w * r.y - l.x * r.z + l.y * r.w + l.z * r.x,
+                l.w * r.z + l.x * r.y - l.y * r.x + l.z * r.w,
+                l.w * r.w - l.x * r.x - l.y * r.y - l.z * r.z
+            )
+        }
+
+        @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
+            guard let cameraNode else { return }
+            switch gesture.state {
+            case .began:
+                cameraAnchorZ = cameraNode.position.z
+            case .changed:
+                let z = cameraAnchorZ / Float(gesture.scale)
+                cameraNode.position.z = min(14, max(4.5, z))
+            default:
+                break
+            }
+        }
+
+        /// Double tap: spring everything home — pose and zoom.
+        @objc func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
+            guard let spinNode else { return }
+            spinNode.removeAllActions()
+            SCNTransaction.begin()
+            SCNTransaction.animationDuration = 0.5
+            SCNTransaction.animationTimingFunction = CAMediaTimingFunction(name: .easeOut)
+            spinNode.orientation = restOrientation
+            cameraNode?.position.z = 9.2
+            SCNTransaction.commit()
+            if currentMotion == .turntable { startTurntable() }
         }
     }
 }
