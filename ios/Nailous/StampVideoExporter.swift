@@ -1,6 +1,8 @@
 import AVFoundation
+import ImageIO
 import SceneKit
 import UIKit
+import UniformTypeIdentifiers
 
 /// Renders a seamless 3-second turntable loop of the current nail(s) as an
 /// H.264 MP4 (1080×1920) with the stage theme baked in — ready for Instagram
@@ -35,20 +37,21 @@ enum StampVideoExporter {
         }.value
     }
 
-    private static func renderVideo(
+    /// Builds the offscreen stage (same recipe as the live view) and returns
+    /// the renderer plus the node to spin. `background` nil = transparent.
+    private static func makeStage(
         appearance: NailAppearance,
         setAppearances: [NailAppearance]?,
         shape: NailShape,
         mode: StageMode,
         layout: SetLayout,
         theme: StageTheme,
-        duration: Double,
-        fps: Int,
-        size: CGSize
-    ) throws -> URL {
-        // --- offscreen stage (same recipe as the live view) ---
+        background: UIImage?
+    ) throws -> (renderer: SCNRenderer, spinNode: SCNNode) {
         let scene = SCNScene()
-        scene.background.contents = backgroundImage(for: theme, size: size)
+        if let background {
+            scene.background.contents = background
+        }
         scene.lightingEnvironment.contents = StageEnvironment.image(for: theme)
         scene.lightingEnvironment.intensity = 1.6
 
@@ -95,6 +98,141 @@ enum StampVideoExporter {
         let renderer = SCNRenderer(device: device, options: nil)
         renderer.scene = scene
         renderer.autoenablesDefaultLighting = false
+        return (renderer, spinNode)
+    }
+
+    /// Transparent animated GIF "moving stamp" — plays in LINE / X / Discord.
+    /// (Instagram Stories can't paste animated stickers; use the MP4 there.)
+    static func exportGIF(
+        appearance: NailAppearance,
+        setAppearances: [NailAppearance]?,
+        shape: NailShape,
+        mode: StageMode,
+        layout: SetLayout,
+        theme: StageTheme,
+        duration: Double = 3,
+        fps: Int = 15,
+        size: CGSize = CGSize(width: 540, height: 960)
+    ) async throws -> URL {
+        try await Task.detached(priority: .userInitiated) {
+            let (renderer, spinNode) = try makeStage(
+                appearance: appearance,
+                setAppearances: setAppearances,
+                shape: shape,
+                mode: mode,
+                layout: layout,
+                theme: theme,
+                background: nil
+            )
+
+            let frameCount = Int(duration * Double(fps))
+            var frames: [CGImage] = []
+            frames.reserveCapacity(frameCount)
+            var unionBox: CGRect?
+            for frame in 0..<frameCount {
+                let progress = Float(frame) / Float(frameCount)
+                spinNode.eulerAngles = SCNVector3(-0.1, 2 * Float.pi * progress, 0)
+                let image = renderer.snapshot(atTime: 0, with: size, antialiasingMode: .multisampling4X)
+                guard let cgImage = image.cgImage else { throw ExportError.frameFailed }
+                frames.append(cgImage)
+                if let box = alphaBoundingBox(of: cgImage) {
+                    unionBox = unionBox?.union(box) ?? box
+                }
+            }
+
+            // Trim every frame to the shared bounding box (+padding) so the
+            // GIF is a tight sticker with a stable frame.
+            var cropped = frames
+            if var box = unionBox {
+                box = box.insetBy(dx: -20, dy: -20)
+                    .intersection(CGRect(x: 0, y: 0, width: size.width, height: size.height))
+                cropped = frames.compactMap { $0.cropping(to: box) }
+                if cropped.count != frames.count { cropped = frames }
+            }
+
+            let url = FileManager.default.temporaryDirectory
+                .appendingPathComponent("nailous-stamp-\(Int(Date().timeIntervalSince1970)).gif")
+            try? FileManager.default.removeItem(at: url)
+            guard let destination = CGImageDestinationCreateWithURL(
+                url as CFURL,
+                UTType.gif.identifier as CFString,
+                cropped.count,
+                nil
+            ) else { throw ExportError.writerFailed }
+
+            let gifProperties = [
+                kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFLoopCount: 0],
+            ] as CFDictionary
+            CGImageDestinationSetProperties(destination, gifProperties)
+            let delay = 1.0 / Double(fps)
+            let frameProperties = [
+                kCGImagePropertyGIFDictionary: [
+                    kCGImagePropertyGIFUnclampedDelayTime: delay,
+                    kCGImagePropertyGIFDelayTime: delay,
+                ],
+            ] as CFDictionary
+            for cgImage in cropped {
+                CGImageDestinationAddImage(destination, cgImage, frameProperties)
+            }
+            guard CGImageDestinationFinalize(destination) else { throw ExportError.writerFailed }
+            return url
+        }.value
+    }
+
+    /// Bounding box of non-transparent pixels (top-left origin).
+    private static func alphaBoundingBox(of cgImage: CGImage) -> CGRect? {
+        let width = cgImage.width
+        let height = cgImage.height
+        guard width > 0, height > 0,
+              let context = CGContext(
+                  data: nil,
+                  width: width,
+                  height: height,
+                  bitsPerComponent: 8,
+                  bytesPerRow: width * 4,
+                  space: CGColorSpaceCreateDeviceRGB(),
+                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+              )
+        else { return nil }
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard let raw = context.data else { return nil }
+        let pixels = raw.bindMemory(to: UInt8.self, capacity: width * height * 4)
+        var minX = width, maxX = -1, minY = height, maxY = -1
+        for y in 0..<height {
+            let row = y * width * 4
+            for x in 0..<width {
+                if pixels[row + x * 4 + 3] > 8 {
+                    if x < minX { minX = x }
+                    if x > maxX { maxX = x }
+                    if y < minY { minY = y }
+                    if y > maxY { maxY = y }
+                }
+            }
+        }
+        guard maxX >= minX, maxY >= minY else { return nil }
+        return CGRect(x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1)
+    }
+
+    private static func renderVideo(
+        appearance: NailAppearance,
+        setAppearances: [NailAppearance]?,
+        shape: NailShape,
+        mode: StageMode,
+        layout: SetLayout,
+        theme: StageTheme,
+        duration: Double,
+        fps: Int,
+        size: CGSize
+    ) throws -> URL {
+        let (renderer, spinNode) = try makeStage(
+            appearance: appearance,
+            setAppearances: setAppearances,
+            shape: shape,
+            mode: mode,
+            layout: layout,
+            theme: theme,
+            background: backgroundImage(for: theme, size: size)
+        )
 
         // --- video writer ---
         let url = FileManager.default.temporaryDirectory

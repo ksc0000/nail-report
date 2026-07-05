@@ -65,9 +65,13 @@ extension UIImage {
 struct StampSheet: View {
     let image: UIImage
     var makeVideo: (() async throws -> URL)?
+    var makeGIF: (() async throws -> URL)?
     @State private var copied = false
     @State private var isExportingVideo = false
+    @State private var isExportingGIF = false
     @State private var videoURL: URL?
+    @State private var gifURL: URL?
+    @State private var videoSaved = false
 
     var body: some View {
         ZStack {
@@ -134,46 +138,110 @@ struct StampSheet: View {
                     }
                 }
 
-                if makeVideo != nil {
-                    Group {
-                        if let videoURL {
-                            ShareLink(item: videoURL) {
-                                Label("動画を共有（写真に保存→ストーリーへ）", systemImage: "film")
-                                    .font(.system(size: 13.5, weight: .semibold))
-                                    .padding(.horizontal, 18)
-                                    .padding(.vertical, 11)
-                                    .background(Capsule().fill(Color(red: 0.55, green: 0.45, blue: 0.75)))
-                                    .foregroundStyle(.white)
-                            }
-                        } else if isExportingVideo {
-                            HStack(spacing: 8) {
-                                ProgressView().tint(.white)
-                                Text("回転動画を作成中…")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(.white.opacity(0.75))
-                            }
+                // --- moving stamps ---
+                if let videoURL {
+                    HStack(spacing: 10) {
+                        Button {
+                            UISaveVideoAtPathToSavedPhotosAlbum(videoURL.path, nil, nil, nil)
+                            videoSaved = true
+                            UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        } label: {
+                            Label(
+                                videoSaved ? "保存しました" : "写真に保存",
+                                systemImage: videoSaved ? "checkmark" : "square.and.arrow.down"
+                            )
+                            .font(.system(size: 13.5, weight: .semibold))
+                            .padding(.horizontal, 16)
                             .padding(.vertical, 11)
-                        } else {
+                            .background(
+                                Capsule().fill(
+                                    videoSaved
+                                        ? Color(red: 0.45, green: 0.72, blue: 0.52)
+                                        : Color(red: 0.55, green: 0.45, blue: 0.75)
+                                )
+                            )
+                            .foregroundStyle(.white)
+                        }
+                        ShareLink(item: videoURL) {
+                            Label("共有", systemImage: "square.and.arrow.up")
+                                .font(.system(size: 13.5, weight: .semibold))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 11)
+                                .background(Capsule().fill(Color.white.opacity(0.15)))
+                                .foregroundStyle(.white)
+                        }
+                    }
+                    Text("写真に保存 → Instagramストーリーで追加できます")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.white.opacity(0.5))
+                } else if isExportingVideo {
+                    HStack(spacing: 8) {
+                        ProgressView().tint(.white)
+                        Text("回転動画を作成中…")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.75))
+                    }
+                    .padding(.vertical, 11)
+                } else if makeVideo != nil {
+                    HStack(spacing: 10) {
+                        Button {
+                            guard let makeVideo else { return }
+                            isExportingVideo = true
+                            Task {
+                                defer { isExportingVideo = false }
+                                videoURL = try? await makeVideo()
+                                if videoURL != nil {
+                                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                                }
+                            }
+                        } label: {
+                            Label("回転動画（IG向け）", systemImage: "film")
+                                .font(.system(size: 13, weight: .semibold))
+                                .padding(.horizontal, 15)
+                                .padding(.vertical, 11)
+                                .background(Capsule().fill(Color.white.opacity(0.15)))
+                                .foregroundStyle(.white)
+                        }
+                        if makeGIF != nil {
                             Button {
-                                guard let makeVideo else { return }
-                                isExportingVideo = true
+                                guard let makeGIF else { return }
+                                isExportingGIF = true
                                 Task {
-                                    defer { isExportingVideo = false }
-                                    videoURL = try? await makeVideo()
-                                    if videoURL != nil {
+                                    defer { isExportingGIF = false }
+                                    gifURL = try? await makeGIF()
+                                    if gifURL != nil {
                                         UINotificationFeedbackGenerator().notificationOccurred(.success)
                                     }
                                 }
                             } label: {
-                                Label("回転動画を作成（3秒ループ）", systemImage: "film")
-                                    .font(.system(size: 13.5, weight: .semibold))
-                                    .padding(.horizontal, 18)
+                                Label("GIF（LINE向け）", systemImage: "photo.stack")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .padding(.horizontal, 15)
                                     .padding(.vertical, 11)
                                     .background(Capsule().fill(Color.white.opacity(0.15)))
                                     .foregroundStyle(.white)
                             }
                         }
                     }
+                }
+
+                if let gifURL {
+                    ShareLink(item: gifURL) {
+                        Label("GIFを共有（LINE / Xで動きます）", systemImage: "photo.stack")
+                            .font(.system(size: 13.5, weight: .semibold))
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 11)
+                            .background(Capsule().fill(Color(red: 0.83, green: 0.54, blue: 0.61)))
+                            .foregroundStyle(.white)
+                    }
+                } else if isExportingGIF {
+                    HStack(spacing: 8) {
+                        ProgressView().tint(.white)
+                        Text("GIFを作成中…")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.white.opacity(0.75))
+                    }
+                    .padding(.vertical, 11)
                 }
 
                 Spacer(minLength: 20)

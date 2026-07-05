@@ -261,9 +261,19 @@ struct NailDetailView: View {
                             layout: layout,
                             theme: theme
                         )
+                    },
+                    makeGIF: { [appearance, shape, mode, layout, theme] in
+                        try await StampVideoExporter.exportGIF(
+                            appearance: appearance,
+                            setAppearances: record?.setAppearances,
+                            shape: shape,
+                            mode: mode,
+                            layout: layout,
+                            theme: theme
+                        )
                     }
                 )
-                .presentationDetents([.height(500)])
+                .presentationDetents([.height(560)])
             }
         }
         .confirmationDialog("この記録を削除しますか？", isPresented: $confirmingDelete, titleVisibility: .visible) {
