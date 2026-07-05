@@ -66,6 +66,21 @@ enum AutoMotion: String, CaseIterable {
     }
 }
 
+/// Lets SwiftUI ask the running stage for a transparent snapshot ("stamp").
+final class StageController {
+    weak var scnView: SCNView?
+    weak var coordinator: NailSceneView.Coordinator?
+
+    /// Renders the stage exactly as posed, without backdrop or particles,
+    /// trimmed to the nails' bounding box — ready to paste anywhere.
+    func makeStamp() -> UIImage? {
+        guard let view = scnView else { return nil }
+        coordinator?.setParticlesHidden(true)
+        defer { coordinator?.setParticlesHidden(false) }
+        return view.snapshot().trimmedTransparency(padding: 24)
+    }
+}
+
 struct NailSceneView: UIViewRepresentable {
     var appearance: NailAppearance
     var shape: NailShape
@@ -78,12 +93,14 @@ struct NailSceneView: UIViewRepresentable {
     /// Set-mode interactions: long-press copies a tip, tap pastes onto one.
     var onTipLongPress: ((Int) -> Void)? = nil
     var onTipTap: ((Int) -> Void)? = nil
+    var controller: StageController? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView()
         view.backgroundColor = .clear
+        view.isOpaque = false
         view.antialiasingMode = .multisampling4X
         view.preferredFramesPerSecond = 60
 
@@ -184,6 +201,8 @@ struct NailSceneView: UIViewRepresentable {
 
         context.coordinator.onTipLongPress = onTipLongPress
         context.coordinator.onTipTap = onTipTap
+        controller?.scnView = view
+        controller?.coordinator = context.coordinator
         return view
     }
 
@@ -193,6 +212,8 @@ struct NailSceneView: UIViewRepresentable {
         context.coordinator.applyTheme(theme)
         context.coordinator.onTipLongPress = onTipLongPress
         context.coordinator.onTipTap = onTipTap
+        controller?.scnView = uiView
+        controller?.coordinator = context.coordinator
     }
 
     final class Coordinator: NSObject {
@@ -208,6 +229,10 @@ struct NailSceneView: UIViewRepresentable {
         private var particleNode: SCNNode?
         private var currentTheme: StageTheme?
         private var cameraAnchorZ: Float = 9.2
+
+        func setParticlesHidden(_ hidden: Bool) {
+            particleNode?.isHidden = hidden
+        }
 
         func applyTheme(_ theme: StageTheme) {
             guard theme != currentTheme, let scene else { return }

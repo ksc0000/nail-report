@@ -15,6 +15,9 @@ struct NailDetailView: View {
     @State private var motion: AutoMotion = .off
     @State private var theme: StageTheme = .glass
     @State private var stampSource: Int?
+    @State private var stageController = StageController()
+    @State private var stampImage: UIImage?
+    @State private var showStampSheet = false
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingDelete = false
@@ -72,7 +75,8 @@ struct NailDetailView: View {
                               source != index else { return }
                         record.fingerPhotoData[index] = record.fingerPhotoData[source]
                         UINotificationFeedbackGenerator().notificationOccurred(.success)
-                    }
+                    },
+                    controller: stageController
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .overlay(alignment: .top) {
@@ -197,6 +201,26 @@ struct NailDetailView: View {
             }
         }
         .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    if let stamp = stageController.makeStamp() {
+                        stampImage = stamp
+                        showStampSheet = true
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    }
+                } label: {
+                    Label("スタンプ", systemImage: "square.and.arrow.up")
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+        .sheet(isPresented: $showStampSheet) {
+            if let stampImage {
+                StampSheet(image: stampImage)
+                    .presentationDetents([.height(440)])
+            }
+        }
         .confirmationDialog("この記録を削除しますか？", isPresented: $confirmingDelete, titleVisibility: .visible) {
             Button("削除する", role: .destructive) {
                 if let record {
