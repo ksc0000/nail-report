@@ -2,17 +2,17 @@
 
 ## Context
 
-The product roadmap for `nail-report` is currently in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses the "2.1 Test coverage" goal by adding unit tests for core helper functions.
+The current roadmap focuses on improving stability, test coverage, and UX. Phase 2.1 specifically targets unit tests for helper functions. This task aims to kickstart the test coverage for core utility files.
 
 ## Objective
 
-Implement unit tests for the helper functions located in `src/lib/firestore.ts` using Vitest.
+Implement Vitest unit tests for the helper functions within `src/lib/firestore.ts`. This involves creating a new test file and mocking Firebase SDK dependencies as necessary.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for potential minor adjustments to aid testability, if strictly necessary and within diff limits)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `src/__tests__/` (other new test files, if deemed appropriate for better organization)
+- `src/lib/firestore.ts` (minor modifications to make functions testable if needed, e.g., exports)
+- `src/__tests__/firestore.test.ts` (new test file for `firestore.ts` helpers)
+- `vitest.config.ts` (if mocking setup is required)
 
 ## Forbidden Scope
 
@@ -25,13 +25,13 @@ Implement unit tests for the helper functions located in `src/lib/firestore.ts` 
 
 ## Requirements
 
-- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
-- Write unit tests for at least one to two key helper functions in `src/lib/firestore.ts` (e.g., `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`).
-- Use `vitest` and `vi.mock` to effectively mock Firebase SDK dependencies (Firestore instances, authentication state) to isolate the functions under test.
-- Ensure the tests cover basic functionality and expected outcomes.
-- Keep diff ≤ 150 lines. Focus on testing a small, core part of the file.
-- Run `npm run build && npm run lint` before finishing to ensure code quality and prevent build errors.
-- Report any follow-up items as comments.
+- Keep diff ≤ 150 lines.
+- Create a new test file named `src/__tests__/firestore.test.ts`.
+- Write unit tests for at least two significant helper functions within `src/lib/firestore.ts`.
+- Effectively mock Firebase SDK (Firestore) calls using `vi.mock` to ensure tests are isolated and run without actual Firebase interaction.
+- Ensure the new tests pass.
+- Run `npm run build && npm run lint` before finishing.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
