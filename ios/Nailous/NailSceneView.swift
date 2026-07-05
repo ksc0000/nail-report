@@ -73,10 +73,17 @@ final class StageController {
 
     /// Renders the stage exactly as posed, without backdrop or particles,
     /// trimmed to the nails' bounding box — ready to paste anywhere.
-    func makeStamp() -> UIImage? {
+    /// Pass `tipIndex` to capture just that one nail from the set.
+    func makeStamp(tipIndex: Int? = nil) -> UIImage? {
         guard let view = scnView else { return nil }
         coordinator?.setParticlesHidden(true)
-        defer { coordinator?.setParticlesHidden(false) }
+        if let tipIndex {
+            coordinator?.setTipsHidden(except: tipIndex)
+        }
+        defer {
+            coordinator?.setParticlesHidden(false)
+            coordinator?.setTipsHidden(except: nil)
+        }
         return view.snapshot().trimmedTransparency(padding: 24)
     }
 }
@@ -93,6 +100,8 @@ struct NailSceneView: UIViewRepresentable {
     /// Set-mode interactions: long-press copies a tip, tap pastes onto one.
     var onTipLongPress: ((Int) -> Void)? = nil
     var onTipTap: ((Int) -> Void)? = nil
+    /// Long-press that didn't land on a specific tip (single mode / empty space).
+    var onStageLongPress: (() -> Void)? = nil
     var controller: StageController? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator() }
@@ -201,6 +210,7 @@ struct NailSceneView: UIViewRepresentable {
 
         context.coordinator.onTipLongPress = onTipLongPress
         context.coordinator.onTipTap = onTipTap
+        context.coordinator.onStageLongPress = onStageLongPress
         controller?.scnView = view
         controller?.coordinator = context.coordinator
         return view
@@ -212,6 +222,7 @@ struct NailSceneView: UIViewRepresentable {
         context.coordinator.applyTheme(theme)
         context.coordinator.onTipLongPress = onTipLongPress
         context.coordinator.onTipTap = onTipTap
+        context.coordinator.onStageLongPress = onStageLongPress
         controller?.scnView = uiView
         controller?.coordinator = context.coordinator
     }
@@ -219,6 +230,7 @@ struct NailSceneView: UIViewRepresentable {
     final class Coordinator: NSObject {
         var onTipLongPress: ((Int) -> Void)?
         var onTipTap: ((Int) -> Void)?
+        var onStageLongPress: (() -> Void)?
         var spinNode: SCNNode?
         var lightRig: SCNNode?
         var orbitNode: SCNNode?
@@ -232,6 +244,19 @@ struct NailSceneView: UIViewRepresentable {
 
         func setParticlesHidden(_ hidden: Bool) {
             particleNode?.isHidden = hidden
+        }
+
+        /// Hides every named tip except one (nil shows all) for per-nail stamps.
+        func setTipsHidden(except index: Int?) {
+            guard let contentNode else { return }
+            for child in contentNode.childNodes {
+                guard let name = child.name, name.hasPrefix("tip-") else { continue }
+                if let index {
+                    child.isHidden = name != "tip-\(index)"
+                } else {
+                    child.isHidden = false
+                }
+            }
         }
 
         func applyTheme(_ theme: StageTheme) {
@@ -505,6 +530,8 @@ struct NailSceneView: UIViewRepresentable {
             guard gesture.state == .began, let view = gesture.view as? SCNView else { return }
             if let index = tipIndex(at: gesture.location(in: view), in: view) {
                 onTipLongPress?(index)
+            } else {
+                onStageLongPress?()
             }
         }
 

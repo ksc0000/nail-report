@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// The jewel view: one saved nail (or sample) on the spinnable stage, with its
 /// story underneath. Records can be deleted here.
@@ -18,6 +19,7 @@ struct NailDetailView: View {
     @State private var stageController = StageController()
     @State private var stampImage: UIImage?
     @State private var showStampSheet = false
+    @State private var showCopiedToast = false
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingDelete = false
@@ -30,6 +32,16 @@ struct NailDetailView: View {
         _shape = State(initialValue: record?.shape ?? .squoval)
         // A whole-hand capture opens as the five-piece set by default.
         _mode = State(initialValue: (record?.setAppearances?.count ?? 0) > 1 ? .set : .single)
+    }
+
+    private func copyToClipboard(_ image: UIImage?) {
+        guard let png = image?.pngData() else { return }
+        UIPasteboard.general.setData(png, forPasteboardType: UTType.png.identifier)
+        withAnimation(.easeOut(duration: 0.25)) { showCopiedToast = true }
+        Task {
+            try? await Task.sleep(for: .seconds(2.6))
+            withAnimation(.easeIn(duration: 0.4)) { showCopiedToast = false }
+        }
     }
 
     var body: some View {
@@ -62,8 +74,13 @@ struct NailDetailView: View {
                     motion: motion,
                     theme: theme,
                     onTipLongPress: { index in
-                        guard mode == .set, record?.setAppearances != nil else { return }
-                        stampSource = index
+                        // One gesture, two uses: the nail goes straight onto the
+                        // system clipboard (paste in Instagram etc.), and stays
+                        // armed for in-app apply via a tap on another tip.
+                        copyToClipboard(stageController.makeStamp(tipIndex: index))
+                        if mode == .set, record?.setAppearances != nil {
+                            stampSource = index
+                        }
                         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                     },
                     onTipTap: { index in
@@ -76,16 +93,32 @@ struct NailDetailView: View {
                         record.fingerPhotoData[index] = record.fingerPhotoData[source]
                         UINotificationFeedbackGenerator().notificationOccurred(.success)
                     },
+                    onStageLongPress: {
+                        copyToClipboard(stageController.makeStamp())
+                        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                    },
                     controller: stageController
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .bottom) {
+                    if showCopiedToast {
+                        Label("コピーしました — 他のアプリでそのまま貼り付けできます", systemImage: "checkmark.circle.fill")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 9)
+                            .background(Capsule().fill(Color(red: 0.45, green: 0.62, blue: 0.5).opacity(0.92)))
+                            .padding(.bottom, 8)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    }
+                }
                 .overlay(alignment: .top) {
                     if stampSource != nil {
                         HStack(spacing: 10) {
-                            Text("スタンプ中：貼り付け先の爪をタップ")
-                                .font(.system(size: 12.5, weight: .medium))
+                            Text("コピーしました：爪をタップで適用・他アプリでペースト可")
+                                .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(.white)
-                            Button("キャンセル") { stampSource = nil }
+                            Button("解除") { stampSource = nil }
                                 .font(.system(size: 12.5, weight: .semibold))
                                 .foregroundStyle(Color(red: 0.96, green: 0.75, blue: 0.82))
                         }
@@ -96,7 +129,7 @@ struct NailDetailView: View {
                     }
                 }
 
-                Text(mode == .set && record != nil ? "ドラッグで回転・長押しでスタンプコピー" : "ドラッグで回転")
+                Text(mode == .set ? "ドラッグで回転・爪を長押しでコピー" : "ドラッグで回転・長押しでコピー")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.45))
                     .padding(.bottom, 12)
