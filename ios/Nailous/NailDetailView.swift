@@ -252,24 +252,26 @@ struct NailDetailView: View {
             if let stampImage {
                 StampSheet(
                     image: stampImage,
-                    makeVideo: { [appearance, shape, mode, layout, theme] in
+                    makeVideo: { [appearance, shape, mode, layout, theme] motion in
                         try await StampVideoExporter.export(
                             appearance: appearance,
                             setAppearances: record?.setAppearances,
                             shape: shape,
                             mode: mode,
                             layout: layout,
-                            theme: theme
+                            theme: theme,
+                            motion: motion
                         )
                     },
-                    makeGIF: { [appearance, shape, mode, layout, theme] in
+                    makeGIF: { [appearance, shape, mode, layout, theme] motion in
                         try await StampVideoExporter.exportGIF(
                             appearance: appearance,
                             setAppearances: record?.setAppearances,
                             shape: shape,
                             mode: mode,
                             layout: layout,
-                            theme: theme
+                            theme: theme,
+                            motion: motion
                         )
                     }
                 )

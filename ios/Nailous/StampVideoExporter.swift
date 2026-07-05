@@ -10,7 +10,66 @@ import UniformTypeIdentifiers
 ///
 /// Frames are rendered offline with SCNRenderer at exact angles (no screen
 /// capture), so the loop is perfect and never drops frames.
+/// Loopable motion for exported clips — mirrors the live stage motions.
+enum ExportMotion: String, CaseIterable, Identifiable {
+    case turntable
+    case orbit
+    case float
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .turntable: return "回転"
+        case .orbit: return "周回"
+        case .float: return "ぷかぷか"
+        }
+    }
+}
+
 enum StampVideoExporter {
+    private struct Stage {
+        let renderer: SCNRenderer
+        let cameraNode: SCNNode
+        let orbitNode: SCNNode
+        let orbitArm: SCNNode
+        let spinNode: SCNNode
+    }
+
+    /// Positions everything for one frame. Every term is a whole number of
+    /// sine cycles over the clip, so the loop is seamless for all motions.
+    private static func pose(_ stage: Stage, motion: ExportMotion, mode: StageMode, progress: Float) {
+        let phase = 2 * Float.pi * progress
+        switch motion {
+        case .turntable:
+            stage.orbitNode.eulerAngles = SCNVector3Zero
+            stage.orbitArm.position = SCNVector3Zero
+            stage.spinNode.position = SCNVector3Zero
+            stage.spinNode.eulerAngles = SCNVector3(-0.1, phase, 0)
+        case .orbit:
+            let radius: Float = mode == .set ? 0.5 : 1.1
+            stage.orbitArm.position = SCNVector3(radius, 0, 0)
+            stage.orbitNode.eulerAngles = SCNVector3(0, phase, 0)
+            stage.spinNode.position = SCNVector3Zero
+            stage.spinNode.eulerAngles = SCNVector3(-0.1, 0.42, 0)
+        case .float:
+            stage.orbitNode.eulerAngles = SCNVector3Zero
+            stage.orbitArm.position = SCNVector3Zero
+            stage.spinNode.position = SCNVector3(0, 0.3 * sin(phase), 0)
+            stage.spinNode.eulerAngles = SCNVector3(
+                -0.1 + 0.05 * sin(phase),
+                0.42 + 0.18 * sin(phase),
+                0.04 * sin(phase)
+            )
+        }
+    }
+
+    /// Camera distance per motion so orbiting content stays in frame.
+    private static func cameraZ(for motion: ExportMotion, mode: StageMode) -> Float {
+        guard motion == .orbit else { return 9.2 }
+        return mode == .set ? 14 : 12
+    }
+
     static func export(
         appearance: NailAppearance,
         setAppearances: [NailAppearance]?,
@@ -18,6 +77,7 @@ enum StampVideoExporter {
         mode: StageMode,
         layout: SetLayout,
         theme: StageTheme,
+        motion: ExportMotion = .turntable,
         duration: Double = 3,
         fps: Int = 30,
         size: CGSize = CGSize(width: 1080, height: 1920)
@@ -30,6 +90,7 @@ enum StampVideoExporter {
                 mode: mode,
                 layout: layout,
                 theme: theme,
+                motion: motion,
                 duration: duration,
                 fps: fps,
                 size: size
@@ -47,7 +108,7 @@ enum StampVideoExporter {
         layout: SetLayout,
         theme: StageTheme,
         background: UIImage?
-    ) throws -> (renderer: SCNRenderer, spinNode: SCNNode) {
+    ) throws -> Stage {
         let scene = SCNScene()
         if let background {
             scene.background.contents = background
@@ -75,6 +136,8 @@ enum StampVideoExporter {
         ambient.light?.intensity = 220
         scene.rootNode.addChildNode(ambient)
 
+        let orbitNode = SCNNode()
+        let orbitArm = SCNNode()
         let spinNode = SCNNode()
         let content: SCNNode
         switch mode {
@@ -90,7 +153,9 @@ enum StampVideoExporter {
             )
         }
         spinNode.addChildNode(content)
-        scene.rootNode.addChildNode(spinNode)
+        orbitArm.addChildNode(spinNode)
+        orbitNode.addChildNode(orbitArm)
+        scene.rootNode.addChildNode(orbitNode)
 
         guard let device = MTLCreateSystemDefaultDevice() else {
             throw ExportError.metalUnavailable
@@ -98,7 +163,13 @@ enum StampVideoExporter {
         let renderer = SCNRenderer(device: device, options: nil)
         renderer.scene = scene
         renderer.autoenablesDefaultLighting = false
-        return (renderer, spinNode)
+        return Stage(
+            renderer: renderer,
+            cameraNode: cameraNode,
+            orbitNode: orbitNode,
+            orbitArm: orbitArm,
+            spinNode: spinNode
+        )
     }
 
     /// Transparent animated GIF "moving stamp" — plays in LINE / X / Discord.
@@ -110,12 +181,13 @@ enum StampVideoExporter {
         mode: StageMode,
         layout: SetLayout,
         theme: StageTheme,
+        motion: ExportMotion = .turntable,
         duration: Double = 3,
         fps: Int = 15,
         size: CGSize = CGSize(width: 540, height: 960)
     ) async throws -> URL {
         try await Task.detached(priority: .userInitiated) {
-            let (renderer, spinNode) = try makeStage(
+            let stage = try makeStage(
                 appearance: appearance,
                 setAppearances: setAppearances,
                 shape: shape,
@@ -124,6 +196,7 @@ enum StampVideoExporter {
                 theme: theme,
                 background: nil
             )
+            stage.cameraNode.position.z = cameraZ(for: motion, mode: mode)
 
             let frameCount = Int(duration * Double(fps))
             var frames: [CGImage] = []
@@ -131,8 +204,8 @@ enum StampVideoExporter {
             var unionBox: CGRect?
             for frame in 0..<frameCount {
                 let progress = Float(frame) / Float(frameCount)
-                spinNode.eulerAngles = SCNVector3(-0.1, 2 * Float.pi * progress, 0)
-                let image = renderer.snapshot(atTime: 0, with: size, antialiasingMode: .multisampling4X)
+                pose(stage, motion: motion, mode: mode, progress: progress)
+                let image = stage.renderer.snapshot(atTime: 0, with: size, antialiasingMode: .multisampling4X)
                 guard let cgImage = image.cgImage else { throw ExportError.frameFailed }
                 frames.append(cgImage)
                 if let box = alphaBoundingBox(of: cgImage) {
@@ -220,11 +293,12 @@ enum StampVideoExporter {
         mode: StageMode,
         layout: SetLayout,
         theme: StageTheme,
+        motion: ExportMotion,
         duration: Double,
         fps: Int,
         size: CGSize
     ) throws -> URL {
-        let (renderer, spinNode) = try makeStage(
+        let stage = try makeStage(
             appearance: appearance,
             setAppearances: setAppearances,
             shape: shape,
@@ -233,6 +307,7 @@ enum StampVideoExporter {
             theme: theme,
             background: backgroundImage(for: theme, size: size)
         )
+        stage.cameraNode.position.z = cameraZ(for: motion, mode: mode)
 
         // --- video writer ---
         let url = FileManager.default.temporaryDirectory
@@ -263,9 +338,9 @@ enum StampVideoExporter {
         let frameCount = Int(duration * Double(fps))
         for frame in 0..<frameCount {
             let progress = Float(frame) / Float(frameCount)
-            spinNode.eulerAngles = SCNVector3(-0.1, 2 * Float.pi * progress, 0)
+            pose(stage, motion: motion, mode: mode, progress: progress)
 
-            let image = renderer.snapshot(
+            let image = stage.renderer.snapshot(
                 atTime: 0,
                 with: size,
                 antialiasingMode: .multisampling4X

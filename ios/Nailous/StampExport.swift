@@ -64,8 +64,9 @@ extension UIImage {
 /// + a seamless turntable-loop video for Stories.
 struct StampSheet: View {
     let image: UIImage
-    var makeVideo: (() async throws -> URL)?
-    var makeGIF: (() async throws -> URL)?
+    var makeVideo: ((ExportMotion) async throws -> URL)?
+    var makeGIF: ((ExportMotion) async throws -> URL)?
+    @State private var exportMotion: ExportMotion = .turntable
     @State private var copied = false
     @State private var isExportingVideo = false
     @State private var isExportingGIF = false
@@ -139,6 +140,39 @@ struct StampSheet: View {
                 }
 
                 // --- moving stamps ---
+                if makeVideo != nil {
+                    HStack(spacing: 8) {
+                        Text("動き")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.55))
+                        ForEach(ExportMotion.allCases) { candidate in
+                            Button {
+                                exportMotion = candidate
+                                videoURL = nil
+                                gifURL = nil
+                                videoSaved = false
+                            } label: {
+                                Text(candidate.label)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .padding(.horizontal, 11)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        Capsule().fill(
+                                            exportMotion == candidate
+                                                ? Color.white.opacity(0.92)
+                                                : Color.white.opacity(0.1)
+                                        )
+                                    )
+                                    .foregroundStyle(
+                                        exportMotion == candidate
+                                            ? Color(red: 0.2, green: 0.1, blue: 0.18)
+                                            : .white.opacity(0.75)
+                                    )
+                            }
+                        }
+                    }
+                }
+
                 if let videoURL {
                     HStack(spacing: 10) {
                         Button {
@@ -189,7 +223,7 @@ struct StampSheet: View {
                             isExportingVideo = true
                             Task {
                                 defer { isExportingVideo = false }
-                                videoURL = try? await makeVideo()
+                                videoURL = try? await makeVideo(exportMotion)
                                 if videoURL != nil {
                                     UINotificationFeedbackGenerator().notificationOccurred(.success)
                                 }
@@ -208,7 +242,7 @@ struct StampSheet: View {
                                 isExportingGIF = true
                                 Task {
                                     defer { isExportingGIF = false }
-                                    gifURL = try? await makeGIF()
+                                    gifURL = try? await makeGIF(exportMotion)
                                     if gifURL != nil {
                                         UINotificationFeedbackGenerator().notificationOccurred(.success)
                                     }
