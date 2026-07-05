@@ -8,6 +8,8 @@ struct CollectionView: View {
     @Query(sort: \NailRecord.createdAt, order: .reverse) private var records: [NailRecord]
     @State private var isAdding = false
     @State private var glowingID: UUID?
+    @State private var selected: NailRecord?
+    @State private var arrivalID: String?
 
     private let columns = [GridItem(.adaptive(minimum: 100), spacing: 18)]
 
@@ -23,38 +25,8 @@ struct CollectionView: View {
                         if records.isEmpty {
                             emptyState
                         } else {
-                            LazyVGrid(columns: columns, spacing: 26) {
-                                ForEach(records) { record in
-                                    if let appearance = record.appearance,
-                                       let texture = record.texture {
-                                        NavigationLink {
-                                            NailDetailView(
-                                                appearance: appearance,
-                                                title: record.title,
-                                                subtitle: record.createdAt.formatted(.dateTime.year().month().day()),
-                                                record: record
-                                            )
-                                        } label: {
-                                            VStack(spacing: 10) {
-                                                NailThumbnail(image: texture, nailShape: record.shape)
-                                                    .shadow(
-                                                        color: glowingID == record.id
-                                                            ? Color(red: 0.95, green: 0.7, blue: 0.78).opacity(0.85)
-                                                            : .clear,
-                                                        radius: 18
-                                                    )
-                                                    .scaleEffect(glowingID == record.id ? 1.07 : 1)
-                                                Text(record.title)
-                                                    .font(.system(size: 12))
-                                                    .lineLimit(1)
-                                                    .foregroundStyle(.white.opacity(0.75))
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 24)
-                            .animation(.spring(duration: 0.5, bounce: 0.3), value: records.count)
+                            jewelStage
+                            shelf
                         }
 
                         sampleSection
@@ -77,11 +49,22 @@ struct CollectionView: View {
             .sheet(isPresented: $isAdding) {
                 AddNailView()
             }
+            .navigationDestination(item: $selected) { record in
+                NailDetailView(
+                    appearance: record.appearance ?? NailStyle.samples[0].appearance,
+                    title: record.title,
+                    subtitle: record.createdAt.formatted(.dateTime.year().month().day()),
+                    record: record
+                )
+            }
             .onChange(of: records.first?.id) { _, newID in
-                // Welcome glow for a nail that just joined the box.
+                // A nail just joined the box: drop-in animation on the stage,
+                // welcome glow on the shelf, success haptic.
                 guard let newID,
                       let newest = records.first,
                       Date().timeIntervalSince(newest.createdAt) < 8 else { return }
+                arrivalID = newID.uuidString
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
                 withAnimation(.easeInOut(duration: 0.7)) { glowingID = newID }
                 Task {
                     try? await Task.sleep(for: .seconds(2.2))
@@ -142,6 +125,75 @@ struct CollectionView: View {
             .padding(.top, 6)
         }
         .padding(.vertical, 30)
+    }
+
+    /// The newest five jewels drifting in the box — tap to open, drag to spin.
+    private var showcase: [NailRecord] { Array(records.prefix(5)) }
+
+    private var jewelStage: some View {
+        VStack(spacing: 4) {
+            if let first = showcase.first, let firstAppearance = first.appearance {
+                NailSceneView(
+                    appearance: firstAppearance,
+                    shape: first.shape,
+                    mode: .set,
+                    setAppearances: showcase.compactMap(\.appearance),
+                    setShapes: showcase.map(\.shape),
+                    layout: .cloud,
+                    theme: .glass,
+                    onTipTap: { index in
+                        if showcase.indices.contains(index) {
+                            selected = showcase[index]
+                        }
+                    },
+                    arrivalID: arrivalID
+                )
+                .frame(height: 400)
+                Text("タップで開く・ドラッグで回転")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+        }
+    }
+
+    private var shelf: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("コレクション")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.5))
+                .padding(.horizontal, 24)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    ForEach(records) { record in
+                        if let texture = record.texture {
+                            Button {
+                                selected = record
+                            } label: {
+                                VStack(spacing: 6) {
+                                    NailThumbnail(image: texture, nailShape: record.shape)
+                                        .scaleEffect(0.76)
+                                        .frame(width: 66, height: 100)
+                                        .shadow(
+                                            color: glowingID == record.id
+                                                ? Color(red: 0.95, green: 0.7, blue: 0.78).opacity(0.85)
+                                                : .clear,
+                                            radius: 14
+                                        )
+                                    Text(record.title)
+                                        .font(.system(size: 11))
+                                        .lineLimit(1)
+                                        .foregroundStyle(.white.opacity(0.7))
+                                        .frame(width: 76)
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 4)
+            }
+        }
     }
 
     private var sampleSection: some View {

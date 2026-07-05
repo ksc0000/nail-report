@@ -26,6 +26,7 @@ enum StageMode: String, CaseIterable, Identifiable {
 enum SetLayout: String, CaseIterable, Identifiable {
     case arc
     case curve
+    case cloud
     case cascade
     case circle
     case line
@@ -36,6 +37,7 @@ enum SetLayout: String, CaseIterable, Identifiable {
         switch self {
         case .arc: return "アーチ"
         case .curve: return "カーブ"
+        case .cloud: return "ふわり"
         case .cascade: return "カスケード"
         case .circle: return "サークル"
         case .line: return "ライン"
@@ -94,6 +96,8 @@ struct NailSceneView: UIViewRepresentable {
     var mode: StageMode
     /// When present, the five-piece set uses these per finger (cycled if fewer).
     var setAppearances: [NailAppearance]? = nil
+    /// Per-nail shapes for the set (falls back to `shape`).
+    var setShapes: [NailShape]? = nil
     var layout: SetLayout = .arc
     var motion: AutoMotion = .off
     var theme: StageTheme = .glass
@@ -103,6 +107,8 @@ struct NailSceneView: UIViewRepresentable {
     /// Long-press that didn't land on a specific tip (single mode / empty space).
     var onStageLongPress: (() -> Void)? = nil
     var controller: StageController? = nil
+    /// Fresh token plays the "new jewel drops into the box" arrival animation.
+    var arrivalID: String? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -173,7 +179,7 @@ struct NailSceneView: UIViewRepresentable {
         floatNode.runAction(SCNAction.repeatForever(bob))
 
         context.coordinator.spinNode = spinNode
-        context.coordinator.rebuildPlate(appearance: appearance, setAppearances: setAppearances, shape: shape, mode: mode, layout: layout)
+        context.coordinator.rebuildPlate(appearance: appearance, setAppearances: setAppearances, setShapes: setShapes, shape: shape, mode: mode, layout: layout, arrivalID: arrivalID)
         context.coordinator.updateMotion(motion, stageMode: mode)
 
         let pan = UIPanGestureRecognizer(
@@ -217,7 +223,7 @@ struct NailSceneView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: SCNView, context: Context) {
-        context.coordinator.rebuildPlate(appearance: appearance, setAppearances: setAppearances, shape: shape, mode: mode, layout: layout)
+        context.coordinator.rebuildPlate(appearance: appearance, setAppearances: setAppearances, setShapes: setShapes, shape: shape, mode: mode, layout: layout, arrivalID: arrivalID)
         context.coordinator.updateMotion(motion, stageMode: mode)
         context.coordinator.applyTheme(theme)
         context.coordinator.onTipLongPress = onTipLongPress
@@ -313,9 +319,12 @@ struct NailSceneView: UIViewRepresentable {
             (1.06, 0.88), (0.88, 1.0), (0.94, 1.06), (0.86, 1.0), (0.70, 0.84),
         ]
 
-        func rebuildPlate(appearance: NailAppearance, setAppearances: [NailAppearance]?, shape: NailShape, mode: StageMode, layout: SetLayout) {
+        private var lastArrivalID: String?
+
+        func rebuildPlate(appearance: NailAppearance, setAppearances: [NailAppearance]?, setShapes: [NailShape]?, shape: NailShape, mode: StageMode, layout: SetLayout, arrivalID: String?) {
             let setKey = setAppearances?.map(\.id).joined(separator: "+") ?? ""
-            let key = "\(appearance.id)/\(setKey)/\(shape.rawValue)/\(mode.rawValue)/\(layout.rawValue)"
+            let shapeKey = setShapes?.map(\.rawValue).joined(separator: "+") ?? shape.rawValue
+            let key = "\(appearance.id)/\(setKey)/\(shapeKey)/\(mode.rawValue)/\(layout.rawValue)"
             guard key != currentKey, let spinNode else { return }
             currentKey = key
 
@@ -325,10 +334,34 @@ struct NailSceneView: UIViewRepresentable {
             case .single:
                 node = SCNNode(geometry: Self.makePlate(appearance: appearance, shape: shape))
             case .set:
-                node = Self.makeTipSet(appearances: setAppearances ?? [appearance], shape: shape, layout: layout)
+                node = Self.makeTipSet(appearances: setAppearances ?? [appearance], shapes: setShapes, shape: shape, layout: layout)
             }
             spinNode.addChildNode(node)
             contentNode = node
+
+            if let arrivalID, arrivalID != lastArrivalID {
+                lastArrivalID = arrivalID
+                playArrival(in: node)
+            }
+        }
+
+        /// The newest jewel drops in from above and springs into place.
+        private func playArrival(in container: SCNNode) {
+            let target = container.childNode(withName: "tip-0", recursively: true) ?? container
+            let finalScale = target.scale
+            let finalY = target.position.y
+            target.scale = SCNVector3(finalScale.x * 0.01, finalScale.y * 0.01, finalScale.z * 0.01)
+            target.position.y = finalY + 2.6
+            target.opacity = 0
+            DispatchQueue.main.async {
+                SCNTransaction.begin()
+                SCNTransaction.animationDuration = 0.7
+                SCNTransaction.animationTimingFunction = CAMediaTimingFunction(controlPoints: 0.2, 1.25, 0.4, 1)
+                target.scale = finalScale
+                target.position.y = finalY
+                target.opacity = 1
+                SCNTransaction.commit()
+            }
         }
 
         static func makePlate(appearance: NailAppearance, shape: NailShape) -> SCNGeometry {
@@ -339,12 +372,18 @@ struct NailSceneView: UIViewRepresentable {
 
         /// Five tips fanned in a shallow arc, middle finger front and tallest —
         /// the way a press-on set is presented.
-        static func makeTipSet(appearances: [NailAppearance], shape: NailShape, layout: SetLayout) -> SCNNode {
+        static func makeTipSet(appearances: [NailAppearance], shapes: [NailShape]? = nil, shape: NailShape, layout: SetLayout) -> SCNNode {
             let group = SCNNode()
-            for (index, spec) in fingerSpecs.enumerated() {
+            let count = layout == .cloud ? max(1, min(appearances.count, 5)) : fingerSpecs.count
+            for index in 0..<count {
+                let spec = fingerSpecs[index % fingerSpecs.count]
                 let fi = Float(index) - 2
                 let appearance = appearances[index % appearances.count]
-                let node = SCNNode(geometry: makePlate(appearance: appearance, shape: shape))
+                let tipShape: NailShape = {
+                    guard let shapes, !shapes.isEmpty else { return shape }
+                    return shapes[index % shapes.count]
+                }()
+                let node = SCNNode(geometry: makePlate(appearance: appearance, shape: tipShape))
                 node.name = "tip-\(index)"
                 node.scale = SCNVector3(spec.w, spec.l, spec.w)
                 switch layout {
@@ -376,10 +415,23 @@ struct NailSceneView: UIViewRepresentable {
                 case .line:
                     node.position = SCNVector3(fi * 1.5, 0, 0)
                     node.eulerAngles.z = 0
+                case .cloud:
+                    // Scattered drift, newest front and center — the jewelry box.
+                    let slots: [(x: Float, y: Float, z: Float, r: Float)] = [
+                        (0, 0.05, 0.35, -0.05),
+                        (-1.5, 1.05, -0.45, 0.13),
+                        (1.45, 0.95, -0.3, -0.15),
+                        (-1.35, -1.15, -0.25, 0.1),
+                        (1.35, -1.05, -0.5, -0.09),
+                    ]
+                    let slot = slots[index % slots.count]
+                    node.position = SCNVector3(slot.x, slot.y, slot.z)
+                    node.eulerAngles.z = slot.r
+                    node.eulerAngles.y = fi * 0.1
                 }
                 group.addChildNode(node)
             }
-            let groupScale: Float = layout == .circle ? 0.4 : 0.44
+            let groupScale: Float = layout == .circle ? 0.4 : layout == .cloud ? 0.52 : 0.44
             group.scale = SCNVector3(groupScale, groupScale, groupScale)
             return group
         }

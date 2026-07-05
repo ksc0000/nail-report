@@ -73,6 +73,7 @@ struct StampSheet: View {
     @State private var videoURL: URL?
     @State private var gifURL: URL?
     @State private var videoSaved = false
+    @State private var exportError: String?
 
     var body: some View {
         ZStack {
@@ -151,6 +152,7 @@ struct StampSheet: View {
                                 videoURL = nil
                                 gifURL = nil
                                 videoSaved = false
+                                exportError = nil
                             } label: {
                                 Text(candidate.label)
                                     .font(.system(size: 12, weight: .medium))
@@ -221,11 +223,15 @@ struct StampSheet: View {
                         Button {
                             guard let makeVideo else { return }
                             isExportingVideo = true
+                            exportError = nil
                             Task {
                                 defer { isExportingVideo = false }
-                                videoURL = try? await makeVideo(exportMotion)
-                                if videoURL != nil {
+                                do {
+                                    videoURL = try await makeVideo(exportMotion)
                                     UINotificationFeedbackGenerator().notificationOccurred(.success)
+                                } catch {
+                                    exportError = "動画の作成に失敗しました。もう一度お試しください。"
+                                    UINotificationFeedbackGenerator().notificationOccurred(.error)
                                 }
                             }
                         } label: {
@@ -240,11 +246,15 @@ struct StampSheet: View {
                             Button {
                                 guard let makeGIF else { return }
                                 isExportingGIF = true
+                                exportError = nil
                                 Task {
                                     defer { isExportingGIF = false }
-                                    gifURL = try? await makeGIF(exportMotion)
-                                    if gifURL != nil {
+                                    do {
+                                        gifURL = try await makeGIF(exportMotion)
                                         UINotificationFeedbackGenerator().notificationOccurred(.success)
+                                    } catch {
+                                        exportError = "GIFの作成に失敗しました。もう一度お試しください。"
+                                        UINotificationFeedbackGenerator().notificationOccurred(.error)
                                     }
                                 }
                             } label: {
@@ -276,6 +286,12 @@ struct StampSheet: View {
                             .foregroundStyle(.white.opacity(0.75))
                     }
                     .padding(.vertical, 11)
+                }
+
+                if let exportError {
+                    Text(exportError)
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color(red: 1, green: 0.6, blue: 0.65))
                 }
 
                 Spacer(minLength: 20)

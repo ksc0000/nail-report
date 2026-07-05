@@ -32,6 +32,7 @@ struct PhotoCropView: View {
     @State private var collected: [UIImage] = []
     @State private var sortedNails: [DetectedNail] = []
     @State private var currentIndex: Int = 0
+    @State private var lastAddedSignature = ""
 
     private let window = CGSize(width: 216, height: 324) // 2:3, matches texture
     private let maxZoom: CGFloat = 16
@@ -42,6 +43,19 @@ struct PhotoCropView: View {
 
     private var allCollected: Bool {
         !sortedNails.isEmpty && collected.count >= min(5, sortedNails.count)
+    }
+
+    /// Fingerprint of the current framing; adding twice from the same pose is
+    /// almost certainly an accidental duplicate.
+    private var poseSignature: String {
+        String(
+            format: "%d|%.3f|%.1f|%.1f|%.3f",
+            currentIndex, zoom, offset.width, offset.height, rotation
+        )
+    }
+
+    private var isDuplicatePose: Bool {
+        !collected.isEmpty && poseSignature == lastAddedSignature
     }
 
     /// Aspect-fill scale that makes the photo just cover the window at zoom 1.
@@ -214,13 +228,14 @@ struct PhotoCropView: View {
                                     .padding(.vertical, 12)
                                     .background(
                                         Capsule().fill(
-                                            allCollected
+                                            isDuplicatePose || allCollected
                                                 ? Color.white.opacity(0.22)
                                                 : Color(red: 0.83, green: 0.54, blue: 0.61)
                                         )
                                     )
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(.white.opacity(isDuplicatePose ? 0.45 : 1))
                             }
+                            .disabled(isDuplicatePose)
                         }
                         if collected.isEmpty && sortedNails.isEmpty {
                             Button {
@@ -307,7 +322,9 @@ struct PhotoCropView: View {
     }
 
     private func addCurrentNail() {
+        guard !isDuplicatePose else { return }
         collected.append(bakeCurrent())
+        lastAddedSignature = poseSignature
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         // advance to the next detected nail
         if currentIndex + 1 < sortedNails.count {
