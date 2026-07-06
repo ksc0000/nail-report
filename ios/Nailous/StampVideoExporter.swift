@@ -25,6 +25,14 @@ enum ExportMotion: String, CaseIterable, Identifiable {
         case .float: return "ぷかぷか"
         }
     }
+
+    var icon: String {
+        switch self {
+        case .turntable: return "arrow.clockwise"
+        case .orbit: return "circle.dashed"
+        case .float: return "water.waves"
+        }
+    }
 }
 
 enum StampVideoExporter {

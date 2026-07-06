@@ -1,6 +1,28 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// The classic "this is transparent" checkerboard, drawn behind the stamp
+/// preview so the cut-out is obvious.
+struct Checkerboard: View {
+    var square: CGFloat = 11
+
+    var body: some View {
+        Canvas { context, size in
+            let cols = Int(size.width / square) + 1
+            let rows = Int(size.height / square) + 1
+            for row in 0..<rows {
+                for col in 0..<cols {
+                    let shade = (row + col) % 2 == 0
+                    context.fill(
+                        Path(CGRect(x: CGFloat(col) * square, y: CGFloat(row) * square, width: square, height: square)),
+                        with: .color(shade ? Color.white.opacity(0.16) : Color.white.opacity(0.06))
+                    )
+                }
+            }
+        }
+    }
+}
+
 /// Transparent-PNG payload for ShareLink (Notes, LINE, save to Photos…).
 struct StampPNG: Transferable {
     let data: Data
@@ -89,6 +111,12 @@ struct StampSheet: View {
                     .resizable()
                     .scaledToFit()
                     .frame(maxHeight: 210)
+                    .padding(10)
+                    .background(
+                        Checkerboard()
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Palette.gold.opacity(0.2), lineWidth: 1))
+                    )
                     .shadow(color: .black.opacity(0.5), radius: 14, y: 8)
 
                 Text("コピーして、Instagramストーリーの文字入力画面で\n長押し→ペーストするとステッカーになります")
@@ -154,21 +182,19 @@ struct StampSheet: View {
                                 videoSaved = false
                                 exportError = nil
                             } label: {
-                                Text(candidate.label)
+                                Label(candidate.label, systemImage: candidate.icon)
                                     .font(.system(size: 12, weight: .medium))
                                     .padding(.horizontal, 11)
                                     .padding(.vertical, 6)
                                     .background(
                                         Capsule().fill(
                                             exportMotion == candidate
-                                                ? Color.white.opacity(0.92)
-                                                : Color.white.opacity(0.1)
+                                                ? AnyShapeStyle(Palette.goldGradient)
+                                                : AnyShapeStyle(Color.white.opacity(0.1))
                                         )
                                     )
                                     .foregroundStyle(
-                                        exportMotion == candidate
-                                            ? Color(red: 0.2, green: 0.1, blue: 0.18)
-                                            : .white.opacity(0.75)
+                                        exportMotion == candidate ? Palette.ink0 : .white.opacity(0.75)
                                     )
                             }
                         }

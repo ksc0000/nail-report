@@ -71,49 +71,46 @@ struct AddNailView: View {
                     }
 
                     ScrollView {
-                        VStack(spacing: 14) {
-                            HStack(spacing: 10) {
+                        VStack(spacing: 18) {
+                            VStack(spacing: 10) {
                                 PhotosPicker(selection: $pickerItem, matching: .images) {
-                                    Label(
-                                        hasTexture ? "写真を変更" : "写真を選ぶ",
-                                        systemImage: "photo.on.rectangle.angled"
+                                    actionRow(
+                                        icon: "photo.on.rectangle.angled",
+                                        title: hasTexture ? "写真を変更" : "写真を選ぶ"
                                     )
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .padding(.horizontal, 18)
-                                    .padding(.vertical, 11)
-                                    .background(Capsule().fill(Color.white.opacity(0.92)))
-                                    .foregroundStyle(Color(red: 0.2, green: 0.1, blue: 0.18))
                                 }
                                 if originalImage != nil {
-                                    Button {
-                                        isCropping = true
-                                    } label: {
-                                        Label("位置を調整", systemImage: "arrow.up.and.down.and.arrow.left.and.right")
-                                            .font(.system(size: 14, weight: .medium))
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 11)
-                                            .background(Capsule().fill(Color.white.opacity(0.12)))
-                                            .foregroundStyle(.white)
+                                    Button { isCropping = true } label: {
+                                        actionRow(
+                                            icon: "arrow.up.and.down.and.arrow.left.and.right",
+                                            title: "位置を調整"
+                                        )
                                     }
                                 }
                             }
+                            .padding(.horizontal, 24)
 
                             if isSetCapture {
                                 Text("\(displayTextures.count) 本ぶんのデザインを取り込みました（セット表示）")
                                     .font(.caption)
-                                    .foregroundStyle(.white.opacity(0.6))
+                                    .foregroundStyle(Palette.gold.opacity(0.75))
                             }
 
-                            HStack(spacing: 8) {
-                                ForEach(NailShape.allCases) { candidate in
-                                    StagePill(label: candidate.label, isOn: shape == candidate) {
-                                        shape = candidate
+                            VStack(alignment: .leading, spacing: 12) {
+                                SectionHeader(title: "形（シェイプ）")
+                                HStack(spacing: 8) {
+                                    ForEach(NailShape.allCases) { candidate in
+                                        shapeChip(candidate)
                                     }
                                 }
+                                .padding(.horizontal, 24)
                             }
 
                             if hasTexture {
-                                retouchSection
+                                VStack(alignment: .leading, spacing: 12) {
+                                    SectionHeader(title: "リタッチ")
+                                    retouchSection
+                                }
                             }
 
                             VStack(spacing: 10) {
@@ -127,18 +124,21 @@ struct AddNailView: View {
                             .padding(.horizontal, 24)
 
                             Button(action: save) {
-                                Text("宝石箱に入れる")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 13)
-                                    .background(
-                                        Capsule().fill(
-                                            hasTexture
-                                                ? Color(red: 0.83, green: 0.54, blue: 0.61)
-                                                : Color.white.opacity(0.25)
-                                        )
+                                HStack(spacing: 6) {
+                                    Text("宝石箱に入れる")
+                                    Image(systemName: "sparkles")
+                                }
+                                .font(.system(size: 15, weight: .semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(
+                                    Capsule().fill(
+                                        hasTexture
+                                            ? AnyShapeStyle(Palette.goldGradient)
+                                            : AnyShapeStyle(Color.white.opacity(0.15))
                                     )
-                                    .foregroundStyle(.white)
+                                )
+                                .foregroundStyle(hasTexture ? Palette.ink0 : .white.opacity(0.5))
                             }
                             .disabled(!hasTexture)
                             .padding(.horizontal, 24)
@@ -287,6 +287,60 @@ struct AddNailView: View {
 
         guard let cgImage = Self.ciContext.createCGImage(working, from: input.extent) else { return image }
         return UIImage(cgImage: cgImage)
+    }
+
+    // MARK: - Rows & chips
+
+    /// Full-width list row: gold icon, title, chevron — the mockup's tappable
+    /// list style for 写真を選ぶ / 位置を調整.
+    private func actionRow(icon: String, title: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 15))
+                .foregroundStyle(Palette.gold)
+                .frame(width: 24)
+            Text(title)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.white)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.35))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 15)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white.opacity(0.06))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Palette.gold.opacity(0.12), lineWidth: 1))
+        )
+    }
+
+    /// A nail-silhouette shape option; gold outline + glow when selected.
+    private func shapeChip(_ candidate: NailShape) -> some View {
+        let isOn = shape == candidate
+        return Button {
+            shape = candidate
+        } label: {
+            VStack(spacing: 6) {
+                NailSilhouette(nailShape: candidate)
+                    .fill(isOn ? AnyShapeStyle(Palette.goldGradient) : AnyShapeStyle(Color.white.opacity(0.16)))
+                    .frame(width: 26, height: 42)
+                    .overlay(
+                        NailSilhouette(nailShape: candidate)
+                            .stroke(isOn ? Palette.goldBright : .white.opacity(0.25), lineWidth: 1)
+                    )
+                Text(candidate.label)
+                    .font(.system(size: 10.5, weight: isOn ? .semibold : .regular))
+                    .foregroundStyle(isOn ? Palette.goldBright : .white.opacity(0.6))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isOn ? Palette.gold.opacity(0.1) : Color.white.opacity(0.04))
+            )
+        }
     }
 
     // MARK: - Save

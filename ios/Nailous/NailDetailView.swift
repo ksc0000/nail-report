@@ -34,6 +34,34 @@ struct NailDetailView: View {
         _mode = State(initialValue: (record?.setAppearances?.count ?? 0) > 1 ? .set : .single)
     }
 
+    /// Theme picker as a little backdrop swatch with a label — matches the
+    /// mockup's テーマ thumbnails; gold ring when selected.
+    private func themeThumb(_ candidate: StageTheme) -> some View {
+        let isOn = theme == candidate
+        return Button {
+            theme = candidate
+        } label: {
+            VStack(spacing: 5) {
+                ZStack {
+                    if let img = candidate.backdropImage {
+                        Image(uiImage: img).resizable().scaledToFill()
+                    } else {
+                        LinearGradient(colors: candidate.gradientColors, startPoint: .top, endPoint: .bottom)
+                    }
+                }
+                .frame(width: 58, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(isOn ? Palette.goldBright : .white.opacity(0.15), lineWidth: isOn ? 2 : 1)
+                )
+                Text(candidate.label)
+                    .font(.system(size: 10.5, weight: isOn ? .semibold : .regular))
+                    .foregroundStyle(isOn ? Palette.goldBright : .white.opacity(0.6))
+            }
+        }
+    }
+
     private func copyToClipboard(_ image: UIImage?) {
         guard let png = image?.pngData() else { return }
         UIPasteboard.general.setData(png, forPasteboardType: UTType.png.identifier)
@@ -187,12 +215,12 @@ struct NailDetailView: View {
                             motion = motion.next
                         }
                     }
+                    SectionHeader(title: "テーマ")
+                        .padding(.top, 4)
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: 12) {
                             ForEach(StageTheme.allCases) { candidate in
-                                StagePill(label: candidate.label, isOn: theme == candidate) {
-                                    theme = candidate
-                                }
+                                themeThumb(candidate)
                             }
                         }
                         .padding(.horizontal, 20)
@@ -327,7 +355,7 @@ struct StageBackground: View {
     }
 }
 
-/// Shared capsule toggle.
+/// Shared capsule toggle — selected reads as champagne gold.
 struct StagePill: View {
     let label: String
     let isOn: Bool
@@ -339,14 +367,14 @@ struct StagePill: View {
                 .font(.system(size: 12.5, weight: .medium))
                 .lineLimit(1)
                 .fixedSize()
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 13)
                 .padding(.vertical, 7)
                 .background(
-                    Capsule().fill(isOn ? Color.white.opacity(0.92) : Color.white.opacity(0.08))
+                    Capsule().fill(
+                        isOn ? AnyShapeStyle(Palette.goldGradient) : AnyShapeStyle(Color.white.opacity(0.08))
+                    )
                 )
-                .foregroundStyle(
-                    isOn ? Color(red: 0.2, green: 0.1, blue: 0.18) : .white.opacity(0.75)
-                )
+                .foregroundStyle(isOn ? Palette.ink0 : .white.opacity(0.75))
         }
     }
 }
