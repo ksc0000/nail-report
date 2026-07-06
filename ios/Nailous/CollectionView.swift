@@ -34,7 +34,7 @@ struct CollectionView: View {
                     .padding(.bottom, 48)
                 }
 
-                LuxuryFrame()
+                StageForeground(theme: .glass)
             }
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {

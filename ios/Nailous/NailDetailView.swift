@@ -260,6 +260,8 @@ struct NailDetailView: View {
                     .padding(.bottom, 24)
                 }
             }
+
+            StageForeground(theme: theme)
         }
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {

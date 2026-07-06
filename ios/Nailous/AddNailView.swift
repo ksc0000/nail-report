@@ -148,6 +148,8 @@ struct AddNailView: View {
                     }
                     .scrollDismissesKeyboard(.interactively)
                 }
+
+                StageForeground(theme: .glass)
             }
             .navigationTitle("ネイルを記録")
             .navigationBarTitleDisplayMode(.inline)

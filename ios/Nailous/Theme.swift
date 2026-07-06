@@ -133,6 +133,29 @@ struct JewelPodium: View {
     }
 }
 
+/// The AI-generated ornament frame (`fg_<theme>.png`, gold on black) laid over
+/// the stage with a screen blend — black drops out, only the gold glows — so no
+/// alpha channel is needed. Falls back to the drawn `LuxuryFrame`.
+struct StageForeground: View {
+    var theme: StageTheme = .glass
+    var opacity: Double = 0.95
+
+    var body: some View {
+        Group {
+            if let overlay = theme.foregroundImage {
+                Image(uiImage: overlay)
+                    .resizable()
+                    .ignoresSafeArea()
+                    .blendMode(.screen)
+                    .opacity(opacity)
+            } else {
+                LuxuryFrame()
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
 /// A restrained gold hairline frame with corner flourishes, laid over a screen
 /// to give the "display case" feel without competing with the content.
 struct LuxuryFrame: View {

@@ -28,6 +28,12 @@ enum StageTheme: String, CaseIterable, Identifiable {
         UIImage(named: "bg_\(rawValue)")
     }
 
+    /// AI-generated gold-on-black ornament frame overlaid (screen-blended) on
+    /// top of the stage; `fg_<theme>.png` in the bundle.
+    var foregroundImage: UIImage? {
+        UIImage(named: "fg_\(rawValue)")
+    }
+
     var gradientColors: [Color] {
         switch self {
         case .glass:
