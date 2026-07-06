@@ -33,16 +33,12 @@ struct CollectionView: View {
                     }
                     .padding(.bottom, 48)
                 }
+
+                LuxuryFrame()
             }
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        isAdding = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.white)
-                    }
+                    GoldIconButton(systemName: "plus") { isAdding = true }
                 }
             }
             .toolbarColorScheme(.dark, for: .navigationBar)
@@ -82,21 +78,11 @@ struct CollectionView: View {
     }
 
     private var header: some View {
-        VStack(spacing: 4) {
-            Text("NAILOUS")
-                .font(.system(size: 12, weight: .semibold))
-                .kerning(5)
-                .foregroundStyle(.white.opacity(0.5))
-            Text("宝石箱")
-                .font(.system(size: 26, weight: .medium, design: .serif))
-                .foregroundStyle(.white)
-            if !records.isEmpty {
-                Text("\(records.count) 個のネイル")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.45))
-            }
-        }
-        .padding(.top, 10)
+        DisplayTitle(
+            title: "宝石箱",
+            subtitle: records.isEmpty ? nil : "\(records.count) 個のネイル"
+        )
+        .padding(.top, 12)
     }
 
     private var emptyState: some View {
@@ -133,21 +119,24 @@ struct CollectionView: View {
     private var jewelStage: some View {
         VStack(spacing: 4) {
             if let first = showcase.first, let firstAppearance = first.appearance {
-                NailSceneView(
-                    appearance: firstAppearance,
-                    shape: first.shape,
-                    mode: .set,
-                    setAppearances: showcase.compactMap(\.appearance),
-                    setShapes: showcase.map(\.shape),
-                    layout: .cloud,
-                    theme: .glass,
-                    onTipTap: { index in
-                        if showcase.indices.contains(index) {
-                            selected = showcase[index]
-                        }
-                    },
-                    arrivalID: arrivalID
-                )
+                ZStack {
+                    JewelPodium()
+                    NailSceneView(
+                        appearance: firstAppearance,
+                        shape: first.shape,
+                        mode: .set,
+                        setAppearances: showcase.compactMap(\.appearance),
+                        setShapes: showcase.map(\.shape),
+                        layout: .cloud,
+                        theme: .glass,
+                        onTipTap: { index in
+                            if showcase.indices.contains(index) {
+                                selected = showcase[index]
+                            }
+                        },
+                        arrivalID: arrivalID
+                    )
+                }
                 .frame(height: 400)
                 Text("タップで開く・ドラッグで回転")
                     .font(.caption2)
@@ -158,10 +147,7 @@ struct CollectionView: View {
 
     private var shelf: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("コレクション")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.5))
-                .padding(.horizontal, 24)
+            SectionHeader(title: "最近のネイル")
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
@@ -198,10 +184,7 @@ struct CollectionView: View {
 
     private var sampleSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("サンプルデザイン")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.5))
-                .padding(.horizontal, 24)
+            SectionHeader(title: "サンプルデザイン")
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 18) {
