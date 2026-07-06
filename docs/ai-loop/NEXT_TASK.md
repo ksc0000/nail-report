@@ -2,41 +2,40 @@
 
 ## Context
 
-The current phase is 2.0, focusing on improving stability, test coverage, and UX. This task initiates the test coverage efforts by adding unit tests for core Firebase utility functions.
+The product roadmap indicates that Phase 2.1 focuses on improving test coverage. The current state shows no unit tests for the `firestore.ts` helper functions yet.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest, ensuring Firebase SDK interactions are properly mocked.
+Implement unit tests for the helper functions in `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but ideally no functional changes)
-- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
-- `vite.config.ts` (if Vitest setup is needed, but typically it's already there)
+-   `src/lib/firestore.ts` (modifications to export functions or add test IDs if necessary for testing, but prioritize testing existing public interfaces)
+-   `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
-- Firebase deploy commands
-- Secrets and credentials
-- `src/App.css` (not relevant for this task)
+-   `src/main.tsx` (entry point — do not modify)
+-   `commands/` (PowerShell scripts — do not modify)
+-   `firestore.rules`, `storage.rules` (require human approval)
+-   `package.json` deps (no new npm packages without human approval)
+-   Firebase deploy commands
+-   Secrets and credentials
+-   Any files outside of `src/lib/firestore.ts` and `src/__tests__/`
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
-- Mock Firebase SDK dependencies (e.g., `firebase/firestore`) using `vi.mock` as necessary to isolate the functions under test.
-- Write at least one unit test for each *exported* helper function in `src/lib/firestore.ts` that involves Firestore interactions (e.g., adding, getting, updating, deleting data).
-- Ensure tests cover success and basic error scenarios where applicable without external network calls.
-- Run `npm run build && npm run lint && npm test` before finishing.
+-   Keep diff ≤ 150 lines.
+-   Add a new test file, `src/__tests__/firestore.test.ts`.
+-   Cover the main helper functions in `src/lib/firestore.ts` with unit tests (e.g., functions for creating, reading, updating, deleting nail items or public shares if they reside there).
+-   Use `vitest` and mock Firebase SDK dependencies where necessary to ensure tests are isolated and run quickly.
+-   Run `npm run build && npm run lint && npm run test` before finishing.
+-   Report follow-up items as comments, not additional code.
 
 ## Output Format
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+-   Summary of what changed
+-   Changed files list
+-   Commands run and results
+-   Known issues or limitations
+-   Suggested next task
