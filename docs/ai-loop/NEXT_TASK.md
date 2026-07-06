@@ -2,55 +2,41 @@
 
 ## Context
 
-The current roadmap for `nail-report` is in Phase 2, focusing on stability, test coverage, and UX improvements. The immediate goal is to enhance test coverage, specifically for Firebase helper functions.
+The product roadmap indicates "Phase 2 - Active" focuses on improving stability, test coverage, and UX. This task directly addresses the "2.1 Test coverage" goal by adding initial unit tests for key Firestore helper functions.
 
 ## Objective
 
-Implement unit tests for a few key helper functions in `src/lib/firestore.ts` using Vitest, focusing on mocking Firebase SDK dependencies.
+Add initial unit tests for core helper functions within `src/lib/firestore.ts` using Vitest, ensuring Firebase SDK interactions are properly mocked.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for minor adjustments to enable testing, if necessary)
-- `src/__tests__/lib/firestore.test.ts` (new file)
-- `vite.config.ts` (for Vitest configuration/setup, if needed)
+-   `src/lib/firestore.ts` (for understanding function signatures)
+-   `src/__tests__/firestore.test.ts` (new test file)
+-   Any necessary Vitest configuration files if they are explicitly for test setup (e.g., `vitest.config.ts`), but do not add new npm dependencies to `package.json`.
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
-- Firebase deploy commands
-- Secrets and credentials
+-   `src/main.tsx` (entry point — do not modify)
+-   `commands/` (PowerShell scripts — do not modify)
+-   `firestore.rules`, `storage.rules` (require human approval)
+-   `package.json` deps (no new npm packages without human approval)
+-   Firebase deploy commands
+-   Secrets and credentials
+-   Adding Vitest as a new dependency if it's not already configured (assume Vitest is ready to be used).
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Run `npm run test` (to ensure tests pass) and `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
+-   Keep diff ≤ 150 lines. Focus on testing 1-2 core CRUD operations (e.g., `addItem`, `updateItem`, `deleteItem`, or `getNailItems`).
+-   Use `vitest` for writing tests.
+-   Properly mock Firebase SDK functions (Firestore specifically) to isolate the `firestore.ts` logic.
+-   Ensure tests cover typical success cases and basic error handling where applicable for the chosen functions.
+-   Run `npm run build && npm run lint && npm run test` (or equivalent test command) before finishing.
+-   Report follow-up items as comments, not additional code.
 
 ## Output Format
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
-
-## Worker Prompt
-
-1.  **Create Test File:** Create a new test file at `src/__tests__/lib/firestore.test.ts`.
-2.  **Vitest Setup:** Configure Vitest within this test file to effectively mock the Firebase Firestore SDK (e.g., `firebase/firestore`). Ensure no actual network calls are made to Firebase.
-3.  **Implement Tests:** Write comprehensive unit tests for at least two of the following helper functions found in `src/lib/firestore.ts`:
-    *   `getNailItems`
-    *   `addNailItem`
-    *   `updateNailItem`
-    *   `deleteNailItem`
-    *   `getNailItem`
-    *   `updateNailItemTags`
-    *   `addPublicShare`
-    *   `getPublicShare`
-4.  **Coverage:** Ensure the tests cover basic functionality and relevant success/failure scenarios for the chosen functions, all purely through mocking.
-5.  **No New Dependencies:** Do not add any new npm packages to `package.json`. Vitest is already configured.
-6.  **Verify:** Run `npm run test` to confirm all tests pass, then `npm run build && npm run lint` to ensure no build or linting errors.
+-   Summary of what changed
+-   Changed files list
+-   Commands run and results
+-   Known issues or limitations
+-   Suggested next task
