@@ -13,6 +13,8 @@ struct AddNailView: View {
     @State private var pickerItem: PhotosPickerItem?
     @State private var originalImage: UIImage?
     @State private var isCropping = false
+    @State private var showCamera = false
+    @State private var isCleaning = false
 
     /// Baked textures straight from the crop (before retouch). One entry for a
     /// single nail; up to five (photo left→right) for a whole-hand capture.
@@ -69,6 +71,19 @@ struct AddNailView: View {
                                 .foregroundStyle(.white.opacity(0.55))
                         }
                     }
+                    .overlay {
+                        if isCleaning {
+                            HStack(spacing: 8) {
+                                ProgressView().tint(.white)
+                                Text("仕上げ処理中…")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.white.opacity(0.85))
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(Capsule().fill(Color.black.opacity(0.6)))
+                        }
+                    }
 
                     ScrollView {
                         VStack(spacing: 18) {
@@ -78,6 +93,11 @@ struct AddNailView: View {
                                         icon: "photo.on.rectangle.angled",
                                         title: hasTexture ? "写真を変更" : "写真を選ぶ"
                                     )
+                                }
+                                if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                                    Button { showCamera = true } label: {
+                                        actionRow(icon: "camera", title: "カメラで撮る")
+                                    }
                                 }
                                 if originalImage != nil {
                                     Button { isCropping = true } label: {
@@ -178,23 +198,46 @@ struct AddNailView: View {
                 isCropping = true
             }
         }
+        .fullScreenCover(isPresented: $showCamera) {
+            NailCameraView(
+                onCapture: { image in
+                    showCamera = false
+                    originalImage = image
+                    isCropping = true
+                },
+                onCancel: { showCamera = false }
+            )
+            .ignoresSafeArea()
+        }
         .fullScreenCover(isPresented: $isCropping) {
             if let originalImage {
                 PhotoCropView(
                     image: originalImage,
                     nailShape: $shape,
                     onConfirm: { baked in
-                        bakedTextures = [baked]
-                        applyRetouch()
                         isCropping = false
+                        cleanupAndSet([baked])
                     },
                     onConfirmSet: { bakedList in
-                        bakedTextures = bakedList
-                        applyRetouch()
                         isCropping = false
+                        cleanupAndSet(bakedList)
                     },
                     onCancel: { isCropping = false }
                 )
+            }
+        }
+    }
+
+    /// On-device cleanup (subject mask → skin feathering → highlight taming)
+    /// runs once per committed texture, off the main thread.
+    private func cleanupAndSet(_ textures: [UIImage]) {
+        isCleaning = true
+        Task.detached(priority: .userInitiated) {
+            let cleaned = textures.map { NailCleanup.process($0) }
+            await MainActor.run {
+                bakedTextures = cleaned
+                applyRetouch()
+                isCleaning = false
             }
         }
     }
