@@ -2,18 +2,16 @@
 
 ## Context
 
-The product roadmap indicates that Phase 2.3 focuses on improving loading states with a specific goal of adding a skeleton loading for the nail item list. This task will implement that improvement.
+The product roadmap for nail-report is in Phase 2, focusing on stability, test coverage, and UX improvements. This task specifically addresses a point in Phase 2.4, enhancing the application's accessibility.
 
 ## Objective
 
-Implement a skeleton loading UI for the nail item list displayed in `src/App.tsx`. This skeleton should appear while the actual nail items are being fetched.
+Identify all icon-only buttons throughout the application and add a descriptive `aria-label` attribute to each to improve accessibility for users of assistive technologies.
 
 ## Allowed Scope
 
-- `src/App.tsx` (for integrating the skeleton)
-- `src/components/` (if a new skeleton component is created)
-- `src/App.css` or new CSS module for styling the skeleton
-- `src/hooks/` (if a custom hook is needed to manage loading state)
+- `src/` (except `src/main.tsx`)
+- `src/App.css` (for minor style adjustments if absolutely necessary, but not the primary focus)
 
 ## Forbidden Scope
 
@@ -26,12 +24,12 @@ Implement a skeleton loading UI for the nail item list displayed in `src/App.tsx
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- The skeleton should display dynamically when data is being fetched and hide once data is loaded.
-- Ensure the skeleton provides a visual indication of content loading.
-- Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files (N/A for this task).
-- Report follow-up items as comments, not additional code.
+- Locate all `<button>` or custom button-like elements that primarily display an icon (e.g., `<button><FontAwesomeIcon icon={faTrash} /></button>`) and do not have visible text content.
+- For each identified button, add a meaningful `aria-label` attribute. The label should clearly and concisely describe the button's action (e.g., "Delete item", "Edit tag", "Share nail report").
+- Ensure the `aria-label` accurately reflects the button's functionality in the given context.
+- Keep the diff size for this change to ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing and include the results.
+- Report any follow-up items or considerations as comments in the PR, rather than implementing additional code.
 
 ## Output Format
 
