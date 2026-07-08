@@ -1,19 +1,17 @@
-```markdown
-# Worker Prompt Template
+# Worker Prompt
 
 ## Context
 
-The product roadmap outlines Phase 2, which focuses on improving stability, test coverage, and UX. This task addresses the "Test coverage" aspect by adding unit tests for core Firebase helper functions.
+The `nail-report` application is currently in Phase 2 of its roadmap, focusing on improving stability, test coverage, and user experience. This task directly addresses accessibility, a key aspect of user experience, by ensuring that interactive elements are properly described for assistive technologies.
 
 ## Objective
 
-Implement unit tests for one or two helper functions within `src/lib/firestore.ts` using Vitest, specifically focusing on mocking Firebase SDK interactions.
+Identify all icon-only buttons throughout the `nail-report` application and add appropriate `aria-label` attributes to enhance accessibility for screen reader users.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor adjustments for testability if necessary, but prefer to keep changes minimal)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `vite.config.ts` (only for adding Vitest setup if not already configured for test files)
+- Any existing file within the `src/` directory that contains an icon-only button element or a component rendering such a button. This typically includes files in `src/components/`, `src/App.tsx`, and potentially other view/page components.
+- Modifications are limited to adding `aria-label` attributes to `button` elements or their encapsulating components.
 
 ## Forbidden Scope
 
@@ -23,38 +21,13 @@ Implement unit tests for one or two helper functions within `src/lib/firestore.t
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/App.css`
+- Creation of new files (except for tests, but this task does not involve new tests).
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Create a new test file `src/__tests__/firestore.test.ts`.
-- Implement unit tests for at least one, preferably two, functions from `src/lib/firestore.ts`, such as `addNailItem` or `getNailItems`.
-- Use `vi.mock` to mock Firebase Firestore SDK dependencies (e.g., `getFirestore`, `collection`, `addDoc`, `getDocs`, `query`).
-- Ensure the tests are isolated and do not make actual calls to Firebase.
-- Run `npm run build && npm run lint && npm test` before finishing.
-
-## Output Format
-
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
-
----
-## Worker prompt
-
-You are tasked with enhancing the test coverage for the `nail-report` application by adding unit tests for Firestore helper functions.
-
-1.  **Create a new test file**: Create `src/__tests__/firestore.test.ts`.
-2.  **Vitest Setup**: Ensure Vitest is correctly configured to run tests within `src/__tests__/`. If `vite.config.ts` needs a minor adjustment to include test files (e.g., `test: { include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'] }`), apply it.
-3.  **Mock Firebase Firestore SDK**: Before importing `src/lib/firestore.ts`, use `vi.mock` to mock the necessary Firebase Firestore SDK functions and objects that `firestore.ts` depends on. This includes mocking `getFirestore`, `collection`, `addDoc`, `getDocs`, `query`, and any other Firestore-related functions called within `src/lib/firestore.ts` that you plan to test.
-4.  **Implement Tests**: Write unit tests for one or two of the simpler functions in `src/lib/firestore.ts`. Good candidates are `addNailItem` and `getNailItems`.
-    *   For `addNailItem`, test that `addDoc` is called with the correct arguments (Firestore instance, collection ref, data).
-    *   For `getNailItems`, test that `collection`, `query`, and `getDocs` are called correctly and that the function processes and returns the mock snapshot data as expected.
-5.  **Run Tests**: Execute `npm test` to ensure your new tests pass.
-6.  **Lint and Build**: Run `npm run lint` and `npm run build` to verify no linting issues or build errors are introduced.
-
-Remember to keep the changes concise and focused on testing specific functions with proper mocking.
-```
+- Systematically review the application's UI to locate all buttons that render solely an icon without visible text content (e.g., `<button><SomeIconComponent /></button>`).
+- For each identified icon-only button, add a descriptive `aria-label` attribute that clearly communicates the button's purpose and action to a screen reader (e.g., `aria-label="Delete item"`, `aria-label="Edit report"`, `aria-label="Upload image"`).
+- The `aria-label` should be concise and accurately reflect the button's functionality. Assume English descriptions are sufficient for now.
+- The total line diff for the resulting pull request must be ≤ 150 lines.
+- Before considering the task complete, ensure `npm run build && npm run lint` run without errors.
+- Any challenges encountered (e.g., highly dynamic button labels, complex component structures) or potential follow-up items should be reported as comments in the pull request, not as additional code changes.
