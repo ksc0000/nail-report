@@ -2,18 +2,18 @@
 
 ## Context
 
-The current phase is 2.0, focusing on stability, test coverage, and UX improvements. This task directly addresses Phase 2.4 Accessibility, which aims to improve the application's usability for all users, including those relying on assistive technologies.
+The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. This task addresses Phase 2.1 (Test coverage) by adding foundational unit tests for Firebase helper functions.
 
 ## Objective
 
-Identify all icon-only buttons throughout the application and add appropriate `aria-label` attributes to them.
+Implement initial unit tests for key helper functions in `src/lib/firestore.ts` using Vitest, specifically focusing on the `addNailItem` and `deleteNailItem` operations.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
-- `src/__tests__/` (new test files)
-- `src/App.css` (CSS improvements)
+- `src/lib/firestore.ts` (read-only for understanding the functions to test)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `package.json` (read-only to confirm `vitest` is available)
+- `vite.config.ts` (read-only to confirm Vitest setup if needed, but no modifications)
 
 ## Forbidden Scope
 
@@ -23,52 +23,43 @@ Identify all icon-only buttons throughout the application and add appropriate `a
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
+- `src/App.css` or any other CSS files
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
+- Create a new test file: `src/__tests__/firestore.test.ts`.
+- Use `vitest` for testing.
+- Mock Firebase SDK (Firestore) dependencies as needed for isolated unit tests, utilizing `vi.mock`.
+- Ensure tests are clean, isolated, and pass.
+
+## Output Format
+
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
 
 ## Worker prompt
 
-Your task is to enhance the accessibility of the nail-report application by adding `aria-label` attributes to all icon-only interactive elements that function as buttons.
+1.  **Verify Vitest Setup:** Check `package.json` for `vitest` in `devDependencies`. Assume Vitest is configured and ready to use for running tests (e.g., via `npm test` or `npm run test`). If `vitest` is not present, report this as a blocking issue.
+2.  **Inspect `firestore.ts`:** Carefully read `src/lib/firestore.ts` to understand how `addNailItem` and `deleteNailItem` interact with the Firebase Firestore SDK.
+3.  **Create Test File:** Create a new file named `src/__tests__/firestore.test.ts`.
+4.  **Mock Firebase Firestore:**
+    *   Set up `vi.mock('firebase/firestore')` at the top of your test file to mock Firestore functions.
+    *   Mock the specific Firestore functions that `addNailItem` and `deleteNailItem` call (e.g., `collection`, `doc`, `addDoc`, `deleteDoc`).
+    *   Ensure the mocks allow you to verify that the functions are called with the correct arguments.
+5.  **Test `addNailItem`:**
+    *   Write a unit test case for `addNailItem`.
+    *   Assert that `addDoc` (or equivalent Firestore method) is called exactly once with the expected `collection` reference and `nailItem` data.
+    *   Consider testing successful execution.
+6.  **Test `deleteNailItem`:**
+    *   Write a unit test case for `deleteNailItem`.
+    *   Assert that `deleteDoc` (or equivalent Firestore method) is called exactly once with the expected `doc` reference constructed from the provided `itemId` and `userId`.
+    *   Consider testing successful execution.
+7.  **Run Tests:** Execute `npm test` (or `npm run test`) and ensure all new tests pass.
+8.  **Final Checks:** Run `npm run build && npm run lint` to ensure no build or linting errors are introduced.
 
-**Steps:**
-
-1.  **Identify Icon-Only Buttons:** Navigate through the application's UI to locate buttons or interactive elements (e.g., `<a>` tags styled as buttons) that convey their action primarily through an icon without visible text.
-    *   Look for common patterns like:
-        *   Delete icons (e.g., trash can)
-        *   Edit icons (e.g., pencil)
-        *   Add/Upload icons (e.g., plus sign, cloud with arrow)
-        *   Close/Dismiss icons (e.g., 'x' mark)
-        *   Navigation icons (e.g., home, settings, back arrows)
-        *   Sign-out icons.
-2.  **Add `aria-label`:** For each identified element, add an `aria-label` attribute that provides a concise, descriptive text alternative for the icon's function. This label should describe the action the button performs.
-    *   **Example:**
-        *   Before: `<button><img src="delete.svg" alt=""></button>`
-        *   After: `<button aria-label="Delete item"><img src="delete.svg" alt=""></button>`
-        *   Before: `<a onClick={handleShare}><ShareIcon /></a>`
-        *   After: `<a onClick={handleShare} aria-label="Share item"><ShareIcon /></a>`
-3.  **Review existing `alt` attributes:** If an `<img>` tag inside a button already has a descriptive `alt` attribute that fully explains the button's purpose, adding an `aria-label` to the button itself might be redundant or undesirable. Prioritize `aria-label` on the button element itself, but be mindful of existing `alt` text. If the icon *is* decorative and the button *already* has visible text, no `aria-label` is needed.
-4.  **Common components to check:**
-    *   Nail item list (edit, delete, share buttons)
-    *   Image upload/delete actions
-    *   Tag management buttons
-    *   Navigation elements (if any are icon-only)
-    *   Modals or dialogs (close buttons)
-
-**Acceptance Criteria:**
-
--   All icon-only buttons throughout the application have a descriptive `aria-label` attribute.
--   The `aria-label` accurately describes the action performed by the button.
--   No new `npm` packages are added.
--   The changes result in a diff of 150 lines or less.
-
-**Required Test Commands:**
-
-```bash
-npm run build
-npm run lint
-```
+This task specifically focuses on adding initial tests for two core CRUD operations. Error handling or edge cases for these functions are not required in this task to keep the diff small.
