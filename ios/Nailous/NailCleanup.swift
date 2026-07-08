@@ -74,7 +74,7 @@ enum NailCleanup {
     // MARK: - base colour
 
     /// Average colour of the central region — the nail's own base tone.
-    private static func dominantCenterColor(of image: UIImage) -> UIColor {
+    static func dominantCenterColor(of image: UIImage) -> UIColor {
         guard let cgImage = image.cgImage else { return .systemPink }
         let ci = CIImage(cgImage: cgImage)
         let extent = ci.extent

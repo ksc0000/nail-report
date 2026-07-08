@@ -74,11 +74,11 @@ private final class GuideOverlayView: UIView {
     }
 
     override func draw(_ rect: CGRect) {
-        let guideWidth = bounds.width * 0.42
+        let guideWidth = bounds.width * 0.26
         let guideHeight = guideWidth * 1.5
         let guideRect = CGRect(
             x: (bounds.width - guideWidth) / 2,
-            y: bounds.height * 0.5 - guideHeight * 0.62,
+            y: bounds.height * 0.5 - guideHeight * 0.7,
             width: guideWidth,
             height: guideHeight
         )

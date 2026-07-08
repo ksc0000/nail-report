@@ -15,6 +15,10 @@ struct AddNailView: View {
     @State private var isCropping = false
     @State private var showCamera = false
     @State private var isCleaning = false
+    @State private var isAIProcessing = false
+    @State private var aiProgress = ""
+    @State private var aiError: String?
+    @State private var aiApplied = false
 
     /// Baked textures straight from the crop (before retouch). One entry for a
     /// single nail; up to five (photo left→right) for a whole-hand capture.
@@ -131,6 +135,41 @@ struct AddNailView: View {
                                     SectionHeader(title: "リタッチ")
                                     retouchSection
                                 }
+
+                                if AICleanup.isConfigured {
+                                    VStack(spacing: 6) {
+                                        Button(action: runAICleanup) {
+                                            HStack(spacing: 8) {
+                                                if isAIProcessing {
+                                                    ProgressView().tint(Palette.goldBright)
+                                                    Text(aiProgress)
+                                                } else {
+                                                    Image(systemName: aiApplied ? "checkmark.seal.fill" : "sparkles")
+                                                    Text(aiApplied ? "AIクリーンアップ済み" : "AIクリーンアップ（クラウド）")
+                                                }
+                                            }
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 12)
+                                            .background(
+                                                Capsule()
+                                                    .fill(Color.white.opacity(0.06))
+                                                    .overlay(Capsule().stroke(Palette.gold.opacity(0.5), lineWidth: 1))
+                                            )
+                                            .foregroundStyle(Palette.goldBright)
+                                        }
+                                        .disabled(isAIProcessing || aiApplied)
+                                        if let aiError {
+                                            Text(aiError)
+                                                .font(.system(size: 12))
+                                                .foregroundStyle(Color(red: 1, green: 0.6, blue: 0.65))
+                                        }
+                                        Text("背景・肌をAIで完全除去し、ディテールを強化します")
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.white.opacity(0.45))
+                                    }
+                                    .padding(.horizontal, 24)
+                                }
                             }
 
                             VStack(spacing: 10) {
@@ -228,9 +267,40 @@ struct AddNailView: View {
         }
     }
 
+    /// Cloud pipeline (matting → composite → detail enhance) over every
+    /// captured texture, sequential with progress.
+    private func runAICleanup() {
+        guard !isAIProcessing, !bakedTextures.isEmpty else { return }
+        isAIProcessing = true
+        aiError = nil
+        let sources = bakedTextures
+        Task {
+            var results: [UIImage] = []
+            do {
+                for (index, texture) in sources.enumerated() {
+                    aiProgress = sources.count > 1
+                        ? "AI処理中（\(index + 1)/\(sources.count)）…"
+                        : "AI処理中…"
+                    let enhanced = try await AICleanup.enhance(texture)
+                    results.append(enhanced)
+                }
+                bakedTextures = results
+                applyRetouch()
+                aiApplied = true
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            } catch {
+                aiError = "AI処理に失敗しました。通信環境を確認して再試行してください。"
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
+            }
+            isAIProcessing = false
+        }
+    }
+
     /// On-device cleanup (subject mask → skin feathering → highlight taming)
     /// runs once per committed texture, off the main thread.
     private func cleanupAndSet(_ textures: [UIImage]) {
+        aiApplied = false
+        aiError = nil
         isCleaning = true
         Task.detached(priority: .userInitiated) {
             let cleaned = textures.map { NailCleanup.process($0) }

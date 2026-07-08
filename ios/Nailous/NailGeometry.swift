@@ -3,6 +3,7 @@ import SceneKit
 /// Nail plate shapes supported by the procedural mesh.
 enum NailShape: String, CaseIterable, Identifiable {
     case squoval
+    case round
     case oval
     case almond
     case coffin
@@ -12,6 +13,7 @@ enum NailShape: String, CaseIterable, Identifiable {
     var label: String {
         switch self {
         case .squoval: return "スクエア"
+        case .round: return "ラウンド"
         case .oval: return "オーバル"
         case .almond: return "アーモンド"
         case .coffin: return "コフィン"
@@ -28,8 +30,18 @@ enum NailShape: String, CaseIterable, Identifiable {
 enum NailGeometry {
     private static let cols = 48
     private static let rows = 96
-    private static let plateWidth: Float = 1.3
-    private static let plateHeight: Float = 2.4
+
+    /// Plate proportions per shape: round is short & wide, almond/coffin run
+    /// long — matching how the styles differ on real tips.
+    static func plateSize(for shape: NailShape) -> (width: Float, height: Float) {
+        switch shape {
+        case .squoval: return (1.32, 2.25)
+        case .round: return (1.48, 1.8)
+        case .oval: return (1.3, 2.4)
+        case .almond: return (1.22, 2.6)
+        case .coffin: return (1.22, 2.65)
+        }
+    }
 
     private static func smoothstep(_ a: Float, _ b: Float, _ x: Float) -> Float {
         let t = min(1, max(0, (x - a) / (b - a)))
@@ -57,6 +69,14 @@ enum NailGeometry {
                 ? 0.62 + 0.38 * sqrt(max(0, 1 - pow((t - (1 - tipCap)) / tipCap, 2)))
                 : 1
             return body * baseRound * baseTaper * tipRound
+        case .round:
+            // Short and wide with a generously rounded free edge.
+            let body = 1 - 0.05 * smoothstep(0.4, 1, t)
+            let tipCap: Float = 0.3
+            let tipRound: Float = t > 1 - tipCap
+                ? sqrt(max(0, 1 - pow((t - (1 - tipCap)) / tipCap, 2)))
+                : 1
+            return body * baseRound * baseTaper * tipRound
         case .oval:
             // Near-straight sides, gently rounded free edge.
             let body = 1 - 0.1 * smoothstep(0.45, 1, t)
@@ -66,21 +86,30 @@ enum NailGeometry {
                 : 1
             return body * baseRound * baseTaper * tipRound
         case .almond:
-            // Long, gradual taper toward a softly pointed tip.
-            let body = 1 - 0.34 * smoothstep(0.2, 1, t)
-            let tipCap: Float = 0.14
+            // Continuous accelerating curve into a slim rounded point —
+            // no straight "shoulder", the almond signature.
+            let progress = smoothstep(0.18, 1, t)
+            let body = 1 - 0.62 * pow(progress, 1.6)
+            let tipCap: Float = 0.09
             let tipRound: Float = t > 1 - tipCap
                 ? sqrt(max(0, 1 - pow((t - (1 - tipCap)) / tipCap, 2)))
                 : 1
             return body * baseRound * baseTaper * tipRound
         case .coffin:
-            // Straight sides tapering to a flat (squared-off) free edge.
-            let body = 1 - 0.26 * smoothstep(0.3, 1, t)
-            return body * baseRound * baseTaper
+            // Ballerina: dead-straight diagonal sides down to a flat free
+            // edge (~58% of base width) with just-softened corners.
+            let linear = max(0, (t - 0.12) / 0.88)
+            let body = 1 - 0.42 * linear
+            let cornerCap: Float = 0.03
+            let corner: Float = t > 1 - cornerCap
+                ? 0.9 + 0.1 * sqrt(max(0, 1 - pow((t - (1 - cornerCap)) / cornerCap, 2)))
+                : 1
+            return body * baseRound * baseTaper * corner
         }
     }
 
     static func makeGeometry(shape: NailShape) -> SCNGeometry {
+        let (plateWidth, plateHeight) = plateSize(for: shape)
         var vertices: [SCNVector3] = []
         var uvs: [CGPoint] = []
         vertices.reserveCapacity((cols + 1) * (rows + 1))
