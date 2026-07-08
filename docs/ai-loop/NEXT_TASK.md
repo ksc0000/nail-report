@@ -1,13 +1,12 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-Read the roadmap, recent commits, and the current task.
+The current phase is 2.0, focusing on stability, test coverage, and UX improvements. This task directly addresses Phase 2.4 Accessibility, which aims to improve the application's usability for all users, including those relying on assistive technologies.
 
 ## Objective
 
-Implement exactly one bounded task from Phase 2 of the roadmap.
+Identify all icon-only buttons throughout the application and add appropriate `aria-label` attributes to them.
 
 ## Allowed Scope
 
@@ -32,63 +31,44 @@ Implement exactly one bounded task from Phase 2 of the roadmap.
 - Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
-## Output Format
+## Worker prompt
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+Your task is to enhance the accessibility of the nail-report application by adding `aria-label` attributes to all icon-only interactive elements that function as buttons.
 
----
+**Steps:**
 
-# Worker Prompt
+1.  **Identify Icon-Only Buttons:** Navigate through the application's UI to locate buttons or interactive elements (e.g., `<a>` tags styled as buttons) that convey their action primarily through an icon without visible text.
+    *   Look for common patterns like:
+        *   Delete icons (e.g., trash can)
+        *   Edit icons (e.g., pencil)
+        *   Add/Upload icons (e.g., plus sign, cloud with arrow)
+        *   Close/Dismiss icons (e.g., 'x' mark)
+        *   Navigation icons (e.g., home, settings, back arrows)
+        *   Sign-out icons.
+2.  **Add `aria-label`:** For each identified element, add an `aria-label` attribute that provides a concise, descriptive text alternative for the icon's function. This label should describe the action the button performs.
+    *   **Example:**
+        *   Before: `<button><img src="delete.svg" alt=""></button>`
+        *   After: `<button aria-label="Delete item"><img src="delete.svg" alt=""></button>`
+        *   Before: `<a onClick={handleShare}><ShareIcon /></a>`
+        *   After: `<a onClick={handleShare} aria-label="Share item"><ShareIcon /></a>`
+3.  **Review existing `alt` attributes:** If an `<img>` tag inside a button already has a descriptive `alt` attribute that fully explains the button's purpose, adding an `aria-label` to the button itself might be redundant or undesirable. Prioritize `aria-label` on the button element itself, but be mindful of existing `alt` text. If the icon *is* decorative and the button *already* has visible text, no `aria-label` is needed.
+4.  **Common components to check:**
+    *   Nail item list (edit, delete, share buttons)
+    *   Image upload/delete actions
+    *   Tag management buttons
+    *   Navigation elements (if any are icon-only)
+    *   Modals or dialogs (close buttons)
 
-## Context
+**Acceptance Criteria:**
 
-The application needs improved accessibility. Specifically, icon-only buttons lack proper labels for screen readers, which is a key part of Phase 2.4 of the roadmap.
+-   All icon-only buttons throughout the application have a descriptive `aria-label` attribute.
+-   The `aria-label` accurately describes the action performed by the button.
+-   No new `npm` packages are added.
+-   The changes result in a diff of 150 lines or less.
 
-## Objective
-
-Add `aria-label` attributes to all icon-only buttons throughout the application to enhance accessibility for screen reader users.
-
-## Allowed Scope
-
-- `src/components/` (e.g., button components, list items with action buttons)
-- `src/pages/` (any page using icon-only buttons)
-- `src/App.tsx` (if a top-level button is found, though less likely)
-
-## Forbidden Scope
-
-- `src/main.tsx`
-- `commands/`
-- `firestore.rules`, `storage.rules`
-- `package.json` deps
-- Firebase deploy commands
-- Secrets and credentials
-
-## Requirements
-
-- **Identify:** Locate all interactive elements that function as buttons but display only an icon without visible text.
-- **Implement `aria-label`:** For each identified icon-only button, add an `aria-label` attribute.
-- **Descriptive Labels:** The `aria-label` content must clearly and concisely describe the button's intended action or purpose (e.g., "Delete item", "Edit item", "Add tag", "Close modal", "View details").
-- **No New Dependencies:** Do not add any new npm packages.
-- **Small Diff:** The changes should be focused on adding `aria-label` attributes and should result in a diff of no more than 150 lines.
-- **Code Quality:** Ensure `npm run build` and `npm run lint` pass successfully after changes.
-- **Follow-up:** If any icon-only buttons are found to be complex (e.g., dynamically changing icons/actions) and a simple `aria-label` isn't sufficient, report it as a comment for a follow-up task.
-
-## Acceptance Criteria
-
-- All icon-only buttons in the application have a descriptive `aria-label` attribute.
-- The application builds without errors (`npm run build`).
-- Linting passes (`npm run lint`).
-
-## Required Test Commands
+**Required Test Commands:**
 
 ```bash
-npm install
 npm run build
 npm run lint
-```
-```
 ```
