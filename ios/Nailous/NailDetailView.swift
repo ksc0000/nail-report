@@ -11,6 +11,8 @@ struct NailDetailView: View {
     var record: NailRecord?
 
     @State private var shape: NailShape
+    @State private var plateParams: NailPlateParams
+    @State private var showTuneSheet = false
     @State private var mode: StageMode = .single
     @State private var layout: SetLayout = .arc
     @State private var motion: AutoMotion = .off
@@ -30,8 +32,80 @@ struct NailDetailView: View {
         self.subtitle = subtitle
         self.record = record
         _shape = State(initialValue: record?.shape ?? .squoval)
+        _plateParams = State(initialValue: record?.plateParams ?? .default)
         // A whole-hand capture opens as the five-piece set by default.
         _mode = State(initialValue: (record?.setAppearances?.count ?? 0) > 1 ? .set : .single)
+    }
+
+    /// Reshape a jewel after the fact: shape chips + tip-tuning sliders, live
+    /// on the stage behind the sheet, written straight back to the record.
+    private var tuneSheet: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SectionHeader(title: "形（シェイプ）")
+                .padding(.top, 18)
+            HStack(spacing: 8) {
+                ForEach(NailShape.allCases) { candidate in
+                    tuneShapeChip(candidate)
+                }
+            }
+            .padding(.horizontal, 24)
+
+            SectionHeader(title: "チップ調整")
+            VStack(spacing: 6) {
+                GoldSlider(label: "長さ", value: $plateParams.length)
+                GoldSlider(label: "幅", value: $plateParams.width)
+                GoldSlider(label: "カーブ 横", value: $plateParams.curveH)
+                GoldSlider(label: "カーブ 縦", value: $plateParams.curveV)
+                GoldSlider(label: "厚み", value: $plateParams.thickness)
+            }
+            .padding(.horizontal, 24)
+
+            if record != nil {
+                Text("変更はこの記録にそのまま保存されます")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.45))
+                    .frame(maxWidth: .infinity)
+            }
+            Spacer(minLength: 0)
+        }
+        .onChange(of: shape) { persistTuning() }
+        .onChange(of: plateParams) { persistTuning() }
+    }
+
+    private func tuneShapeChip(_ candidate: NailShape) -> some View {
+        let isOn = shape == candidate
+        return Button {
+            shape = candidate
+        } label: {
+            VStack(spacing: 6) {
+                NailSilhouette(nailShape: candidate)
+                    .fill(isOn ? AnyShapeStyle(Palette.goldGradient) : AnyShapeStyle(Color.white.opacity(0.16)))
+                    .frame(width: 22, height: 36)
+                    .overlay(
+                        NailSilhouette(nailShape: candidate)
+                            .stroke(isOn ? Palette.goldBright : .white.opacity(0.25), lineWidth: 1)
+                    )
+                Text(candidate.label)
+                    .font(.system(size: 10, weight: isOn ? .semibold : .regular))
+                    .foregroundStyle(isOn ? Palette.goldBright : .white.opacity(0.6))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isOn ? Palette.gold.opacity(0.1) : Color.white.opacity(0.04))
+            )
+        }
+    }
+
+    private func persistTuning() {
+        guard let record else { return }
+        record.shapeRaw = shape.rawValue
+        record.lengthAdj = plateParams.length
+        record.widthAdj = plateParams.width
+        record.curveHAdj = plateParams.curveH
+        record.curveVAdj = plateParams.curveV
+        record.thicknessAdj = plateParams.thickness
     }
 
     /// Theme picker as a little backdrop swatch with a label — matches the
@@ -97,7 +171,7 @@ struct NailDetailView: View {
                     appearance: appearance,
                     shape: shape,
                     mode: mode,
-                    plateParams: record?.plateParams ?? .default,
+                    plateParams: plateParams,
                     setAppearances: record?.setAppearances,
                     layout: layout,
                     motion: motion,
@@ -215,6 +289,9 @@ struct NailDetailView: View {
                         StagePill(label: motion.label, isOn: motion != .off) {
                             motion = motion.next
                         }
+                        StagePill(label: "調整", isOn: showTuneSheet) {
+                            showTuneSheet = true
+                        }
                     }
                     SectionHeader(title: "テーマ")
                         .padding(.top, 4)
@@ -236,15 +313,6 @@ struct NailDetailView: View {
                                 }
                             }
                             .padding(.horizontal, 20)
-                        }
-                    }
-                    if record == nil {
-                        HStack(spacing: 8) {
-                            ForEach(NailShape.allCases) { candidate in
-                                StagePill(label: candidate.label, isOn: shape == candidate) {
-                                    shape = candidate
-                                }
-                            }
                         }
                     }
                 }
@@ -279,28 +347,35 @@ struct NailDetailView: View {
                 }
             }
         }
+        .sheet(isPresented: $showTuneSheet) {
+            tuneSheet
+                .presentationDetents([.height(430)])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Color(red: 0.09, green: 0.06, blue: 0.1))
+                .preferredColorScheme(.dark)
+        }
         .sheet(isPresented: $showStampSheet) {
             if let stampImage {
                 StampSheet(
                     image: stampImage,
-                    makeVideo: { [appearance, shape, mode, layout, theme] motion in
+                    makeVideo: { [appearance, shape, plateParams, mode, layout, theme] motion in
                         try await StampVideoExporter.export(
                             appearance: appearance,
                             setAppearances: record?.setAppearances,
                             shape: shape,
-                            params: record?.plateParams ?? .default,
+                            params: plateParams,
                             mode: mode,
                             layout: layout,
                             theme: theme,
                             motion: motion
                         )
                     },
-                    makeGIF: { [appearance, shape, mode, layout, theme] motion in
+                    makeGIF: { [appearance, shape, plateParams, mode, layout, theme] motion in
                         try await StampVideoExporter.exportGIF(
                             appearance: appearance,
                             setAppearances: record?.setAppearances,
                             shape: shape,
-                            params: record?.plateParams ?? .default,
+                            params: plateParams,
                             mode: mode,
                             layout: layout,
                             theme: theme,
