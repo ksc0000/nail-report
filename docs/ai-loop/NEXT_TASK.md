@@ -1,21 +1,18 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. A key objective in Phase 2.1 is to increase test coverage, specifically by adding unit tests for Firebase helper functions using Vitest and mocking the Firebase SDK. This task aims to kickstart this effort by focusing on the `firestore.ts` utility file.
+Read the roadmap, recent commits, and the current task.
 
 ## Objective
 
-Implement unit tests for the helper functions located in `src/lib/firestore.ts` using Vitest. This involves setting up a new test file and mocking the Firebase SDK to ensure tests are isolated and efficient.
+Implement unit tests for key helper functions in `src/lib/firestore.ts` using Vitest, focusing on mocking Firebase SDK interactions.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but ideally minimal changes to the original file)
-- `src/__tests__/firestore.test.ts` (new test file)
-- `src/__tests__/` (other new test utility files, e.g., for common mocks)
-- `package.json` (only to confirm or add a `test` script if missing, no new npm dependencies)
-- `vite.config.ts` (only for Vitest configuration if necessary, e.g., for test setup files)
+- `src/lib/firestore.ts`
+- `src/__tests__/firestore.test.ts` (new file)
+- `vite.config.ts` (only if absolutely necessary for Vitest configuration, assume basic setup exists)
 
 ## Forbidden Scope
 
@@ -25,25 +22,33 @@ Implement unit tests for the helper functions located in `src/lib/firestore.ts` 
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/App.tsx`, `src/App.css` (irrelevant for this task)
+- Any files outside the `src/` directory, except as explicitly allowed.
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create a new test file `src/__tests__/firestore.test.ts`.
-- Write unit tests for at least two functions within `src/lib/firestore.ts` (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`).
-- Ensure the Firebase SDK (Firestore specifically) is mocked using `vi.mock` to prevent actual Firebase calls during tests.
-- Run `npm run test` (or `vitest`) to ensure tests pass.
-- Run `npm run build && npm run lint` before finishing.
+- Run `npm run build && npm run lint && npm run test` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
-## Output Format
+## Worker prompt
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+Your task is to add unit tests for selected helper functions within the `src/lib/firestore.ts` file, leveraging Vitest and Firebase SDK mocking. This directly addresses roadmap item "2.1 Test coverage" and "Mocking Firebase SDK".
 
----
-```
+1.  **Create a new test file:** `src/__tests__/firestore.test.ts`.
+2.  **Identify key functions:** Choose 2-3 core functions from `src/lib/firestore.ts` (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`, or similar data manipulation functions).
+3.  **Implement unit tests:** For each chosen function, write comprehensive unit tests using Vitest's assertion library.
+4.  **Mock Firebase SDK:** Crucially, mock the Firebase Firestore SDK (e.g., `firebase/firestore`) using `vi.mock` to ensure tests are fast, isolated, and do not make actual network calls to Firebase. Focus on testing the application logic within the `firestore.ts` helper functions, not the Firebase SDK itself.
+    *   You will likely need to mock `getFirestore`, `collection`, `addDoc`, `getDocs`, `doc`, `updateDoc`, `deleteDoc`, and their return values.
+5.  **Verify test results:** Ensure all new tests pass.
+
+**Acceptance Criteria:**
+- A new file `src/__tests__/firestore.test.ts` is created.
+- At least 2-3 significant functions from `src/lib/firestore.ts` are covered by unit tests.
+- Firebase Firestore SDK interactions are effectively mocked, preventing actual database calls during tests.
+- All new tests pass when running `npm run test`.
+
+**Required Test Commands:**
+- `npm run lint`
+- `npm run build`
+- `npm run test`
