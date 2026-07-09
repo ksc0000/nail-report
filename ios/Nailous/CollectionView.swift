@@ -125,6 +125,7 @@ struct CollectionView: View {
                         appearance: firstAppearance,
                         shape: first.shape,
                         mode: .set,
+                        plateParams: first.plateParams,
                         setAppearances: showcase.compactMap(\.appearance),
                         setShapes: showcase.map(\.shape),
                         layout: .cloud,

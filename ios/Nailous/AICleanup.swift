@@ -56,7 +56,7 @@ enum AICleanup {
             ]
         )
         let cutout = try await downloadImage(from: cutoutURL)
-        let composited = composite(cutout, over: base, size: image.size)
+        let composited = fitCutout(cutout, over: base, size: image.size)
 
         // 2. upscale ×2 → back to texture size (detail enhancement)
         let upscaledURL = try await runPrediction(
@@ -153,14 +153,73 @@ enum AICleanup {
         return "data:image/jpeg;base64,\(data.base64EncodedString())"
     }
 
-    private static func composite(_ cutout: UIImage, over base: UIColor, size: CGSize) -> UIImage {
+    /// Crops the matted cutout to the nail itself, then aspect-fills it into the
+    /// plate frame so the design reaches every edge — no solid base-colour
+    /// corners where the photo had skin/background around a smaller nail.
+    private static func fitCutout(_ cutout: UIImage, over base: UIColor, size: CGSize) -> UIImage {
+        let nail: UIImage
+        if let cg = cutout.cgImage,
+           let bounds = opaqueBounds(cutout),
+           let cropped = cg.cropping(to: bounds) {
+            nail = UIImage(cgImage: cropped)
+        } else {
+            nail = cutout
+        }
+
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
         return UIGraphicsImageRenderer(size: size, format: format).image { ctx in
             base.setFill()
             ctx.fill(CGRect(origin: .zero, size: size))
-            cutout.draw(in: CGRect(origin: .zero, size: size))
+            // aspect-fill: cover the whole frame, centre-crop any overflow.
+            let ns = nail.size
+            guard ns.width > 0, ns.height > 0 else { return }
+            let scale = max(size.width / ns.width, size.height / ns.height)
+            let dw = ns.width * scale, dh = ns.height * scale
+            nail.draw(in: CGRect(
+                x: (size.width - dw) / 2,
+                y: (size.height - dh) / 2,
+                width: dw,
+                height: dh
+            ))
         }
+    }
+
+    /// Bounding box of the opaque region (alpha above a small threshold), in
+    /// top-left pixel coordinates suitable for `CGImage.cropping(to:)`.
+    private static func opaqueBounds(_ image: UIImage) -> CGRect? {
+        guard let cg = image.cgImage else { return nil }
+        let w = cg.width, h = cg.height
+        guard w > 0, h > 0 else { return nil }
+        var pixels = [UInt8](repeating: 0, count: w * h * 4)
+        guard let ctx = CGContext(
+            data: &pixels,
+            width: w,
+            height: h,
+            bitsPerComponent: 8,
+            bytesPerRow: w * 4,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+        ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+
+        let threshold: UInt8 = 24
+        var minX = w, minY = h, maxX = -1, maxY = -1
+        for y in 0..<h {
+            let row = y * w * 4
+            for x in 0..<w where pixels[row + x * 4 + 3] > threshold {
+                if x < minX { minX = x }
+                if x > maxX { maxX = x }
+                if y < minY { minY = y }
+                if y > maxY { maxY = y }
+            }
+        }
+        guard maxX >= minX, maxY >= minY else { return nil }
+        // A hair of padding keeps the very edge of the nail from clipping.
+        let pad = max(1, Int(Double(max(w, h)) * 0.01))
+        let x0 = max(0, minX - pad), y0 = max(0, minY - pad)
+        let x1 = min(w - 1, maxX + pad), y1 = min(h - 1, maxY + pad)
+        return CGRect(x: x0, y: y0, width: x1 - x0 + 1, height: y1 - y0 + 1)
     }
 
     private static func resized(_ image: UIImage, to size: CGSize) -> UIImage {

@@ -19,6 +19,12 @@ final class NailRecord {
     /// Per-finger textures (left→right in the source photo) when a whole hand
     /// was captured at once. Empty for single-nail records.
     var fingerPhotoData: [Data] = []
+    // Plate tuning sliders (-1…+1 each, 0 = the shape's stock look)
+    var lengthAdj: Float = 0
+    var widthAdj: Float = 0
+    var curveHAdj: Float = 0
+    var curveVAdj: Float = 0
+    var thicknessAdj: Float = 0
 
     init(
         title: String,
@@ -29,7 +35,8 @@ final class NailRecord {
         priceYen: Int? = nil,
         memo: String = "",
         tags: [String] = [],
-        fingerPhotoData: [Data] = []
+        fingerPhotoData: [Data] = [],
+        plateParams: NailPlateParams = .default
     ) {
         self.id = UUID()
         self.title = title
@@ -42,9 +49,24 @@ final class NailRecord {
         self.memo = memo
         self.tags = tags
         self.fingerPhotoData = fingerPhotoData
+        self.lengthAdj = plateParams.length
+        self.widthAdj = plateParams.width
+        self.curveHAdj = plateParams.curveH
+        self.curveVAdj = plateParams.curveV
+        self.thicknessAdj = plateParams.thickness
     }
 
     var shape: NailShape { NailShape(rawValue: shapeRaw) ?? .squoval }
+
+    var plateParams: NailPlateParams {
+        NailPlateParams(
+            length: lengthAdj,
+            width: widthAdj,
+            curveH: curveHAdj,
+            curveV: curveVAdj,
+            thickness: thicknessAdj
+        )
+    }
     var finish: NailFinish { NailFinish(rawValue: finishRaw) ?? .gloss }
 
     var texture: UIImage? { UIImage(data: photoData) }

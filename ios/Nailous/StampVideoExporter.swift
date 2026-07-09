@@ -82,6 +82,7 @@ enum StampVideoExporter {
         appearance: NailAppearance,
         setAppearances: [NailAppearance]?,
         shape: NailShape,
+        params: NailPlateParams = .default,
         mode: StageMode,
         layout: SetLayout,
         theme: StageTheme,
@@ -95,6 +96,7 @@ enum StampVideoExporter {
                 appearance: appearance,
                 setAppearances: setAppearances,
                 shape: shape,
+                params: params,
                 mode: mode,
                 layout: layout,
                 theme: theme,
@@ -112,6 +114,7 @@ enum StampVideoExporter {
         appearance: NailAppearance,
         setAppearances: [NailAppearance]?,
         shape: NailShape,
+        params: NailPlateParams = .default,
         mode: StageMode,
         layout: SetLayout,
         theme: StageTheme,
@@ -151,12 +154,13 @@ enum StampVideoExporter {
         switch mode {
         case .single:
             content = SCNNode(
-                geometry: NailSceneView.Coordinator.makePlate(appearance: appearance, shape: shape)
+                geometry: NailSceneView.Coordinator.makePlate(appearance: appearance, shape: shape, params: params)
             )
         case .set:
             content = NailSceneView.Coordinator.makeTipSet(
                 appearances: setAppearances ?? [appearance],
                 shape: shape,
+                params: params,
                 layout: layout
             )
         }
@@ -186,6 +190,7 @@ enum StampVideoExporter {
         appearance: NailAppearance,
         setAppearances: [NailAppearance]?,
         shape: NailShape,
+        params: NailPlateParams = .default,
         mode: StageMode,
         layout: SetLayout,
         theme: StageTheme,
@@ -199,6 +204,7 @@ enum StampVideoExporter {
                 appearance: appearance,
                 setAppearances: setAppearances,
                 shape: shape,
+                params: params,
                 mode: mode,
                 layout: layout,
                 theme: theme,
@@ -298,6 +304,7 @@ enum StampVideoExporter {
         appearance: NailAppearance,
         setAppearances: [NailAppearance]?,
         shape: NailShape,
+        params: NailPlateParams = .default,
         mode: StageMode,
         layout: SetLayout,
         theme: StageTheme,

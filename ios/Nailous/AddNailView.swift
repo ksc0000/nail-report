@@ -26,10 +26,13 @@ struct AddNailView: View {
     /// Retouched copies actually shown and saved.
     @State private var displayTextures: [UIImage] = []
 
-    @State private var smoothStep: Int = 2
-    @State private var brightnessStep: Int = 0
-    @State private var saturationStep: Int = 0
-    @State private var contrastStep: Int = 0
+    @State private var smoothStep: Float = 2
+    @State private var brightnessStep: Float = 0
+    @State private var saturationStep: Float = 0
+    @State private var contrastStep: Float = 0
+    @State private var retouchTask: Task<Void, Never>?
+
+    @State private var plateParams = NailPlateParams()
 
     @State private var shape: NailShape = .squoval
     @State private var title = ""
@@ -65,6 +68,7 @@ struct AddNailView: View {
                         appearance: previewAppearance,
                         shape: shape,
                         mode: isSetCapture ? .set : .single,
+                        plateParams: plateParams,
                         setAppearances: previewSetAppearances
                     )
                     .frame(height: 290)
@@ -126,6 +130,18 @@ struct AddNailView: View {
                                     ForEach(NailShape.allCases) { candidate in
                                         shapeChip(candidate)
                                     }
+                                }
+                                .padding(.horizontal, 24)
+                            }
+
+                            VStack(alignment: .leading, spacing: 12) {
+                                SectionHeader(title: "チップ調整")
+                                VStack(spacing: 6) {
+                                    GoldSlider(label: "長さ", value: $plateParams.length)
+                                    GoldSlider(label: "幅", value: $plateParams.width)
+                                    GoldSlider(label: "カーブ 横", value: $plateParams.curveH)
+                                    GoldSlider(label: "カーブ 縦", value: $plateParams.curveV)
+                                    GoldSlider(label: "厚み", value: $plateParams.thickness)
                                 }
                                 .padding(.horizontal, 24)
                             }
@@ -315,56 +331,24 @@ struct AddNailView: View {
     // MARK: - Retouch
 
     private var retouchSection: some View {
-        VStack(spacing: 8) {
-            retouchStepper("なめらか", value: $smoothStep, range: 0...5)
-            retouchStepper("明るさ", value: $brightnessStep)
-            retouchStepper("鮮やかさ", value: $saturationStep)
-            retouchStepper("コントラスト", value: $contrastStep)
+        VStack(spacing: 6) {
+            GoldSlider(label: "なめらか", value: $smoothStep, range: 0...5) { _ in scheduleRetouch() }
+            GoldSlider(label: "明るさ", value: $brightnessStep, range: -5...5) { _ in scheduleRetouch() }
+            GoldSlider(label: "鮮やかさ", value: $saturationStep, range: -5...5) { _ in scheduleRetouch() }
+            GoldSlider(label: "コントラスト", value: $contrastStep, range: -5...5) { _ in scheduleRetouch() }
         }
         .padding(.horizontal, 24)
     }
 
-    /// Discrete stepped adjustment with +/- buttons; applied instantly per tap.
-    private func retouchStepper(
-        _ label: String,
-        value: Binding<Int>,
-        range: ClosedRange<Int> = -5...5
-    ) -> some View {
-        HStack(spacing: 12) {
-            Text(label)
-                .font(.system(size: 12))
-                .foregroundStyle(.white.opacity(0.65))
-                .frame(width: 86, alignment: .leading)
-            Button {
-                guard value.wrappedValue > range.lowerBound else { return }
-                value.wrappedValue -= 1
-                applyRetouch()
-                UISelectionFeedbackGenerator().selectionChanged()
-            } label: {
-                stepButtonIcon("minus")
-            }
-            Text(value.wrappedValue > 0 ? "+\(value.wrappedValue)" : "\(value.wrappedValue)")
-                .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                .foregroundStyle(value.wrappedValue == 0 ? .white.opacity(0.5) : .white)
-                .frame(width: 36)
-            Button {
-                guard value.wrappedValue < range.upperBound else { return }
-                value.wrappedValue += 1
-                applyRetouch()
-                UISelectionFeedbackGenerator().selectionChanged()
-            } label: {
-                stepButtonIcon("plus")
-            }
-            Spacer()
+    /// CIFilter chain is too heavy to run per drag tick; coalesce slider
+    /// movement and re-render once the finger pauses.
+    private func scheduleRetouch() {
+        retouchTask?.cancel()
+        retouchTask = Task {
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            guard !Task.isCancelled else { return }
+            applyRetouch()
         }
-    }
-
-    private func stepButtonIcon(_ name: String) -> some View {
-        Image(systemName: name)
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.white)
-            .frame(width: 32, height: 32)
-            .background(Circle().fill(Color.white.opacity(0.12)))
     }
 
     private static let ciContext = CIContext()
@@ -374,19 +358,20 @@ struct AddNailView: View {
     }
 
     private func retouched(_ image: UIImage) -> UIImage {
-        guard smoothStep != 0 || brightnessStep != 0 || saturationStep != 0 || contrastStep != 0,
+        guard abs(smoothStep) > 0.05 || abs(brightnessStep) > 0.05
+            || abs(saturationStep) > 0.05 || abs(contrastStep) > 0.05,
               let input = CIImage(image: image) else { return image }
         var working = input
 
         // Edge-preserving smoothing: median wipes speckle/grain, noise
         // reduction softens skin/gel texture while sharpness keeps art edges.
-        if smoothStep > 0 {
+        if smoothStep > 0.05 {
             let median = CIFilter.median()
             median.inputImage = working
             working = median.outputImage ?? working
             let noise = CIFilter.noiseReduction()
             noise.inputImage = working
-            noise.noiseLevel = Float(Double(smoothStep) * 0.012)
+            noise.noiseLevel = smoothStep * 0.012
             noise.sharpness = 0.55
             working = noise.outputImage ?? working
         }
@@ -394,9 +379,9 @@ struct AddNailView: View {
         if brightnessStep != 0 || saturationStep != 0 || contrastStep != 0 {
             let filter = CIFilter.colorControls()
             filter.inputImage = working
-            filter.brightness = Float(Double(brightnessStep) * 0.04)
-            filter.saturation = Float(1 + Double(saturationStep) * 0.12)
-            filter.contrast = Float(1 + Double(contrastStep) * 0.05)
+            filter.brightness = brightnessStep * 0.04
+            filter.saturation = 1 + saturationStep * 0.12
+            filter.contrast = 1 + contrastStep * 0.05
             working = filter.outputImage ?? working
         }
 
@@ -498,7 +483,8 @@ struct AddNailView: View {
                 .split(whereSeparator: { $0 == "," || $0 == "、" })
                 .map { $0.trimmingCharacters(in: .whitespaces) }
                 .filter { !$0.isEmpty },
-            fingerPhotoData: fingerData
+            fingerPhotoData: fingerData,
+            plateParams: plateParams
         )
         modelContext.insert(record)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
