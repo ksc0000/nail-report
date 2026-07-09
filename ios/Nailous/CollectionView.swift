@@ -79,7 +79,7 @@ struct CollectionView: View {
 
     private var header: some View {
         DisplayTitle(
-            title: "宝石箱",
+            title: "コレクション",
             subtitle: records.isEmpty ? nil : "\(records.count) 個のネイル"
         )
         .padding(.top, 12)
@@ -89,11 +89,11 @@ struct CollectionView: View {
         VStack(spacing: 14) {
             Image(systemName: "sparkles")
                 .font(.system(size: 34))
-                .foregroundStyle(Color(red: 0.9, green: 0.68, blue: 0.76))
-            Text("最初のネイルを宝石箱へ")
+                .foregroundStyle(Palette.gold)
+            Text("最初のネイルをコレクションへ")
                 .font(.system(size: 17, weight: .medium))
                 .foregroundStyle(.white)
-            Text("サロン帰りの写真を選ぶだけで、\nあなたのネイルが回せる宝石になります。")
+            Text("サロン帰りの写真を選ぶだけで、\nあなたのネイルが指先で回せる3Dチップになります。")
                 .font(.system(size: 13))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white.opacity(0.6))
@@ -105,16 +105,22 @@ struct CollectionView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .padding(.horizontal, 28)
                     .padding(.vertical, 12)
-                    .background(Capsule().fill(Color(red: 0.83, green: 0.54, blue: 0.61)))
-                    .foregroundStyle(.white)
+                    .background(Capsule().fill(Palette.goldGradient))
+                    .foregroundStyle(Palette.ink0)
             }
             .padding(.top, 6)
         }
         .padding(.vertical, 30)
     }
 
-    /// The newest five jewels drifting in the box — tap to open, drag to spin.
-    private var showcase: [NailRecord] { Array(records.prefix(5)) }
+    /// The five designs drifting on stage: the one being worn (if any) front
+    /// and centre, then the newest.
+    private var showcase: [NailRecord] {
+        guard let wearing = records.first(where: { $0.wornSince != nil }) else {
+            return Array(records.prefix(5))
+        }
+        return [wearing] + records.filter { $0.id != wearing.id }.prefix(4)
+    }
 
     private var jewelStage: some View {
         VStack(spacing: 4) {
@@ -139,6 +145,14 @@ struct CollectionView: View {
                     )
                 }
                 .frame(height: 400)
+                if let days = showcase.first?.wearDays, let title = showcase.first?.title {
+                    HStack(spacing: 6) {
+                        Circle().fill(Palette.goldBright).frame(width: 5, height: 5)
+                        Text("装着中 ・ \(days)日目 — \(title)")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Palette.goldBright.opacity(0.9))
+                    }
+                }
                 Text("タップで開く・ドラッグで回転")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.4))
@@ -163,10 +177,19 @@ struct CollectionView: View {
                                         .frame(width: 66, height: 100)
                                         .shadow(
                                             color: glowingID == record.id
-                                                ? Color(red: 0.95, green: 0.7, blue: 0.78).opacity(0.85)
+                                                ? Palette.goldBright.opacity(0.85)
                                                 : .clear,
                                             radius: 14
                                         )
+                                        .overlay(alignment: .topTrailing) {
+                                            if record.wornSince != nil {
+                                                Circle()
+                                                    .fill(Palette.goldBright)
+                                                    .frame(width: 7, height: 7)
+                                                    .shadow(color: Palette.gold, radius: 4)
+                                                    .offset(x: -4, y: 10)
+                                            }
+                                        }
                                     Text(record.title)
                                         .font(.system(size: 11))
                                         .lineLimit(1)

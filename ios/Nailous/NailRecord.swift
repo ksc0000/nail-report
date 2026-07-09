@@ -19,6 +19,9 @@ final class NailRecord {
     /// Per-finger textures (left→right in the source photo) when a whole hand
     /// was captured at once. Empty for single-nail records.
     var fingerPhotoData: [Data] = []
+    /// Set when this design is on the user's actual nails right now; at most
+    /// one record wears it at a time.
+    var wornSince: Date?
     // Plate tuning sliders (-1…+1 each, 0 = the shape's stock look)
     var lengthAdj: Float = 0
     var widthAdj: Float = 0
@@ -57,6 +60,13 @@ final class NailRecord {
     }
 
     var shape: NailShape { NailShape(rawValue: shapeRaw) ?? .squoval }
+
+    /// 1-based days worn (marked today = day 1); nil when not wearing.
+    var wearDays: Int? {
+        guard let wornSince else { return nil }
+        let days = Calendar.current.dateComponents([.day], from: wornSince, to: Date()).day ?? 0
+        return days + 1
+    }
 
     var plateParams: NailPlateParams {
         NailPlateParams(

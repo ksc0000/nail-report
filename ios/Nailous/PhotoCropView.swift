@@ -230,7 +230,7 @@ struct PhotoCropView: View {
                                         Capsule().fill(
                                             isDuplicatePose || allCollected
                                                 ? Color.white.opacity(0.22)
-                                                : Color(red: 0.83, green: 0.54, blue: 0.61)
+                                                : Palette.gold
                                         )
                                     )
                                     .foregroundStyle(.white.opacity(isDuplicatePose ? 0.45 : 1))
@@ -245,7 +245,7 @@ struct PhotoCropView: View {
                                     .font(.system(size: 14, weight: .semibold))
                                     .padding(.horizontal, 20)
                                     .padding(.vertical, 12)
-                                    .background(Capsule().fill(Color(red: 0.83, green: 0.54, blue: 0.61)))
+                                    .background(Capsule().fill(Palette.goldGradient))
                                     .foregroundStyle(.white)
                             }
                         } else if !collected.isEmpty {
@@ -263,7 +263,7 @@ struct PhotoCropView: View {
                                     .background(
                                         Capsule().fill(
                                             allCollected
-                                                ? Color(red: 0.83, green: 0.54, blue: 0.61)
+                                                ? Palette.gold
                                                 : Color.white.opacity(0.22)
                                         )
                                     )

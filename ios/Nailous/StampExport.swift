@@ -88,6 +88,22 @@ struct StampSheet: View {
     let image: UIImage
     var makeVideo: ((ExportMotion) async throws -> URL)?
     var makeGIF: ((ExportMotion) async throws -> URL)?
+    @Environment(\.openURL) private var openURL
+
+    private static let storiesURL = URL(string: "instagram-stories://share?source_application=com.ksc0000.nailous")!
+    private var canPostToStories: Bool { UIApplication.shared.canOpenURL(Self.storiesURL) }
+
+    /// Hands the stamp to Instagram as a Stories sticker and jumps straight
+    /// into the story composer — no copy/paste round trip.
+    private func postToStories() {
+        guard let png = image.pngData() else { return }
+        UIPasteboard.general.setItems(
+            [["com.instagram.sharedSticker.stickerImage": png]],
+            options: [.expirationDate: Date().addingTimeInterval(300)]
+        )
+        openURL(Self.storiesURL)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
     @State private var exportMotion: ExportMotion = .turntable
     @State private var copied = false
     @State private var isExportingVideo = false
@@ -119,11 +135,24 @@ struct StampSheet: View {
                     )
                     .shadow(color: .black.opacity(0.5), radius: 14, y: 8)
 
-                Text("コピーして、Instagramストーリーの文字入力画面で\n長押し→ペーストするとステッカーになります")
+                Text(canPostToStories
+                    ? "そのままストーリーズへ。コピーすれば\nLINEやメモにもステッカーとして貼れます"
+                    : "コピーして、Instagramストーリーの文字入力画面で\n長押し→ペーストするとステッカーになります")
                     .font(.system(size: 12))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.white.opacity(0.6))
                     .lineSpacing(3)
+
+                if canPostToStories {
+                    Button(action: postToStories) {
+                        Label("ストーリーズに投稿", systemImage: "camera.aperture")
+                            .font(.system(size: 14.5, weight: .semibold))
+                            .padding(.horizontal, 26)
+                            .padding(.vertical, 13)
+                            .background(Capsule().fill(Palette.goldGradient))
+                            .foregroundStyle(Palette.ink0)
+                    }
+                }
 
                 HStack(spacing: 12) {
                     Button {
@@ -146,11 +175,11 @@ struct StampSheet: View {
                         .background(
                             Capsule().fill(
                                 copied
-                                    ? Color(red: 0.45, green: 0.72, blue: 0.52)
-                                    : Color(red: 0.83, green: 0.54, blue: 0.61)
+                                    ? AnyShapeStyle(Color.white.opacity(0.15))
+                                    : AnyShapeStyle(Palette.goldGradient)
                             )
                         )
-                        .foregroundStyle(.white)
+                        .foregroundStyle(copied ? .white : Palette.ink0)
                     }
 
                     if let png = image.pngData() {
@@ -218,11 +247,11 @@ struct StampSheet: View {
                             .background(
                                 Capsule().fill(
                                     videoSaved
-                                        ? Color(red: 0.45, green: 0.72, blue: 0.52)
-                                        : Color(red: 0.55, green: 0.45, blue: 0.75)
+                                        ? AnyShapeStyle(Color.white.opacity(0.15))
+                                        : AnyShapeStyle(Palette.goldGradient)
                                 )
                             )
-                            .foregroundStyle(.white)
+                            .foregroundStyle(videoSaved ? .white : Palette.ink0)
                         }
                         ShareLink(item: videoURL) {
                             Label("共有", systemImage: "square.and.arrow.up")
@@ -301,8 +330,8 @@ struct StampSheet: View {
                             .font(.system(size: 13.5, weight: .semibold))
                             .padding(.horizontal, 18)
                             .padding(.vertical, 11)
-                            .background(Capsule().fill(Color(red: 0.83, green: 0.54, blue: 0.61)))
-                            .foregroundStyle(.white)
+                            .background(Capsule().fill(Palette.goldGradient))
+                            .foregroundStyle(Palette.ink0)
                     }
                 } else if isExportingGIF {
                     HStack(spacing: 8) {

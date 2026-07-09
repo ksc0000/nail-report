@@ -35,6 +35,7 @@ struct AddNailView: View {
     @State private var plateParams = NailPlateParams()
 
     @State private var shape: NailShape = .squoval
+    @State private var showDetails = false
     @State private var title = ""
     @State private var salon = ""
     @State private var priceText = ""
@@ -190,17 +191,33 @@ struct AddNailView: View {
 
                             VStack(spacing: 10) {
                                 storyField("タイトル（例: 深海ネイル）", text: $title)
-                                storyField("タグ（カンマ区切り。例: ピンク, マグネット）", text: $tagsText)
-                                storyField("サロン名（任意）", text: $salon)
-                                storyField("価格（任意・円）", text: $priceText)
-                                    .keyboardType(.numberPad)
-                                storyField("メモ（任意）", text: $memo, axis: .vertical)
+                                Button {
+                                    withAnimation(.easeInOut(duration: 0.22)) { showDetails.toggle() }
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: showDetails ? "chevron.up" : "plus")
+                                            .font(.system(size: 11, weight: .semibold))
+                                        Text(showDetails ? "詳細を閉じる" : "詳細を追加（タグ・サロン・価格・メモ）")
+                                            .font(.system(size: 12.5, weight: .medium))
+                                        Spacer()
+                                    }
+                                    .foregroundStyle(Palette.gold.opacity(0.85))
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 2)
+                                }
+                                if showDetails {
+                                    storyField("タグ（カンマ区切り。例: ピンク, マグネット）", text: $tagsText)
+                                    storyField("サロン名（任意）", text: $salon)
+                                    storyField("価格（任意・円）", text: $priceText)
+                                        .keyboardType(.numberPad)
+                                    storyField("メモ（任意）", text: $memo, axis: .vertical)
+                                }
                             }
                             .padding(.horizontal, 24)
 
                             Button(action: save) {
                                 HStack(spacing: 6) {
-                                    Text("宝石箱に入れる")
+                                    Text("コレクションに加える")
                                     Image(systemName: "sparkles")
                                 }
                                 .font(.system(size: 15, weight: .semibold))

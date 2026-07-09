@@ -13,6 +13,7 @@ struct NailDetailView: View {
     @State private var shape: NailShape
     @State private var plateParams: NailPlateParams
     @State private var showTuneSheet = false
+    @State private var showStageSheet = false
     @State private var mode: StageMode = .single
     @State private var layout: SetLayout = .arc
     @State private var motion: AutoMotion = .off
@@ -35,6 +36,79 @@ struct NailDetailView: View {
         _plateParams = State(initialValue: record?.plateParams ?? .default)
         // A whole-hand capture opens as the five-piece set by default.
         _mode = State(initialValue: (record?.setAppearances?.count ?? 0) > 1 ? .set : .single)
+    }
+
+    /// Marks this design as the one on the user's nails right now. Only one
+    /// record wears at a time; marking schedules the (single) refit reminder.
+    private var wearPill: some View {
+        let days = record?.wearDays
+        return StagePill(
+            label: days.map { "装着中 ・ \($0)日目" } ?? "装着中にする",
+            isOn: days != nil
+        ) {
+            toggleWearing()
+        }
+    }
+
+    private func toggleWearing() {
+        guard let record else { return }
+        if record.wornSince != nil {
+            record.wornSince = nil
+            RefitReminder.cancel()
+        } else {
+            let all = (try? modelContext.fetch(FetchDescriptor<NailRecord>())) ?? []
+            for other in all where other.wornSince != nil {
+                other.wornSince = nil
+            }
+            record.wornSince = Date()
+            RefitReminder.schedule(designTitle: record.title)
+        }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
+
+    /// Stage controls (mode / motion / theme / layout), tucked away so the
+    /// viewing screen stays quiet.
+    private var stageSheet: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SectionHeader(title: "ステージ")
+                .padding(.top, 18)
+            HStack(spacing: 8) {
+                ForEach(StageMode.allCases) { candidate in
+                    StagePill(label: candidate.label, isOn: mode == candidate) {
+                        mode = candidate
+                    }
+                }
+                StagePill(label: motion.label, isOn: motion != .off) {
+                    motion = motion.next
+                }
+            }
+            .padding(.horizontal, 24)
+
+            SectionHeader(title: "テーマ")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(StageTheme.allCases) { candidate in
+                        themeThumb(candidate)
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
+
+            if mode == .set {
+                SectionHeader(title: "ならび")
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(SetLayout.allCases) { candidate in
+                            StagePill(label: candidate.label, isOn: layout == candidate) {
+                                layout = candidate
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                }
+            }
+            Spacer(minLength: 0)
+        }
     }
 
     /// Reshape a jewel after the fact: shape chips + tip-tuning sliders, live
@@ -210,7 +284,11 @@ struct NailDetailView: View {
                             .foregroundStyle(.white)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 9)
-                            .background(Capsule().fill(Color(red: 0.45, green: 0.62, blue: 0.5).opacity(0.92)))
+                            .background(
+                                Capsule()
+                                    .fill(Color.black.opacity(0.72))
+                                    .overlay(Capsule().stroke(Palette.gold.opacity(0.55), lineWidth: 1))
+                            )
                             .padding(.bottom, 8)
                             .transition(.opacity.combined(with: .move(edge: .bottom)))
                     }
@@ -223,11 +301,15 @@ struct NailDetailView: View {
                                 .foregroundStyle(.white)
                             Button("解除") { stampSource = nil }
                                 .font(.system(size: 12.5, weight: .semibold))
-                                .foregroundStyle(Color(red: 0.96, green: 0.75, blue: 0.82))
+                                .foregroundStyle(Palette.goldBright)
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
-                        .background(Capsule().fill(Color(red: 0.83, green: 0.54, blue: 0.61).opacity(0.55)))
+                        .background(
+                            Capsule()
+                                .fill(Color.black.opacity(0.72))
+                                .overlay(Capsule().stroke(Palette.gold.opacity(0.55), lineWidth: 1))
+                        )
                         .padding(.top, 6)
                     }
                 }
@@ -245,8 +327,8 @@ struct NailDetailView: View {
                                     .font(.system(size: 11.5, weight: .medium))
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 5)
-                                    .background(Capsule().fill(Color(red: 0.83, green: 0.54, blue: 0.61).opacity(0.28)))
-                                    .foregroundStyle(Color(red: 0.96, green: 0.8, blue: 0.86))
+                                    .background(Capsule().fill(Palette.gold.opacity(0.16)))
+                                    .foregroundStyle(Palette.goldBright.opacity(0.9))
                             }
                         }
                         .padding(.horizontal, 24)
@@ -279,41 +361,15 @@ struct NailDetailView: View {
                     .padding(.bottom, 14)
                 }
 
-                VStack(spacing: 8) {
-                    HStack(spacing: 8) {
-                        ForEach(StageMode.allCases) { candidate in
-                            StagePill(label: candidate.label, isOn: mode == candidate) {
-                                mode = candidate
-                            }
-                        }
-                        StagePill(label: motion.label, isOn: motion != .off) {
-                            motion = motion.next
-                        }
-                        StagePill(label: "調整", isOn: showTuneSheet) {
-                            showTuneSheet = true
-                        }
+                HStack(spacing: 8) {
+                    if record != nil {
+                        wearPill
                     }
-                    SectionHeader(title: "テーマ")
-                        .padding(.top, 4)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(StageTheme.allCases) { candidate in
-                                themeThumb(candidate)
-                            }
-                        }
-                        .padding(.horizontal, 20)
+                    StagePill(label: "ステージ", isOn: showStageSheet) {
+                        showStageSheet = true
                     }
-                    if mode == .set {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                ForEach(SetLayout.allCases) { candidate in
-                                    StagePill(label: candidate.label, isOn: layout == candidate) {
-                                        layout = candidate
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                        }
+                    StagePill(label: "調整", isOn: showTuneSheet) {
+                        showTuneSheet = true
                     }
                 }
                 .padding(.bottom, record == nil ? 28 : 16)
@@ -346,6 +402,13 @@ struct NailDetailView: View {
                         .foregroundStyle(.white)
                 }
             }
+        }
+        .sheet(isPresented: $showStageSheet) {
+            stageSheet
+                .presentationDetents([.height(mode == .set ? 380 : 300)])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Color(red: 0.09, green: 0.06, blue: 0.1))
+                .preferredColorScheme(.dark)
         }
         .sheet(isPresented: $showTuneSheet) {
             tuneSheet
