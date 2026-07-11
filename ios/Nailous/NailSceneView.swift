@@ -95,6 +95,12 @@ struct NailSceneView: UIViewRepresentable {
     var shape: NailShape
     var mode: StageMode
     var plateParams: NailPlateParams = .default
+    /// Fires while the user drags (normalized 0-1 view coords) so the backdrop
+    /// can ripple with the finger.
+    var onPanStir: ((CGPoint) -> Void)? = nil
+    @AppStorage("stageDecor") private var decorRaw = StageDecor.sparkle.rawValue
+
+    private var decor: StageDecor { StageDecor(rawValue: decorRaw) ?? .sparkle }
     /// When present, the five-piece set uses these per finger (cycled if fewer).
     var setAppearances: [NailAppearance]? = nil
     /// Per-nail shapes for the set (falls back to `shape`).
@@ -125,7 +131,7 @@ struct NailSceneView: UIViewRepresentable {
         scene.lightingEnvironment.intensity = 1.6
         view.scene = scene
         context.coordinator.scene = scene
-        context.coordinator.applyTheme(theme)
+        context.coordinator.applyAtmosphere(theme: theme, decor: decor)
 
         let camera = SCNCamera()
         camera.fieldOfView = 30
@@ -218,6 +224,7 @@ struct NailSceneView: UIViewRepresentable {
         context.coordinator.onTipLongPress = onTipLongPress
         context.coordinator.onTipTap = onTipTap
         context.coordinator.onStageLongPress = onStageLongPress
+        context.coordinator.onPanStir = onPanStir
         controller?.scnView = view
         controller?.coordinator = context.coordinator
         return view
@@ -226,10 +233,11 @@ struct NailSceneView: UIViewRepresentable {
     func updateUIView(_ uiView: SCNView, context: Context) {
         context.coordinator.rebuildPlate(appearance: appearance, setAppearances: setAppearances, setShapes: setShapes, shape: shape, params: plateParams, mode: mode, layout: layout, arrivalID: arrivalID)
         context.coordinator.updateMotion(motion, stageMode: mode)
-        context.coordinator.applyTheme(theme)
+        context.coordinator.applyAtmosphere(theme: theme, decor: decor)
         context.coordinator.onTipLongPress = onTipLongPress
         context.coordinator.onTipTap = onTipTap
         context.coordinator.onStageLongPress = onStageLongPress
+        context.coordinator.onPanStir = onPanStir
         controller?.scnView = uiView
         controller?.coordinator = context.coordinator
     }
@@ -245,8 +253,10 @@ struct NailSceneView: UIViewRepresentable {
         var cameraNode: SCNNode?
         weak var scene: SCNScene?
         var restOrientation = SCNQuaternion(0, 0, 0, 1)
+        var onPanStir: ((CGPoint) -> Void)?
         private var particleNode: SCNNode?
         private var currentTheme: StageTheme?
+        private var currentDecor: StageDecor?
         private var cameraAnchorZ: Float = 9.2
 
         func setParticlesHidden(_ hidden: Bool) {
@@ -266,15 +276,16 @@ struct NailSceneView: UIViewRepresentable {
             }
         }
 
-        func applyTheme(_ theme: StageTheme) {
-            guard theme != currentTheme, let scene else { return }
+        func applyAtmosphere(theme: StageTheme, decor: StageDecor) {
+            guard theme != currentTheme || decor != currentDecor, let scene else { return }
             currentTheme = theme
+            currentDecor = decor
             scene.lightingEnvironment.contents = StageEnvironment.image(for: theme)
             particleNode?.removeFromParentNode()
             particleNode = nil
-            if let system = StageEnvironment.particles(for: theme) {
+            if let system = StageEnvironment.particles(for: theme, decor: decor) {
                 let node = SCNNode()
-                node.position = SCNVector3(0, 0, -2.4)
+                node.position = SCNVector3(0, StageEnvironment.emitterY(for: decor), -2.4)
                 node.addParticleSystem(system)
                 scene.rootNode.addChildNode(node)
                 particleNode = node
@@ -494,6 +505,11 @@ struct NailSceneView: UIViewRepresentable {
                 let delta = gesture.translation(in: view)
                 gesture.setTranslation(.zero, in: view)
                 applyTrackball(dx: Float(delta.x), dy: Float(delta.y))
+                let location = gesture.location(in: view)
+                onPanStir?(CGPoint(
+                    x: location.x / max(1, view.bounds.width),
+                    y: location.y / max(1, view.bounds.height)
+                ))
             case .ended:
                 if currentMotion == .turntable {
                     startTurntable()

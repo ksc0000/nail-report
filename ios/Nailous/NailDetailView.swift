@@ -24,6 +24,9 @@ struct NailDetailView: View {
     @State private var stampImage: UIImage?
     @State private var showStampSheet = false
     @State private var showCopiedToast = false
+    @State private var stir: StirEvent?
+    @AppStorage("stageDecor") private var decorRaw = StageDecor.sparkle.rawValue
+    @AppStorage("stageLiquid") private var liquidOn = true
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingDelete = false
@@ -119,6 +122,21 @@ struct NailDetailView: View {
                     }
                     .padding(.horizontal, 24)
                 }
+            }
+
+            SectionHeader(title: "装飾")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(StageDecor.allCases) { candidate in
+                        StagePill(label: candidate.label, isOn: decorRaw == candidate.rawValue) {
+                            decorRaw = candidate.rawValue
+                        }
+                    }
+                    StagePill(label: liquidOn ? "水面 オン" : "水面 オフ", isOn: liquidOn) {
+                        liquidOn.toggle()
+                    }
+                }
+                .padding(.horizontal, 24)
             }
             Spacer(minLength: 0)
         }
@@ -251,7 +269,7 @@ struct NailDetailView: View {
 
     var body: some View {
         ZStack {
-            StageBackground(theme: theme)
+            StageBackground(theme: theme, stir: stir)
 
             VStack(spacing: 0) {
                 VStack(spacing: 4) {
@@ -275,6 +293,9 @@ struct NailDetailView: View {
                     shape: shape,
                     mode: mode,
                     plateParams: plateParams,
+                    onPanStir: { point in
+                        stir = StirEvent(point: point, time: Date())
+                    },
                     setAppearances: liveSetAppearances,
                     layout: layout,
                     motion: motion,
@@ -306,6 +327,8 @@ struct NailDetailView: View {
                     controller: stageController
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .offset(y: (showTuneSheet || showStageSheet) ? -132 : 0)
+                .animation(.easeInOut(duration: 0.3), value: showTuneSheet || showStageSheet)
                 .overlay(alignment: .bottom) {
                     if showCopiedToast {
                         Label("コピーしました — 他のアプリでそのまま貼り付けできます", systemImage: "checkmark.circle.fill")
@@ -433,17 +456,19 @@ struct NailDetailView: View {
             }
         }
         .sheet(isPresented: $showStageSheet) {
-            stageSheet
-                .presentationDetents([.height(mode == .set ? 380 : 300)])
+            ScrollView { stageSheet }
+                .presentationDetents([.height(400), .height(560)])
+                .presentationBackgroundInteraction(.enabled(upThrough: .height(560)))
                 .presentationDragIndicator(.visible)
-                .presentationBackground(Color(red: 0.09, green: 0.06, blue: 0.1))
+                .presentationBackground(Color(red: 0.09, green: 0.06, blue: 0.1).opacity(0.97))
                 .preferredColorScheme(.dark)
         }
         .sheet(isPresented: $showTuneSheet) {
-            tuneSheet
-                .presentationDetents([.height(520)])
+            ScrollView { tuneSheet }
+                .presentationDetents([.height(400), .height(600)])
+                .presentationBackgroundInteraction(.enabled(upThrough: .height(600)))
                 .presentationDragIndicator(.visible)
-                .presentationBackground(Color(red: 0.09, green: 0.06, blue: 0.1))
+                .presentationBackground(Color(red: 0.09, green: 0.06, blue: 0.1).opacity(0.97))
                 .preferredColorScheme(.dark)
         }
         .sheet(isPresented: $showStampSheet) {
@@ -489,9 +514,25 @@ struct NailDetailView: View {
     }
 }
 
-/// Shared dark stage backdrop.
+/// A drag on the stage that the backdrop answers with a ripple.
+struct StirEvent: Equatable {
+    var point: CGPoint // normalized 0-1
+    var time: Date
+}
+
+/// Shared dark stage backdrop. With 水面 on, the backdrop becomes living
+/// water: a slow ambient sway plus ripples that follow the finger while the
+/// nail is being spun.
 struct StageBackground: View {
     var theme: StageTheme = .glass
+    var stir: StirEvent? = nil
+    @AppStorage("stageLiquid") private var liquidOn = true
+
+    private func stirAmplitude(now: Date) -> Float {
+        guard let stir else { return 0 }
+        let age = now.timeIntervalSince(stir.time)
+        return Float(max(0, 1 - age / 1.4)) * 16
+    }
 
     var body: some View {
         Group {
@@ -499,20 +540,38 @@ struct StageBackground: View {
                 // AI-generated backdrop (bg_<theme>.png in the bundle), dimmed
                 // and vignetted so the nail stays the hero.
                 GeometryReader { proxy in
-                    Image(uiImage: backdrop)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: proxy.size.width, height: proxy.size.height)
-                        .clipped()
-                        .overlay(Color.black.opacity(0.3))
-                        .overlay(
-                            RadialGradient(
-                                colors: [.clear, .black.opacity(0.55)],
-                                center: .center,
-                                startRadius: 120,
-                                endRadius: 520
-                            )
+                    Group {
+                        if liquidOn {
+                            TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+                                let t = timeline.date.timeIntervalSinceReferenceDate
+                                backdropImage(backdrop, size: proxy.size)
+                                    .distortionEffect(
+                                        ShaderLibrary.waterSway(
+                                            .float(Float(t.truncatingRemainder(dividingBy: 100_000))),
+                                            .float2(proxy.size),
+                                            .float(4.5),
+                                            .float2(CGPoint(
+                                                x: (stir?.point.x ?? 0.5) * proxy.size.width,
+                                                y: (stir?.point.y ?? 0.5) * proxy.size.height
+                                            )),
+                                            .float(stirAmplitude(now: timeline.date))
+                                        ),
+                                        maxSampleOffset: CGSize(width: 26, height: 26)
+                                    )
+                            }
+                        } else {
+                            backdropImage(backdrop, size: proxy.size)
+                        }
+                    }
+                    .overlay(Color.black.opacity(0.3))
+                    .overlay(
+                        RadialGradient(
+                            colors: [.clear, .black.opacity(0.55)],
+                            center: .center,
+                            startRadius: 120,
+                            endRadius: 520
                         )
+                    )
                 }
             } else {
                 RadialGradient(
@@ -524,6 +583,14 @@ struct StageBackground: View {
             }
         }
         .ignoresSafeArea()
+    }
+
+    private func backdropImage(_ backdrop: UIImage, size: CGSize) -> some View {
+        Image(uiImage: backdrop)
+            .resizable()
+            .scaledToFill()
+            .frame(width: size.width, height: size.height)
+            .clipped()
     }
 }
 
