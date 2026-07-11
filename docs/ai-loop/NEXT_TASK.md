@@ -1,19 +1,19 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses the "2.1 Test coverage" goal by adding unit tests for core Firebase utility functions.
+The current focus is on Phase 2 of the roadmap, which involves improving stability, test coverage, and UX. This task specifically addresses accessibility improvements by adding ARIA attributes to interactive elements, aligning with Phase 2.4 (Accessibility).
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest. Focus on mocking Firebase SDK calls to test the logic of these functions in isolation.
+Identify all icon-only buttons within the application and add an appropriate `aria-label` attribute to each to enhance accessibility for screen reader users.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but prioritize minimal changes)
-- `src/__tests__/firestore.test.ts` (new test file)
-- `vite.config.ts` (if Vitest configuration requires adjustment for mocking, keep changes minimal)
+- `src/components/` (modify existing component files to add `aria-label` to buttons)
+- `src/App.tsx` (if any icon-only buttons are directly rendered here)
+- Any other `src/` file that renders icon-only buttons (except `src/main.tsx`)
+- `src/App.css` (only if minor styling adjustments are absolutely necessary, but not expected)
 
 ## Forbidden Scope
 
@@ -23,15 +23,17 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
+- `src/lib/` files (unless an icon-only button is surprisingly found there, which is not expected)
+- Adding new files (this task is focused on modifying existing files)
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
+- For each icon-only button, choose an `aria-label` that clearly describes its action (e.g., "Delete item", "Edit profile", "Share link", "Close dialog").
+- Ensure all interactive icon-only elements that function as buttons have an `aria-label`.
 - Run `npm run build && npm run lint` before finishing.
-- Create `src/__tests__/firestore.test.ts`.
-- Mock Firebase SDK functions (`doc`, `collection`, `getDoc`, `setDoc`, `updateDoc`, `deleteDoc`) using `vitest` and `vi.mock` to ensure tests are isolated and do not interact with actual Firebase services.
-- Write at least one passing unit test for `addNailItem` and `getNailItems` functions.
-- Ensure the tests cover basic successful execution paths for the selected functions.
+- No new npm dependencies.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -40,22 +42,3 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
-## Worker Prompt
-
-Your task is to add unit tests for `src/lib/firestore.ts` using Vitest.
-
-1.  **Create a new test file:** `src/__tests__/firestore.test.ts`.
-2.  **Mock Firebase SDK:** Use `vi.mock('firebase/firestore', ...)` to mock the necessary Firestore functions (`doc`, `collection`, `getDoc`, `setDoc`, `updateDoc`, `deleteDoc`). Ensure the mocks return predictable values or resolve promises as expected for successful scenarios.
-3.  **Test `addNailItem`:**
-    *   Write a test case that verifies `addNailItem` correctly calls the mocked `setDoc` with the expected `nailItem` data and `userId`.
-    *   Ensure it handles the `id` field creation correctly (either passed in or generated).
-4.  **Test `getNailItems`:**
-    *   Write a test case that verifies `getNailItems` correctly queries the mocked Firestore collection for a given `userId`.
-    *   Mock `getDocs` to return an array of mock `QueryDocumentSnapshot` objects, each containing a `data()` method and an `id` property, so `getNailItems` can transform them into `NailItem` objects.
-    *   Verify the returned array matches the expected `NailItem` structure.
-5.  **Run tests:** Execute `npm test` and ensure all new tests pass.
-6.  **Lint and Build:** Run `npm run lint` and `npm run build` to confirm no new errors are introduced.
-
-**Follow-up consideration (do not implement now):** After this task, tests for `updateNailItem` and `deleteNailItem` should be added. Also, error handling scenarios should be tested.
-```
