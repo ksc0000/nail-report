@@ -1,38 +1,59 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The `nail-report` application requires improved test coverage as part of Phase 2 of the product roadmap. The initial focus is on the core utility functions that interact with Firebase Firestore.
+The current phase is 2.0 (Active), focusing on stability, test coverage, and UX. This task addresses accessibility improvements by ensuring all interactive elements are properly labeled for assistive technologies.
 
 ## Objective
 
-Add Vitest unit tests for selected helper functions within `src/lib/firestore.ts`. This task will establish the testing framework for Firestore-related utilities, ensuring stability and correctness.
+Identify all icon-only buttons in the application and add an appropriate `aria-label` attribute to each of them.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (only to export functions if needed for testing, or minor refactors to improve testability, but the primary change is adding tests)
-- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
-- `vite.config.ts` (minor additions for Vitest configuration if strictly necessary, but prefer to use existing config if possible)
-- `package.json` (only to add `vitest` as a dev dependency if not already present, and add test scripts if not already present; *do not add new application dependencies*)
+- `src/` (except `src/main.tsx`)
+- `src/App.css` (CSS improvements, if any minor styling is needed for `aria-label` visibility in dev tools, though unlikely)
 
 ## Forbidden Scope
 
 - `src/main.tsx` (entry point — do not modify)
 - `commands/` (PowerShell scripts — do not modify)
 - `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new *runtime* npm packages without human approval; dev dependencies like `vitest` are allowed if not present)
+- `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
 
 ## Requirements
 
-- Keep diff ≤ 150 lines. Focus on 1-2 key functions in `src/lib/firestore.ts` to keep the PR small. Examples include `getNailItems`, `addNailItem`, or `updateNailItem`.
-- Use Vitest as the test runner.
-- Mock Firebase SDK dependencies (specifically Firestore) using `vi.mock` to ensure tests are isolated and fast.
+- Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
-- Ensure tests cover basic success and error cases for the chosen functions.
+- Prefer adding tests when touching `src/lib/` files (not applicable for this UI task).
+- Report follow-up items as comments, not additional code.
+
+## Worker prompt
+
+Your task is to improve the accessibility of the `nail-report` application by adding `aria-label` attributes to all buttons that only display an icon, without visible text.
+
+1.  **Identify icon-only buttons:** Scan the `src/components/` directory and `src/App.tsx` for `<button>` elements that primarily contain an icon component (e.g., an SVG icon or a component rendering an icon) and lack descriptive text content.
+2.  **Add `aria-label`:** For each identified icon-only button, add a meaningful `aria-label` attribute. The value of `aria-label` should clearly and concisely describe the button's function (e.g., "Delete nail item", "Edit entry", "Upload image", "Open menu").
+3.  **Verify:** Ensure that the `aria-label` is descriptive and accurate for each button's intended action.
+
+Example:
+```tsx
+// Before
+<button onClick={handleEdit}>
+  <EditIcon />
+</button>
+
+// After
+<button onClick={handleEdit} aria-label="Edit nail item">
+  <EditIcon />
+</button>
+```
+
+**Acceptance Criteria:**
+- All functional icon-only buttons across the application (in `src/components` and `src/App.tsx`) include an `aria-label` attribute.
+- The `aria-label` content accurately reflects the button's action.
+- The changes adhere to the line diff limit and do not introduce new npm dependencies.
 
 ## Output Format
 
@@ -41,4 +62,3 @@ Add Vitest unit tests for selected helper functions within `src/lib/firestore.ts
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-```
