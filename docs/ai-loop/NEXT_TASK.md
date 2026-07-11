@@ -2,60 +2,42 @@
 
 ## Context
 
-The current phase is 2.0, focusing on improving stability, test coverage, and UX. This task addresses a specific item within Phase 2.4: Accessibility. The goal is to enhance the application's accessibility by providing meaningful labels for interactive elements.
+The nail-report application is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses Phase 2.1: Test coverage. The goal is to enhance the reliability of our data handling by adding unit tests for core Firebase Firestore helper functions.
 
 ## Objective
 
-Add `aria-label` attributes to all icon-only buttons throughout the application to improve accessibility for users of assistive technologies.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest. Focus on covering at least two to three essential CRUD-related functions (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`).
 
 ## Allowed Scope
 
--   `src/` (except `src/main.tsx`)
--   `src/components/` (where most icon buttons are likely defined or used)
--   `src/App.tsx` (for global layout or primary navigation buttons)
--   Other view files within `src/` that render icon-only buttons.
--   `src/App.css` (only for minor style adjustments if absolutely necessary, but not expected for this task).
+- `src/lib/firestore.ts` (minor adjustments for testability, e.g., exporting functions)
+- `src/__tests__/lib/firestore.test.ts` (new file for unit tests)
+- `package.json` (only if a `test` script needs to be added or modified to run Vitest, strictly no new dependencies)
+- `vite.config.ts` (only for minimal Vitest configuration if absolutely necessary and not already present)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
+- `src/App.css` or other UI-related files
 
 ## Requirements
 
--   Keep diff ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing.
--   Identify all `<button>` elements that primarily display an icon without visible text.
--   Add a descriptive `aria-label` attribute to each identified icon-only button. The label should clearly convey the button's purpose (e.g., "Delete item", "Edit profile", "Go back").
--   Ensure existing functionality of the buttons remains unchanged.
--   No new npm dependencies should be added.
+- Keep diff ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing.
+- Ensure the tests adequately cover at least two to three core helper functions in `src/lib/firestore.ts`.
+- Mock Firebase SDK dependencies (e.g., `firebase/firestore`, `firebase/auth`) using `vi.mock` as appropriate to isolate the logic being tested.
+- Write clear and descriptive test names.
+- Report follow-up items as comments, not additional code.
 
-## Worker prompt
+## Output Format
 
-1.  **Identify Icon-Only Buttons:**
-    *   Navigate through the application's UI components and views, particularly files in `src/components/` and `src/App.tsx`.
-    *   Look for `<button>` HTML elements or custom `Button` components that render an icon (e.g., SVG, `<img>` tag, or an icon component like `FaIcon`) but do *not* have accompanying visible text.
-
-2.  **Add `aria-label`:**
-    *   For each icon-only button identified, add an `aria-label` attribute.
-    *   The value of `aria-label` should be a concise and descriptive string that explains the button's action or purpose.
-    *   **Example:**
-        *   Before: `<button><TrashIcon /></button>`
-        *   After: `<button aria-label="Delete item"><TrashIcon /></button>`
-    *   **Example (with a custom component):**
-        *   Before: `<IconButton icon={EditIcon} onClick={handleEdit} />`
-        *   After: `<IconButton icon={EditIcon} aria-label="Edit item" onClick={handleEdit} />` (assuming `IconButton` passes `aria-label` to the underlying button element).
-
-3.  **Verification:**
-    *   Visually inspect the application to ensure the changes did not alter the visual layout or functionality.
-    *   Run `npm run build` and `npm run lint` to ensure no build errors or linting warnings are introduced.
-
-4.  **Reporting:**
-    *   List the files that were modified.
-    *   Summarize the changes made (e.g., "Added `aria-label` to X icon buttons in Y files").
-
-This task focuses solely on adding the `aria-label` attribute and should not involve refactoring component structures or changing styling unless absolutely necessary for the `aria-label` to function correctly (which is highly unlikely).
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
