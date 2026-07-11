@@ -498,9 +498,18 @@ struct NailDetailView: View {
                             theme: theme,
                             motion: motion
                         )
+                    },
+                    makeCard: { template in
+                        CardRenderer.render(
+                            template: template,
+                            stamp: stampImage,
+                            title: title,
+                            date: record?.createdAt ?? Date(),
+                            subtitle: record.flatMap { $0.salon.isEmpty ? nil : $0.salon }
+                        )
                     }
                 )
-                .presentationDetents([.height(560)])
+                .presentationDetents([.height(620), .large])
             }
         }
         .confirmationDialog("この記録を削除しますか？", isPresented: $confirmingDelete, titleVisibility: .visible) {

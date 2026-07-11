@@ -88,6 +88,11 @@ struct StampSheet: View {
     let image: UIImage
     var makeVideo: ((ExportMotion) async throws -> URL)?
     var makeGIF: ((ExportMotion) async throws -> URL)?
+    /// Renders a nail card for a template (stamp + Swift-drawn typography).
+    var makeCard: ((CardTemplate) -> UIImage?)?
+    @State private var cardTemplate: CardTemplate?
+    @State private var cardImage: UIImage?
+    @State private var cardSaved = false
     @Environment(\.openURL) private var openURL
 
     private static let storiesURL = URL(string: "instagram-stories://share?source_application=com.ksc0000.nailous")!
@@ -193,6 +198,86 @@ struct StampSheet: View {
                                 .padding(.vertical, 12)
                                 .background(Capsule().fill(Color.white.opacity(0.15)))
                                 .foregroundStyle(.white)
+                        }
+                    }
+                }
+
+                // --- nail cards ---
+                if makeCard != nil {
+                    VStack(spacing: 10) {
+                        HStack(spacing: 8) {
+                            Text("カード")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.white.opacity(0.55))
+                            ForEach(CardTemplate.allCases) { candidate in
+                                Button {
+                                    cardTemplate = candidate
+                                    cardImage = makeCard?(candidate)
+                                    cardSaved = false
+                                    UISelectionFeedbackGenerator().selectionChanged()
+                                } label: {
+                                    Text(candidate.label)
+                                        .font(.system(size: 12, weight: .medium))
+                                        .padding(.horizontal, 11)
+                                        .padding(.vertical, 6)
+                                        .background(
+                                            Capsule().fill(
+                                                cardTemplate == candidate
+                                                    ? AnyShapeStyle(Palette.goldGradient)
+                                                    : AnyShapeStyle(Color.white.opacity(0.1))
+                                            )
+                                        )
+                                        .foregroundStyle(
+                                            cardTemplate == candidate ? Palette.ink0 : .white.opacity(0.75)
+                                        )
+                                }
+                            }
+                        }
+                        if let cardImage {
+                            HStack(spacing: 14) {
+                                Image(uiImage: cardImage)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: 130)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .shadow(color: .black.opacity(0.5), radius: 8, y: 4)
+                                VStack(spacing: 8) {
+                                    Button {
+                                        UIImageWriteToSavedPhotosAlbum(cardImage, nil, nil, nil)
+                                        cardSaved = true
+                                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                                    } label: {
+                                        Label(
+                                            cardSaved ? "保存しました" : "写真に保存",
+                                            systemImage: cardSaved ? "checkmark" : "square.and.arrow.down"
+                                        )
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 10)
+                                        .background(
+                                            Capsule().fill(
+                                                cardSaved
+                                                    ? AnyShapeStyle(Color.white.opacity(0.15))
+                                                    : AnyShapeStyle(Palette.goldGradient)
+                                            )
+                                        )
+                                        .foregroundStyle(cardSaved ? .white : Palette.ink0)
+                                    }
+                                    if let png = cardImage.pngData() {
+                                        ShareLink(
+                                            item: StampPNG(data: png),
+                                            preview: SharePreview("Nailousカード", image: Image(uiImage: cardImage))
+                                        ) {
+                                            Label("共有", systemImage: "square.and.arrow.up")
+                                                .font(.system(size: 13, weight: .semibold))
+                                                .padding(.horizontal, 14)
+                                                .padding(.vertical, 10)
+                                                .background(Capsule().fill(Color.white.opacity(0.15)))
+                                                .foregroundStyle(.white)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

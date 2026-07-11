@@ -70,6 +70,7 @@ struct CollectionView: View {
         }
         .preferredColorScheme(.dark)
         .task {
+            renderDebugCards()
             seedIfRequested()
             if UserDefaults.standard.string(forKey: "openAdd") == "1" {
                 isAdding = true
@@ -232,6 +233,25 @@ struct CollectionView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.vertical, 6)
+            }
+        }
+    }
+
+    /// `-debugCards 1` renders every card template to Documents so the
+    /// composition can be checked headlessly in the simulator.
+    private func renderDebugCards() {
+        guard UserDefaults.standard.string(forKey: "debugCards") == "1" else { return }
+        let stamp = NailStyle.samples[1].texture
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        for template in CardTemplate.allCases {
+            if let card = CardRenderer.render(
+                template: template,
+                stamp: stamp,
+                title: "深海ネイル",
+                date: Date(),
+                subtitle: template == .salon ? "Salon Lumière" : nil
+            ), let png = card.pngData() {
+                try? png.write(to: docs.appendingPathComponent("card_\(template.rawValue).png"))
             }
         }
     }
