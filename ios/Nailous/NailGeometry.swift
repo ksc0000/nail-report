@@ -29,12 +29,13 @@ struct NailPlateParams: Equatable {
     var curveH: Float = 0 // C-curve (side-to-side) strength
     var curveV: Float = 0 // lengthwise arch
     var thickness: Float = 0
+    var corner: Float = 0 // free-edge corner: -1 sharp/square … +1 rounded
 
     static let `default` = NailPlateParams()
 
     /// Stable cache-key fragment for scene rebuild detection.
     var key: String {
-        String(format: "%.2f/%.2f/%.2f/%.2f/%.2f", length, width, curveH, curveV, thickness)
+        String(format: "%.2f/%.2f/%.2f/%.2f/%.2f/%.2f", length, width, curveH, curveV, thickness, corner)
     }
 }
 
@@ -67,8 +68,9 @@ enum NailGeometry {
     }
 
     /// Silhouette half-width factor along the plate (t: 0 = cuticle, 1 = tip).
+    /// `corner` (-1…+1) softens or sharpens the free-edge corners.
     /// Exposed so SwiftUI thumbnails can draw the same silhouette (`NailSilhouette`).
-    static func widthFactor(t: Float, shape: NailShape) -> Float {
+    static func widthFactor(t: Float, shape: NailShape, corner: Float = 0) -> Float {
         // Shallow arc at the cuticle edge plus a slight base taper: real nail
         // plates are marginally narrower at the base than at mid-body.
         let baseCap: Float = 0.09
@@ -76,21 +78,24 @@ enum NailGeometry {
             ? sqrt(max(0, 1 - pow((baseCap - t) / baseCap, 2)))
             : 1
         let baseTaper: Float = 1 - 0.07 * smoothstep(0.3, 0, t)
+        // Rounder corners = the rounding arc starts earlier (bigger cap).
+        let cornerMul = 1 + 0.75 * corner
 
         switch shape {
         case .squoval:
             // Parallel sides, flat free edge with softly rounded corners
             // (photo ref: short square gel nails).
             let body = 1 - 0.04 * smoothstep(0.5, 1, t)
-            let tipCap: Float = 0.07
+            let tipCap = min(0.4, max(0.015, 0.07 * cornerMul))
+            let floor = max(0.2, 0.62 - 0.3 * corner) // sharper corner = higher floor (squarer)
             let tipRound: Float = t > 1 - tipCap
-                ? 0.62 + 0.38 * sqrt(max(0, 1 - pow((t - (1 - tipCap)) / tipCap, 2)))
+                ? floor + (1 - floor) * sqrt(max(0, 1 - pow((t - (1 - tipCap)) / tipCap, 2)))
                 : 1
             return body * baseRound * baseTaper * tipRound
         case .round:
             // Short and wide with a generously rounded free edge.
             let body = 1 - 0.05 * smoothstep(0.4, 1, t)
-            let tipCap: Float = 0.3
+            let tipCap = min(0.45, max(0.1, 0.3 * cornerMul))
             let tipRound: Float = t > 1 - tipCap
                 ? sqrt(max(0, 1 - pow((t - (1 - tipCap)) / tipCap, 2)))
                 : 1
@@ -98,7 +103,7 @@ enum NailGeometry {
         case .oval:
             // Near-straight sides, gently rounded free edge.
             let body = 1 - 0.1 * smoothstep(0.45, 1, t)
-            let tipCap: Float = 0.22
+            let tipCap = min(0.4, max(0.08, 0.22 * cornerMul))
             let tipRound: Float = t > 1 - tipCap
                 ? sqrt(max(0, 1 - pow((t - (1 - tipCap)) / tipCap, 2)))
                 : 1
@@ -108,7 +113,7 @@ enum NailGeometry {
             // no straight "shoulder", the almond signature.
             let progress = smoothstep(0.18, 1, t)
             let body = 1 - 0.62 * pow(progress, 1.6)
-            let tipCap: Float = 0.09
+            let tipCap = min(0.3, max(0.04, 0.09 * cornerMul))
             let tipRound: Float = t > 1 - tipCap
                 ? sqrt(max(0, 1 - pow((t - (1 - tipCap)) / tipCap, 2)))
                 : 1
@@ -118,11 +123,11 @@ enum NailGeometry {
             // edge (~58% of base width) with just-softened corners.
             let linear = max(0, (t - 0.12) / 0.88)
             let body = 1 - 0.42 * linear
-            let cornerCap: Float = 0.03
-            let corner: Float = t > 1 - cornerCap
+            let cornerCap = min(0.14, max(0.008, 0.03 * cornerMul))
+            let cornerRound: Float = t > 1 - cornerCap
                 ? 0.9 + 0.1 * sqrt(max(0, 1 - pow((t - (1 - cornerCap)) / cornerCap, 2)))
                 : 1
-            return body * baseRound * baseTaper * corner
+            return body * baseRound * baseTaper * cornerRound
         }
     }
 
@@ -142,7 +147,7 @@ enum NailGeometry {
 
         for row in 0...rows {
             let t = Float(row) / Float(rows) // 0 cuticle → 1 tip
-            let wf = widthFactor(t: t, shape: shape)
+            let wf = widthFactor(t: t, shape: shape, corner: params.corner)
             for col in 0...cols {
                 let u = Float(col) / Float(cols) * 2 - 1 // -1 … 1
                 let x = u * (plateWidth / 2) * wf

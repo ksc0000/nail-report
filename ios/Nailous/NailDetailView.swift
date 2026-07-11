@@ -12,6 +12,7 @@ struct NailDetailView: View {
 
     @State private var shape: NailShape
     @State private var plateParams: NailPlateParams
+    @State private var finish: NailFinish
     @State private var showTuneSheet = false
     @State private var showStageSheet = false
     @State private var mode: StageMode = .single
@@ -34,8 +35,20 @@ struct NailDetailView: View {
         self.record = record
         _shape = State(initialValue: record?.shape ?? .squoval)
         _plateParams = State(initialValue: record?.plateParams ?? .default)
+        _finish = State(initialValue: record?.finish ?? appearance.finish)
         // A whole-hand capture opens as the five-piece set by default.
         _mode = State(initialValue: (record?.setAppearances?.count ?? 0) > 1 ? .set : .single)
+    }
+
+    /// The hero appearance with the live-edited finish applied.
+    private var liveAppearance: NailAppearance {
+        NailAppearance(id: appearance.id, texture: appearance.texture, finish: finish)
+    }
+
+    /// Set-mode appearances rebuilt with the live finish (nil for single).
+    private var liveSetAppearances: [NailAppearance]? {
+        guard let base = record?.setAppearances else { return nil }
+        return base.map { NailAppearance(id: $0.id, texture: $0.texture, finish: finish) }
     }
 
     /// Marks this design as the one on the user's nails right now. Only one
@@ -131,8 +144,21 @@ struct NailDetailView: View {
                 GoldSlider(label: "カーブ 横", value: $plateParams.curveH)
                 GoldSlider(label: "カーブ 縦", value: $plateParams.curveV)
                 GoldSlider(label: "厚み", value: $plateParams.thickness)
+                GoldSlider(label: "角の丸み", value: $plateParams.corner)
             }
             .padding(.horizontal, 24)
+
+            SectionHeader(title: "仕上げ")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(NailFinish.allCases) { candidate in
+                        StagePill(label: candidate.label, isOn: finish == candidate) {
+                            finish = candidate
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
 
             if record != nil {
                 Text("変更はこの記録にそのまま保存されます")
@@ -144,6 +170,7 @@ struct NailDetailView: View {
         }
         .onChange(of: shape) { persistTuning() }
         .onChange(of: plateParams) { persistTuning() }
+        .onChange(of: finish) { persistTuning() }
     }
 
     private func tuneShapeChip(_ candidate: NailShape) -> some View {
@@ -175,11 +202,13 @@ struct NailDetailView: View {
     private func persistTuning() {
         guard let record else { return }
         record.shapeRaw = shape.rawValue
+        record.finishRaw = finish.rawValue
         record.lengthAdj = plateParams.length
         record.widthAdj = plateParams.width
         record.curveHAdj = plateParams.curveH
         record.curveVAdj = plateParams.curveV
         record.thicknessAdj = plateParams.thickness
+        record.cornerAdj = plateParams.corner
     }
 
     /// Theme picker as a little backdrop swatch with a label — matches the
@@ -242,11 +271,11 @@ struct NailDetailView: View {
                 .padding(.top, 6)
 
                 NailSceneView(
-                    appearance: appearance,
+                    appearance: liveAppearance,
                     shape: shape,
                     mode: mode,
                     plateParams: plateParams,
-                    setAppearances: record?.setAppearances,
+                    setAppearances: liveSetAppearances,
                     layout: layout,
                     motion: motion,
                     theme: theme,
@@ -412,7 +441,7 @@ struct NailDetailView: View {
         }
         .sheet(isPresented: $showTuneSheet) {
             tuneSheet
-                .presentationDetents([.height(430)])
+                .presentationDetents([.height(520)])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(Color(red: 0.09, green: 0.06, blue: 0.1))
                 .preferredColorScheme(.dark)
@@ -421,10 +450,10 @@ struct NailDetailView: View {
             if let stampImage {
                 StampSheet(
                     image: stampImage,
-                    makeVideo: { [appearance, shape, plateParams, mode, layout, theme] motion in
+                    makeVideo: { [liveAppearance, liveSetAppearances, shape, plateParams, mode, layout, theme] motion in
                         try await StampVideoExporter.export(
-                            appearance: appearance,
-                            setAppearances: record?.setAppearances,
+                            appearance: liveAppearance,
+                            setAppearances: liveSetAppearances,
                             shape: shape,
                             params: plateParams,
                             mode: mode,
@@ -433,10 +462,10 @@ struct NailDetailView: View {
                             motion: motion
                         )
                     },
-                    makeGIF: { [appearance, shape, plateParams, mode, layout, theme] motion in
+                    makeGIF: { [liveAppearance, liveSetAppearances, shape, plateParams, mode, layout, theme] motion in
                         try await StampVideoExporter.exportGIF(
-                            appearance: appearance,
-                            setAppearances: record?.setAppearances,
+                            appearance: liveAppearance,
+                            setAppearances: liveSetAppearances,
                             shape: shape,
                             params: plateParams,
                             mode: mode,

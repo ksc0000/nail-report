@@ -1,9 +1,26 @@
 import UIKit
 
-/// Surface finish applied on top of the base texture.
-enum NailFinish: String, CaseIterable {
+/// Surface finish applied on top of the base texture — a real 3D material
+/// treatment (not a photo edit), so the same design reads completely
+/// differently as it spins in the light.
+enum NailFinish: String, CaseIterable, Identifiable {
     case gloss
     case matte
+    case glitter
+    case chrome
+    case aurora
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .gloss: return "ツヤ"
+        case .matte: return "マット"
+        case .glitter: return "ラメ"
+        case .chrome: return "ミラー"
+        case .aurora: return "オーロラ"
+        }
+    }
 }
 
 /// What gets painted on a nail: a texture (photo or generated art) + finish.

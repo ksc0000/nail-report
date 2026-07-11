@@ -35,6 +35,9 @@ struct AddNailView: View {
     @State private var plateParams = NailPlateParams()
 
     @State private var shape: NailShape = .squoval
+    @State private var finish: NailFinish = .gloss
+    @State private var cameraSingle = false
+    @State private var showRetouch = false
     @State private var showDetails = false
     @State private var title = ""
     @State private var salon = ""
@@ -47,7 +50,7 @@ struct AddNailView: View {
 
     private var previewAppearance: NailAppearance {
         if let first = displayTextures.first {
-            return NailAppearance(id: "picked-\(first.hashValue)", texture: first, finish: .gloss)
+            return NailAppearance(id: "picked-\(first.hashValue)", texture: first, finish: finish)
         }
         return NailStyle.samples[0].appearance
     }
@@ -55,7 +58,7 @@ struct AddNailView: View {
     private var previewSetAppearances: [NailAppearance]? {
         guard isSetCapture else { return nil }
         return displayTextures.enumerated().map { index, texture in
-            NailAppearance(id: "picked-\(index)-\(texture.hashValue)", texture: texture, finish: .gloss)
+            NailAppearance(id: "picked-\(index)-\(texture.hashValue)", texture: texture, finish: finish)
         }
     }
 
@@ -143,14 +146,43 @@ struct AddNailView: View {
                                     GoldSlider(label: "カーブ 横", value: $plateParams.curveH)
                                     GoldSlider(label: "カーブ 縦", value: $plateParams.curveV)
                                     GoldSlider(label: "厚み", value: $plateParams.thickness)
+                                    GoldSlider(label: "角の丸み", value: $plateParams.corner)
                                 }
                                 .padding(.horizontal, 24)
                             }
 
                             if hasTexture {
                                 VStack(alignment: .leading, spacing: 12) {
-                                    SectionHeader(title: "リタッチ")
-                                    retouchSection
+                                    SectionHeader(title: "仕上げ")
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 8) {
+                                            ForEach(NailFinish.allCases) { candidate in
+                                                finishChip(candidate)
+                                            }
+                                        }
+                                        .padding(.horizontal, 24)
+                                    }
+                                }
+                            }
+
+                            if hasTexture {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Button {
+                                        withAnimation(.easeInOut(duration: 0.2)) { showRetouch.toggle() }
+                                    } label: {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: showRetouch ? "chevron.up" : "slider.horizontal.3")
+                                                .font(.system(size: 11, weight: .semibold))
+                                            Text(showRetouch ? "写真の微調整を閉じる" : "写真を微調整（明るさ・鮮やかさ等）")
+                                                .font(.system(size: 12.5, weight: .medium))
+                                            Spacer()
+                                        }
+                                        .foregroundStyle(.white.opacity(0.55))
+                                        .padding(.horizontal, 28)
+                                    }
+                                    if showRetouch {
+                                        retouchSection
+                                    }
                                 }
 
                                 if AICleanup.isConfigured {
@@ -259,13 +291,22 @@ struct AddNailView: View {
             Task {
                 if let data = try? await newItem.loadTransferable(type: Data.self),
                    let image = UIImage(data: data) {
+                    cameraSingle = false
                     originalImage = image
                     isCropping = true
                 }
             }
         }
         .onAppear {
-            if UserDefaults.standard.string(forKey: "debugPhoto") == "1", originalImage == nil {
+            if let dbg = UserDefaults.standard.string(forKey: "debugFinish"),
+               let f = NailFinish(rawValue: dbg), displayTextures.isEmpty {
+                // Skip the crop step: drop a sample straight onto the preview so
+                // the finish material can be screenshotted headlessly.
+                finish = f
+                let tex = NailStyle.samples[2].texture
+                bakedTextures = [tex]
+                displayTextures = [tex]
+            } else if UserDefaults.standard.string(forKey: "debugPhoto") == "1", originalImage == nil {
                 originalImage = NailStyle.samples[3].texture
                 isCropping = true
             }
@@ -274,6 +315,7 @@ struct AddNailView: View {
             NailCameraView(
                 onCapture: { image in
                     showCamera = false
+                    cameraSingle = true
                     originalImage = image
                     isCropping = true
                 },
@@ -286,6 +328,7 @@ struct AddNailView: View {
                 PhotoCropView(
                     image: originalImage,
                     nailShape: $shape,
+                    forceSingle: cameraSingle,
                     onConfirm: { baked in
                         isCropping = false
                         cleanupAndSet([baked])
@@ -433,6 +476,26 @@ struct AddNailView: View {
         )
     }
 
+    /// A finish option chip; gold when selected.
+    private func finishChip(_ candidate: NailFinish) -> some View {
+        let isOn = finish == candidate
+        return Button {
+            finish = candidate
+            UISelectionFeedbackGenerator().selectionChanged()
+        } label: {
+            Text(candidate.label)
+                .font(.system(size: 13, weight: isOn ? .semibold : .regular))
+                .padding(.horizontal, 15)
+                .padding(.vertical, 9)
+                .background(
+                    Capsule().fill(
+                        isOn ? AnyShapeStyle(Palette.goldGradient) : AnyShapeStyle(Color.white.opacity(0.08))
+                    )
+                )
+                .foregroundStyle(isOn ? Palette.ink0 : .white.opacity(0.75))
+        }
+    }
+
     /// A nail-silhouette shape option; gold outline + glow when selected.
     private func shapeChip(_ candidate: NailShape) -> some View {
         let isOn = shape == candidate
@@ -491,7 +554,7 @@ struct AddNailView: View {
         let record = NailRecord(
             title: name.isEmpty ? "マイネイル" : name,
             shape: shape,
-            finish: .gloss,
+            finish: finish,
             photoData: jpeg,
             salon: salon.trimmingCharacters(in: .whitespacesAndNewlines),
             priceYen: Int(priceText.trimmingCharacters(in: .whitespaces)),

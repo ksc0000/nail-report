@@ -17,6 +17,8 @@ private struct DetectedNail: Identifiable {
 struct PhotoCropView: View {
     let image: UIImage
     @Binding var nailShape: NailShape
+    /// Camera captures are a single close-up nail — skip 5-finger detection.
+    var forceSingle: Bool = false
     let onConfirm: (UIImage) -> Void
     var onConfirmSet: (([UIImage]) -> Void)?
     let onCancel: () -> Void
@@ -41,8 +43,13 @@ struct PhotoCropView: View {
         sortedNails.indices.contains(currentIndex) ? sortedNails[currentIndex] : nil
     }
 
+    /// Guided multi-nail flow only when we actually found several nails; a
+    /// single/zero detection falls back to the simple position-and-confirm path
+    /// (fixes bogus 5-nail attempts on close-ups and single-nail photos).
+    private var guidedMode: Bool { !forceSingle && sortedNails.count >= 2 }
+
     private var allCollected: Bool {
-        !sortedNails.isEmpty && collected.count >= min(5, sortedNails.count)
+        guidedMode && collected.count >= min(5, sortedNails.count)
     }
 
     /// Fingerprint of the current framing; adding twice from the same pose is
@@ -106,13 +113,13 @@ struct PhotoCropView: View {
                             Circle()
                                 .strokeBorder(
                                     nail.id == currentTarget?.id
-                                        ? Color(red: 0.95, green: 0.62, blue: 0.72)
+                                        ? Palette.goldBright
                                         : .white.opacity(0.9),
                                     lineWidth: nail.id == currentTarget?.id ? 3 : 1.5
                                 )
                                 .frame(width: 26, height: 26)
                             Circle()
-                                .fill(Color(red: 0.95, green: 0.62, blue: 0.72).opacity(0.85))
+                                .fill(Palette.gold.opacity(0.9))
                                 .frame(width: 10, height: 10)
                         }
                         .shadow(color: .black.opacity(0.6), radius: 4)
@@ -122,7 +129,7 @@ struct PhotoCropView: View {
 
                 VStack {
                     Text(
-                        sortedNails.isEmpty
+                        !guidedMode
                             ? "ドラッグとピンチで、爪に入れたい部分を合わせます"
                             : allCollected
                                 ? "全部そろいました。「完了」でセットにします"
@@ -220,9 +227,9 @@ struct PhotoCropView: View {
                                 .background(Capsule().fill(Color.white.opacity(0.12)))
                                 .foregroundStyle(.white)
                         }
-                        if collected.count < 5 {
+                        if guidedMode && collected.count < 5 {
                             Button(action: addCurrentNail) {
-                                Text(sortedNails.isEmpty ? "この爪を追加" : "この爪を追加（\(min(collected.count + 1, 5))本目）")
+                                Text("この爪を追加（\(min(collected.count + 1, 5))本目）")
                                     .font(.system(size: 14, weight: .semibold))
                                     .padding(.horizontal, 18)
                                     .padding(.vertical, 12)
@@ -237,7 +244,7 @@ struct PhotoCropView: View {
                             }
                             .disabled(isDuplicatePose)
                         }
-                        if collected.isEmpty && sortedNails.isEmpty {
+                        if collected.isEmpty && !guidedMode {
                             Button {
                                 onConfirm(bakeCurrent())
                             } label: {
@@ -308,13 +315,20 @@ struct PhotoCropView: View {
         }
         .preferredColorScheme(.dark)
         .task {
-            detectedNails = await Self.detectNails(in: image)
-            // Guided tour: thumb → pinky (left → right in the photo), starting
-            // zoomed on the first nail so "決定 at full view" can't happen.
-            sortedNails = detectedNails.sorted { $0.center.x < $1.center.x }
-            if let first = sortedNails.first {
+            if forceSingle {
+                previewTexture = bakeCurrent()
+                return
+            }
+            let found = (await Self.detectNails(in: image)).sorted { $0.center.x < $1.center.x }
+            if found.count >= 2 {
+                // Guided tour: thumb → pinky, starting zoomed on the first nail.
+                detectedNails = found
+                sortedNails = found
                 currentIndex = 0
-                focus(on: first)
+                focus(on: found[0])
+            } else if let one = found.first {
+                // One nail found: auto-frame it, but stay in the simple path.
+                focus(on: one)
             } else {
                 previewTexture = bakeCurrent()
             }

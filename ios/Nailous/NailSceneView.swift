@@ -323,9 +323,9 @@ struct NailSceneView: UIViewRepresentable {
         private var lastArrivalID: String?
 
         func rebuildPlate(appearance: NailAppearance, setAppearances: [NailAppearance]?, setShapes: [NailShape]?, shape: NailShape, params: NailPlateParams, mode: StageMode, layout: SetLayout, arrivalID: String?) {
-            let setKey = setAppearances?.map(\.id).joined(separator: "+") ?? ""
+            let setKey = setAppearances?.map { "\($0.id).\($0.finish.rawValue)" }.joined(separator: "+") ?? ""
             let shapeKey = setShapes?.map(\.rawValue).joined(separator: "+") ?? shape.rawValue
-            let key = "\(appearance.id)/\(setKey)/\(shapeKey)/\(mode.rawValue)/\(layout.rawValue)/\(params.key)"
+            let key = "\(appearance.id)/\(appearance.finish.rawValue)/\(setKey)/\(shapeKey)/\(mode.rawValue)/\(layout.rawValue)/\(params.key)"
             guard key != currentKey, let spinNode else { return }
             currentKey = key
 
@@ -480,24 +480,7 @@ struct NailSceneView: UIViewRepresentable {
         }
 
         static func makeMaterial(appearance: NailAppearance) -> SCNMaterial {
-            let material = SCNMaterial()
-            material.lightingModel = .physicallyBased
-            material.diffuse.contents = appearance.texture
-            material.diffuse.maxAnisotropy = 8
-            material.diffuse.mipFilter = .linear
-            material.metalness.contents = 0.0
-            material.isDoubleSided = true
-            switch appearance.finish {
-            case .gloss:
-                material.roughness.contents = 0.34
-                material.clearCoat.contents = 1.0
-                material.clearCoatRoughness.contents = 0.08
-            case .matte:
-                material.roughness.contents = 0.78
-                material.clearCoat.contents = 0.12
-                material.clearCoatRoughness.contents = 0.6
-            }
-            return material
+            NailFinishMaterial.material(for: appearance)
         }
 
         private var lastAxis = SCNVector3(0, 1, 0)

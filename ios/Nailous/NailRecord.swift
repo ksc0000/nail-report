@@ -28,6 +28,7 @@ final class NailRecord {
     var curveHAdj: Float = 0
     var curveVAdj: Float = 0
     var thicknessAdj: Float = 0
+    var cornerAdj: Float = 0
 
     init(
         title: String,
@@ -57,6 +58,7 @@ final class NailRecord {
         self.curveHAdj = plateParams.curveH
         self.curveVAdj = plateParams.curveV
         self.thicknessAdj = plateParams.thickness
+        self.cornerAdj = plateParams.corner
     }
 
     var shape: NailShape { NailShape(rawValue: shapeRaw) ?? .squoval }
@@ -74,7 +76,8 @@ final class NailRecord {
             width: widthAdj,
             curveH: curveHAdj,
             curveV: curveVAdj,
-            thickness: thicknessAdj
+            thickness: thicknessAdj,
+            corner: cornerAdj
         )
     }
     var finish: NailFinish { NailFinish(rawValue: finishRaw) ?? .gloss }
