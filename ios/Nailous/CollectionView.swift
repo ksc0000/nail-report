@@ -10,6 +10,7 @@ struct CollectionView: View {
     @State private var glowingID: UUID?
     @State private var selected: NailRecord?
     @State private var arrivalID: String?
+    @State private var gridShown = false
 
     private let columns = [GridItem(.adaptive(minimum: 100), spacing: 18)]
 
@@ -53,6 +54,9 @@ struct CollectionView: View {
                     record: record
                 )
             }
+            .navigationDestination(isPresented: $gridShown) {
+                CollectionGridView(records: records) { selected = $0 }
+            }
             .onChange(of: records.first?.id) { _, newID in
                 // A nail just joined the box: drop-in animation on the stage,
                 // welcome glow on the shelf, success haptic.
@@ -74,6 +78,10 @@ struct CollectionView: View {
             seedIfRequested()
             if UserDefaults.standard.string(forKey: "openAdd") == "1" {
                 isAdding = true
+            }
+            if UserDefaults.standard.string(forKey: "openGrid") == "1" {
+                try? await Task.sleep(for: .seconds(0.4))
+                gridShown = true
             }
         }
     }
@@ -163,7 +171,21 @@ struct CollectionView: View {
 
     private var shelf: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "最近のネイル")
+            HStack {
+                SectionHeader(title: "最近のネイル")
+                Spacer()
+                NavigationLink {
+                    CollectionGridView(records: records) { selected = $0 }
+                } label: {
+                    HStack(spacing: 3) {
+                        Text("すべて見る")
+                        Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
+                    }
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundStyle(Palette.gold)
+                }
+                .padding(.trailing, 24)
+            }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
@@ -183,13 +205,21 @@ struct CollectionView: View {
                                             radius: 14
                                         )
                                         .overlay(alignment: .topTrailing) {
-                                            if record.wornSince != nil {
-                                                Circle()
-                                                    .fill(Palette.goldBright)
-                                                    .frame(width: 7, height: 7)
-                                                    .shadow(color: Palette.gold, radius: 4)
-                                                    .offset(x: -4, y: 10)
+                                            HStack(spacing: 3) {
+                                                if record.wornSince != nil {
+                                                    Circle()
+                                                        .fill(Palette.goldBright)
+                                                        .frame(width: 7, height: 7)
+                                                        .shadow(color: Palette.gold, radius: 4)
+                                                }
+                                                if record.isFavorite {
+                                                    Image(systemName: "heart.fill")
+                                                        .font(.system(size: 10))
+                                                        .foregroundStyle(Palette.goldBright)
+                                                        .shadow(color: .black.opacity(0.5), radius: 2)
+                                                }
                                             }
+                                            .offset(x: -4, y: 8)
                                         }
                                     Text(record.title)
                                         .font(.system(size: 11))
@@ -260,16 +290,17 @@ struct CollectionView: View {
     /// UI can be verified headlessly in the simulator.
     private func seedIfRequested() {
         guard UserDefaults.standard.string(forKey: "seedDemo") == "1", records.isEmpty else { return }
-        let sample = NailStyle.samples[3]
-        guard let jpeg = sample.texture.jpegData(compressionQuality: 0.85) else { return }
-        modelContext.insert(
-            NailRecord(title: "深海ネイル", shape: .oval, finish: .gloss, photoData: jpeg)
-        )
-        let second = NailStyle.samples[1]
-        if let jpeg2 = second.texture.jpegData(compressionQuality: 0.85) {
-            modelContext.insert(
-                NailRecord(title: "グレージュ", shape: .squoval, finish: .gloss, photoData: jpeg2)
-            )
+        let specs: [(NailStyle, String, NailShape, [String], Bool)] = [
+            (NailStyle.samples[3], "深海ネイル", .oval, ["ブルー", "グラデ"], true),
+            (NailStyle.samples[1], "グレージュ", .squoval, ["ベージュ", "マグネット"], false),
+            (NailStyle.samples[0], "シアーローズ", .almond, ["ピンク", "シアー"], true),
+            (NailStyle.samples[2], "ラメフレンチ", .coffin, ["フレンチ", "ラメ"], false),
+        ]
+        for (style, title, shape, tags, fav) in specs {
+            guard let jpeg = style.texture.jpegData(compressionQuality: 0.85) else { continue }
+            let record = NailRecord(title: title, shape: shape, finish: .gloss, photoData: jpeg, tags: tags)
+            record.isFavorite = fav
+            modelContext.insert(record)
         }
     }
 }

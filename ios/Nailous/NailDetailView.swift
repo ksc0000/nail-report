@@ -442,6 +442,17 @@ struct NailDetailView: View {
         }
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
+            if let record {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        record.isFavorite.toggle()
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    } label: {
+                        Image(systemName: record.isFavorite ? "heart.fill" : "heart")
+                            .foregroundStyle(record.isFavorite ? Palette.goldBright : .white)
+                    }
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     if let stamp = stageController.makeStamp() {

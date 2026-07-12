@@ -22,6 +22,8 @@ final class NailRecord {
     /// Set when this design is on the user's actual nails right now; at most
     /// one record wears it at a time.
     var wornSince: Date?
+    /// Curated into the ♡ favourites filter.
+    var isFavorite: Bool = false
     // Plate tuning sliders (-1…+1 each, 0 = the shape's stock look)
     var lengthAdj: Float = 0
     var widthAdj: Float = 0
