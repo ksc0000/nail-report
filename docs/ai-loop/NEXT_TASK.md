@@ -1,97 +1,59 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The `nail-report` application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This task initiates the test coverage efforts by adding unit tests for core Firebase Firestore helper functions.
+The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. The first sub-goal in this phase is to increase test coverage, starting with core utility functions. This task directly addresses Phase 2.1: "Unit tests for Firestore helper functions (`src/lib/firestore.ts`)".
 
 ## Objective
 
-Implement Vitest unit tests for selected helper functions within `src/lib/firestore.ts`, ensuring proper mocking of Firebase SDK calls.
+Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for understanding the functions to be tested)
-- `src/__tests__/` (specifically, create a new file `src/__tests__/lib/firestore.test.ts`)
+- `src/lib/firestore.ts` (minor adjustments if necessary for testability, but focus on testing existing logic)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `vitest.config.ts` (only if absolutely necessary for Firebase mocking, otherwise avoid)
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
+- `src/main.tsx`
+- `commands/`
+- `firestore.rules`, `storage.rules`
+- `package.json` deps (no new npm packages)
 - Firebase deploy commands
 - Secrets and credentials
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
+- Create a new test file, `src/__tests__/firestore.test.ts`.
+- Identify key helper functions within `src/lib/firestore.ts` (e.g., functions wrapping `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`, or any data transformation logic related to Firestore documents).
+- Write unit tests for at least 2-3 of these helper functions.
+- Mock the Firebase SDK as required to perform isolated unit testing using `vitest` and `vi.mock`. Do not make actual calls to Firebase services during tests.
+- Ensure the tests are clear, concise, and cover basic success and error paths where applicable for the chosen functions.
+- Run `npm run build && npm run lint && npm run test` before finishing.
+- All new and existing tests must pass.
 
 ## Worker prompt
 
-Your task is to add unit tests for the helper functions in `src/lib/firestore.ts`.
+Jules, your task is to enhance the test coverage for the `nail-report` application by introducing unit tests for the Firebase Firestore helper functions.
 
-1.  **Create a new test file**: Create `src/__tests__/lib/firestore.test.ts`.
-2.  **Select functions**: Choose one or two *simple* helper functions from `src/lib/firestore.ts` (e.g., functions wrapping `addDoc`, `getDoc`, `updateDoc`, or `deleteDoc`). Prioritize functions with clear input/output and minimal side effects for the initial tests.
-3.  **Implement tests**: Write unit tests for the selected functions using Vitest.
-4.  **Mock Firebase SDK**: Use `vi.mock` to mock the Firebase Firestore SDK functions (e.g., `getDoc`, `addDoc`, `updateDoc`, `deleteDoc`) to ensure tests are isolated and do not interact with a live Firebase instance. Simulate successful and potentially error conditions if feasible within the line limit.
-5.  **Assertions**: Use Vitest's assertion library (`expect`) to verify the behavior of the helper functions.
-6.  **Maintain line limit**: Focus on thorough testing of a small number of functions rather than shallow testing of many, to stay within the ≤150 line diff limit.
+1.  **Examine `src/lib/firestore.ts`**: Identify the primary helper functions that interact with Firestore (e.g., functions for adding, fetching, updating, or deleting nail items, or public shares, or any data transformation logic for these).
+2.  **Create Test File**: Create a new file named `src/__tests__/firestore.test.ts`.
+3.  **Set up Vitest Mocking**:
+    *   Configure Vitest to mock the Firebase SDK (Firestore specifically) so that your tests do not make actual network calls. Use `vi.mock` for this purpose.
+    *   You will likely need to mock `firebase/firestore`.
+4.  **Write Unit Tests**:
+    *   Choose 2-3 significant helper functions from `src/lib/firestore.ts`.
+    *   For each chosen function, write comprehensive unit tests covering:
+        *   Successful execution paths (e.g., adding a document, fetching documents).
+        *   Basic error handling (e.g., if a Firestore operation fails).
+    *   Focus on testing the *logic within* your helper functions, assuming the mocked Firebase SDK behaves as expected.
+5.  **Run Tests and Linters**: Execute `npm run build && npm run lint && npm run test`. Ensure all commands pass without errors.
+6.  **Adhere to Constraints**: Remember the ≤ 150 lines diff limit and no new npm dependencies.
 
-**Example of mocking Firebase Firestore:**
+Example of potential functions to test: `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`, `getPublicShare`.
 
-```typescript
-// src/__tests__/lib/firestore.test.ts
-import { describe, it, expect, vi } from 'vitest';
-import { doc, getDoc, setDoc } from 'firebase/firestore'; // Import only what's needed for types/mocks
-
-// Mock the entire 'firebase/firestore' module
-vi.mock('firebase/firestore', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...actual, // Spread actual to not mock everything
-    getDoc: vi.fn(),
-    setDoc: vi.fn(),
-    doc: vi.fn((firestore, path, docId) => ({
-      // Mock doc reference to have a simple path
-      path: `${path}/${docId}`,
-      id: docId,
-    })),
-    collection: vi.fn((firestore, path) => ({
-      path: path,
-    })),
-    // Mock other Firestore functions as needed (e.g., addDoc, updateDoc, deleteDoc)
-  };
-});
-
-// Import the function you want to test from your firestore.ts file
-// import { yourFirestoreHelperFunction } from '../../lib/firestore';
-
-describe('firestore.ts helper functions', () => {
-  // Test cases go here
-  it('should call getDoc when fetching a document', async () => {
-    // Cast the mocked function to ensure type safety if needed
-    const mockedGetDoc = getDoc as vi.Mock;
-    mockedGetDoc.mockResolvedValueOnce({
-      exists: () => true,
-      data: () => ({ name: 'Test Item' }),
-    });
-
-    // const result = await yourFirestoreHelperFunction('testId');
-    // expect(mockedGetDoc).toHaveBeenCalledWith(expect.anything());
-    // expect(result).toEqual({ name: 'Test Item' });
-  });
-
-  // Add more tests for other scenarios and functions
-});
 ```
-
-## Output Format
-
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+```
