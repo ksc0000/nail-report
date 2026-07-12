@@ -2,62 +2,57 @@
 
 ## Context
 
-The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This task specifically targets enhancing test coverage for core utility functions that interact with Firestore. The current state indicates that `src/lib/firestore.ts` helper functions currently lack unit tests.
+The product roadmap prioritizes improving stability and test coverage. This task focuses on `Phase 2.1 Test coverage`, specifically by introducing unit tests for Firebase helper functions. Establishing good testing practices for these core utilities is crucial for future development.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest, focusing on basic CRUD operations and their respective success and failure paths.
+Implement Vitest unit tests for the `addNailItem` function within `src/lib/firestore.ts`. The goal is to set up a basic testing pattern for Firebase Firestore helper functions, including mocking Firebase SDK dependencies.
 
 ## Allowed Scope
 
--   `src/lib/firestore.ts` (for potential minor adjustments to aid testability, but primarily to understand its API)
--   `src/__tests__/` (for creating new test files, e.g., `src/__tests__/lib/firestore.test.ts`)
--   `src/App.css` (only if strictly necessary for testing a component, which is unlikely for this task)
+- `src/lib/firestore.ts` (only to export functions if needed for testing, no logic changes)
+- `src/__tests__/lib/firestore.test.ts` (new file for tests)
+- `vite.config.ts` (if minor Vitest configuration for mocking is required)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   Keep diff ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing.
--   Prefer adding tests when touching `src/lib/` files (this task *is* about adding tests).
--   Report follow-up items as comments, not additional code.
+- Keep diff ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
 ## Worker Prompt
 
-Your task is to create a new unit test file for `src/lib/firestore.ts` using Vitest.
+Your task is to add unit tests for the `addNailItem` function located in `src/lib/firestore.ts`.
 
-1.  **Create a new test file:** In `src/__tests__/lib/`, create a new file named `firestore.test.ts`.
-2.  **Mock Firebase SDK:** Use `vi.mock` to mock the necessary Firebase Firestore SDK modules (e.g., `firebase/firestore`, `firebase/app`) to control their behavior during tests. You will need to simulate responses for successful operations and throw errors for failure scenarios.
-3.  **Identify helper functions:** Analyze `src/lib/firestore.ts` to identify the core helper functions responsible for interacting with the `nailItems` collection (e.g., functions for adding, getting, updating, and deleting nail items).
-4.  **Write unit tests:**
-    *   For each identified helper function, write tests to verify its behavior for:
-        *   **Successful execution:** Verify that the function correctly calls the mocked Firebase methods and returns the expected data or resolves successfully.
-        *   **Error handling:** Verify that the function correctly catches errors thrown by the mocked Firebase methods and handles them as expected (e.g., throwing a specific error, returning null/undefined, or rejecting a promise).
-5.  **Focus on coverage:** Aim to cover the main execution paths for at least 2-3 key Firestore helper functions. Do not attempt to cover every single edge case if it exceeds the line diff limit.
-6.  **No new npm dependencies:** Ensure no new packages are added to `package.json`. Vitest is already configured.
-7.  **Run tests:** Execute `npm test` to confirm all new tests pass.
+1.  **Create a new test file**: Create `src/__tests__/lib/firestore.test.ts`.
+2.  **Implement mocks**: Use `vi.mock` to mock the necessary Firebase Firestore SDK functions (`addDoc`, `collection`) that `addNailItem` depends on. Ensure that no actual calls to Firebase are made during the tests.
+3.  **Write tests for `addNailItem`**:
+    *   Test the successful creation of a nail item, verifying that `addDoc` is called with the correct arguments.
+    *   Ensure the function correctly returns the expected data (e.g., the document ID if `addDoc` is mocked to return one).
+4.  **Keep it minimal**: Focus on covering the primary success path for `addNailItem` to keep the PR small. Error handling can be addressed in subsequent tasks.
 
-**Example `src/lib/firestore.ts` functions you might find and need to test:**
+## Acceptance Criteria
 
-*   `getNailItems(userId: string)`
-*   `addNailItem(userId: string, itemData: NailItem)`
-*   `updateNailItem(userId: string, itemId: string, updateData: Partial<NailItem>)`
-*   `deleteNailItem(userId: string, itemId: string)`
+- A new file `src/__tests__/lib/firestore.test.ts` is created.
+- The `addNailItem` function from `src/lib/firestore.ts` has at least one successful unit test case.
+- Firebase Firestore functions (`addDoc`, `collection`) are properly mocked using `vitest`'s mocking capabilities.
+- `npm run test` executes successfully and shows the new test passing.
 
----
+## Required Test Commands
 
-## Output Format
-
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
+```bash
+npm install # Ensure all dependencies are up-to-date
+npm run build
+npm run lint
+npm run test
+```
