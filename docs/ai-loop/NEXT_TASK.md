@@ -1,19 +1,18 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap prioritizes improving stability and test coverage in Phase 2. This task focuses on adding unit tests for core Firebase Firestore helper functions, which is crucial for ensuring data integrity and application reliability. Vitest is the designated test runner.
+The product roadmap for `nail-report` is in Phase 2, which focuses on improving stability, test coverage, and UX. A key item in this phase is to increase test coverage for Firebase helper functions. This task specifically targets `src/lib/firestore.ts`.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest, with appropriate mocking of Firebase SDK dependencies.
+Implement comprehensive unit tests for all exported functions within `src/lib/firestore.ts` using Vitest. This involves creating a new test file and mocking Firebase SDK dependencies to ensure tests are isolated and do not interact with actual Firebase services.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor adjustments for testability, if strictly necessary, e.g., exporting internal functions)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `vitest.config.ts` (if minor config adjustments are needed for mocks, but prefer to avoid)
+- `src/lib/firestore.ts` (minor changes to facilitate testing, if necessary)
+- `src/__tests__/firestore.test.ts` (new file)
+- `vite.config.ts` (only if Vitest configuration explicitly needs adjustment for tests, but prefer to use existing config if possible)
 
 ## Forbidden Scope
 
@@ -23,26 +22,24 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
+- `src/App.css` (not relevant for this task)
+- Any other `src/lib/` files beyond `firestore.ts`
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
+- Create a new test file named `src/__tests__/firestore.test.ts`.
+- Write unit tests for all exported functions in `src/lib/firestore.ts` (e.g., `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`).
+- Effectively mock Firebase SDK modules and functions (e.g., `getFirestore`, `collection`, `doc`, `getDocs`, `addDoc`, `updateDoc`, `deleteDoc`) using Vitest's `vi.mock` to ensure tests run in isolation without connecting to Firebase.
+- Ensure test cases cover happy paths and common error scenarios for each function.
+- Verify that `npm run test` passes successfully.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
+- The generated code should not introduce any new npm dependencies.
 
-## Worker prompt
+## Output Format
 
-Your task is to add comprehensive unit tests for the Firestore helper functions located in `src/lib/firestore.ts`.
-
-1.  **Create a new test file**: Create `src/__tests__/firestore.test.ts`.
-2.  **Mock Firebase SDK**: Utilize `vi.mock` to mock the `firebase/firestore` module and its methods (e.g., `getFirestore`, `collection`, `doc`, `getDocs`, `addDoc`, `updateDoc`, `deleteDoc`). Ensure the mocks simulate successful operations and potential error scenarios.
-3.  **Test `addItem`**: Write tests to verify `addItem` correctly adds a document and handles errors.
-4.  **Test `updateItem`**: Write tests to verify `updateItem` correctly updates a document and handles errors.
-5.  **Test `deleteItem`**: Write tests to verify `deleteItem` correctly deletes a document and handles errors.
-6.  **Test `getNailItems`**: Write tests to verify `getNailItems` correctly fetches and processes documents, including empty states and error handling.
-7.  **Run tests**: Ensure all new tests pass by running `npm run test`.
-8.  **Verify code quality**: Run `npm run build && npm run lint` to ensure no build or linting errors are introduced.
-
-Focus on testing the logic within the `firestore.ts` functions themselves, ensuring they correctly interact with the mocked Firebase SDK.
-```
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
