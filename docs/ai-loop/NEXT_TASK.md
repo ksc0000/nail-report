@@ -1,8 +1,9 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This task specifically addresses Phase 2.1: Test coverage. The goal is to begin adding unit tests for core helper functions.
+The application is in Phase 2 of its roadmap, focusing on stability, test coverage, and UX improvements. This task specifically addresses `2.1 Test coverage`. Vitest is already established as the test runner for the project.
 
 ## Objective
 
@@ -10,9 +11,8 @@ Implement unit tests for the helper functions located in `src/lib/firestore.ts` 
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications only if necessary for testability, minor refactors)
-- `src/__tests__/firestore.test.ts` (new file)
-- `vite.config.ts` (if needed for Vitest setup, but ideally Vitest is already configured)
+- `src/lib/firestore.ts` (modifications to export functions if necessary for testing)
+- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
 
 ## Forbidden Scope
 
@@ -25,17 +25,12 @@ Implement unit tests for the helper functions located in `src/lib/firestore.ts` 
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
-
-### Acceptance Criteria
-
-- A new test file `src/__tests__/firestore.test.ts` must be created.
-- The new tests must cover at least the primary CRUD-related helper functions within `src/lib/firestore.ts` that interact with the `nailItems` and `publicShares` collections. Examples include `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`, and related public share functions.
-- Firebase SDK functions (e.g., `getFirestore`, `collection`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`, `doc`) must be properly mocked using `vitest.mock` to ensure tests are isolated and do not interact with a live Firebase project.
-- All new tests must pass when `npm run test` is executed.
+- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
+- Write unit tests for at least two significant helper functions within `src/lib/firestore.ts`. Examples include functions for adding, updating, or deleting nail items or public shares.
+- Mock Firebase SDK dependencies as necessary using `vi.mock` to isolate the functions under test from actual Firebase calls.
+- Ensure the tests cover basic functionality and edge cases where applicable (e.g., empty data, successful operations).
+- Keep the overall diff ≤ 150 lines.
+- Run `npm run build && npm run lint && npm test` before finishing.
 
 ## Output Format
 
@@ -44,3 +39,4 @@ Implement unit tests for the helper functions located in `src/lib/firestore.ts` 
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+```
