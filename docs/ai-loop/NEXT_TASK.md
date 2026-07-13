@@ -1,59 +1,85 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. The first sub-goal in this phase is to increase test coverage, starting with core utility functions. This task directly addresses Phase 2.1: "Unit tests for Firestore helper functions (`src/lib/firestore.ts`)".
+The product roadmap focuses on improving stability, test coverage, and UX in Phase 2. This task specifically addresses the accessibility goal of Phase 2.4 by ensuring interactive icon-only elements provide proper context for assistive technologies.
 
 ## Objective
 
-Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`.
+Enhance accessibility by adding descriptive `aria-label` attributes to all icon-only interactive elements (buttons, links acting as buttons) throughout the application.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor adjustments if necessary for testability, but focus on testing existing logic)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `vitest.config.ts` (only if absolutely necessary for Firebase mocking, otherwise avoid)
+- `src/**/*.tsx` (for UI components containing buttons/interactive elements)
+- `src/**/*.ts` (if any component logic files are separate)
+- `src/App.css` (for minor stylistic adjustments if needed, though unlikely for this task)
 
 ## Forbidden Scope
 
-- `src/main.tsx`
-- `commands/`
-- `firestore.rules`, `storage.rules`
-- `package.json` deps (no new npm packages)
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create a new test file, `src/__tests__/firestore.test.ts`.
-- Identify key helper functions within `src/lib/firestore.ts` (e.g., functions wrapping `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`, or any data transformation logic related to Firestore documents).
-- Write unit tests for at least 2-3 of these helper functions.
-- Mock the Firebase SDK as required to perform isolated unit testing using `vitest` and `vi.mock`. Do not make actual calls to Firebase services during tests.
-- Ensure the tests are clear, concise, and cover basic success and error paths where applicable for the chosen functions.
-- Run `npm run build && npm run lint && npm run test` before finishing.
-- All new and existing tests must pass.
+- Identify all interactive elements that are visually represented by an icon but lack descriptive text or an `aria-label`.
+- Add a meaningful `aria-label` attribute to each identified element, clearly describing its purpose to users of assistive technologies. For example, a delete icon button might have `aria-label="Delete item"`.
+- Prioritize `button` elements, but also consider other interactive elements (e.g., `div` or `span` with `onClick` and only an icon child) that function as buttons.
+- Run `npm run build && npm run lint` before finishing.
 
-## Worker prompt
+## Output Format
 
-Jules, your task is to enhance the test coverage for the `nail-report` application by introducing unit tests for the Firebase Firestore helper functions.
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
 
-1.  **Examine `src/lib/firestore.ts`**: Identify the primary helper functions that interact with Firestore (e.g., functions for adding, fetching, updating, or deleting nail items, or public shares, or any data transformation logic for these).
-2.  **Create Test File**: Create a new file named `src/__tests__/firestore.test.ts`.
-3.  **Set up Vitest Mocking**:
-    *   Configure Vitest to mock the Firebase SDK (Firestore specifically) so that your tests do not make actual network calls. Use `vi.mock` for this purpose.
-    *   You will likely need to mock `firebase/firestore`.
-4.  **Write Unit Tests**:
-    *   Choose 2-3 significant helper functions from `src/lib/firestore.ts`.
-    *   For each chosen function, write comprehensive unit tests covering:
-        *   Successful execution paths (e.g., adding a document, fetching documents).
-        *   Basic error handling (e.g., if a Firestore operation fails).
-    *   Focus on testing the *logic within* your helper functions, assuming the mocked Firebase SDK behaves as expected.
-5.  **Run Tests and Linters**: Execute `npm run build && npm run lint && npm run test`. Ensure all commands pass without errors.
-6.  **Adhere to Constraints**: Remember the ≤ 150 lines diff limit and no new npm dependencies.
+## Worker Prompt
 
-Example of potential functions to test: `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`, `getPublicShare`.
+Hey Jules,
 
-```
-```
+Your next task is to improve the accessibility of the `nail-report` application.
+
+**Detailed Instructions:**
+
+1.  **Identify Icon-Only Interactive Elements:**
+    *   Scan all React component files (`.tsx`) within the `src/` directory.
+    *   Look for `<button>` elements that primarily contain an icon (e.g., an `<img>`, `<svg>`, or an icon font `<i>` tag) and no visible text.
+    *   Also, look for other interactive elements like `<a>`, `<div>`, or `<span>` elements that have `onClick` handlers and only contain an icon, effectively acting as a button or interactive control.
+
+2.  **Add `aria-label` Attributes:**
+    *   For each identified icon-only interactive element, add an `aria-label` attribute.
+    *   The value of `aria-label` must be a concise and descriptive string that clearly communicates the element's purpose to a screen reader user.
+    *   **Example:**
+        ```tsx
+        // Before
+        <button onClick={handleDelete} className="icon-button">
+          <FaTrash />
+        </button>
+
+        // After
+        <button onClick={handleDelete} aria-label="Delete item" className="icon-button">
+          <FaTrash />
+        </button>
+        ```
+    *   Ensure the `aria-label` is localized if the application supports multiple languages (though for this task, English is sufficient).
+
+3.  **Verify Functionality and Linting:**
+    *   After making changes, ensure the application still builds and runs correctly.
+    *   Run `npm run build && npm run lint` and address any reported issues.
+
+**Specific elements to look out for (not an exhaustive list, but common patterns):**
+*   Delete buttons (e.g., trash can icon)
+*   Edit buttons (e.g., pencil icon)
+*   Share buttons (e.g., share icon)
+*   Navigation buttons (e.g., arrow icons for pagination)
+*   Close buttons (e.g., 'X' icon)
+
+This task should result in a series of small, focused changes across several component files. If you encounter an unexpectedly large number of such elements, please document it in your `Known issues or limitations` section.
+
+Good luck!
