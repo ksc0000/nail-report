@@ -1,19 +1,17 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-Read the roadmap, recent commits, and the current task.
+The product roadmap for nail-report is focused on Phase 2, which involves improving stability, test coverage, and UX. This task initiates the test coverage improvements by adding unit tests for core Firebase utility functions.
 
 ## Objective
 
-Implement accessibility improvements by adding `aria-label` attributes to all icon-only buttons in the application.
+Implement Vitest unit tests for the helper functions within `src/lib/firestore.ts`.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/components/` (where most icon buttons are located)
-- `src/App.css` (for any minor layout adjustments if necessary, though unlikely)
+- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but prefer minimal changes)
+- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
 
 ## Forbidden Scope
 
@@ -23,14 +21,17 @@ Implement accessibility improvements by adding `aria-label` attributes to all ic
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
+- Any files outside the explicitly allowed scope.
 
 ## Requirements
 
+- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
+- Add unit tests for at least two key helper functions in `src/lib/firestore.ts`. Examples include functions for adding, updating, or deleting nail items.
+- Use `vitest` for testing and `vi.mock` for mocking Firebase SDK dependencies as necessary.
+- Ensure the tests cover basic functionality and edge cases.
 - Keep diff ≤ 150 lines.
-- Identify all `button` elements that contain only an icon (e.g., `<Button><Icon /></Button>`) and add a descriptive `aria-label` attribute to them.
-- The `aria-label` should clearly describe the button's action (e.g., "Delete item", "Edit item", "Share link", "Upload image").
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files. (Not applicable for this task, as it's UI-focused).
+- Run `npm test` and ensure all new tests pass.
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -40,4 +41,3 @@ Implement accessibility improvements by adding `aria-label` attributes to all ic
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-```
