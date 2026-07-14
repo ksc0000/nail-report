@@ -2,16 +2,18 @@
 
 ## Context
 
-The product roadmap for nail-report is focused on Phase 2, which involves improving stability, test coverage, and UX. This task initiates the test coverage improvements by adding unit tests for core Firebase utility functions.
+The `nail-report` application is currently in Phase 2 of its roadmap, focusing on improving stability, test coverage, and user experience. This task specifically addresses accessibility improvements by ensuring interactive elements are properly labeled for assistive technologies.
 
 ## Objective
 
-Implement Vitest unit tests for the helper functions within `src/lib/firestore.ts`.
+Implement exactly one bounded task from Phase 2 of the roadmap: Add `aria-label` attributes to all icon-only buttons throughout the application.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but prefer minimal changes)
-- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `src/` (except `src/main.tsx`)
+- `src/components/` (modifying existing component JSX)
+- `src/pages/` (modifying existing page JSX)
+- `src/App.css` (CSS improvements, if any minor layout shifts occur, though none are expected for this task)
 
 ## Forbidden Scope
 
@@ -21,17 +23,12 @@ Implement Vitest unit tests for the helper functions within `src/lib/firestore.t
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- Any files outside the explicitly allowed scope.
 
 ## Requirements
 
-- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
-- Add unit tests for at least two key helper functions in `src/lib/firestore.ts`. Examples include functions for adding, updating, or deleting nail items.
-- Use `vitest` for testing and `vi.mock` for mocking Firebase SDK dependencies as necessary.
-- Ensure the tests cover basic functionality and edge cases.
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Run `npm test` and ensure all new tests pass.
+- Prefer adding tests when touching `src/lib/` files (not applicable for this UI-focused task).
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -41,3 +38,36 @@ Implement Vitest unit tests for the helper functions within `src/lib/firestore.t
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+
+## Worker prompt
+
+Your task is to enhance the accessibility of the `nail-report` application by adding `aria-label` attributes to all icon-only buttons. These labels are crucial for users of assistive technologies to understand the purpose of buttons that do not have visible text.
+
+**Instructions:**
+
+1.  **Identify Icon-Only Buttons:** Navigate through the application's UI components and pages to find all `<button>` elements that primarily contain an icon (SVG, image, or icon component) and lack visible text content. This includes buttons for actions like "edit", "delete", "share", "add", "close", "navigate", etc.
+2.  **Add `aria-label` Attribute:** For each identified icon-only button, add an `aria-label` attribute directly to the `<button>` tag.
+3.  **Provide Meaningful Labels:** The value of the `aria-label` should be a concise and descriptive phrase that clearly communicates the button's function.
+    *   Examples:
+        *   For a delete icon button: `aria-label="Delete item"`
+        *   For an edit icon button: `aria-label="Edit item"`
+        *   For a share icon button: `aria-label="Share"`
+        *   For a back arrow icon button: `aria-label="Go back"`
+        *   For a close 'X' icon button: `aria-label="Close dialog"`
+4.  **Preserve Functionality:** Ensure that adding `aria-label` attributes does not alter the visual appearance or existing JavaScript functionality of the buttons.
+5.  **Focus on Primary UI:** Prioritize buttons in core navigation, item lists, and dialogs.
+
+**Acceptance Criteria:**
+
+- All prominent icon-only buttons within `src/components/` and `src/pages/` files have a descriptive `aria-label` attribute.
+- The application's visual layout and interactive behavior remain unchanged.
+- `npm run build` completes successfully.
+- `npm run lint` reports no new errors.
+
+**Required Test Commands:**
+
+```bash
+npm install # Ensure all dependencies are up-to-date
+npm run build
+npm run lint
+```
