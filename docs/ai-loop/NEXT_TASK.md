@@ -1,19 +1,20 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The `nail-report` application is currently in Phase 2 of its roadmap, focusing on improving stability, test coverage, and user experience. This task specifically addresses accessibility improvements by ensuring interactive elements are properly labeled for assistive technologies.
+The application is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses the "Test coverage" goal by adding unit tests for core helper functions.
 
 ## Objective
 
-Implement exactly one bounded task from Phase 2 of the roadmap: Add `aria-label` attributes to all icon-only buttons throughout the application.
+Implement unit tests for helper functions in `src/lib/firestore.ts` using Vitest, ensuring proper mocking of the Firebase SDK.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/components/` (modifying existing component JSX)
-- `src/pages/` (modifying existing page JSX)
-- `src/App.css` (CSS improvements, if any minor layout shifts occur, though none are expected for this task)
+- `src/lib/firestore.ts` (for minor adjustments to enable testability if absolutely necessary, but primarily for import)
+- `src/__tests__/lib/firestore.test.ts` (new file)
+- `src/__tests__/` (for adding new test files)
+- `vite.config.ts` (for Vitest configuration if necessary, but prefer existing setup)
 
 ## Forbidden Scope
 
@@ -23,12 +24,18 @@ Implement exactly one bounded task from Phase 2 of the roadmap: Add `aria-label`
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
+- `src/App.css` (not relevant for this task)
+- Any other `src/lib/` files not directly related to `firestore.ts` testing.
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files (not applicable for this UI-focused task).
+- Create `src/__tests__/lib/firestore.test.ts` to house the new tests.
+- Use `vitest` for testing.
+- Effectively mock the Firebase Firestore SDK (e.g., `getFirestore`, `collection`, `doc`, `getDocs`, `getDoc`, `addDoc`, `updateDoc`, `deleteDoc`) using `vi.mock`.
+- Focus on testing the core CRUD helper functions within `src/lib/firestore.ts`, such as `createNailItem`, `updateNailItem`, `deleteNailItem`, `getNailItems`, `getNailItem`, and potentially `getPublicShare` if its logic is distinct enough.
+- Aim for clear, isolated unit tests.
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -38,36 +45,4 @@ Implement exactly one bounded task from Phase 2 of the roadmap: Add `aria-label`
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
-## Worker prompt
-
-Your task is to enhance the accessibility of the `nail-report` application by adding `aria-label` attributes to all icon-only buttons. These labels are crucial for users of assistive technologies to understand the purpose of buttons that do not have visible text.
-
-**Instructions:**
-
-1.  **Identify Icon-Only Buttons:** Navigate through the application's UI components and pages to find all `<button>` elements that primarily contain an icon (SVG, image, or icon component) and lack visible text content. This includes buttons for actions like "edit", "delete", "share", "add", "close", "navigate", etc.
-2.  **Add `aria-label` Attribute:** For each identified icon-only button, add an `aria-label` attribute directly to the `<button>` tag.
-3.  **Provide Meaningful Labels:** The value of the `aria-label` should be a concise and descriptive phrase that clearly communicates the button's function.
-    *   Examples:
-        *   For a delete icon button: `aria-label="Delete item"`
-        *   For an edit icon button: `aria-label="Edit item"`
-        *   For a share icon button: `aria-label="Share"`
-        *   For a back arrow icon button: `aria-label="Go back"`
-        *   For a close 'X' icon button: `aria-label="Close dialog"`
-4.  **Preserve Functionality:** Ensure that adding `aria-label` attributes does not alter the visual appearance or existing JavaScript functionality of the buttons.
-5.  **Focus on Primary UI:** Prioritize buttons in core navigation, item lists, and dialogs.
-
-**Acceptance Criteria:**
-
-- All prominent icon-only buttons within `src/components/` and `src/pages/` files have a descriptive `aria-label` attribute.
-- The application's visual layout and interactive behavior remain unchanged.
-- `npm run build` completes successfully.
-- `npm run lint` reports no new errors.
-
-**Required Test Commands:**
-
-```bash
-npm install # Ensure all dependencies are up-to-date
-npm run build
-npm run lint
 ```
