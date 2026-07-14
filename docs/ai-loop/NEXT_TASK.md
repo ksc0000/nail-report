@@ -1,20 +1,18 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The application is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses the "Test coverage" goal by adding unit tests for core helper functions.
+The application needs to improve its user experience during data loading. Currently, when the nail item list is fetching data, there is no visual indicator for the user. Implementing a loading skeleton will provide a better perceived performance.
 
 ## Objective
 
-Implement unit tests for helper functions in `src/lib/firestore.ts` using Vitest, ensuring proper mocking of the Firebase SDK.
+Implement a simple loading skeleton component that displays while the nail item list data is being fetched. This should replace the empty space or previous content with a placeholder animation during loading.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for minor adjustments to enable testability if absolutely necessary, but primarily for import)
-- `src/__tests__/lib/firestore.test.ts` (new file)
-- `src/__tests__/` (for adding new test files)
-- `vite.config.ts` (for Vitest configuration if necessary, but prefer existing setup)
+- `src/App.tsx` (to integrate the skeleton and manage loading state)
+- `src/App.css` (for skeleton styling)
+- `src/components/` (if a new skeleton component is created)
 
 ## Forbidden Scope
 
@@ -24,18 +22,14 @@ Implement unit tests for helper functions in `src/lib/firestore.ts` using Vitest
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/App.css` (not relevant for this task)
-- Any other `src/lib/` files not directly related to `firestore.ts` testing.
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
+- The skeleton should be visually distinct from actual list items.
+- It should display only when the nail item list is actively loading.
 - Run `npm run build && npm run lint` before finishing.
-- Create `src/__tests__/lib/firestore.test.ts` to house the new tests.
-- Use `vitest` for testing.
-- Effectively mock the Firebase Firestore SDK (e.g., `getFirestore`, `collection`, `doc`, `getDocs`, `getDoc`, `addDoc`, `updateDoc`, `deleteDoc`) using `vi.mock`.
-- Focus on testing the core CRUD helper functions within `src/lib/firestore.ts`, such as `createNailItem`, `updateNailItem`, `deleteNailItem`, `getNailItems`, `getNailItem`, and potentially `getPublicShare` if its logic is distinct enough.
-- Aim for clear, isolated unit tests.
+- Prefer adding tests when touching `src/lib/` files. (Not applicable for this UI task)
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -45,4 +39,3 @@ Implement unit tests for helper functions in `src/lib/firestore.ts` using Vitest
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-```
