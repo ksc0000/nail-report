@@ -2,56 +2,41 @@
 
 ## Context
 
-The product roadmap for nail-report is focused on improving stability, test coverage, and UX in Phase 2. This includes adding user-friendly error handling. Your current task is to implement the foundational `ErrorBanner` component.
+The product roadmap focuses on improving stability, test coverage, and UX in Phase 2. This task specifically targets accessibility improvements. The current state shows that no specific accessibility tasks have been completed yet.
 
 ## Objective
 
-Create a reusable `ErrorBanner` component to display user-friendly error messages and integrate it into `App.tsx` to demonstrate its basic functionality with a static error message.
+Improve accessibility by adding descriptive `aria-label` attributes to all icon-only buttons throughout the application.
 
 ## Allowed Scope
 
--   `src/components/` (new file for `ErrorBanner.tsx`)
--   `src/App.tsx` (for integration and demonstration)
--   `src/App.css` (for basic styling of the banner)
--   Any other `src/` file *if strictly necessary* and within the diff limit, excluding `src/main.tsx`.
+- `src/components/` (or other component files containing icon buttons)
+- `src/App.css` (for minor style adjustments, if necessary)
+- `src/` (except `src/main.tsx`)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   Keep diff ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing.
--   Prefer adding tests when touching `src/lib/` files (not applicable here, as no `src/lib/` files are touched).
--   Report follow-up items as comments, not additional code.
+- Identify all `<button>` elements that visually contain only an icon and lack a visible text label.
+- For each identified icon-only button, add an `aria-label` attribute with a concise, descriptive text that explains the button's purpose (e.g., `aria-label="Delete item"`, `aria-label="Edit tag"`).
+- Ensure the `aria-label` provides sufficient context for screen reader users.
+- Do not add `aria-label` to buttons that already have visible text or an appropriate `alt` attribute for an image inside (though icon buttons usually use SVG or font icons).
+- Keep diff ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
-
-## Worker Prompt
-
-Your task is to implement a reusable `ErrorBanner` component and integrate it to display a static error message in the main application component.
-
-1.  **Create `src/components/ErrorBanner.tsx`**:
-    *   This component should accept a `message: string` prop to display the error text.
-    *   It should also optionally accept an `onRetry: () => void` prop. If `onRetry` is provided, a "Retry" button should be rendered within the banner.
-    *   Implement basic styling for the banner and its elements.
-2.  **Add Styling to `src/App.css`**:
-    *   Include minimal CSS in `src/App.css` to style the `ErrorBanner` component. Ensure it's visually distinct (e.g., red background, white text) and provides a clear alert to the user.
-3.  **Integrate into `src/App.tsx` for Demonstration**:
-    *   Modify `src/App.tsx` to include the `ErrorBanner` component.
-    *   For this task, the banner should display a *static, hardcoded error message* (e.g., "An unexpected error occurred. Please try again later.") and optionally a "Retry" button. You can use a local `useState` hook (e.g., `showErrorBanner`, initialized to `true` or toggled by a simple button) to control its visibility for demonstration purposes. The goal is to verify the component renders correctly and styles are applied.
-    *   **Do not** connect it to actual Firebase error handling logic in this task to keep the diff small and focused. That will be a follow-up task.
-
-The focus is on creating the component, styling it, and proving its basic render functionality within `App.tsx`.
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
