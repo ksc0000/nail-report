@@ -2,18 +2,17 @@
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. This task initiates the test coverage effort by adding unit tests for core Firebase utility functions.
+The project is in Phase 2, focusing on improving stability, test coverage, and UX. A key objective for Phase 2.1 is to enhance test coverage for core utility functions. This task specifically targets the `firestore.ts` helper functions. Vitest is already configured for the project.
 
 ## Objective
 
-Implement unit tests for the `addNailItem` and `getNailItems` functions located in `src/lib/firestore.ts` using Vitest. Mock the Firebase SDK to ensure tests are isolated and run efficiently.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest, ensuring proper mocking of the Firebase SDK.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications only if necessary for testability, minor refactors)
-- `src/__tests__/lib/firestore.test.ts` (new file for tests)
-- `vite.config.ts` (if Vitest configuration is required)
-- `package.json` (only to add `test` script if missing, no new dependencies)
+- `src/lib/firestore.ts` (for reference)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `src/__tests__/mocks/firestore.mock.ts` (new file for Firebase SDK mocks, if needed)
 
 ## Forbidden Scope
 
@@ -31,94 +30,41 @@ Implement unit tests for the `addNailItem` and `getNailItems` functions located 
 - Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
-## Output Format
+## Worker prompt
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+Your task is to add a new test file, `src/__tests__/firestore.test.ts`, and write unit tests for a selection of functions in `src/lib/firestore.ts`.
 
-### Worker prompt
+Focus on testing the following functions, ensuring you mock the Firebase Firestore SDK appropriately using `vitest.mock`:
 
-Your task is to add unit tests for the `addNailItem` and `getNailItems` functions in `src/lib/firestore.ts`.
+1.  `addNailItem`
+2.  `getNailItem`
+3.  `updateNailItem`
+4.  `deleteNailItem`
+5.  `getNailItems`
+6.  `addShare`
+7.  `getShare`
+8.  `updateShare`
+9.  `deleteShare`
 
-1.  **Create a new test file:** Create `src/__tests__/lib/firestore.test.ts`.
-2.  **Set up Vitest environment:**
-    *   Configure Vitest to mock the Firebase Firestore SDK (e.g., using `vi.mock('firebase/firestore')`) to prevent actual Firebase calls during tests.
-    *   Ensure that functions like `collection`, `addDoc`, `getDocs`, `query`, `orderBy`, `where`, and `doc` (if used internally by `addNailItem`/`getNailItems`) are mocked to return predictable values.
-3.  **Write tests for `addNailItem`:**
-    *   Test successful addition of a nail item, verifying that `addDoc` is called with the correct collection and data.
-    *   Test error handling (e.g., if `addDoc` throws an error).
-4.  **Write tests for `getNailItems`:**
-    *   Test successful retrieval of multiple nail items, ensuring `getDocs` and `query` are called correctly and that the returned data is transformed as expected.
-    *   Test retrieving items for a specific user ID.
-    *   Test error handling (e.g., if `getDocs` throws an error).
-5.  **Run tests:** Use `npm run test` (or `vitest`) to ensure all new tests pass.
+*   **Mocking:** Create mock implementations for Firestore methods (e.g., `getFirestore`, `collection`, `doc`, `getDoc`, `setDoc`, `updateDoc`, `deleteDoc`, `query`, `onSnapshot`). You may create a dedicated mock file, e.g., `src/__tests__/mocks/firestore.mock.ts`, if it helps organize the mocks.
+*   **Assertions:** Assert that the Firestore SDK methods are called with the correct arguments and that the helper functions return the expected values or handle errors as appropriate.
+*   **Coverage:** Aim for at least basic happy-path coverage for each specified function. Error path testing can be a follow-up task.
 
-**Example mocking strategy:**
+## Acceptance Criteria
 
-```typescript
-// src/__tests__/lib/firestore.test.ts
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { collection, addDoc, getDocs, query, orderBy, where } from 'firebase/firestore';
-import { addNailItem, getNailItems } from '../lib/firestore'; // Adjust path
+- A new test file `src/__tests__/firestore.test.ts` is created.
+- Unit tests are implemented for `addNailItem`, `getNailItem`, `updateNailItem`, `deleteNailItem`, `getNailItems`, `addShare`, `getShare`, `updateShare`, `deleteShare` functions from `src/lib/firestore.ts`.
+- The Firebase Firestore SDK is mocked correctly using `vitest.mock`.
+- All added tests pass successfully.
 
-// Mock Firebase Firestore functions
-vi.mock('firebase/firestore', () => ({
-  getFirestore: vi.fn(() => ({})), // Mock getFirestore if used
-  collection: vi.fn(() => ({ type: 'collectionRef', path: 'nailItems' })),
-  addDoc: vi.fn(async () => ({ id: 'new-id-123', get: () => ({ /* mock data */ }) })),
-  getDocs: vi.fn(async () => ({
-    empty: false,
-    docs: [
-      { id: 'doc1', data: () => ({ userId: 'user1', tag: 'red', createdAt: new Date() }) },
-      { id: 'doc2', data: () => ({ userId: 'user1', tag: 'blue', createdAt: new Date() }) },
-    ],
-  })),
-  query: vi.fn(() => ({ type: 'query' })),
-  orderBy: vi.fn(() => ({ type: 'orderedQuery' })),
-  where: vi.fn(() => ({ type: 'filteredQuery' })),
-  // Mock other Firestore functions as needed
-}));
+## Required Test Commands
 
-describe('firestore helpers', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe('addNailItem', () => {
-    it('should add a new nail item to the collection', async () => {
-      const mockItem = { userId: 'testUser', tag: 'green', imageUrl: 'url', notes: 'test' };
-      const itemId = await addNailItem(mockItem);
-
-      expect(collection).toHaveBeenCalledWith(expect.any(Object), 'nailItems');
-      expect(addDoc).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({
-        ...mockItem,
-        createdAt: expect.any(Date),
-      }));
-      expect(itemId).toBe('new-id-123');
-    });
-
-    // Add error handling test
-  });
-
-  describe('getNailItems', () => {
-    it('should retrieve nail items for a given user', async () => {
-      const items = await getNailItems('user1');
-
-      expect(collection).toHaveBeenCalledWith(expect.any(Object), 'nailItems');
-      expect(query).toHaveBeenCalled();
-      expect(where).toHaveBeenCalledWith('userId', '==', 'user1');
-      expect(orderBy).toHaveBeenCalledWith('createdAt', 'desc');
-      expect(getDocs).toHaveBeenCalled();
-      expect(items).toEqual([
-        { id: 'doc1', userId: 'user1', tag: 'red', createdAt: expect.any(Date) },
-        { id: 'doc2', userId: 'user1', tag: 'blue', createdAt: expect.any(Date) },
-      ]);
-    });
-
-    // Add error handling test
-  });
-});
+```bash
+npm test
+npm run build
+npm run lint
 ```
+
+## Suggested next task
+
+Add loading skeleton to nail item list (`src/App.tsx`).
