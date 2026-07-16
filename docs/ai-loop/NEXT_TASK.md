@@ -2,18 +2,17 @@
 
 ## Context
 
-The current focus is on Phase 2 of the roadmap, which aims to improve stability, test coverage, and UX. This task specifically addresses an accessibility improvement from section 2.4.
+The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. The current task is to address "2.1 Test coverage" by adding unit tests for core helper functions.
 
 ## Objective
 
-Implement accessibility improvements by adding `aria-label` attributes to all icon-only buttons throughout the application.
+Implement unit tests for the functions within `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
-- `src/__tests__/` (new test files)
-- `src/App.css` (CSS improvements)
+- `src/lib/firestore.ts` (for minor adjustments to enable testing, if necessary)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `vite.config.ts` (to configure Vitest if needed)
 
 ## Forbidden Scope
 
@@ -39,29 +38,37 @@ Implement accessibility improvements by adding `aria-label` attributes to all ic
 - Known issues or limitations
 - Suggested next task
 
+---
+
 ## Worker Prompt
 
-Your task is to improve the accessibility of the `nail-report` application by adding `aria-label` attributes to all interactive elements that consist solely of an icon (e.g., buttons with only an SVG icon and no visible text).
+Your task is to add unit tests for the Firebase Firestore helper functions located in `src/lib/firestore.ts`.
 
-**Steps:**
+1.  **Create a new test file**: Create `src/__tests__/firestore.test.ts`.
+2.  **Set up Vitest**: Ensure Vitest is correctly configured to run tests (if `vite.config.ts` needs adjustment for `test.environment`, `test.globals`, or `test.setupFiles`, make those changes).
+3.  **Mock Firebase SDK**: Use `vi.mock` to mock the Firebase Firestore SDK functions that `src/lib/firestore.ts` depends on (e.g., `getFirestore`, `collection`, `doc`, `getDoc`, `setDoc`, `updateDoc`, `deleteDoc`, `query`, `getDocs`, `where`). Focus on mocking the *behavior* of these functions as needed for the tests, rather than the entire SDK.
+4.  **Write unit tests**:
+    *   Focus on testing at least two key functions from `src/lib/firestore.ts`. Good candidates include:
+        *   `createNailItem`
+        *   `getNailItems` (or a related function that fetches a list)
+        *   `updateNailItem`
+        *   `deleteNailItem`
+        *   `getPublicShare`
+        *   `createPublicShare`
+    *   Ensure tests cover successful execution and basic error cases (e.g., a function throwing an error due to a mocked Firestore failure).
+    *   Verify that the functions correctly interact with the mocked Firestore (e.g., calling `setDoc` with the correct data, `getDocs` returning expected data).
+5.  **Run tests**: Execute `npm test` or `vitest` to ensure all new tests pass.
 
-1.  **Identify Icon-Only Buttons:** Traverse through the React components in the `src/` directory. Look for `<button>` or similar interactive elements that visually present only an icon (e.g., `<button><svg>...</svg></button>`, `<button><IconComponent /></button>`).
-2.  **Add `aria-label`:** For each identified icon-only button, add a descriptive `aria-label` attribute.
-    *   The `aria-label` should clearly state the button's purpose for screen reader users.
-    *   **Example:** If a button contains an SVG of a trash can icon and its function is to delete an item, add `aria-label="Delete item"`.
-    *   Prioritize common actions such as "Edit", "Delete", "Add", "Share", "Close", "Back", "Menu", "Filter", etc.
-3.  **Ensure Consistency:** Use concise and clear labels.
-4.  **Verify:** After making changes, ensure the application still functions correctly.
+**Acceptance Criteria**:
+- A new file `src/__tests__/firestore.test.ts` exists.
+- At least two functions from `src/lib/firestore.ts` are covered by unit tests.
+- The tests correctly mock Firebase Firestore dependencies.
+- All new tests pass when running `npm test`.
 
-**Acceptance Criteria:**
-
-*   All icon-only buttons in the application have a meaningful `aria-label` attribute.
-*   No new npm dependencies are introduced.
-*   The total diff for the task is less than or equal to 150 lines.
-
-**Required Test Commands:**
-
+**Required Test Commands**:
 ```bash
+npm install # if any vitest config changes require
+npm test
 npm run build
 npm run lint
 ```
