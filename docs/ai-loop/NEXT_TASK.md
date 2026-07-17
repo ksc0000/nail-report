@@ -2,65 +2,58 @@
 
 ## Context
 
-The AI Loop is progressing through Phase 2 of the roadmap, focusing on improving stability, test coverage, and UX. The current task aims to enhance error handling user experience.
+The product roadmap for `nail-report` is in Phase 2, focusing on stability, test coverage, and UX improvements. This task specifically addresses the "Test coverage" goal. Vitest is designated as the test runner, and Firebase SDK mocking using `vi.mock` is a key technique.
 
 ## Objective
 
-Implement a reusable `ErrorBanner` React component and integrate it into `src/App.tsx` to display user-friendly messages when an error occurs during the initial fetching of nail items from Firestore.
+Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`, focusing on mocking Firebase SDK interactions.
 
 ## Allowed Scope
 
-- `src/components/ErrorBanner.tsx` (new file)
-- `src/App.tsx` (modify to manage and display error state)
-- `src/App.css` (add basic styling for the banner component)
-- Other `src/` files for minor adjustments necessary for error propagation (e.g., if a fetch utility needs to throw or return an error for `App.tsx` to catch).
-- Any existing test files in `src/__tests__/` if modifications are needed (though not expected for this task).
+-   `src/lib/firestore.ts` (for minor refactoring to improve testability, if necessary)
+-   `src/__tests__/` (for new test files, e.g., `src/__tests__/firestore.test.ts`)
+-   `package.json` (only to add a `test` script if not already present for Vitest, no new dependencies)
+-   `vite.config.ts` (for minor Vitest configuration, if necessary)
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
-- Firebase deploy commands
-- Secrets and credentials
+-   `src/main.tsx` (entry point — do not modify)
+-   `commands/` (PowerShell scripts — do not modify)
+-   `firestore.rules`, `storage.rules` (require human approval)
+-   `package.json` deps (no new npm packages without human approval)
+-   Firebase deploy commands
+-   Secrets and credentials
+-   Any file not explicitly listed in "Allowed Scope"
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
+-   Keep diff ≤ 150 lines.
+-   Run `npm run build && npm run lint` before finishing.
+-   Prefer adding tests when touching `src/lib/` files.
+-   Report follow-up items as comments, not additional code.
 
 ## Worker Prompt
 
-1.  **Create `src/components/ErrorBanner.tsx`**:
-    *   Implement a new functional React component named `ErrorBanner`.
-    *   This component should accept `message: string` and `onDismiss: () => void` as props.
-    *   It should display the `message` prominently.
-    *   Include a dismiss button (e.g., an "X" icon or text button) that calls `onDismiss` when clicked.
+Implement unit tests for the helper functions in `src/lib/firestore.ts`.
 
-2.  **Integrate into `src/App.tsx`**:
-    *   Add state to `src/App.tsx` to manage a potential error message (e.g., `const [fetchError, setFetchError] = useState<string | null>(null);`).
-    *   Locate the initial data fetching logic for nail items in `App.tsx`.
-    *   Modify this logic to catch any errors that occur during the fetch.
-    *   If an error occurs, set the `fetchError` state with a user-friendly message (e.g., "Failed to load nail items. Please check your internet connection or try again later.").
-    *   Conditionally render the `ErrorBanner` component at an appropriate place in `App.tsx` when `fetchError` is not null.
-    *   Pass the `fetchError` message to the `ErrorBanner`'s `message` prop.
-    *   Pass a function to the `onDismiss` prop that clears the `fetchError` state (e.g., `() => setFetchError(null)`).
+1.  **Create a test file:** Create a new file named `src/__tests__/firestore.test.ts`.
+2.  **Mock Firebase SDK:** Utilize `vitest` and `vi.mock` to mock Firestore SDK methods (e.g., `collection`, `doc`, `getDocs`, `setDoc`, `updateDoc`, `deleteDoc`) to prevent actual database calls during tests. Focus on mocking the behavior expected by the helper functions in `src/lib/firestore.ts`.
+3.  **Test helper functions:** Write unit tests for the core CRUD helper functions within `src/lib/firestore.ts` that interact with the mocked Firestore. Examples include functions for adding, fetching, updating, and deleting `nailItems`.
+4.  **Verify interactions:** Ensure your tests assert that the mocked Firestore functions are called with the correct arguments and that the helper functions return expected values.
+5.  **Add `test` script (if needed):** If `package.json` does not already have a `test` script that runs Vitest, add one (e.g., `"test": "vitest"`).
+6.  **Ensure passing tests:** All new tests must pass.
 
-3.  **Add Styling to `src/App.css`**:
-    *   Add minimal, basic CSS rules to `src/App.css` to style the `ErrorBanner` component.
-    *   The banner should be visually distinct (e.g., red background, white text, padding) and clearly visible at the top or a prominent position in the layout.
-    *   Ensure the dismiss button is clickable and visually clear.
+**Acceptance Criteria:**
+-   A new file `src/__tests__/firestore.test.ts` exists containing unit tests for `src/lib/firestore.ts` helper functions.
+-   Firebase SDK interactions are mocked using Vitest's mocking capabilities.
+-   Tests cover at least one add, one fetch (e.g., `getAllNailItems`), one update, and one delete operation via the helper functions.
+-   All new tests pass successfully.
+-   The changes adhere to the line diff limit.
 
-4.  **Error Handling**:
-    *   Focus on handling errors during the *initial fetch* of nail items specifically within `src/App.tsx`. Do not implement general error handling for all Firebase operations across the entire application in this task.
-
-## Output Format
-
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+**Required test commands:**
+```bash
+npm install # Ensure all dependencies are installed
+npm run build
+npm run lint
+npm test # To run the new Vitest tests
+```
