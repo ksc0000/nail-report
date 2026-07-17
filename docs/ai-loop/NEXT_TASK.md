@@ -2,17 +2,19 @@
 
 ## Context
 
-The product roadmap outlines Phase 2, which focuses on improving stability, test coverage, and UX. The current state indicates that Phase 2 is active, and a first substantive task is pending. The goal is to incrementally improve the application by addressing a core aspect of stability: test coverage for critical helper functions.
+The AI Loop is progressing through Phase 2 of the roadmap, focusing on improving stability, test coverage, and UX. The current task aims to enhance error handling user experience.
 
 ## Objective
 
-Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. This task directly addresses "2.1 Test coverage" from the roadmap.
+Implement a reusable `ErrorBanner` React component and integrate it into `src/App.tsx` to display user-friendly messages when an error occurs during the initial fetching of nail items from Firestore.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor modifications if absolutely necessary for testability, keep diff small)
-- `src/lib/__tests__/firestore.test.ts` (new file)
-- `src/` (other existing files only if strictly required for testing setup, e.g., `vitest.config.ts` if not already configured for mocks, but prefer to assume Vitest is setup)
+- `src/components/ErrorBanner.tsx` (new file)
+- `src/App.tsx` (modify to manage and display error state)
+- `src/App.css` (add basic styling for the banner component)
+- Other `src/` files for minor adjustments necessary for error propagation (e.g., if a fetch utility needs to throw or return an error for `App.tsx` to catch).
+- Any existing test files in `src/__tests__/` if modifications are needed (though not expected for this task).
 
 ## Forbidden Scope
 
@@ -30,6 +32,31 @@ Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. Th
 - Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
+## Worker Prompt
+
+1.  **Create `src/components/ErrorBanner.tsx`**:
+    *   Implement a new functional React component named `ErrorBanner`.
+    *   This component should accept `message: string` and `onDismiss: () => void` as props.
+    *   It should display the `message` prominently.
+    *   Include a dismiss button (e.g., an "X" icon or text button) that calls `onDismiss` when clicked.
+
+2.  **Integrate into `src/App.tsx`**:
+    *   Add state to `src/App.tsx` to manage a potential error message (e.g., `const [fetchError, setFetchError] = useState<string | null>(null);`).
+    *   Locate the initial data fetching logic for nail items in `App.tsx`.
+    *   Modify this logic to catch any errors that occur during the fetch.
+    *   If an error occurs, set the `fetchError` state with a user-friendly message (e.g., "Failed to load nail items. Please check your internet connection or try again later.").
+    *   Conditionally render the `ErrorBanner` component at an appropriate place in `App.tsx` when `fetchError` is not null.
+    *   Pass the `fetchError` message to the `ErrorBanner`'s `message` prop.
+    *   Pass a function to the `onDismiss` prop that clears the `fetchError` state (e.g., `() => setFetchError(null)`).
+
+3.  **Add Styling to `src/App.css`**:
+    *   Add minimal, basic CSS rules to `src/App.css` to style the `ErrorBanner` component.
+    *   The banner should be visually distinct (e.g., red background, white text, padding) and clearly visible at the top or a prominent position in the layout.
+    *   Ensure the dismiss button is clickable and visually clear.
+
+4.  **Error Handling**:
+    *   Focus on handling errors during the *initial fetch* of nail items specifically within `src/App.tsx`. Do not implement general error handling for all Firebase operations across the entire application in this task.
+
 ## Output Format
 
 - Summary of what changed
@@ -37,56 +64,3 @@ Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. Th
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
-## Worker prompt
-
-### Task: Implement Vitest unit tests for `src/lib/firestore.ts`
-
-**Detailed Instructions:**
-
-1.  **Create a New Test File:**
-    *   Create a new file at `src/lib/__tests__/firestore.test.ts`.
-
-2.  **Inspect `src/lib/firestore.ts`:**
-    *   Identify the key exported helper functions responsible for interacting with Firestore (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`, and any related data transformation or utility functions).
-
-3.  **Mock Firebase SDK:**
-    *   Utilize `vi.mock` from Vitest to mock Firebase Firestore SDK functions. This is crucial for isolating the unit under test and preventing actual database calls during testing.
-    *   Mocks should simulate successful responses and error conditions where applicable, especially for `getDoc`, `setDoc`, `updateDoc`, `deleteDoc`, `getDocs`, `query`, etc.
-
-4.  **Write Unit Tests:**
-    *   For each identified helper function in `src/lib/firestore.ts`, write at least one unit test case.
-    *   **Focus on happy paths:** Ensure functions correctly handle typical inputs and produce expected outputs.
-    *   **Consider error paths:** If the functions include error handling (e.g., try-catch blocks), write tests that simulate Firestore errors (e.g., rejected promises from mocked Firebase calls) and verify the helper functions handle them gracefully (e.g., throw a custom error, return `null`, log an error).
-    *   Use `expect` assertions to verify function behavior, return values, and side effects (like calls to mocked Firebase functions).
-
-5.  **Example Testing Targets (Jules should verify actual functions in `firestore.ts`):**
-    *   `addNailItem`: Test successful addition, ensure correct data is passed to Firestore mock.
-    *   `getNailItems`: Test successful retrieval of a list, ensure data transformation is correct. Test behavior when no items are found.
-    *   `getNailItemById`: Test successful retrieval of a single item, test behavior when item not found.
-    *   `updateNailItem`: Test successful update, ensure correct ID and data are passed.
-    *   `deleteNailItem`: Test successful deletion, ensure correct ID is passed.
-
-6.  **Maintain Test Isolation:**
-    *   Each test should be independent and not rely on the state set up by previous tests. Use `beforeEach` or `afterEach` for cleanup if necessary (though for mocking, `vi.mock` usually handles this well).
-
-7.  **Review `vitest.config.ts` (if it exists):**
-    *   Ensure Vitest is correctly configured to find and run tests in `src/lib/__tests__/`. If a `vitest.config.ts` file doesn't exist, assume default Vitest behavior or create a minimal one to enable mocking if needed (but prefer to assume it's already set up). **Do not add new npm dependencies for Vitest configuration.**
-
-### Acceptance Criteria:
-
-*   A new file `src/lib/__tests__/firestore.test.ts` is created.
-*   This file contains unit tests for at least the primary CRUD-related helper functions in `src/lib/firestore.ts`.
-*   Firebase Firestore SDK functions are effectively mocked to prevent actual database calls.
-*   Tests cover both successful execution and simulated error conditions where appropriate.
-*   All new tests pass when `npm run test` is executed.
-*   The overall PR diff is ≤ 150 lines.
-
-### Required Test Commands:
-
-```bash
-npm install # Ensure all dependencies are in place
-npm run build
-npm run lint
-npm run test # Execute the new Vitest tests
-```
