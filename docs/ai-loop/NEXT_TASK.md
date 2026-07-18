@@ -1,18 +1,20 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This task initiates the test coverage efforts by adding unit tests for core Firebase helper functions.
+The application needs to improve its accessibility. This task focuses on enhancing the experience for users who rely on screen readers by providing meaningful labels for interactive elements.
 
 ## Objective
 
-Implement unit tests for the helper functions in `src/lib/firestore.ts` using Vitest. Focus on mocking Firebase SDK calls to test the logic of these functions in isolation.
+Identify all icon-only buttons throughout the application and add an appropriate `aria-label` attribute to each, clearly describing its function.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions for testing if necessary, but prefer to test existing exports)
-- `src/__tests__/firestore.test.ts` (new file for unit tests)
-- `vite.config.ts` (minimal modifications if absolutely required for Vitest setup, but assume Vitest is largely configured as per roadmap)
+- `src/` (except `src/main.tsx`)
+- `src/components/` (most likely location for button modifications)
+- `src/App.css` (if minor styling adjustments are needed to accommodate labels, though unlikely)
+- `src/__tests__/` (if new tests are warranted for changed components)
 
 ## Forbidden Scope
 
@@ -26,77 +28,62 @@ Implement unit tests for the helper functions in `src/lib/firestore.ts` using Vi
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create `src/__tests__/firestore.test.ts`.
-- Mock Firebase Firestore SDK interactions (e.g., `getFirestore`, `collection`, `doc`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`). Use `vi.mock` from Vitest.
-- Write at least one unit test for each major CRUD operation function in `src/lib/firestore.ts` (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`).
-- Ensure tests run successfully without actual Firebase calls.
 - Run `npm run build && npm run lint` before finishing.
+- Systematically locate all `<button>` elements that primarily display an icon (e.g., using `react-icons` or similar) without accompanying visible text.
+- For each identified icon-only button, add an `aria-label` attribute.
+- The `aria-label` text must be descriptive of the button's action (e.g., "Delete item", "Edit profile", "Close dialog", "Add new tag").
+- Ensure existing functionality and visual layout of buttons are not negatively impacted.
+- No new npm dependencies should be added.
 
-## Worker prompt
+## Output Format
 
-Your task is to add unit tests for the functions defined in `src/lib/firestore.ts`.
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
 
-1.  **Create a new test file:** `src/__tests__/firestore.test.ts`.
-2.  **Set up Vitest environment:** Ensure Vitest is configured to run tests. If `vite.config.ts` needs a minor adjustment to include `src/__tests__` in test discovery, make only that minimal change.
-3.  **Mock Firebase Firestore:** Use `vi.mock('firebase/firestore', ...)` to mock the Firebase Firestore SDK.
-    *   Mock functions like `getFirestore`, `collection`, `doc`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`, and any other Firestore-specific functions used in `src/lib/firestore.ts`.
-    *   Your mocks should return predictable values or resolve promises as expected by the functions under test.
-4.  **Write Unit Tests:**
-    *   For each function in `src/lib/firestore.ts` that interacts with Firestore (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`, `getNailItem`), write at least one `it` block.
-    *   Each test should verify the correct behavior of the function, assuming the Firebase SDK mocks behave as expected. Focus on what the function *does* (e.g., calls `addDoc` with specific data, returns formatted data).
-    *   Use `expect` assertions to check function return values, side effects on mocks, or that specific mock functions were called with correct arguments.
-5.  **Run tests:** Execute `npm test` (or `vitest`) to ensure all new tests pass.
-6.  **Lint and Build:** Run `npm run build && npm run lint` to verify code quality and build integrity.
+## Worker Prompt
 
-**Example structure for mocking (adapt as needed):**
+Okay, Jules, your task is to improve the accessibility of the `nail-report` application by adding `aria-label` attributes to all icon-only buttons.
 
-```typescript
-// src/__tests__/firestore.test.ts
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getFirestore, collection, doc, addDoc, getDocs, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
-import { addNailItem, getNailItems, updateNailItem, deleteNailItem, getNailItem } from '../lib/firestore'; // Adjust path if needed
+Here's a detailed breakdown:
 
-// Mock Firebase Firestore SDK
-vi.mock('firebase/firestore', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...actual,
-    getFirestore: vi.fn(() => ({})), // Mock getFirestore
-    collection: vi.fn(() => ({ type: 'collectionRef' })), // Mock collection
-    doc: vi.fn(() => ({ type: 'docRef' })), // Mock doc
-    addDoc: vi.fn((colRef, data) => Promise.resolve({ id: 'mock-id', data })),
-    getDocs: vi.fn(() => Promise.resolve({
-      docs: [
-        { id: 'item1', data: () => ({ name: 'Polish 1', tags: ['red'], createdAt: new Date() }) },
-        { id: 'item2', data: () => ({ name: 'Polish 2', tags: ['blue'], createdAt: new Date() }) },
-      ],
-      empty: false,
-    })),
-    getDoc: vi.fn(() => Promise.resolve({
-        id: 'mock-item-id',
-        exists: vi.fn(() => true),
-        data: vi.fn(() => ({ name: 'Single Polish', tags: ['green'], createdAt: new Date() })),
-    })),
-    updateDoc: vi.fn(() => Promise.resolve()),
-    deleteDoc: vi.fn(() => Promise.resolve()),
-  };
-});
+1.  **Identify Icon-Only Buttons:**
+    *   Thoroughly search through the React component files in `src/components/` and `src/` for `<button>` elements.
+    *   Focus on buttons that only render an icon (e.g., `<button><FaPlus /></button>`, `<button><img src="..." alt="" /></button>`). Buttons that have visible text labels do not need an `aria-label` unless the icon is part of a larger, more complex accessible name strategy (which is not the focus of this task).
 
-describe('firestore helpers', () => {
-  beforeEach(() => {
-    vi.clearAllMocks(); // Clear mocks before each test
-  });
+2.  **Add `aria-label` Attribute:**
+    *   For each identified icon-only button, add an `aria-label="Your descriptive text here"` attribute.
+    *   The `aria-label` should clearly and concisely describe the button's function to a screen reader user.
+        *   **Examples:**
+            *   A button with a trash icon for deleting an item might get `aria-label="Delete item"`.
+            *   A button with a pencil icon for editing might get `aria-label="Edit item"`.
+            *   A button with a plus icon for adding something might get `aria-label="Add new item"`.
+            *   A button with an 'X' icon for closing a modal might get `aria-label="Close dialog"`.
+            *   A button for sharing might get `aria-label="Share"` or `aria-label="Share item"`.
+            *   A button for uploading an image might get `aria-label="Upload image"`.
+            *   A button for a tag might get `aria-label="Add tag"`.
 
-  it('addNailItem should call addDoc with correct data', async () => {
-    const itemData = { name: 'New Polish', description: 'desc', imageUrl: 'url', tags: ['test'], createdAt: new Date() };
-    const result = await addNailItem('user1', itemData);
-    expect(addDoc).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'collectionRef' }), // Verify collection ref type
-      expect.objectContaining(itemData)
-    );
-    expect(result).toEqual('mock-id');
-  });
+3.  **Verify Functionality:**
+    *   Ensure that the addition of `aria-label`s does not break any existing button functionality or visual styling.
 
-  // Add more tests for getNailItems, updateNailItem, deleteNailItem, getNailItem
-});
+4.  **Lint and Build:**
+    *   Before concluding the task, run `npm run build` and `npm run lint` to catch any compilation or style issues.
+
+**Example of a change:**
+
+```diff
+// Before
+-<button className="icon-button">
+-  <FaTrashAlt />
+-</button>
+
+// After
+-<button className="icon-button" aria-label="Delete item">
+-  <FaTrashAlt />
+-</button>
+```
+
+Good luck!
 ```
