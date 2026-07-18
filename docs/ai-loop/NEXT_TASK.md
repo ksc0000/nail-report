@@ -2,17 +2,18 @@
 
 ## Context
 
-The application needs to improve its overall accessibility, starting with interactive elements.
+The current phase focuses on improving stability, test coverage, and user experience, with a specific emphasis on accessibility. This task aims to enhance the accessibility of the application for users relying on screen readers.
 
 ## Objective
 
-Identify and add an appropriate `aria-label` attribute to all icon-only buttons across the application. This will enhance usability for screen reader users by providing a descriptive name for each button's action.
+Identify all interactive elements that appear as "icon-only buttons" (i.e., buttons or elements with click handlers that display only an icon without visible text) and add a descriptive `aria-label` attribute to each. The `aria-label` should clearly describe the button's action to screen reader users.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/components/` (modifying existing component files)
-- `src/features/` (modifying existing feature component files)
+- `src/components/**/*.tsx` (or other component files)
+- `src/App.tsx` (if icon-only buttons exist there)
+- `src/layouts/**/*.tsx` (if icon-only buttons exist there)
+- `src/App.css` (for minor stylistic adjustments if necessary, but focus on `aria-label`)
 
 ## Forbidden Scope
 
@@ -26,8 +27,10 @@ Identify and add an appropriate `aria-label` attribute to all icon-only buttons 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
+- For each icon-only interactive element, add an `aria-label` attribute with a concise, descriptive text (e.g., `aria-label="Delete item"`, `aria-label="Edit tag"`, `aria-label="Upload image"`).
+- Ensure the `aria-label` is localized if the app supports i18n in the future (for now, use English).
+- Do not add `aria-label` to elements that already have visible, descriptive text or an `aria-labelledby` reference.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -37,17 +40,3 @@ Identify and add an appropriate `aria-label` attribute to all icon-only buttons 
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
-### Worker Prompt
-
-The goal is to improve accessibility for screen readers. Scan through the React components in `src/components/` and `src/features/`. For every `<button>` element that contains only an icon (e.g., `<button><Icon /></button>`) and no visible text, add an `aria-label="Descriptive Text"` attribute. The descriptive text should clearly communicate the button's purpose (e.g., "Delete item", "Edit profile", "Share link").
-
-**Acceptance Criteria:**
-1.  All icon-only buttons in existing components have a descriptive `aria-label`.
-2.  The application builds and runs without errors or new lint warnings.
-
-**Required Test Commands:**
-```bash
-npm run build
-npm run lint
-```
