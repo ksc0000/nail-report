@@ -1,20 +1,20 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The application needs to improve its accessibility. This task focuses on enhancing the experience for users who rely on screen readers by providing meaningful labels for interactive elements.
+The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. A key part of this phase is adding unit tests for core helper functions.
 
 ## Objective
 
-Identify all icon-only buttons throughout the application and add an appropriate `aria-label` attribute to each, clearly describing its function.
+Implement Vitest unit tests for the `addNailItem` and `getNailItems` functions within `src/lib/firestore.ts`, mocking the Firebase Firestore SDK calls.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/components/` (most likely location for button modifications)
-- `src/App.css` (if minor styling adjustments are needed to accommodate labels, though unlikely)
-- `src/__tests__/` (if new tests are warranted for changed components)
+- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but ideally no functional changes)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `src/__tests__/` (other new test files if necessary for shared mocks)
+- `package.json` (only to add a Vitest script if not present, but no new dependencies)
+- `vite.config.ts` (for Vitest configuration)
 
 ## Forbidden Scope
 
@@ -29,11 +29,8 @@ Identify all icon-only buttons throughout the application and add an appropriate
 
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Systematically locate all `<button>` elements that primarily display an icon (e.g., using `react-icons` or similar) without accompanying visible text.
-- For each identified icon-only button, add an `aria-label` attribute.
-- The `aria-label` text must be descriptive of the button's action (e.g., "Delete item", "Edit profile", "Close dialog", "Add new tag").
-- Ensure existing functionality and visual layout of buttons are not negatively impacted.
-- No new npm dependencies should be added.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -45,45 +42,33 @@ Identify all icon-only buttons throughout the application and add an appropriate
 
 ## Worker Prompt
 
-Okay, Jules, your task is to improve the accessibility of the `nail-report` application by adding `aria-label` attributes to all icon-only buttons.
+Your task is to add Vitest unit tests for two specific helper functions in `src/lib/firestore.ts`: `addNailItem` and `getNailItems`.
 
-Here's a detailed breakdown:
+1.  **Create a new test file**: `src/__tests__/firestore.test.ts`.
+2.  **Mock Firebase Firestore SDK**: Use `vi.mock` to mock `firebase/firestore` functions like `doc`, `collection`, `addDoc`, `getDocs`, `query`, `orderBy`, `where`, `getFirestore`, etc., as needed for testing `addNailItem` and `getNailItems`. Ensure that mocked Firestore operations return predictable data or simulate success/failure.
+3.  **Test `addNailItem`**:
+    *   Verify that `addDoc` is called with the correct collection path and data when a new nail item is added.
+    *   Verify the function returns the expected result (e.g., the ID of the new document).
+4.  **Test `getNailItems`**:
+    *   Verify that `getDocs` is called with the correct query (e.g., collection path, ordering, and potentially where clauses if `getNailItems` supports filtering).
+    *   Verify that the function correctly transforms and returns the data retrieved from Firestore.
+    *   Consider a test case for an empty collection.
+5.  **Configure Vitest**: If not already present, ensure `vite.config.ts` includes Vitest setup. If `package.json` doesn't have a `test` script, add one (e.g., `"test": "vitest"`).
+6.  **Adhere to the diff limit**: Focus strictly on `addNailItem` and `getNailItems`. If testing more functions would exceed the line limit, leave them for a follow-up task.
 
-1.  **Identify Icon-Only Buttons:**
-    *   Thoroughly search through the React component files in `src/components/` and `src/` for `<button>` elements.
-    *   Focus on buttons that only render an icon (e.g., `<button><FaPlus /></button>`, `<button><img src="..." alt="" /></button>`). Buttons that have visible text labels do not need an `aria-label` unless the icon is part of a larger, more complex accessible name strategy (which is not the focus of this task).
+### Acceptance Criteria:
 
-2.  **Add `aria-label` Attribute:**
-    *   For each identified icon-only button, add an `aria-label="Your descriptive text here"` attribute.
-    *   The `aria-label` should clearly and concisely describe the button's function to a screen reader user.
-        *   **Examples:**
-            *   A button with a trash icon for deleting an item might get `aria-label="Delete item"`.
-            *   A button with a pencil icon for editing might get `aria-label="Edit item"`.
-            *   A button with a plus icon for adding something might get `aria-label="Add new item"`.
-            *   A button with an 'X' icon for closing a modal might get `aria-label="Close dialog"`.
-            *   A button for sharing might get `aria-label="Share"` or `aria-label="Share item"`.
-            *   A button for uploading an image might get `aria-label="Upload image"`.
-            *   A button for a tag might get `aria-label="Add tag"`.
+-   A new file `src/__tests__/firestore.test.ts` exists.
+-   `addNailItem` is tested for successful document creation.
+-   `getNailItems` is tested for successfully retrieving and formatting documents.
+-   Firebase Firestore SDK is mocked correctly for these tests.
+-   All new tests pass.
 
-3.  **Verify Functionality:**
-    *   Ensure that the addition of `aria-label`s does not break any existing button functionality or visual styling.
+### Required Test Commands:
 
-4.  **Lint and Build:**
-    *   Before concluding the task, run `npm run build` and `npm run lint` to catch any compilation or style issues.
-
-**Example of a change:**
-
-```diff
-// Before
--<button className="icon-button">
--  <FaTrashAlt />
--</button>
-
-// After
--<button className="icon-button" aria-label="Delete item">
--  <FaTrashAlt />
--</button>
-```
-
-Good luck!
+```bash
+npm install # if package.json was modified with a new script or for vitest setup
+npm run build
+npm run lint
+npm test # or `vitest` if `npm test` is not configured
 ```
