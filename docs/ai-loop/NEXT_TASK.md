@@ -3,17 +3,18 @@
 
 ## Context
 
-The product roadmap prioritizes improving stability and test coverage in Phase 2. This task focuses on adding foundational unit tests for core Firebase Firestore helper functions, which is a critical step towards enhancing application reliability.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses Phase 2.4: Accessibility, which aims to enhance the user experience for assistive technologies.
 
 ## Objective
 
-Implement unit tests for the helper functions located in `src/lib/firestore.ts` using Vitest.
+Identify all icon-only buttons in the application and add an appropriate `aria-label` attribute to each of them to improve accessibility for screen reader users.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor modifications for export if necessary for testing, but prefer not)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `vite.config.ts` (add `test` configuration for Vitest if not already present, minimal changes)
+- `src/` (except `src/main.tsx`)
+- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+- `src/__tests__/` (new test files)
+- `src/App.css` (CSS improvements)
 
 ## Forbidden Scope
 
@@ -28,17 +29,31 @@ Implement unit tests for the helper functions located in `src/lib/firestore.ts` 
 
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Create a new test file `src/__tests__/firestore.test.ts`.
-- Write unit tests for at least two key functions in `src/lib/firestore.ts`, such as `addNailItem`, `getNailItems`, `updateNailItem`, or `deleteNailItem`.
-- Ensure Firebase SDK functions (e.g., `collection`, `doc`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`) are properly mocked using `vitest`'s `vi.mock` to avoid actual Firebase calls during tests.
-- Tests should cover typical success cases for the chosen functions.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
-## Output Format
+## Worker Prompt
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+1.  **Identify Icon-Only Buttons:** Scan the `src/` directory, particularly components and main views (e.g., `src/App.tsx`, `src/components/`), to locate all interactive elements that are visually represented by an icon but lack visible text. These are typically `<button>` elements or `<a>` elements styled as buttons.
+2.  **Add `aria-label`:** For each identified icon-only button, add an `aria-label` attribute with a concise and descriptive text that explains the button's purpose or action.
+    *   Examples: "Upload image", "Delete item", "Edit tag", "Sign out", "Toggle navigation".
+3.  **Review existing buttons:** Ensure that any existing buttons that might be icon-only but already have `aria-label` are correct and descriptive.
+4.  **Test Accessibility (Manual):** Although not part of automated tests, perform a quick manual check (e.g., using browser developer tools accessibility tree or a screen reader if available) to ensure the labels are correctly exposed.
+5.  **Run Checks:** Execute `npm run build` and `npm run lint` to ensure no new errors or warnings are introduced.
 
+**Acceptance Criteria:**
+
+*   All interactive icon-only buttons throughout the application have a descriptive `aria-label` attribute.
+*   The `aria-label` text accurately conveys the button's function to screen reader users.
+*   No new npm dependencies are added.
+*   The application builds successfully (`npm run build`).
+*   There are no new linting errors (`npm run lint`).
+*   The visual appearance and functionality of the application remain unchanged for visual users.
+
+**Required test commands:**
+
+```bash
+npm run build
+npm run lint
+```
 ```
