@@ -2,18 +2,18 @@
 
 ## Context
 
-The current phase of the roadmap focuses on improving stability, test coverage, and UX. This task specifically addresses accessibility by enhancing screen reader support for interactive elements.
+The product roadmap is in Phase 2, focusing on improving stability, test coverage, and UX. The current state indicates that the AI Loop setup is complete, and a first substantive task is pending. This task directly addresses the "2.1 Test coverage" goal by adding unit tests for critical Firestore helper functions.
 
 ## Objective
 
-Identify all icon-only buttons within the application and add a descriptive `aria-label` attribute to each, improving accessibility for screen reader users.
+Implement unit tests for the core Firestore helper functions located in `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
 - `src/` (except `src/main.tsx`)
-- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
-- `src/__tests__/` (new test files)
-- `src/App.css` (CSS improvements)
+- `src/lib/firestore.ts` (modifications to export functions if needed for testing, or minor refactoring to enable testability)
+- `src/__tests__/` (new test files, specifically `src/__tests__/lib/firestore.test.ts`)
+- `src/App.css` (CSS improvements - not applicable for this task, but allowed)
 
 ## Forbidden Scope
 
@@ -41,32 +41,24 @@ Identify all icon-only buttons within the application and add a descriptive `ari
 
 ## Worker Prompt
 
-Implement the following task:
+Your task is to add unit tests for the core CRUD operations within `src/lib/firestore.ts`.
 
-1.  **Locate Icon-Only Buttons:** Traverse the application's UI components (e.g., `src/components/`, `src/App.tsx`) to find all `<button>` elements that primarily use an icon (SVG, image, or icon font) as their sole visible content, without accompanying text.
-2.  **Add `aria-label`:** For each identified icon-only button, add an `aria-label` attribute. The value of this label should be a concise, human-readable description of the button's action or purpose (e.g., "Delete item", "Edit item", "Add new item", "Sign out", "Toggle navigation").
-3.  **Ensure Clarity:** The `aria-label` should be sufficient for a screen reader user to understand the button's functionality without needing visual context.
+1.  **Create a new test file**: Create `src/__tests__/lib/firestore.test.ts`.
+2.  **Mock Firebase Firestore SDK**: Use `vi.mock('firebase/firestore')` to mock Firestore functions like `collection`, `doc`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc` and `query`. This will prevent actual database calls during tests. Ensure your mocks return predictable data or throw specific errors for test scenarios.
+3.  **Implement tests for `addNailItem`**:
+    *   Test a successful item addition.
+    *   Test error handling (e.g., if `addDoc` throws an error).
+4.  **Implement tests for `getNailItems`**:
+    *   Test successful retrieval of an empty list.
+    *   Test successful retrieval of multiple items.
+    *   Test error handling (e.g., if `getDocs` throws an error).
+5.  **Implement tests for `updateNailItem`**:
+    *   Test a successful item update.
+    *   Test error handling (e.g., if `updateDoc` throws an error).
+6.  **Implement tests for `deleteNailItem`**:
+    *   Test a successful item deletion.
+    *   Test error handling (e.g., if `deleteDoc` throws an error).
+7.  **Run tests**: Use `npm test` or `vitest` to ensure all new tests pass.
+8.  **Lint and Build**: Run `npm run lint && npm run build` to verify code quality and build integrity.
 
-**Example:**
-
-```diff
--<button onClick={handleDeleteItem}>
--  <TrashIcon />
--</button>
-+<button onClick={handleDeleteItem} aria-label="Delete item">
-+  <TrashIcon />
-+</button>
-```
-
-### Acceptance Criteria
-
-- All icon-only buttons in the application have an `aria-label` attribute.
-- The `aria-label` values accurately describe the function of each button.
-- The application builds and lints without errors.
-
-### Required Test Commands
-
-```bash
-npm run build
-npm run lint
-```
+Focus on mocking the Firebase SDK interactions and verifying that the `firestore.ts` functions correctly call these mocked methods with the expected arguments and handle their responses (success/failure) appropriately. Prioritize `addNailItem` and `getNailItems` if the line limit is a concern, but ideally, cover all four core CRUD operations.
