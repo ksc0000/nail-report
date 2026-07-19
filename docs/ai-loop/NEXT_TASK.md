@@ -1,20 +1,19 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The application needs improved test coverage, starting with core Firebase helper functions. This task focuses on adding unit tests for Firestore-related utilities.
+The current phase of the roadmap focuses on improving stability, test coverage, and UX. This task specifically addresses accessibility by enhancing screen reader support for interactive elements.
 
 ## Objective
 
-Implement unit tests for the helper functions defined in `src/lib/firestore.ts` using Vitest.
+Identify all icon-only buttons within the application and add a descriptive `aria-label` attribute to each, improving accessibility for screen reader users.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor modifications for testability, if necessary, e.g., exporting unexported functions, but keep changes minimal)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `src/__tests__/` (any other new test helper files if absolutely necessary for mocking)
-- `vite.config.ts` (only for Vitest configuration, if minor adjustments are needed for mocks, but `package.json` dependencies are forbidden)
+- `src/` (except `src/main.tsx`)
+- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+- `src/__tests__/` (new test files)
+- `src/App.css` (CSS improvements)
 
 ## Forbidden Scope
 
@@ -24,14 +23,12 @@ Implement unit tests for the helper functions defined in `src/lib/firestore.ts` 
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/App.css` (not relevant for this task)
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint && npm run test` before finishing.
-- Focus on mocking Firebase SDK functions (e.g., `collection`, `doc`, `getDoc`, `getDocs`, `addDoc`, `updateDoc`, `deleteDoc`) to ensure tests are isolated and do not require a live Firebase connection.
-- Prioritize testing the primary CRUD operations and any data transformation logic within `src/lib/firestore.ts`.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -42,29 +39,34 @@ Implement unit tests for the helper functions defined in `src/lib/firestore.ts` 
 - Known issues or limitations
 - Suggested next task
 
-## Worker prompt
+## Worker Prompt
 
-Implement unit tests for the `src/lib/firestore.ts` helper functions.
+Implement the following task:
 
-1.  Create a new test file at `src/__tests__/firestore.test.ts`.
-2.  Import and test the functions exported from `src/lib/firestore.ts`.
-3.  Use Vitest for writing tests. Assume Vitest is already configured and can be run via `npm run test`.
-4.  Mock Firebase Firestore SDK dependencies to ensure tests are isolated. For example, mock functions like `collection`, `doc`, `getDocs`, `addDoc`, `updateDoc`, and `deleteDoc` from `firebase/firestore`. The goal is to test the logic within your `firestore.ts` helpers, not the Firebase SDK itself.
-5.  Ensure tests cover successful operations and, where applicable, basic error handling paths within the helper functions.
-6.  Keep an eye on the 150-line diff limit. If `firestore.ts` is extensive, focus on the most critical functions (e.g., those related to `nailItems` CRUD).
+1.  **Locate Icon-Only Buttons:** Traverse the application's UI components (e.g., `src/components/`, `src/App.tsx`) to find all `<button>` elements that primarily use an icon (SVG, image, or icon font) as their sole visible content, without accompanying text.
+2.  **Add `aria-label`:** For each identified icon-only button, add an `aria-label` attribute. The value of this label should be a concise, human-readable description of the button's action or purpose (e.g., "Delete item", "Edit item", "Add new item", "Sign out", "Toggle navigation").
+3.  **Ensure Clarity:** The `aria-label` should be sufficient for a screen reader user to understand the button's functionality without needing visual context.
 
-**Acceptance Criteria:**
-- A new file `src/__tests__/firestore.test.ts` exists and contains unit tests for `src/lib/firestore.ts`.
-- The tests mock Firebase Firestore SDK correctly.
-- The tests pass when running `npm run test`.
-- The code passes `npm run build` and `npm run lint`.
+**Example:**
 
-**Required Test Commands:**
+```diff
+-<button onClick={handleDeleteItem}>
+-  <TrashIcon />
+-</button>
++<button onClick={handleDeleteItem} aria-label="Delete item">
++  <TrashIcon />
++</button>
+```
+
+### Acceptance Criteria
+
+- All icon-only buttons in the application have an `aria-label` attribute.
+- The `aria-label` values accurately describe the function of each button.
+- The application builds and lints without errors.
+
+### Required Test Commands
+
 ```bash
-npm run test
 npm run build
 npm run lint
-```
-
-```
 ```
