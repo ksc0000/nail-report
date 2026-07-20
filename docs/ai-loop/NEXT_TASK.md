@@ -1,18 +1,19 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The current phase is 2.0, focusing on improving stability, test coverage, and UX. This task addresses the "Test coverage" objective by adding foundational unit tests for core Firebase Firestore helper functions.
+The product roadmap indicates that improving loading states is a priority in Phase 2.3. Currently, the application does not provide visual feedback to users while the list of nail items is being fetched from Firebase.
 
 ## Objective
 
-Implement Vitest unit tests for key helper functions within `src/lib/firestore.ts`.
+Implement a skeleton loading UI for the nail item list to enhance user experience during data fetching. This involves showing a placeholder UI while items are being loaded, and then revealing the actual list once data is available.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor adjustments if necessary for testability)
-- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
-- `package.json` (only to add a `test` script if not present, no new dependencies)
+- `src/App.tsx` (for conditional rendering logic and integration)
+- `src/App.css` (for styling the skeleton elements)
+- New small components in `src/components/` if necessary for the skeleton, but prefer direct implementation in `App.tsx` if simple.
 
 ## Forbidden Scope
 
@@ -25,14 +26,12 @@ Implement Vitest unit tests for key helper functions within `src/lib/firestore.t
 
 ## Requirements
 
-- Create a new test file: `src/__tests__/firestore.test.ts`.
-- Add unit tests for at least two helper functions from `src/lib/firestore.ts`. Recommended targets are `getNailItems` and `addNailItem`.
-- Mock Firebase Firestore SDK methods (e.g., `getDocs`, `addDoc`) using `vi.mock` as required to isolate the logic of the helper functions.
-- Ensure tests cover successful execution paths for the chosen functions.
-- The `package.json` must NOT be modified to add any new npm dependencies. Vitest is expected to be already configured for running tests.
-- Keep total diff ≤ 150 lines.
+- Add a state variable (e.g., `isLoading`) to manage the loading state of the nail item list.
+- While `isLoading` is true, display a simple skeleton UI (e.g., a few placeholder rectangles that mimic the structure of a nail item card) instead of the actual list.
+- Once the nail items are fetched and `isLoading` becomes false, render the actual `NailItem` components.
+- Keep the diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Run `npm test` (or `vitest`) and ensure all new tests pass.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -41,3 +40,5 @@ Implement Vitest unit tests for key helper functions within `src/lib/firestore.t
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+
+```
