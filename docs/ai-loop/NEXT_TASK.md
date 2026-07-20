@@ -2,17 +2,18 @@
 
 ## Context
 
-The product roadmap outlines Phase 2, which focuses on improving stability, test coverage, and UX. This task contributes to the Accessibility (2.4) goal by enhancing the usability for assistive technologies.
+The application needs accessibility improvements. Specifically, icon-only buttons lack proper labels for screen readers.
 
 ## Objective
 
-Identify all icon-only buttons in the application and add appropriate `aria-label` attributes to them to improve accessibility.
+Identify all icon-only buttons in the application and add appropriate `aria-label` attributes to them, ensuring they are accessible to users relying on screen readers.
 
 ## Allowed Scope
 
 - `src/` (except `src/main.tsx`)
-- `src/components/` (modifying existing components to add `aria-label`)
-- `src/App.css` (if minor style adjustments are needed for layout stability after changes)
+- `src/components/` (modifying existing component files)
+- Any `.tsx` files containing icon buttons that need `aria-label`s.
+- `src/App.css` (only if absolutely necessary for layout adjustments related to buttons, but unlikely for this task)
 
 ## Forbidden Scope
 
@@ -27,8 +28,8 @@ Identify all icon-only buttons in the application and add appropriate `aria-labe
 
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Ensure all interactive icon-only elements that function as buttons have a descriptive `aria-label`.
-- The `aria-label` should clearly describe the button's action (e.g., "Delete item", "Edit profile", "Share link").
+- Prefer adding tests when touching `src/lib/` files (not applicable for this task).
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -38,21 +39,12 @@ Identify all icon-only buttons in the application and add appropriate `aria-labe
 - Known issues or limitations
 - Suggested next task
 
----
+## Worker Prompt
 
-## Worker prompt
-
-You are Jules, an AI code assistant. Your current task is to enhance the accessibility of the nail-report application by adding `aria-label` attributes to all icon-only buttons.
-
-1.  **Identify Icon-Only Buttons:**
-    *   Scan the `src/` directory for components or JSX elements that render buttons containing only icons (e.g., `<button><IconComponent /></button>`). Look for common UI patterns like edit, delete, add, close, navigation, or share buttons.
-2.  **Add `aria-label`:**
-    *   For each identified icon-only button, add an `aria-label` attribute with a descriptive text that conveys the button's purpose to screen reader users.
-    *   Example: If a button shows a trash can icon and its function is to delete an item, add `aria-label="Delete item"`.
-    *   Ensure the `aria-label` is localized if the app supports multiple languages (for now, use clear English descriptions).
-3.  **Test and Verify:**
-    *   Visually inspect the application to ensure the changes haven't introduced any layout regressions.
-    *   Run `npm run build && npm run lint` to ensure code quality and prevent build issues.
+1.  **Identify Icon-Only Buttons:** Scan the `src/` directory, focusing on `src/components/` and `src/App.tsx`, to find all instances of `<button>` elements that contain only an icon (e.g., using an SVG or an icon font) without visible text.
+2.  **Add `aria-label`:** For each identified icon-only button, add an `aria-label` attribute that clearly describes its action. For example, a delete button might get `aria-label="Delete item"`.
+3.  **Ensure Semantic Correctness:** Verify that the `aria-label` accurately conveys the button's purpose.
+4.  **Lint and Build:** Run `npm run build` and `npm run lint` to ensure no new errors or warnings are introduced.
 
 **Example of a change:**
 
@@ -60,16 +52,11 @@ You are Jules, an AI code assistant. Your current task is to enhance the accessi
 --- a/src/components/SomeComponent.tsx
 +++ b/src/components/SomeComponent.tsx
 @@ -X,X +X,X @@
- import { TrashIcon } from '@heroicons/react/24/outline';
- 
- function SomeComponent() {
-   return (
-     <div>
--      <button onClick={() => handleDelete()} className="icon-button">
-+      <button onClick={() => handleDelete()} className="icon-button" aria-label="Delete item">
-         <TrashIcon className="h-5 w-5" />
-       </button>
-     </div>
-   );
- }
+ <button
+-  onClick={handleDelete}
++  onClick={handleDelete}
++  aria-label="Delete item"
+ >
+   <TrashIcon />
+ </button>
 ```
