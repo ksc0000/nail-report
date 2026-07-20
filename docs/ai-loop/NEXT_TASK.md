@@ -1,19 +1,19 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap indicates that improving loading states is a priority in Phase 2.3. Currently, the application does not provide visual feedback to users while the list of nail items is being fetched from Firebase.
+The current phase is 2.0, focusing on improving stability, test coverage, and UX. This task will initiate the test coverage efforts by adding unit tests for core helper functions.
 
 ## Objective
 
-Implement a skeleton loading UI for the nail item list to enhance user experience during data fetching. This involves showing a placeholder UI while items are being loaded, and then revealing the actual list once data is available.
+Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. The primary goal is to ensure these functions are correctly tested in isolation by mocking the Firebase SDK dependencies.
 
 ## Allowed Scope
 
-- `src/App.tsx` (for conditional rendering logic and integration)
-- `src/App.css` (for styling the skeleton elements)
-- New small components in `src/components/` if necessary for the skeleton, but prefer direct implementation in `App.tsx` if simple.
+- `src/lib/firestore.ts` (minor modifications for testability if necessary, but focus on testing existing logic)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `package.json` (if `vitest` needs to be initialized, but no new dependencies)
+- `vite.config.ts` (if Vitest configuration is needed)
 
 ## Forbidden Scope
 
@@ -23,13 +23,16 @@ Implement a skeleton loading UI for the nail item list to enhance user experienc
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
+- Any other files not explicitly mentioned in "Allowed Scope"
 
 ## Requirements
 
-- Add a state variable (e.g., `isLoading`) to manage the loading state of the nail item list.
-- While `isLoading` is true, display a simple skeleton UI (e.g., a few placeholder rectangles that mimic the structure of a nail item card) instead of the actual list.
-- Once the nail items are fetched and `isLoading` becomes false, render the actual `NailItem` components.
-- Keep the diff ≤ 150 lines.
+- Keep diff ≤ 150 lines.
+- Create a new test file `src/__tests__/firestore.test.ts`.
+- Write unit tests for at least two significant helper functions in `src/lib/firestore.ts` (e.g., functions related to adding, getting, or updating nail items).
+- Mock the Firebase Firestore SDK using `vi.mock` to ensure tests run in isolation without hitting actual Firebase services.
+- Ensure the tests assert expected behavior and error conditions.
+- Run `npm run test` to verify tests pass.
 - Run `npm run build && npm run lint` before finishing.
 - Report follow-up items as comments, not additional code.
 
@@ -40,5 +43,3 @@ Implement a skeleton loading UI for the nail item list to enhance user experienc
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
-```
