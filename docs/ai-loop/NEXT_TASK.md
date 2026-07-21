@@ -2,17 +2,16 @@
 
 ## Context
 
-The current phase is 2.0, focusing on improving stability, test coverage, and UX. This task initiates the test coverage efforts by targeting core Firebase helper functions.
+The product roadmap for `nail-report` is in Phase 2, focusing on stability, test coverage, and UX improvements. This task specifically addresses Phase 2.4: Accessibility.
 
 ## Objective
 
-Implement comprehensive unit tests for the helper functions located in `src/lib/firestore.ts` using Vitest.
+Identify icon-only buttons throughout the application and add appropriate `aria-label` attributes to improve accessibility for users of assistive technologies.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor adjustments for testability, if necessary)
-- `src/__tests__/` (creation of `src/__tests__/firestore.test.ts` and related files)
-- `vite.config.ts` (only if Vitest configuration specifically for this task is missing and essential)
+- `src/` (Specifically component files in `src/components`, `src/App.tsx`, and other relevant UI files that contain icon buttons).
+- `src/App.css` (Only if minor styling adjustments are absolutely necessary to accommodate the changes, but this is unlikely).
 
 ## Forbidden Scope
 
@@ -25,14 +24,12 @@ Implement comprehensive unit tests for the helper functions located in `src/lib/
 
 ## Requirements
 
-- Add a new test file: `src/__tests__/firestore.test.ts`.
-- Write unit tests that cover all exported functions in `src/lib/firestore.ts`.
-- Use `vi.mock` to mock Firebase SDK dependencies (e.g., `firebase/firestore`, `firebase/auth`) to ensure tests are isolated and run quickly without actual Firebase calls.
-- Assert that functions handle both success and error cases appropriately.
-- Keep diff ≤ 150 lines. Focus on essential tests and follow good testing practices.
-- Run `npm run test` to ensure new tests pass.
+- Keep diff ≤ 150 lines.
+- Focus initially on the most prominent and frequently used icon-only buttons, such as those in the main navigation, item list, or item detail view.
+- For each icon-only button, add a descriptive `aria-label` attribute that clearly communicates the button's purpose (e.g., `aria-label="Delete item"`, `aria-label="Edit settings"`, `aria-label="Upload image"`).
+- Ensure the `aria-label` values are localized if the app supports multiple languages (though for this task, English is sufficient).
 - Run `npm run build && npm run lint` before finishing.
-- Report follow-up items as comments, not additional code.
+- Provide a summary of the buttons changed and their new `aria-label` values.
 
 ## Output Format
 
