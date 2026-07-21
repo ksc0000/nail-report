@@ -2,17 +2,17 @@
 
 ## Context
 
-Phase 2.1 of the roadmap focuses on improving test coverage. The application uses Firebase Firestore for data persistence, and the helper functions in `src/lib/firestore.ts` are critical. Adding unit tests for these helpers will improve stability and maintainability. Vitest is already configured as the test runner.
+The current phase is 2.0, focusing on improving stability, test coverage, and UX. This task initiates the test coverage efforts by targeting core Firebase helper functions.
 
 ## Objective
 
-Add unit tests for at least two core helper functions within `src/lib/firestore.ts`, focusing on mocking the Firebase Firestore SDK to ensure isolated testing.
+Implement comprehensive unit tests for the helper functions located in `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for inspection, no modifications if possible)
-- `src/__tests__/firestore.test.ts` (or a new, similar test file)
-- `src/__mocks__/firebase/firestore.ts` (if needed for mocking)
+- `src/lib/firestore.ts` (minor adjustments for testability, if necessary)
+- `src/__tests__/` (creation of `src/__tests__/firestore.test.ts` and related files)
+- `vite.config.ts` (only if Vitest configuration specifically for this task is missing and essential)
 
 ## Forbidden Scope
 
@@ -25,12 +25,13 @@ Add unit tests for at least two core helper functions within `src/lib/firestore.
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Write unit tests using Vitest.
-- Mock Firebase Firestore SDK calls (e.g., `getDoc`, `setDoc`, `addDoc`, `deleteDoc`, `query`, `getDocs`) using `vi.mock`.
-- Ensure tests cover both successful execution and potential error paths for the selected functions.
-- Run `npm run build && npm run lint && npm run test` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
+- Add a new test file: `src/__tests__/firestore.test.ts`.
+- Write unit tests that cover all exported functions in `src/lib/firestore.ts`.
+- Use `vi.mock` to mock Firebase SDK dependencies (e.g., `firebase/firestore`, `firebase/auth`) to ensure tests are isolated and run quickly without actual Firebase calls.
+- Assert that functions handle both success and error cases appropriately.
+- Keep diff ≤ 150 lines. Focus on essential tests and follow good testing practices.
+- Run `npm run test` to ensure new tests pass.
+- Run `npm run build && npm run lint` before finishing.
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -40,12 +41,3 @@ Add unit tests for at least two core helper functions within `src/lib/firestore.
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
----
-**Acceptance Criteria:**
-
-- A new test file `src/__tests__/firestore.test.ts` (or similar) is created.
-- It contains unit tests for at least two functions from `src/lib/firestore.ts`.
-- Firebase Firestore SDK methods are effectively mocked.
-- Tests pass when `npm run test` is executed.
-- Code style adheres to `npm run lint`.
