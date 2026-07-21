@@ -2,16 +2,18 @@
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on stability, test coverage, and UX improvements. This task specifically addresses Phase 2.4: Accessibility.
+Read the roadmap, recent commits, and the current task.
 
 ## Objective
 
-Identify icon-only buttons throughout the application and add appropriate `aria-label` attributes to improve accessibility for users of assistive technologies.
+Implement exactly one bounded task from Phase 2 of the roadmap.
 
 ## Allowed Scope
 
-- `src/` (Specifically component files in `src/components`, `src/App.tsx`, and other relevant UI files that contain icon buttons).
-- `src/App.css` (Only if minor styling adjustments are absolutely necessary to accommodate the changes, but this is unlikely).
+- `src/` (except `src/main.tsx`)
+- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+- `src/__tests__/` (new test files)
+- `src/App.css` (CSS improvements)
 
 ## Forbidden Scope
 
@@ -25,11 +27,9 @@ Identify icon-only buttons throughout the application and add appropriate `aria-
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Focus initially on the most prominent and frequently used icon-only buttons, such as those in the main navigation, item list, or item detail view.
-- For each icon-only button, add a descriptive `aria-label` attribute that clearly communicates the button's purpose (e.g., `aria-label="Delete item"`, `aria-label="Edit settings"`, `aria-label="Upload image"`).
-- Ensure the `aria-label` values are localized if the app supports multiple languages (though for this task, English is sufficient).
 - Run `npm run build && npm run lint` before finishing.
-- Provide a summary of the buttons changed and their new `aria-label` values.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -38,3 +38,30 @@ Identify icon-only buttons throughout the application and add appropriate `aria-
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+
+---
+
+# Worker Prompt
+
+## Objective
+
+Implement Phase 2.4 Accessibility by adding `aria-label` attributes to all existing icon-only buttons throughout the application.
+
+## Acceptance Criteria
+
+1.  Identify all buttons that solely rely on an icon for their meaning (i.e., have no visible text label).
+2.  Add an appropriate `aria-label` attribute to each identified button.
+3.  The `aria-label` text must clearly and concisely describe the button's intended action (e.g., "Delete item", "Edit item", "Add new tag", "Sign out", "Upload image").
+4.  No visible text labels should be added to these buttons; only the `aria-label` attribute should be used for accessibility.
+
+## Required Test Commands
+
+-   `npm run build` completes successfully with no errors.
+-   `npm run lint` completes successfully with no new warnings or errors.
+-   Manually verify the application in a web browser:
+    -   Ensure all icon-only buttons are still visually present and functional.
+    -   Use browser developer tools (e.g., Chrome Lighthouse or Accessibility tab) to inspect buttons and confirm the `aria-label` attribute is present and meaningful.
+
+## Suggested next task
+
+Add Vitest + unit tests for `src/lib/firestore.ts` helpers.
