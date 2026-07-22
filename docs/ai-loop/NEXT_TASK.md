@@ -2,35 +2,38 @@
 
 ## Context
 
-The current phase focuses on improving stability, test coverage, and UX. This task initiates the test coverage effort by adding unit tests for a core Firebase helper module.
+The product roadmap for nail-report is currently in Phase 2, focusing on improving stability, test coverage, and UX. The first sub-goal in this phase is to increase test coverage, specifically targeting helper functions. This task directly addresses that objective by establishing a unit testing framework for Firestore helper functions.
 
 ## Objective
 
-Implement unit tests for the functions defined in `src/lib/firestore.ts`. This involves mocking the Firebase SDK to ensure tests are isolated and run efficiently.
+Implement unit tests for key helper functions within `src/lib/firestore.ts` using Vitest, including mocking of the Firebase SDK.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `vite.config.ts` (minimal additions for `vi.mock` if strictly necessary and within 150 lines)
+- `src/lib/firestore.ts` (minimal modifications if needed for testability)
+- `src/__tests__/lib/firestore.test.ts` (new file for tests)
+- `vite.config.ts` (if Vitest setup is needed)
+- `package.json` (to add Vitest script if not present, but no new dependencies)
 
 ## Forbidden Scope
 
 - `src/main.tsx` (entry point — do not modify)
 - `commands/` (PowerShell scripts — do not modify)
 - `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (do NOT add new npm packages; assume Vitest is already configured as per roadmap)
+- `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create a new test file, `src/__tests__/firestore.test.ts`.
-- Use `vitest` for the test runner and `vi.mock` for mocking Firebase SDK functions (e.g., `getFirestore`, `collection`, `addDoc`, `getDoc`, `updateDoc`, `deleteDoc`).
-- Cover all exportable helper functions in `src/lib/firestore.ts` with unit tests.
-- Ensure tests use realistic mock data that reflects the `nailItems` and `publicShares` collections.
-- Run `npm run build && npm run lint` before finishing.
+- Create a new test file: `src/__tests__/lib/firestore.test.ts`.
+- Add unit tests for at least 2-3 core CRUD helper functions in `src/lib/firestore.ts`, such as `addNailItem`, `getNailItems`, and/or `updateNailItem`.
+- Mock the Firebase Firestore SDK using `vi.mock` to isolate tests from actual Firebase calls.
+- Ensure tests cover basic success cases for the selected functions.
+- Run `npm run build && npm run lint && npm test` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -39,20 +42,3 @@ Implement unit tests for the functions defined in `src/lib/firestore.ts`. This i
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
-## Worker prompt
-
-Jules,
-
-Your task is to add comprehensive unit tests for the functions within `src/lib/firestore.ts`.
-
-1.  **Create a new test file:** `src/__tests__/firestore.test.ts`.
-2.  **Mock Firebase SDK:** Use `vi.mock` to mock Firebase Firestore SDK functions (`getFirestore`, `collection`, `doc`, `addDoc`, `getDoc`, `updateDoc`, `deleteDoc`, `query`, `where`, `orderBy`, `getDocs`, etc.) to isolate tests from actual Firebase interactions.
-3.  **Implement Tests:** Write unit tests for all exportable functions in `src/lib/firestore.ts`. Focus on testing inputs, outputs, error conditions, and interactions with the mocked Firebase SDK.
-    *   Ensure coverage for creating, reading, updating, and deleting `nailItems` and `publicShares`.
-    *   Include tests for any data transformation logic between Firestore documents and application models.
-4.  **Use Realistic Mock Data:** Create mock data that mimics the structure and content of your `nailItems` and `publicShares` collections, including timestamps, IDs, tags, image URLs, etc.
-5.  **Adhere to Constraints:** Remember the diff limit (≤ 150 lines) and the restriction against adding new npm dependencies. Assume Vitest is already installed and configured.
-6.  **Verify:** Run `npm test`, `npm run build`, and `npm run lint` to ensure all tests pass, the project builds successfully, and there are no linting errors.
-
-If Vitest is not configured and this prevents you from adding tests without adding new dependencies to `package.json`, please report this as a known issue rather than proceeding with dependency changes.
