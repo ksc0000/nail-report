@@ -2,18 +2,17 @@
 
 ## Context
 
-The product roadmap is in Phase 2, focusing on stability, test coverage, and UX improvements. The current state indicates that the first substantive task is pending. This task initiates the test coverage efforts for the core Firebase helper functions.
+The current phase of the `nail-report` application development focuses on improving stability, test coverage, and UX. This task initiates the test coverage effort as outlined in Phase 2.1 of the roadmap.
 
 ## Objective
 
-Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. This task aims to improve the test coverage as outlined in Phase 2.1 of the roadmap.
+Implement unit tests for the helper functions located in `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
-- `src/__tests__/` (new test files)
-- `src/App.css` (CSS improvements)
+- `src/lib/firestore.ts` (minor adjustments for testability, if necessary)
+- `src/__tests__/lib/firestore.test.ts` (new file for unit tests)
+- `vitest.config.ts` (if minimal configuration is needed for Firebase mocking, though Vitest should be pre-configured)
 
 ## Forbidden Scope
 
@@ -39,35 +38,35 @@ Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. Th
 - Known issues or limitations
 - Suggested next task
 
----
+## Worker Prompt
 
-## Worker prompt
+Your task is to add comprehensive unit tests for the helper functions in `src/lib/firestore.ts`.
 
-### Summary of what changed
+1.  **Create a new test file:** In `src/__tests__/lib/`, create a new file named `firestore.test.ts`.
+2.  **Identify helper functions:** Focus on testing the core CRUD operations for `nailItems` and `publicShares` (e.g., `getNailItem`, `addNailItem`, `updateNailItem`, `deleteNailItem`, `getPublicShare`).
+3.  **Write unit tests:**
+    *   For each helper function, write tests that cover:
+        *   Successful execution with valid input.
+        *   Error handling (e.g., Firebase errors, invalid IDs).
+        *   Edge cases relevant to the function's logic.
+    *   Utilize Vitest for the test runner.
+    *   **Crucially, mock Firebase SDK interactions** using `vi.mock` to isolate the `firestore.ts` logic from actual Firebase calls. This includes `getFirestore`, `collection`, `doc`, `getDoc`, `setDoc`, `updateDoc`, `deleteDoc`, etc. The goal is to test *your* code, not Firebase itself.
+4.  **Ensure testability:** If any minor refactoring in `src/lib/firestore.ts` is required to make functions more testable (e.g., exporting previously un-exported functions or making dependencies injectable), you may perform it, ensuring the change is minimal and within the line limit.
+5.  **Run tests:** Execute `npm test` and ensure all new tests pass.
 
-Implemented unit tests for the helper functions in `src/lib/firestore.ts` using Vitest. Mocked Firebase SDK dependencies where necessary to ensure tests are isolated and run efficiently.
+**Acceptance Criteria:**
 
-### Changed files list
+*   A new file `src/__tests__/lib/firestore.test.ts` exists.
+*   The new test file contains unit tests for multiple helper functions in `src/lib/firestore.ts`.
+*   Firebase SDK functions are appropriately mocked using `vi.mock`.
+*   Tests cover successful paths and relevant error scenarios.
+*   `npm test` runs successfully, and all new tests pass.
 
-- `src/lib/firestore.ts` (minor adjustments if needed for testability, e.g., exporting non-default functions)
-- `src/__tests__/firestore.test.ts` (new file containing unit tests for `firestore.ts` helpers)
-
-### Commands run and results
+**Required Test Commands:**
 
 ```bash
-npm test # (or npx vitest)
-# Expected: All new tests pass, existing tests (if any) continue to pass.
+npm install # Only if vitest or related test dependencies need initial setup, but should largely be pre-configured.
 npm run build
-# Expected: Build completes successfully with no errors.
 npm run lint
-# Expected: Linting passes with no new warnings or errors.
+npm test
 ```
-
-### Known issues or limitations
-
-- Currently, only `firestore.ts` helpers are covered. Other `src/lib/` files still lack unit tests.
-- Some functions in `firestore.ts` might require more complex mocking or edge case handling, which could be a follow-up task if the initial implementation exceeds the line limit.
-
-### Suggested next task
-
-Add loading skeleton to the nail item list (`src/App.tsx`) to improve the user experience during data fetching, as per Phase 2.3 of the roadmap.
