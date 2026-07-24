@@ -2,17 +2,17 @@
 
 ## Context
 
-The application needs to improve its user experience by showing clear loading states. This task focuses on implementing a visual cue for users when the main list of nail items is being fetched from the database, aligning with Phase 2.3 (Loading states) of the product roadmap.
+The project is in Phase 2, focusing on improving stability, test coverage, and UX. This task initiates the test coverage effort by adding unit tests for a core utility file.
 
 ## Objective
 
-Implement a skeleton loading component that displays while the nail item list is being fetched in `src/App.tsx`.
+Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. Focus on testing the primary CRUD operations (e.g., `createNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`) and other utility functions in that file.
 
 ## Allowed Scope
 
-- `src/App.tsx` (to integrate the skeleton loader)
-- `src/components/` (if a new, dedicated skeleton component is created, e.g., `src/components/NailItemListSkeleton.tsx`)
-- `src/App.css` (for styling the skeleton loader)
+- `src/lib/firestore.ts` (modifications to export functions if needed for testing)
+- `src/__tests__/firestore.test.ts` (new test file)
+- `src/` (minor refactoring if necessary to make functions testable without breaking existing functionality)
 
 ## Forbidden Scope
 
@@ -22,14 +22,17 @@ Implement a skeleton loading component that displays while the nail item list is
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
+- Modifying UI components or CSS.
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
+- Create a new test file `src/__tests__/firestore.test.ts`.
+- Use Vitest for tests.
+- Mock Firebase SDK calls as necessary to isolate the `firestore.ts` functions.
+- Cover at least 2-3 key functions in `src/lib/firestore.ts` with basic unit tests (e.g., `createNailItem`, `getNailItems`).
+- Ensure tests run without requiring a live Firebase project connection.
 - Run `npm run build && npm run lint` before finishing.
-- The skeleton loader should be displayed when the application is in a loading state for the nail item list. Assume a boolean `isLoading` state variable or similar can be introduced or utilized within `App.tsx`'s scope to control visibility.
-- The skeleton should visually represent a placeholder for a few (e.g., 3-5) individual nail items, including elements like a placeholder image, title, and tags.
-- The skeleton loader should seamlessly disappear once the actual `nailItems` data is loaded and rendered.
 
 ## Output Format
 
@@ -38,6 +41,3 @@ Implement a skeleton loading component that displays while the nail item list is
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
----
-**Suggested next task for Jules:** Add `aria-label` to all icon-only buttons.
