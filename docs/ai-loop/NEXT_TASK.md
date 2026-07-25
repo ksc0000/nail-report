@@ -2,20 +2,17 @@
 
 ## Context
 
-The product roadmap for `nail-report` outlines several phases. Phase 2 focuses on improving stability, test coverage, and UX, including accessibility. The current state indicates that the AI Loop is ready for its first substantive development task. This task will directly address an accessibility improvement by enhancing button semantics for screen readers.
+The product roadmap prioritizes improving stability, test coverage, and UX in Phase 2. This task focuses on enhancing accessibility by ensuring all interactive elements are properly labeled for screen readers.
 
 ## Objective
 
-Identify all icon-only buttons within the application and add appropriate `aria-label` attributes to improve accessibility for users relying on screen readers.
+Add `aria-label` attributes to all icon-only buttons throughout the application to improve accessibility for users relying on screen readers.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
 - `src/components/` (modifying existing components)
-- `src/App.tsx` (modifying existing JSX for buttons)
-- `src/lib/` (read-only, no modifications expected)
-- `src/__tests__/` (no new tests expected for this task)
-- `src/App.css` (no changes expected)
+- `src/` (other UI-related files where icon buttons might be present)
+- `src/App.css` (minor adjustments if necessary for layout, but unlikely)
 
 ## Forbidden Scope
 
@@ -29,8 +26,10 @@ Identify all icon-only buttons within the application and add appropriate `aria-
 ## Requirements
 
 - Keep diff ≤ 150 lines.
+- Identify all `<button>` elements that contain only an icon (e.g., `<button><FaPlus /></button>`) and add an appropriate `aria-label` attribute (e.g., `aria-label="Add new item"`).
+- Ensure the `aria-label` clearly describes the button's action.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files (N/A for this task).
+- Prefer adding tests when touching `src/lib/` files. (Not applicable for this UI-focused task).
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -41,33 +40,21 @@ Identify all icon-only buttons within the application and add appropriate `aria-
 - Known issues or limitations
 - Suggested next task
 
----
+## Worker prompt
 
-## Worker Prompt
+Implement the `aria-label` attributes:
 
-Implement the following:
+1.  **Scan the `src/` directory** for `button` elements that likely render only an icon. Common patterns include buttons using react-icons (e.g., `Fa*`, `Ai*`, `Md*` components) without any visible text.
+2.  **For each identified icon-only button**, add a descriptive `aria-label` attribute.
+    *   Example: `<button onClick={addItem}><FaPlus /></button>` should become `<button onClick={addItem} aria-label="Add new item"><FaPlus /></button>`.
+    *   Consider the context of the button to provide an accurate and concise label (e.g., "Delete item", "Edit profile", "Share link", "Close dialog", "Toggle navigation").
+3.  **Prioritize buttons in core UI components** that are frequently used.
+4.  **Avoid adding `aria-label` to buttons that already have visible text** or are not interactive.
+5.  **Verify the changes locally** by building and linting the project.
 
-1.  **Identify Icon-Only Buttons**: Go through the application's UI components, especially in `src/components/` and `src/App.tsx`, to find any `<button>` elements that contain only an icon (e.g., an SVG or an icon font) and no visible text.
-2.  **Add `aria-label`**: For each identified icon-only button, add an `aria-label` attribute.
-    *   The value of the `aria-label` should be a concise, descriptive string that explains the button's action or purpose to a screen reader user.
-    *   For example:
-        *   A delete button should get `aria-label="Delete item"`.
-        *   An edit button should get `aria-label="Edit item"`.
-        *   A close button in a modal should get `aria-label="Close dialog"`.
-        *   A share button should get `aria-label="Share item"`.
-3.  **Review and Test**:
-    *   Ensure all `aria-label` values are accurate and helpful.
-    *   Verify that adding these attributes does not negatively impact the visual layout or functionality.
+**Acceptance criteria:** All significant icon-only buttons throughout the application (e.g., in `src/components`, `src/App.tsx`, `src/pages`) have an `aria-label` attribute describing their function.
 
-**Acceptance Criteria:**
-
-*   All icon-only buttons in the application's primary UI (e.g., item list, item details, tag management) have a meaningful `aria-label` attribute.
-*   The `aria-label` accurately describes the button's action.
-*   The application builds successfully without errors (`npm run build`).
-*   The linter passes without warnings or errors (`npm run lint`).
-
-**Required Test Commands:**
-
+**Required test commands:**
 ```bash
 npm run build
 npm run lint
