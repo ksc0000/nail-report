@@ -1,19 +1,18 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap outlines Phase 2, focusing on improving stability, test coverage, and UX. The current state is in Phase 2.0. This task addresses "2.1 Test coverage" by adding unit tests for core Firebase Firestore helper functions.
+Read the roadmap, recent commits, and the current task. The product roadmap indicates an active Phase 2 focused on improving stability, test coverage, and UX. This task specifically addresses Phase 2.1 Test coverage, by adding unit tests for core Firestore helper functions.
 
 ## Objective
 
-Implement unit tests for the helper functions located in `src/lib/firestore.ts` using Vitest.
+Implement unit tests for helper functions in `src/lib/firestore.ts` using Vitest, specifically mocking Firebase SDK dependencies.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor adjustments if needed for testability)
-- `src/__tests__/firestore.test.ts` (new test file)
-- `package.json` (only if Vitest setup needs a script, but no new dependencies)
-- `vite.config.ts` (if Vitest configuration is needed)
+- `src/lib/firestore.ts` (no significant changes, only potential minor refactoring to enable testing if absolutely necessary, but focus on testing existing code)
+- `src/__tests__/` (create new test files, e.g., `src/__tests__/firestore.test.ts`)
 
 ## Forbidden Scope
 
@@ -31,22 +30,37 @@ Implement unit tests for the helper functions located in `src/lib/firestore.ts` 
 - Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
+## Output Format
+
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
+
 ## Worker Prompt
 
-Your task is to add comprehensive unit tests for the helper functions within `src/lib/firestore.ts`.
+Your task is to add unit tests for the helper functions located in `src/lib/firestore.ts`.
 
-1.  **Create a new test file:** `src/__tests__/firestore.test.ts`.
-2.  **Mock Firebase SDK:** Use `vitest` and `vi.mock` to mock Firebase SDK dependencies (e.g., `firebase/firestore` functions like `collection`, `doc`, `getDocs`, `addDoc`, `updateDoc`, `deleteDoc`). Ensure tests do not interact with actual Firebase services.
-3.  **Test key functions:** Write tests for the primary CRUD and retrieval functions in `src/lib/firestore.ts`, such as `getNailItems`, `addNailItem`, `updateNailItem`, and `deleteNailItem`.
-4.  **Cover edge cases:** Include tests for successful operations, error handling (e.g., mocking rejected promises from Firebase functions), and possibly empty states.
-5.  **Run tests:** Ensure all new tests pass by running `npm run test`.
+1.  **Set up the test file**:
+    *   Create a new test file: `src/__tests__/firestore.test.ts`.
 
-**Acceptance Criteria:**
-- A new file `src/__tests__/firestore.test.ts` is added.
-- The new test file contains unit tests for functions in `src/lib/firestore.ts`.
-- Firebase SDK calls are appropriately mocked, preventing actual service interaction.
-- All new tests pass when running `npm run test`.
+2.  **Mock Firebase SDK**:
+    *   Use `vi.mock('firebase/firestore')` to mock the Firestore SDK functions (e.g., `collection`, `doc`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`).
+    *   Use `vi.mock('firebase/app')` if `getFirestore` is called directly in `firestore.ts` and needs mocking.
+    *   Ensure the mocks provide controlled return values or implement the expected behavior for your tests.
 
-## Suggested next task
+3.  **Write unit tests**:
+    *   Focus on testing at least two key functions from `src/lib/firestore.ts`, such as `addNailItem` and `getNailItems` or `updateNailItem` and `deleteNailItem`.
+    *   For each function, write at least one test case covering a successful operation.
+    *   Verify that the Firebase SDK functions are called with the correct arguments.
+    *   Verify that the helper functions return the expected values on success.
 
-Add loading skeleton to nail item list (`src/App.tsx`).
+4.  **Execute tests**:
+    *   Run `npm run test` (assuming `test` script is configured for Vitest) and ensure all new tests pass.
+
+5.  **Lint and build**:
+    *   Run `npm run lint` and `npm run build` to ensure code quality and build integrity. Resolve any errors.
+
+This task is a foundational step for improving the overall stability and reliability of the application by ensuring core data operations work as expected.
+```
