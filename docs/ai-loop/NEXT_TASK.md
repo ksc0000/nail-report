@@ -1,18 +1,20 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap prioritizes improving stability, test coverage, and UX in Phase 2. This task focuses on enhancing accessibility by ensuring all interactive elements are properly labeled for screen readers.
+The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This task contributes to the "2.1 Test coverage" objective by adding unit tests for core Firebase Firestore helper functions. Vitest is already configured for the project.
 
 ## Objective
 
-Add `aria-label` attributes to all icon-only buttons throughout the application to improve accessibility for users relying on screen readers.
+Implement unit tests for the helper functions located in `src/lib/firestore.ts`.
 
 ## Allowed Scope
 
-- `src/components/` (modifying existing components)
-- `src/` (other UI-related files where icon buttons might be present)
-- `src/App.css` (minor adjustments if necessary for layout, but unlikely)
+- `src/lib/firestore.ts` (modifications only if necessary for testability, but primarily for understanding)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `vite.config.ts` (only if Vitest setup needs minor adjustments, unlikely)
+- `package.json` (only to add `test` script if missing, no new dependencies)
 
 ## Forbidden Scope
 
@@ -26,10 +28,8 @@ Add `aria-label` attributes to all icon-only buttons throughout the application 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Identify all `<button>` elements that contain only an icon (e.g., `<button><FaPlus /></button>`) and add an appropriate `aria-label` attribute (e.g., `aria-label="Add new item"`).
-- Ensure the `aria-label` clearly describes the button's action.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files. (Not applicable for this UI-focused task).
+- Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -40,22 +40,62 @@ Add `aria-label` attributes to all icon-only buttons throughout the application 
 - Known issues or limitations
 - Suggested next task
 
-## Worker prompt
+## Worker Prompt
 
-Implement the `aria-label` attributes:
+Your task is to create a new test file `src/__tests__/firestore.test.ts` and add unit tests for the helper functions within `src/lib/firestore.ts`.
 
-1.  **Scan the `src/` directory** for `button` elements that likely render only an icon. Common patterns include buttons using react-icons (e.g., `Fa*`, `Ai*`, `Md*` components) without any visible text.
-2.  **For each identified icon-only button**, add a descriptive `aria-label` attribute.
-    *   Example: `<button onClick={addItem}><FaPlus /></button>` should become `<button onClick={addItem} aria-label="Add new item"><FaPlus /></button>`.
-    *   Consider the context of the button to provide an accurate and concise label (e.g., "Delete item", "Edit profile", "Share link", "Close dialog", "Toggle navigation").
-3.  **Prioritize buttons in core UI components** that are frequently used.
-4.  **Avoid adding `aria-label` to buttons that already have visible text** or are not interactive.
-5.  **Verify the changes locally** by building and linting the project.
+Specifically:
 
-**Acceptance criteria:** All significant icon-only buttons throughout the application (e.g., in `src/components`, `src/App.tsx`, `src/pages`) have an `aria-label` attribute describing their function.
+1.  **Create Test File**: Create `src/__tests__/firestore.test.ts`.
+2.  **Mock Firebase SDK**: Utilize `vi.mock` to mock the Firebase Firestore SDK functions (e.g., `getFirestore`, `collection`, `doc`, `addDoc`, `updateDoc`, `deleteDoc`, `getDoc`, `getDocs`) that `src/lib/firestore.ts` interacts with. This ensures that tests are isolated and do not perform actual Firebase calls.
+3.  **Test Helper Functions**: Write tests for the primary CRUD (Create, Read, Update, Delete) operations provided by the `firestore.ts` helpers.
+    *   Verify that functions correctly call the mocked Firebase Firestore methods with the expected arguments (collection paths, document IDs, data payloads).
+    *   Test both successful execution and potential error handling scenarios (if present in the helpers).
+    *   Ensure tests cover typical usage patterns for retrieving and manipulating `nailItems` or other relevant collections managed by `firestore.ts`.
 
-**Required test commands:**
-```bash
-npm run build
-npm run lint
+Example mocking strategy:
+
+```typescript
+// src/__tests__/firestore.test.ts
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { doc, collection, addDoc, updateDoc, deleteDoc, getDoc, getDocs, getFirestore } from 'firebase/firestore';
+// Import your functions from src/lib/firestore.ts, e.g.,
+// import { addNailItem, updateNailItem, deleteNailItem, getNailItem, getNailItems } from '../lib/firestore';
+
+// Mock the entire 'firebase/firestore' module
+vi.mock('firebase/firestore', async (importOriginal) => {
+  const original = await importOriginal<typeof import('firebase/firestore')>();
+  return {
+    ...original,
+    getFirestore: vi.fn(() => ({})), // Mock getFirestore to return a simple object
+    collection: vi.fn(() => ({})),
+    doc: vi.fn(() => ({})),
+    addDoc: vi.fn(),
+    updateDoc: vi.fn(),
+    deleteDoc: vi.fn(),
+    getDoc: vi.fn(),
+    getDocs: vi.fn(() => ({
+      empty: false,
+      docs: [{ id: 'testId1', data: () => ({ name: 'Test Nail' }) }],
+    })),
+  };
+});
+
+describe('firestore helpers', () => {
+  beforeEach(() => {
+    vi.clearAllMocks(); // Reset mocks before each test
+  });
+
+  it('should call addDoc when adding a nail item', async () => {
+    // Implement test for addNailItem or similar
+    // For example: await addNailItem({ name: 'New Nail', userId: 'user123' });
+    // expect(addDoc).toHaveBeenCalledWith(expect.any(Object), { name: 'New Nail', userId: 'user123' });
+  });
+
+  // Add more tests for update, delete, get operations
+});
+```
+
+Ensure the tests are comprehensive but remain within the line limit. Prioritize core CRUD operations.
+
 ```
