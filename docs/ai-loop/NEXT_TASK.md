@@ -2,52 +2,43 @@
 
 ## Context
 
-The `nail-report` application is currently in Phase 2 of its roadmap, focusing on improving stability, test coverage, and user experience. Specifically, Phase 2.4 targets Accessibility improvements. This task directly addresses one of these accessibility goals by enhancing keyboard navigation and screen reader support.
+Read the roadmap, recent commits, and the current task. Phase 2 is active, focusing on improving stability, test coverage, and UX. This task will contribute to test coverage.
 
 ## Objective
 
-Identify all icon-only buttons within the application and add appropriate `aria-label` attributes to them, ensuring they are accessible to users of assistive technologies.
+Implement unit tests for selected helper functions within `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
--   `src/components/**/*.tsx` (or similar component files)
--   `src/App.tsx` (if icon buttons are present directly)
--   `src/App.css` (only if minor styling adjustments are needed due to `aria-label` addition, unlikely)
+- `src/lib/firestore.ts` (modifications only if necessary for testability, e.g., exporting non-exported functions if they are core helpers)
+- `src/__tests__/` (create `src/__tests__/firestore.test.ts`)
+- `vitest.config.ts` (minor configuration if required for mocking Firebase, but prefer `vi.mock` directly in test files)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
+- `src/App.css` (not relevant for this task)
+- Any other files outside the allowed scope.
 
 ## Requirements
 
--   Keep diff ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing.
--   Prefer adding tests when touching `src/lib/` files. (Not applicable for this UI-focused task)
--   Report follow-up items as comments, not additional code.
-
-## Worker prompt
-
-1.  **Identify Icon-Only Buttons**: Traverse the `src/` directory to locate all HTML `<button>` elements that primarily display an icon and do not have visible text labels or already have suitable `aria-label` attributes.
-2.  **Add `aria-label`**: For each identified icon-only button, add a descriptive `aria-label` attribute.
-    *   The `aria-label` should clearly convey the button's purpose to a screen reader user.
-    *   Examples:
-        *   For a delete icon button: `<button aria-label="Delete item">...</button>`
-        *   For an edit icon button: `<button aria-label="Edit item">...</button>`
-        *   For a share icon button: `<button aria-label="Share item">...</button>`
-        *   For an add item icon button: `<button aria-label="Add new item">...</button>`
-        *   For a sign-out icon button: `<button aria-label="Sign out">...</button>`
-3.  **No New Dependencies**: Ensure no new npm packages or modifications to `package.json` dependencies are made.
-4.  **Verify Application**: After making changes, run `npm run build` and `npm run lint` to confirm the application builds successfully and passes all lint checks.
+- Create a new test file `src/__tests__/firestore.test.ts`.
+- Focus on adding unit tests for at least 1-2 core helper functions within `src/lib/firestore.ts` (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`).
+- Use `vi.mock` to mock Firebase SDK dependencies (e.g., `getFirestore`, `collection`, `doc`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`).
+- Ensure tests are isolated and do not interact with actual Firebase.
+- Keep diff ≤ 150 lines.
+- Run `npm run build && npm run lint && npm run test` before finishing.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
