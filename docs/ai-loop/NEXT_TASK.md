@@ -2,45 +2,51 @@
 
 ## Context
 
-The current phase is "2.0 Improve stability, test coverage, and UX". A key goal is to increase test coverage. The roadmap specifies Vitest as the test runner.
+The product roadmap for nail-report is in Phase 2, focusing on stability, test coverage, and UX improvements. This task specifically addresses Phase 2.4, enhancing accessibility for users.
 
 ## Objective
 
-Implement unit tests for helper functions located in `src/lib/firestore.ts` using Vitest. This task focuses specifically on testing the functions within this file, ensuring their correctness and robustness.
+Add `aria-label` attributes to all icon-only buttons throughout the application to improve accessibility for screen reader users.
 
 ## Allowed Scope
 
--   `src/lib/firestore.ts` (minor modifications for testability, if strictly necessary)
--   `src/lib/__tests__/firestore.test.ts` (new file for tests)
--   `src/lib/__mocks__/firebase.ts` (new file for mocking Firebase SDK, if needed)
--   `vite.config.ts` (minor modifications for test configuration, if strictly necessary)
--   `package.json` (no new dependencies, but existing scripts can be used or modified for testing)
+- `src/` (except `src/main.tsx`)
+- Specifically, any `.tsx` or `.ts` files within `src/components/`, `src/pages/`, or other UI-related directories that render interactive icon-only buttons.
+- `src/App.css` (for minor styling adjustments related to accessibility, if necessary, but unlikely for this task).
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
--   Any files outside of `src/lib/` or test configuration files.
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   Create a new test file: `src/lib/__tests__/firestore.test.ts`.
--   Write comprehensive unit tests for the functions exported from `src/lib/firestore.ts`.
--   Ensure Firebase SDK calls are appropriately mocked using `vitest` and `vi.mock()` to isolate unit tests from actual Firebase services.
--   Aim for high code coverage for `src/lib/firestore.ts`.
--   Keep diff ≤ 150 lines.
--   Run `npm test`, `npm run build && npm run lint` before finishing and ensure all pass.
--   Prefer adding tests when touching `src/lib/` files.
--   Report follow-up items as comments, not additional code.
+- Keep diff ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files (not directly applicable to this UI-focused task).
+- Report follow-up items as comments, not additional code.
 
-## Output Format
+## Worker prompt
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
+Your task is to identify and modify all icon-only buttons in the application by adding a descriptive `aria-label` attribute.
+
+1.  **Identify Icon-Only Buttons:** Scan through the application's React components (e.g., in `src/components/`, `src/pages/`) for `<button>` elements that contain only an icon (e.g., a React Feather icon like `FaPlus`, `FaEdit`, `FaTrash`, etc.) and do not have visible text.
+2.  **Add `aria-label`:** For each identified icon-only button, add an `aria-label` attribute with a concise and clear description of the button's action.
+    *   Example: If a button shows a plus icon and adds a new item, add `aria-label="Add new item"`.
+    *   Example: If a button shows a trash icon and deletes an item, add `aria-label="Delete item"`.
+    *   Ensure the `aria-label` accurately conveys the button's purpose to a screen reader user.
+3.  **Verification:** After making changes, mentally (or by inspection) ensure that all primary interactive icon buttons have been addressed.
+
+**Acceptance Criteria:**
+- All icon-only buttons in the main application views (e.g., item list, item details, tag management) have an `aria-label` attribute.
+- The `aria-label` accurately describes the button's function.
+
+**Required test commands:**
+```bash
+npm run build
+npm run lint
+```
