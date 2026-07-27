@@ -2,17 +2,17 @@
 
 ## Context
 
-The product roadmap for nail-report is in Phase 2, focusing on stability, test coverage, and UX improvements. This task specifically addresses Phase 2.4, enhancing accessibility for users.
+The current phase of the roadmap focuses on improving stability, test coverage, and UX. This task initiates the test coverage effort by adding unit tests for core Firebase Firestore helper functions.
 
 ## Objective
 
-Add `aria-label` attributes to all icon-only buttons throughout the application to improve accessibility for screen reader users.
+Implement unit tests for the `addNailItem` and `getNailItems` helper functions located in `src/lib/firestore.ts` using Vitest. The tests should mock Firebase SDK calls to ensure isolation and predictability.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- Specifically, any `.tsx` or `.ts` files within `src/components/`, `src/pages/`, or other UI-related directories that render interactive icon-only buttons.
-- `src/App.css` (for minor styling adjustments related to accessibility, if necessary, but unlikely for this task).
+- `src/lib/firestore.ts` (modifications to export functions if needed for testing)
+- `src/__tests__/firestore.test.ts` (new file for unit tests)
+- `vite.config.ts` (only if absolutely necessary for Vitest configuration, but assume Vitest is generally set up)
 
 ## Forbidden Scope
 
@@ -25,28 +25,17 @@ Add `aria-label` attributes to all icon-only buttons throughout the application 
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files (not directly applicable to this UI-focused task).
-- Report follow-up items as comments, not additional code.
+- Create a new test file `src/__tests__/firestore.test.ts`.
+- Write unit tests for `addNailItem` and `getNailItems` functions.
+- Mock Firebase Firestore SDK functions (e.g., `collection`, `addDoc`, `getDocs`, `query`, `orderBy`) using `vi.mock('firebase/firestore')`.
+- Ensure tests verify successful operations and handle potential errors gracefully (e.g., by checking for expected return values or error throwing).
+- Keep the overall diff size to less than 150 lines.
+- Run `npm test`, `npm run build`, and `npm run lint` before finishing and ensure all pass.
 
-## Worker prompt
+## Output Format
 
-Your task is to identify and modify all icon-only buttons in the application by adding a descriptive `aria-label` attribute.
-
-1.  **Identify Icon-Only Buttons:** Scan through the application's React components (e.g., in `src/components/`, `src/pages/`) for `<button>` elements that contain only an icon (e.g., a React Feather icon like `FaPlus`, `FaEdit`, `FaTrash`, etc.) and do not have visible text.
-2.  **Add `aria-label`:** For each identified icon-only button, add an `aria-label` attribute with a concise and clear description of the button's action.
-    *   Example: If a button shows a plus icon and adds a new item, add `aria-label="Add new item"`.
-    *   Example: If a button shows a trash icon and deletes an item, add `aria-label="Delete item"`.
-    *   Ensure the `aria-label` accurately conveys the button's purpose to a screen reader user.
-3.  **Verification:** After making changes, mentally (or by inspection) ensure that all primary interactive icon buttons have been addressed.
-
-**Acceptance Criteria:**
-- All icon-only buttons in the main application views (e.g., item list, item details, tag management) have an `aria-label` attribute.
-- The `aria-label` accurately describes the button's function.
-
-**Required test commands:**
-```bash
-npm run build
-npm run lint
-```
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
