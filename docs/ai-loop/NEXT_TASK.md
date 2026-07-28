@@ -2,19 +2,17 @@
 
 ## Context
 
-The `nail-report` application is currently in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. The immediate focus is on establishing robust test coverage for core utility functions. This task is the first substantive step towards implementing unit tests for the Firebase helper functions.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses an item from Phase 2.4 Accessibility.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest, focusing on core CRUD operations and mocking the Firebase SDK.
+Add `aria-label` attributes to all icon-only buttons in the application to improve accessibility for screen reader users.
 
 ## Allowed Scope
 
 - `src/` (except `src/main.tsx`)
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but primarily for understanding)
-- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
-- `src/App.css` (CSS improvements - not applicable for this task)
-- `vitest.config.ts` (if minimal configuration is needed for mocking, ensure no new npm dependencies are introduced)
+- `src/components/` (Likely location of most icon buttons)
+- `src/App.css` (if minor styling adjustments are needed, though unlikely)
 
 ## Forbidden Scope
 
@@ -27,32 +25,40 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 
 ## Requirements
 
+- Identify all interactive elements that function as buttons but only contain an icon (e.g., `<button><FaIcon /></button>`).
+- For each identified icon-only button, add an `aria-label` attribute that clearly describes the button's action (e.g., `aria-label="Delete item"`, `aria-label="Edit item"`, `aria-label="Upload image"`).
+- Ensure the `aria-label` content is descriptive and contextually appropriate.
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
+
+## Output Format
+
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
 
 ## Worker prompt
 
-Your task is to add unit tests for the core Firebase Firestore helper functions located in `src/lib/firestore.ts`.
+Jules, your task is to iterate through the React components in the `src/` directory, focusing on `src/components/`. Identify all `<button>` elements that primarily contain an icon (e.g., from `react-icons`) and do not have visible text. For each such button, add a descriptive `aria-label` attribute.
 
-**Steps:**
+**Example:**
 
-1.  **Create a new test file**: Create `src/__tests__/firestore.test.ts`.
-2.  **Mock Firebase SDK**: Use `vi.mock` from Vitest to mock the necessary Firebase Firestore SDK functions (e.g., `collection`, `doc`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`, `query`, `where`, etc.) to isolate the `firestore.ts` helpers during testing. Ensure mocks return predictable values for success and throw errors for failure scenarios.
-3.  **Implement tests for `firestore.ts` helpers**:
-    *   Focus on the CRUD operations: `addNailItem`, `getNailItems`, `updateNailItem`, and `deleteNailItem`.
-    *   For each function, write at least one test case for a successful operation and one for an error scenario (e.g., Firestore operation fails).
-    *   Verify that the functions correctly interact with the mocked Firebase SDK and return the expected data or throw appropriate errors.
-    *   Ensure that any data transformations within the helper functions are correctly applied.
-4.  **Verify test execution**: Ensure all new tests pass when running the test suite.
+**Before:**
+```tsx
+<button onClick={handleDelete}>
+  <FaTrashAlt />
+</button>
+```
 
-**Acceptance Criteria:**
+**After:**
+```tsx
+<button onClick={handleDelete} aria-label="Delete item">
+  <FaTrashAlt />
+</button>
+```
 
-*   A new test file `src/__tests__/firestore.test.ts` is created.
-*   The `addNailItem`, `getNailItems`, `updateNailItem`, and `deleteNailItem` functions in `src/lib/firestore.ts` have unit tests.
-*   Firebase Firestore SDK functions are effectively mocked using `vi.mock`.
-*   Tests cover both successful execution paths and basic error handling for the targeted functions.
-*   All tests pass when `npm test` is run.
-*   The overall diff remains within the ≤150 line limit.
-*   No new npm dependencies are added to `package.json`.
+Carefully consider the context of each button to provide an accurate and helpful `aria-label`. For instance, a trash icon button within a list of items should specify "Delete [item type]" if possible, or just "Delete" if generic.
+After making changes, run `npm run build && npm run lint` to ensure no new errors or warnings are introduced.
