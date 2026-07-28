@@ -2,37 +2,37 @@
 
 ## Context
 
-The application is in Phase 2, focusing on improving stability, test coverage, and UX. This task will contribute to test coverage by adding unit tests for core Firebase utility functions.
+The product roadmap outlines Phase 2, which focuses on improving stability, test coverage, and UX. This task initiates the test coverage effort by adding unit tests for core Firebase helper functions. `src/lib/firestore.ts` contains critical functions for managing nail items in Firestore, making it a high priority for robust testing.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest. This task focuses on testing the CRUD operations related to `nailItems`.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor modifications if necessary for testability)
-- `src/__tests__/lib/firestore.test.ts` (new file for tests)
-- `vite.config.ts` (if Vitest setup for mocks is needed)
-- `package.json` (only if adding `vitest` or `jsdom` for `test` script)
+- `src/lib/firestore.ts` (minor refactoring for testability is allowed, but no changes to core logic or external behavior)
+- `src/__tests__/` (for creating new test files, e.g., `src/__tests__/firestore.test.ts`, and any necessary test utility files)
+- `package.json` (only for adding or modifying a `test` script to run Vitest, e.g., `"test": "vitest"`. **DO NOT add new `dependencies` or `devDependencies`.**)
+- `vite.config.ts` (only for adding or modifying `test` configuration settings for Vitest if absolutely necessary, e.g., `test: { environment: 'jsdom' }`. **DO NOT add new plugins that introduce new npm dependencies.**)
 
 ## Forbidden Scope
 
 - `src/main.tsx` (entry point — do not modify)
 - `commands/` (PowerShell scripts — do not modify)
 - `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval, except if vitest config requires it for a test environment like `jsdom`)
+- `package.json` deps (no new npm packages without human approval - this explicitly means **do not add new entries to `dependencies` or `devDependencies`**. Only modify existing scripts/config.)
 - Firebase deploy commands
 - Secrets and credentials
-- Any files outside the `src/` directory, except `vite.config.ts`.
+- Any other files not explicitly listed in "Allowed Scope".
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create a new test file `src/__tests__/lib/firestore.test.ts`.
-- Mock Firebase SDK dependencies as needed using `vi.mock`.
-- Focus on testing the helper functions that interact with Firestore directly (e.g., `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`, etc.).
-- Ensure `npm run build && npm run lint` passes after changes.
-- Ensure `npm run test` passes after changes.
+- Create a new test file: `src/__tests__/firestore.test.ts`.
+- Focus on testing the core CRUD functions in `src/lib/firestore.ts` such as `getNailItems`, `addNailItem`, `updateNailItem`, and `deleteNailItem`.
+- Use `vi.mock` to mock Firebase SDK functions (e.g., `getFirestore`, `collection`, `doc`, `getDocs`, `addDoc`, `updateDoc`, `deleteDoc`) to ensure tests are isolated and do not interact with actual Firebase services.
+- Ensure tests cover both successful operations and basic error handling for Firestore interactions.
+- Run `npm run build && npm run lint && npm run test` before finishing.
 
 ## Output Format
 
@@ -43,16 +43,6 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 - Suggested next task
 
 ---
-**Acceptance Criteria:**
-- A new file `src/__tests__/lib/firestore.test.ts` is created.
-- This file contains unit tests for at least two key functions in `src/lib/firestore.ts`.
-- Firebase SDK calls are appropriately mocked.
-- `npm run test` passes without errors.
-
-**Required Test Commands:**
-```bash
-npm install # if new test deps like jsdom are needed for the test environment
-npm run test
-npm run build
-npm run lint
-```
+*Self-correction by the AI loop:*
+*Initial thought was to include `package.json` for adding Vitest as a `devDependency`, but the "no new npm dependencies" constraint is strict. The roadmap indicates Vitest is the chosen runner, implying it should already be available or its setup is a prior, separate task. Thus, I refined the allowed scope to only touch `package.json` for scripts/config, not deps.*
+*This task assumes Vitest is either already installed as a `devDependency` or the user agent is expected to report if it's not and the task cannot proceed without violating the constraint.*
