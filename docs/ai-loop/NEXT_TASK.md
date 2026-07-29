@@ -2,17 +2,18 @@
 
 ## Context
 
-The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses an item from Phase 2.4 Accessibility.
+The product roadmap indicates Phase 2 is active, focusing on stability, test coverage, and UX. The first priority in Phase 2.1 is "Test coverage," specifically unit tests for Firestore helper functions using Vitest. This task initiates the process of improving test coverage for core application logic.
 
 ## Objective
 
-Add `aria-label` attributes to all icon-only buttons in the application to improve accessibility for screen reader users.
+Implement unit tests for helper functions in `src/lib/firestore.ts`.
 
 ## Allowed Scope
 
 - `src/` (except `src/main.tsx`)
-- `src/components/` (Likely location of most icon buttons)
-- `src/App.css` (if minor styling adjustments are needed, though unlikely)
+- `src/lib/firestore.ts` (modifications to support testing, if necessary, but focus on testing)
+- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `vite.config.ts` (only if Vitest setup is incomplete, but prefer to assume it's ready)
 
 ## Forbidden Scope
 
@@ -25,11 +26,9 @@ Add `aria-label` attributes to all icon-only buttons in the application to impro
 
 ## Requirements
 
-- Identify all interactive elements that function as buttons but only contain an icon (e.g., `<button><FaIcon /></button>`).
-- For each identified icon-only button, add an `aria-label` attribute that clearly describes the button's action (e.g., `aria-label="Delete item"`, `aria-label="Edit item"`, `aria-label="Upload image"`).
-- Ensure the `aria-label` content is descriptive and contextually appropriate.
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -42,23 +41,34 @@ Add `aria-label` attributes to all icon-only buttons in the application to impro
 
 ## Worker prompt
 
-Jules, your task is to iterate through the React components in the `src/` directory, focusing on `src/components/`. Identify all `<button>` elements that primarily contain an icon (e.g., from `react-icons`) and do not have visible text. For each such button, add a descriptive `aria-label` attribute.
+Your task is to add unit tests for the core helper functions responsible for interacting with the `nailItems` collection in Firebase Firestore, located in `src/lib/firestore.ts`.
 
-**Example:**
+**Specific steps:**
 
-**Before:**
-```tsx
-<button onClick={handleDelete}>
-  <FaTrashAlt />
-</button>
+1.  Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
+2.  Set up Vitest and mock the Firebase SDK (e.g., `firebase/firestore`, `firebase/app`) as needed for unit testing the functions in `src/lib/firestore.ts`. Refer to the roadmap's mention of `vitest + vi.mock` for mocking Firebase SDK.
+3.  Write unit tests for at least two key functions in `src/lib/firestore.ts` that perform CRUD operations on `nailItems`. Examples include:
+    *   `getNailItems` (fetching items)
+    *   `addNailItem` (creating an item)
+    *   `updateNailItem` (updating an item)
+    *   `deleteNailItem` (deleting an item)
+    *   `getPublicShare` (if applicable and directly related to `firestore.ts` helpers).
+    Prioritize testing functions that handle data fetching and manipulation.
+4.  Ensure tests cover successful execution and, where appropriate, error handling paths for these functions.
+5.  All tests should be self-contained and not interact with actual Firebase services.
+
+**Acceptance Criteria:**
+
+*   A new test file `src/__tests__/firestore.test.ts` (or similar) is added.
+*   The new file contains unit tests for at least two Firestore helper functions from `src/lib/firestore.ts`.
+*   Firebase SDK dependencies are correctly mocked using Vitest.
+*   All new tests pass successfully when `npm test` is run.
+
+**Required test commands:**
+
+```bash
+npm install # Ensure dev dependencies are installed if running for the first time
+npm run build
+npm run lint
+npm test # To run the new unit tests
 ```
-
-**After:**
-```tsx
-<button onClick={handleDelete} aria-label="Delete item">
-  <FaTrashAlt />
-</button>
-```
-
-Carefully consider the context of each button to provide an accurate and helpful `aria-label`. For instance, a trash icon button within a list of items should specify "Delete [item type]" if possible, or just "Delete" if generic.
-After making changes, run `npm run build && npm run lint` to ensure no new errors or warnings are introduced.
