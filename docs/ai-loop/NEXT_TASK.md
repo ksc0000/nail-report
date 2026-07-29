@@ -1,18 +1,20 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap indicates that Phase 2.1 is focused on improving test coverage. The current state shows no unit tests for `src/lib/firestore.ts` have been implemented yet. This task aims to address that gap.
+The product roadmap outlines Phase 2, which focuses on improving stability, test coverage, and UX, including accessibility. The current state indicates that no substantive tasks have been completed by Jules yet. The constraint `no-new-npm-deps` is critical.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
+Implement exactly one bounded task from Phase 2 of the roadmap: enhance accessibility by adding `aria-label` attributes to all icon-only buttons in the application.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but primarily testing existing exports)
-- `src/__tests__/lib/firestore.test.ts` (new test file)
-- `src/App.css` (no changes expected for this task)
+- `src/` (except `src/main.tsx`)
+- `src/components/` (e.g., button components, list items, navigation)
+- `src/App.tsx`
+- `src/App.css` (for minor style adjustments if necessary, but unlikely for this task)
 
 ## Forbidden Scope
 
@@ -25,14 +27,12 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 
 ## Requirements
 
+- Identify all button elements (`<button>`) that contain only an icon (e.g., using an `<img>`, `<svg>`, or CSS icon font) and have no visible text.
+- Add a descriptive `aria-label` attribute to each identified icon-only button. The label should clearly describe the button's action or purpose for screen reader users (e.g., "Delete item", "Edit item", "Add new item", "Sign out").
+- Do not modify buttons that already have visible text or an existing `aria-label`.
 - Keep diff ≤ 150 lines.
-- Create a new test file `src/__tests__/lib/firestore.test.ts`.
-- Write unit tests for the functions exported from `src/lib/firestore.ts`.
-- Use Vitest and mock Firebase SDK dependencies as needed.
-- Focus on testing the logic of the helper functions, not the Firebase SDK itself.
-- Run `npm run test` to verify tests pass.
 - Run `npm run build && npm run lint` before finishing.
-- Report follow-up items as comments, not additional code.
+- Report any icon-only buttons that are not `button` elements (e.g., `div` with click handler) as a follow-up item.
 
 ## Output Format
 
@@ -41,3 +41,4 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+```
