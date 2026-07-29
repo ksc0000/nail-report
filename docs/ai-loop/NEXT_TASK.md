@@ -1,20 +1,19 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap outlines Phase 2, which focuses on improving stability, test coverage, and UX, including accessibility. The current state indicates that no substantive tasks have been completed by Jules yet. The constraint `no-new-npm-deps` is critical.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses Phase 2.1, which aims to increase test coverage for critical application logic.
 
 ## Objective
 
-Implement exactly one bounded task from Phase 2 of the roadmap: enhance accessibility by adding `aria-label` attributes to all icon-only buttons in the application.
+Add unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/components/` (e.g., button components, list items, navigation)
-- `src/App.tsx`
-- `src/App.css` (for minor style adjustments if necessary, but unlikely for this task)
+- `src/lib/firestore.ts` (for minor adjustments if needed to enable testing)
+- `src/__tests__/` (create new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `src/App.css` (no changes expected for this task)
+- `package.json` (for adding test scripts if missing, but no new npm dependencies)
 
 ## Forbidden Scope
 
@@ -27,12 +26,28 @@ Implement exactly one bounded task from Phase 2 of the roadmap: enhance accessib
 
 ## Requirements
 
-- Identify all button elements (`<button>`) that contain only an icon (e.g., using an `<img>`, `<svg>`, or CSS icon font) and have no visible text.
-- Add a descriptive `aria-label` attribute to each identified icon-only button. The label should clearly describe the button's action or purpose for screen reader users (e.g., "Delete item", "Edit item", "Add new item", "Sign out").
-- Do not modify buttons that already have visible text or an existing `aria-label`.
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Report any icon-only buttons that are not `button` elements (e.g., `div` with click handler) as a follow-up item.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
+
+## Worker prompt
+
+Implement unit tests for the functions defined in `src/lib/firestore.ts`.
+
+1.  **Create a new test file**: Create `src/__tests__/firestore.test.ts`.
+2.  **Mock Firebase SDK**: Use `vitest`'s mocking capabilities (`vi.mock`) to mock the Firebase Firestore SDK. Specifically, mock `getFirestore`, `collection`, `doc`, `getDocs`, `getDoc`, `addDoc`, `updateDoc`, `deleteDoc` and any other Firestore-related functions used in `src/lib/firestore.ts`. The mocks should simulate successful operations and potential errors.
+3.  **Test core functions**: Write tests for the following functions, at a minimum:
+    *   `getNailItems`
+    *   `addNailItem`
+    *   `updateNailItem`
+    *   `deleteNailItem`
+    *   `getPublicShare`
+    *   `addPublicShare`
+    *   `updatePublicShare`
+    *   `deletePublicShare`
+4.  **Cover success and error cases**: For each function, include tests that cover successful data retrieval/manipulation and scenarios where Firestore operations might fail (e.g., throwing an error).
+5.  **Assert data integrity and function calls**: Use Vitest's `expect` assertions to verify that functions return expected values and that the mocked Firestore methods are called with the correct arguments.
 
 ## Output Format
 
@@ -41,4 +56,3 @@ Implement exactly one bounded task from Phase 2 of the roadmap: enhance accessib
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-```
