@@ -2,17 +2,16 @@
 
 ## Context
 
-The `nail-report` application is in Phase 2, focusing on improving stability, test coverage, and UX. This task contributes to the "2.1 Test coverage" goal by adding unit tests for core Firebase helper functions.
+The AI Loop is in Phase 2 of the roadmap, focusing on improving stability, test coverage, and UX. This is the first substantive task for the worker agent. The goal is to improve accessibility by adding `aria-label` attributes to icon-only buttons, ensuring better support for assistive technologies.
 
 ## Objective
 
-Implement Vitest unit tests for the helper functions located in `src/lib/firestore.ts`.
+Add `aria-label` attributes to all icon-only buttons throughout the application to enhance accessibility.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but ideally no functional changes)
-- `src/__tests__/` (create new test files, e.g., `src/__tests__/firestore.test.ts`)
-- `package.json` (only if absolutely necessary for Vitest setup, like adding a `test` script, but prioritize existing setup if possible)
+- `src/` (except `src/main.tsx`)
+- `src/App.css` (for minor layout adjustments if necessary, but not the primary focus)
 
 ## Forbidden Scope
 
@@ -25,12 +24,10 @@ Implement Vitest unit tests for the helper functions located in `src/lib/firesto
 
 ## Requirements
 
-- Add a new test file, `src/__tests__/firestore.test.ts`.
-- Write unit tests for at least two helper functions within `src/lib/firestore.ts`, such as `createNailItem` and `getNailItems`.
-- Mock Firebase SDK dependencies using `vi.mock` as necessary to isolate the functions under test.
-- Ensure tests cover basic success cases and error handling (if applicable and easily testable without complex mocks).
-- Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint && npm test` before finishing.
+- Identify all button elements that contain only an icon and no visible text label.
+- Add a descriptive `aria-label` attribute to each identified button. The label should clearly convey the button's action (e.g., "Delete item", "Edit item", "Add tag").
+- Ensure the diff remains ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing.
 
 ## Output Format
 
@@ -39,3 +36,20 @@ Implement Vitest unit tests for the helper functions located in `src/lib/firesto
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+
+## Worker prompt
+
+Implement the `aria-label` attributes as described in the Objective and Requirements sections. Focus on components that contain interactive buttons displaying only an icon.
+
+**Acceptance Criteria:**
+
+- All icon-only `<button>` elements in the application have a meaningful `aria-label` attribute.
+- The application builds successfully (`npm run build`).
+- The linter passes (`npm run lint`).
+
+**Required Test Commands:**
+
+```bash
+npm run build
+npm run lint
+```
