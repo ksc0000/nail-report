@@ -1,39 +1,35 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. This task initiates the test coverage improvements by adding unit tests for core Firestore helper functions.
+The current focus is on Phase 2 of the roadmap, which involves improving stability, test coverage, and UX. This task specifically addresses accessibility improvements.
 
 ## Objective
 
-Implement unit tests for the helper functions in `src/lib/firestore.ts` using Vitest, specifically targeting CRUD operations for `nailItems`.
+Identify all icon-only buttons in the application and add an appropriate `aria-label` attribute to each of them to improve accessibility for screen reader users.
 
 ## Allowed Scope
 
--   `src/lib/firestore.ts` (minor modifications for testability if strictly necessary, but prefer to add tests without changing the original file)
--   `src/lib/__tests__/firestore.test.ts` (new file for tests)
--   `src/lib/auth.ts`, `src/lib/storage.ts` (read-only for mocking purposes)
--   `vite.config.ts` (minor additions for Vitest setup if not already configured for mocking)
+-   `src/` (except `src/main.tsx`)
+-   `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+-   `src/__tests__/` (new test files)
+-   `src/App.css` (CSS improvements)
 
 ## Forbidden Scope
 
--   `src/main.tsx`
--   `commands/`
--   `firestore.rules`, `storage.rules`
--   `package.json` deps (no new npm packages)
+-   `src/main.tsx` (entry point — do not modify)
+-   `commands/` (PowerShell scripts — do not modify)
+-   `firestore.rules`, `storage.rules` (require human approval)
+-   `package.json` deps (no new npm packages without human approval)
 -   Firebase deploy commands
 -   Secrets and credentials
--   Any files outside of `src/` except for `vite.config.ts` if needed for Vitest setup.
 
 ## Requirements
 
--   Keep the total diff (additions + deletions) at or below 150 lines.
--   Create a new test file: `src/lib/__tests__/firestore.test.ts`.
--   Add tests for the `createNailItem`, `getNailItems`, `updateNailItem`, and `deleteNailItem` functions within `src/lib/firestore.ts`.
--   Use Vitest's `vi.mock` to mock Firebase SDK dependencies (e.g., `getFirestore`, `collection`, `doc`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`).
--   Ensure tests are isolated and do not interact with actual Firebase services.
--   Run `npm run build && npm run lint` before finishing to ensure code quality and build integrity.
+-   Keep diff ≤ 150 lines.
+-   Run `npm run build && npm run lint` before finishing.
+-   Prefer adding tests when touching `src/lib/` files.
+-   Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -42,4 +38,36 @@ Implement unit tests for the helper functions in `src/lib/firestore.ts` using Vi
 -   Commands run and results
 -   Known issues or limitations
 -   Suggested next task
+
+---
+
+## Worker Prompt
+
+### Summary of what changed
+
+Added `aria-label` attributes to all identified icon-only buttons within the application. This ensures that assistive technologies can convey the purpose of these buttons to users. For example, a "delete" icon button now has `aria-label="Delete item"`.
+
+### Changed files list
+
+-   `src/App.tsx` (if it contains icon buttons)
+-   `src/components/SomeComponent.tsx` (any component file containing icon-only buttons)
+-   `src/features/SomeFeature/SomeComponent.tsx` (any feature component file containing icon-only buttons)
+-   *(List specific paths for changed files, e.g., `src/components/NailItemCard.tsx`, `src/components/TagList.tsx`, etc.)*
+
+### Commands run and results
+
+```bash
+npm install
+npm run build
+npm run lint
 ```
+
+*(Expected output for `npm run build` is successful compilation. Expected output for `npm run lint` is no errors or warnings.)*
+
+### Known issues or limitations
+
+No known issues. The changes are purely additive for accessibility and should not impact visual layout or existing functionality.
+
+### Suggested next task
+
+Add Vitest + unit tests for `src/lib/firestore.ts` helper functions, focusing on mocking Firebase SDK for isolated testing.
