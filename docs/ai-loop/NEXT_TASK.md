@@ -1,19 +1,18 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap indicates a focus on improving accessibility in Phase 2.4. This task addresses a specific accessibility improvement for interactive elements.
+The `nail-report` application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. The current state indicates that test coverage for `src/lib/` helper functions is a priority.
 
 ## Objective
 
-Identify all icon-only buttons in the application and add appropriate `aria-label` attributes to them. The `aria-label` should clearly describe the button's action or purpose for screen reader users.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest, focusing on core functionality and mocking Firebase SDK interactions.
 
 ## Allowed Scope
 
-- `src/components/` (e.g., `NailItem.tsx`, `Header.tsx`, `AuthStatus.tsx`, `TagManager.tsx`, `ShareDialog.tsx`)
-- `src/App.tsx`
-- `src/lib/` (if any utility functions related to UI rendering need adjustment, though unlikely for this task)
+- `src/lib/firestore.ts` (for understanding the functions to be tested)
+- `src/__tests__/firestore.test.ts` (or a similar new test file in `src/__tests__/`)
+- `src/vitest.setup.ts` (if minor setup is needed for Firebase mocking, though `vi.mock` in test files is preferred)
 
 ## Forbidden Scope
 
@@ -23,14 +22,17 @@ Identify all icon-only buttons in the application and add appropriate `aria-labe
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
+- Any files outside `src/` except for the specified test files.
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- For each `button` element that contains only an icon (e.g., an SVG or a Material Icon), add an `aria-label` attribute with a concise, descriptive text.
-- Example: `<button><MaterialIcon icon="delete" /></button>` should become `<button aria-label="Delete nail item"><MaterialIcon icon="delete" /></button>`.
-- Ensure the `aria-label` text is meaningful out of context.
+- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
+- Write unit tests for at least 2-3 key helper functions in `src/lib/firestore.ts` that interact with Firestore (e.g., functions for adding, getting, updating, or deleting `nailItems`).
+- Ensure Firebase SDK calls (e.g., `addDoc`, `getDoc`, `updateDoc`, `deleteDoc`, `collection`, `doc`) are properly mocked using `vi.mock` to isolate the unit tests from actual Firebase interactions.
+- Do not modify the production code in `src/lib/firestore.ts` unless absolutely necessary to enable testing (e.g., exporting an unexported helper). Any such modifications must be minimal.
 - Run `npm run build && npm run lint` before finishing.
+- Run `npm test` and ensure all new tests pass.
 
 ## Output Format
 
@@ -39,32 +41,3 @@ Identify all icon-only buttons in the application and add appropriate `aria-labe
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
-## Worker Prompt
-
-Your task is to enhance the accessibility of the nail-report application by adding `aria-label` attributes to all icon-only buttons. This is a crucial step for users relying on screen readers.
-
-1.  **Identify Icon-Only Buttons**: Go through the application's UI components (starting with `src/components/` and `src/App.tsx`) and locate all `<button>` elements that primarily use an icon (SVG, Material Icon, etc.) as their visual content, without accompanying text.
-2.  **Add `aria-label`**: For each identified button, add an `aria-label` attribute. The value of this attribute should be a clear, human-readable description of the button's function.
-    *   For example, a button showing a trash can icon for deleting an item might get `aria-label="Delete item"`.
-    *   A button showing a plus icon to add something might get `aria-label="Add new item"`.
-    *   A button with an "X" icon to close a dialog might get `aria-label="Close dialog"`.
-3.  **Test**: After making changes, ensure the application still functions as expected.
-4.  **Lint and Build**: Before completing the task, run `npm run build && npm run lint` to catch any compilation or style errors.
-
-**Example Transformation:**
-
-```diff
---- a/src/components/SomeComponent.tsx
-+++ b/src/components/SomeComponent.tsx
-@@ -10,7 +10,7 @@
-     return (
-         <div>
-             <span>Hello</span>
--            <button onClick={handleDelete} className="icon-button">
-+            <button onClick={handleDelete} className="icon-button" aria-label="Delete item">
-                 <svg>...</svg> {/* A delete icon */}
-             </button>
-         </div>
-
-```
