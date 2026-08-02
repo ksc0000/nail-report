@@ -2,17 +2,18 @@
 
 ## Context
 
-The application needs improved accessibility. Icon-only buttons currently lack textual labels, making them difficult for screen reader users to understand.
+The current phase focuses on improving stability, test coverage, and UX. This task specifically addresses the "Loading states" objective by adding a visual indication while data is being fetched.
 
 ## Objective
 
-Add `aria-label` attributes to all icon-only buttons in the application to provide accessible names for screen readers.
+Implement a skeleton loading UI that displays when the list of nail items is being fetched from Firestore.
 
 ## Allowed Scope
 
-- `src/components/` (modify existing component files)
-- `src/App.tsx` (if icon buttons are directly in App.tsx)
-- `src/App.css` (only if absolutely necessary for layout adjustments related to labels, but unlikely for this task)
+- `src/App.tsx`
+- `src/App.css`
+- `src/components/` (for new loading skeleton component, if created)
+- `src/hooks/` (if data fetching logic needs adjustment for loading state)
 
 ## Forbidden Scope
 
@@ -25,9 +26,11 @@ Add `aria-label` attributes to all icon-only buttons in the application to provi
 
 ## Requirements
 
+- When the application is fetching `nailItems` (e.g., on initial load or after a refresh), display a skeleton loading UI in the area where the nail item list would normally appear.
+- The skeleton should visually represent multiple nail item placeholders (e.g., a few grey rectangles for images/text areas).
+- The loading skeleton should disappear, and the actual nail item list should render once the data is available.
+- Integrate the loading state logic into `src/App.tsx` or an appropriate child component responsible for displaying the list.
 - Keep diff ≤ 150 lines.
-- For every `<button>` element that contains only an icon (e.g., `<button><Icon /></button>`), add an `aria-label` attribute with a descriptive text for its action.
-- The `aria-label` text should be concise and clearly communicate the button's purpose (e.g., "Delete item", "Edit item", "Add tag").
 - Run `npm run build && npm run lint` before finishing.
 - Report follow-up items as comments, not additional code.
 
