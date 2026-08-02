@@ -1,20 +1,19 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap outlines Phase 2, which focuses on improving stability, test coverage, and UX. The first sub-phase (2.1) is dedicated to test coverage, specifically mentioning unit tests for Firebase helper functions. This task directly addresses that objective.
+The product roadmap for `nail-report` includes improving accessibility in Phase 2.4. This task focuses on a specific accessibility improvement: ensuring icon-only buttons are properly labeled for screen readers.
 
 ## Objective
 
-Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`.
+Enhance accessibility by identifying all icon-only buttons in the application and adding a descriptive `aria-label` attribute to each.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but ideally not)
-- `src/__tests__/lib/firestore.test.ts` (new file for tests)
-- `src/__tests__/lib/__mocks__/firebase-sdk.ts` (new file for Firebase SDK mocking)
-- `vite.config.ts` (potentially minor updates for Vitest config if necessary, but avoid if possible)
+- `src/` (except `src/main.tsx`)
+- `src/components/` (modifying existing components)
+- `src/views/` (modifying existing view components)
+- `src/App.css` (if minor styling adjustments are needed, but not expected)
 
 ## Forbidden Scope
 
@@ -24,18 +23,28 @@ Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`.
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- Any files outside the `src/lib/firestore.ts`, `src/__tests__/` directory, or `vite.config.ts`.
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create a new test file: `src/__tests__/lib/firestore.test.ts`.
-- Mock the Firebase SDK as needed using `vi.mock` to ensure tests are isolated and do not interact with actual Firebase services. A separate mock file `src/__tests__/lib/__mocks__/firebase-sdk.ts` is encouraged for reusability.
-- Add unit tests for at least two different helper functions within `src/lib/firestore.ts`. Focus on functions that interact with Firestore (e.g., `addDoc`, `getDocs`, `updateDoc`, `deleteDoc` wrappers).
-- Ensure tests cover basic success cases.
-- Run `npm run test` to verify tests pass.
 - Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files. (Not applicable for this UI task)
 - Report follow-up items as comments, not additional code.
+
+## Worker prompt
+
+Your task is to add `aria-label` attributes to all icon-only buttons within the `nail-report` application to improve accessibility for screen reader users.
+
+1.  **Identify Icon-Only Buttons:** Navigate through the application's React components (`src/components/`, `src/views/`, etc.) and locate all `<button>` elements that contain only an icon (e.g., using a library like `react-icons`) and no visible text label.
+2.  **Add `aria-label`:** For each identified button, add a meaningful `aria-label` attribute that clearly describes the button's action. For example:
+    *   A delete button with a trashcan icon might get `aria-label="Delete item"`
+    *   An edit button with a pencil icon might get `aria-label="Edit item"`
+    *   A close button with an 'X' icon might get `aria-label="Close dialog"`
+    *   A share button might get `aria-label="Share item"`
+3.  **Review and Test:**
+    *   Ensure all relevant icon-only buttons have an `aria-label`.
+    *   Verify the application still functions correctly.
+    *   Run `npm run build` and `npm run lint` to confirm there are no new errors or warnings.
 
 ## Output Format
 
@@ -44,4 +53,3 @@ Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`.
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-```
