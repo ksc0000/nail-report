@@ -2,16 +2,18 @@
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses an item under Phase 2.4: Accessibility.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. The current state indicates that test coverage is a priority. This task will initiate the process of adding unit tests to the application's core logic.
 
 ## Objective
 
-Enhance accessibility by identifying all icon-only buttons within the application and adding a descriptive `aria-label` attribute to each.
+Add Vitest unit tests for helper functions in `src/lib/firestore.ts`, specifically focusing on basic CRUD operations related to `nailItems` and `publicShares`.
 
 ## Allowed Scope
 
--   `src/` (except `src/main.tsx`)
--   `src/App.css` (for minor styling adjustments if necessary, though unlikely for this task)
+-   `src/lib/firestore.ts` (minor refactoring for testability if strictly necessary, but prefer to keep changes minimal)
+-   `src/__tests__/firestore.test.ts` (new file for tests)
+-   `package.json` (only to add `vitest` scripts if not already present, but *not* to add new dependencies)
+-   `vite.config.ts` (only for Vitest configuration if necessary)
 
 ## Forbidden Scope
 
@@ -21,15 +23,17 @@ Enhance accessibility by identifying all icon-only buttons within the applicatio
 -   `package.json` deps (no new npm packages without human approval)
 -   Firebase deploy commands
 -   Secrets and credentials
+-   Any UI components or CSS files
 
 ## Requirements
 
--   Identify all `button` elements that contain only an icon (e.g., `<button><IconComponent /></button>`) and no visible text.
--   Add a semantic and user-friendly `aria-label` attribute to each identified icon-only button. The `aria-label` should clearly describe the button's action or purpose (e.g., `aria-label="Delete nail item"`, `aria-label="Edit tag"`, `aria-label="Upload image"`).
--   Ensure that existing functionality and styling are not negatively impacted.
--   Keep the total line diff for the PR ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing to ensure code quality and prevent build errors.
--   Prefer small, incremental changes. If the number of icon buttons is very large, select a subset that fits within the line limit.
+-   Keep diff ≤ 150 lines.
+-   Create a new test file: `src/__tests__/firestore.test.ts`.
+-   Implement tests for at least two functions from `src/lib/firestore.ts` (e.g., `addItem`, `updateItem`, `deleteItem`, `getNailItem`, `getPublicShare`).
+-   Use `vitest` for the test runner.
+-   Mock Firebase SDK (Firestore) using `vi.mock` to ensure tests run in isolation without actual Firebase calls.
+-   Ensure tests are clean, readable, and cover basic success cases.
+-   Run `npm run build && npm run lint && npm test` before finishing.
 
 ## Output Format
 
