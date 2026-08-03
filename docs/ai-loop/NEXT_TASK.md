@@ -2,17 +2,19 @@
 
 ## Context
 
-The `nail-report` application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This task addresses the "2.1 Test coverage" goal by adding unit tests to critical helper functions.
+The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. A key objective in Phase 2.1 is to increase test coverage, specifically for helper functions in `src/lib/`. The current state indicates that `Vitest` is the chosen test runner and mocking Firebase SDK is part of the strategy.
+
+This task aims to improve the stability of the application by adding unit tests for a critical helper module.
 
 ## Objective
 
-Implement Vitest unit tests for the core Firebase Firestore helper functions related to `nailItems` in `src/lib/firestore.ts`.
+Implement unit tests using Vitest for the helper functions within `src/lib/firestore.ts`.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions for testing, if necessary)
+- `src/lib/firestore.ts` (minor modifications for testability, e.g., exporting unexported functions if needed)
 - `src/__tests__/firestore.test.ts` (new file for tests)
-- `vite.config.ts` (if minor Vitest configuration is needed, e.g., for `globals`)
+- `vite.config.ts` (only if absolutely necessary for Vitest configuration, but prefer to assume it's set up)
 
 ## Forbidden Scope
 
@@ -25,33 +27,18 @@ Implement Vitest unit tests for the core Firebase Firestore helper functions rel
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
+- Create a new test file `src/__tests__/firestore.test.ts`.
+- Write unit tests for at least two significant helper functions within `src/lib/firestore.ts` (e.g., `createNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`).
+- Mock Firebase Firestore SDK calls using Vitest's mocking capabilities to ensure tests are isolated and do not interact with a live database.
+- Ensure the tests cover basic success and error paths for the chosen functions.
+- Keep the diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
+- Ensure `npm run test` passes after adding the new tests.
 
-## Worker prompt
+## Output Format
 
-Create a new test file `src/__tests__/firestore.test.ts`.
-
-Implement unit tests for the core CRUD functions related to `nailItems` found in `src/lib/firestore.ts`. This includes functions such as `addNailItem`, `getNailItems`, `updateNailItem`, and `deleteNailItem`.
-
-You must mock the Firebase Firestore SDK using `vi.mock('firebase/firestore')` to ensure that the tests are isolated and do not interact with actual Firebase services. Focus on testing the logic within `src/lib/firestore.ts` and the correct invocation of Firebase SDK methods.
-
-Aim for reasonable coverage of the successful execution paths for these functions. Consider basic error path scenarios if they can be straightforwardly mocked (e.g., simulating a Firestore write failure).
-
-**Acceptance Criteria:**
-- A new file `src/__tests__/firestore.test.ts` is created.
-- `firestore.test.ts` contains unit tests for `addNailItem`, `getNailItems`, `updateNailItem`, and `deleteNailItem` (or similarly named `nailItem` CRUD functions).
-- Firebase Firestore SDK is mocked using `vi.mock`.
-- Tests pass when `npm run test` is executed.
-
-**Required Test Commands:**
-```bash
-npm install # Ensure dependencies are up-to-date
-npm run test # Run the newly added unit tests
-npm run build && npm run lint # Verify build and linting
-```
-
-**Suggested next task:**
-Add Vitest + unit tests for `src/lib/storage.ts` helpers.
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
