@@ -1,57 +1,72 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The application needs improved test coverage as part of Phase 2.1 of the roadmap. The `src/lib/firestore.ts` file contains critical helper functions for interacting with Firebase Firestore. Adding unit tests for these functions will enhance stability and ensure their correct behavior.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This task initiates the test coverage effort by adding Vitest and unit tests for core Firebase helper functions.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest. Focus on key CRUD operations or data transformation functions.
+Add Vitest setup (if necessary) and initial unit tests for key Firestore helper functions in `src/lib/firestore.ts`, specifically focusing on `addItem` and `getNailItems` related to `nailItems`.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but primarily testing existing exports)
-- `src/__tests__/lib/firestore.test.ts` (new file for tests)
-- `src/__tests__/lib/test-utils.ts` (new file for Firebase mocking utilities, if necessary)
+-   `src/lib/firestore.ts` (modifications to export functions if needed for testing, no logic changes)
+-   `src/__tests__/lib/firestore.test.ts` (new file for tests)
+-   `package.json` (to add/update Vitest scripts or dev dependencies if not present)
+-   `vitest.config.ts` (new file or modification for Vitest configuration)
+-   `tsconfig.json` (if needed for Vitest integration)
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
-- Firebase deploy commands
-- Secrets and credentials
-- `src/App.css` (not relevant to this task)
+-   `src/main.tsx` (entry point — do not modify)
+-   `commands/` (PowerShell scripts — do not modify)
+-   `firestore.rules`, `storage.rules` (require human approval)
+-   Firebase deploy commands
+-   Secrets and credentials
+-   Any files not explicitly mentioned in "Allowed Scope"
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Create a new test file, e.g., `src/__tests__/lib/firestore.test.ts`.
-- Mock Firebase SDK dependencies as needed using `vitest` and `vi.mock`.
-- Ensure tests cover at least two distinct helper functions in `src/lib/firestore.ts`.
-- Run `npm run test`, `npm run build && npm run lint` before finishing.
+-   Keep diff ≤ 150 lines.
+-   Run `npm run build && npm run lint` before finishing.
+-   Add unit tests for `src/lib/firestore.ts` helper functions, specifically `addItem` and `getNailItems` (or similar core functions for creating and retrieving nail items).
+-   Use `vi.mock` to mock the Firebase Firestore SDK dependencies (e.g., `getFirestore`, `collection`, `addDoc`, `getDocs`, `query`, `orderBy`).
+-   Ensure Vitest is properly configured to run the new tests.
+
+## Worker prompt
+
+Your task is to implement the initial test coverage for the `src/lib/firestore.ts` file.
+
+1.  **Vitest Setup:**
+    *   Verify if Vitest is already installed and configured (`package.json`, `vitest.config.ts`, `tsconfig.json`).
+    *   If not fully set up, add necessary `devDependencies` for Vitest and `@vitest/coverage-v8` to `package.json`, create a basic `vitest.config.ts`, and update `tsconfig.json` for test types if required.
+    *   Add `test` script to `package.json` if missing (e.g., `"test": "vitest"`).
+
+2.  **Create Test File:**
+    *   Create a new file: `src/__tests__/lib/firestore.test.ts`.
+
+3.  **Mock Firebase Firestore SDK:**
+    *   In `src/__tests__/lib/firestore.test.ts`, use `vi.mock` to mock the `firebase/firestore` module. This is crucial to prevent actual interaction with Firebase during tests.
+    *   Mock functions like `getFirestore`, `collection`, `addDoc`, `getDocs`, `query`, `orderBy` to return predictable data or throw controlled errors.
+
+4.  **Write Unit Tests for `src/lib/firestore.ts`:**
+    *   **Focus on `addItem`:** Write tests for the `addItem` function (or the equivalent function responsible for adding new nail items to Firestore).
+        *   Test a successful item addition.
+        *   Test error handling (e.g., if `addDoc` fails).
+    *   **Focus on `getNailItems`:** Write tests for the `getNailItems` function (or the equivalent function responsible for fetching all nail items).
+        *   Test successful retrieval of multiple items.
+        *   Test retrieval when no items exist.
+        *   Test error handling (e.g., if `getDocs` fails).
+    *   Ensure all necessary imports are handled correctly.
+
+5.  **Run Tests and Linters:**
+    *   Run `npm test` to ensure your new tests pass.
+    *   Run `npm run build && npm run lint` and address any issues.
 
 ## Output Format
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
-
-## Worker Prompt
-
-Your task is to add unit tests for the helper functions in `src/lib/firestore.ts`.
-
-1.  **Create a test file**: Add a new test file, `src/__tests__/lib/firestore.test.ts`.
-2.  **Mock Firebase SDK**: Use `vitest` and `vi.mock` to mock Firebase Firestore SDK calls (e.g., `getFirestore`, `collection`, `doc`, `getDocs`, `addDoc`, `updateDoc`, `deleteDoc`). You may create a `src/__tests__/lib/test-utils.ts` file for reusable mocking utilities if appropriate.
-3.  **Write unit tests**: Focus on testing at least two significant helper functions from `src/lib/firestore.ts` (e.g., `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`). Ensure your tests cover successful operations and potential error scenarios if easily mockable.
-4.  **Run tests**: Execute `npm run test` and ensure all tests pass.
-5.  **Lint and Build**: Run `npm run build && npm run lint` to confirm no new errors are introduced.
-
-Remember to keep the diff size small (≤ 150 lines). If necessary, create a separate task for testing additional functions.
-
-```
-```
+-   Summary of what changed
+-   Changed files list
+-   Commands run and results
+-   Known issues or limitations
+-   Suggested next task
