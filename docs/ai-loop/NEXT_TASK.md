@@ -2,120 +2,61 @@
 
 ## Context
 
-Read the roadmap, recent commits, and the current task.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This includes enhancing accessibility. The current state indicates that the AI Loop is ready to tackle its first substantive task.
 
 ## Objective
 
-Implement exactly one bounded task from Phase 2 of the roadmap.
+Implement exactly one bounded task from Phase 2 of the roadmap: Add `aria-label` attributes to all interactive buttons that contain only an icon (no visible text) across the application, improving accessibility for screen reader users.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for the code under test)
-- `src/__tests__/` (for new test files, e.g., `src/__tests__/firestore.test.ts`)
-- `vitest.config.ts` (if minor configuration is needed for mocking, unlikely for this task)
+-   `src/` (except `src/main.tsx`)
+-   `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+-   `src/__tests__/` (new test files)
+-   `src/App.css` (CSS improvements)
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
-- Firebase deploy commands
-- Secrets and credentials
-- Any other files not explicitly mentioned in Allowed Scope
+-   `src/main.tsx` (entry point — do not modify)
+-   `commands/` (PowerShell scripts — do not modify)
+-   `firestore.rules`, `storage.rules` (require human approval)
+-   `package.json` deps (no new npm packages without human approval)
+-   Firebase deploy commands
+-   Secrets and credentials
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
+-   Keep diff ≤ 150 lines.
+-   Run `npm run build && npm run lint` before finishing.
+-   Prefer adding tests when touching `src/lib/` files.
+-   Report follow-up items as comments, not additional code.
 
-## Worker prompt
+## Output Format
 
-Your task is to add unit tests for helper functions located in `src/lib/firestore.ts` using Vitest.
+-   Summary of what changed
+-   Changed files list
+-   Commands run and results
+-   Known issues or limitations
+-   Suggested next task
 
-1.  **Create a new test file**: Create `src/__tests__/firestore.test.ts`.
-2.  **Mock Firebase SDK**: Utilize Vitest's mocking capabilities (`vi.mock`) to mock necessary Firebase Firestore SDK functions (e.g., `getFirestore`, `collection`, `doc`, `addDoc`, `updateDoc`, `deleteDoc`, `getDocs`, `query`, `orderBy`, `limit`, `where`). Refer to existing mock patterns if any, or create them following Vitest best practices for Firebase.
-3.  **Test specific functions**: Implement tests for at least two of the following functions from `src/lib/firestore.ts`:
-    *   `addItem`
-    *   `updateItem`
-    *   `deleteItem`
-    *   `getItems` (focus on the basic fetch, not query variations yet)
-4.  **Assertions**: Ensure tests make meaningful assertions about function calls, return values, and error handling where applicable.
-5.  **Run tests**: Verify all new tests pass by running `npm run test`.
-6.  **Lint and Build**: Ensure `npm run lint` and `npm run build` pass without errors.
+---
 
-**Example of mocking Firestore (adapt as needed):**
+## Worker Prompt
 
-```typescript
-// src/__tests__/firestore.test.ts
-import { describe, it, expect, vi } from 'vitest';
-import { collection, doc, addDoc, updateDoc, deleteDoc, getDocs, getFirestore } from 'firebase/firestore';
-import * as firestoreModule from 'firebase/firestore'; // Import as module to mock specific functions
-import { addItem, updateItem, deleteItem, getItems } from '../lib/firestore'; // Your functions
+Your task is to identify all interactive `<button>` elements (or elements acting as buttons, e.g., `role="button"`) that primarily display an icon without accompanying visible text. For each such button, add an appropriate `aria-label` attribute that describes its function to assistive technologies.
 
-// Mock Firebase Firestore
-vi.mock('firebase/firestore', async (importOriginal) => {
-  const actual = await importOriginal();
-  return {
-    ...actual,
-    getFirestore: vi.fn(() => ({})), // Mock getFirestore
-    collection: vi.fn(() => ({ type: 'collectionRef' })), // Mock collection
-    doc: vi.fn(() => ({ type: 'docRef' })), // Mock doc
-    addDoc: vi.fn(() => Promise.resolve({ id: 'mock-id' })),
-    updateDoc: vi.fn(() => Promise.resolve()),
-    deleteDoc: vi.fn(() => Promise.resolve()),
-    getDocs: vi.fn(() => Promise.resolve({
-      forEach: (callback: any) => {
-        // Mock snapshot data for getItems
-        callback({ id: 'item1', data: () => ({ name: 'Test Nail 1' }) });
-        callback({ id: 'item2', data: () => ({ name: 'Test Nail 2' }) });
-      }
-    })),
-    // Mock query functions if needed for getItems
-    query: vi.fn(() => ({ type: 'queryRef' })),
-    orderBy: vi.fn(() => ({ type: 'queryRef' })),
-    limit: vi.fn(() => ({ type: 'queryRef' })),
-  };
-});
+For example, a trash can icon button for deleting an item should have an `aria-label="Delete item"`. A settings icon button should have `aria-label="Settings"`. Ensure the label is concise and descriptive.
 
-describe('Firestore Helpers', () => {
-  const mockUserId = 'user123';
-  const mockNailItem = { name: 'New Nail', imageUrl: 'url.jpg' };
-  const mockItemId = 'item456';
+Focus on elements that are clearly interactive and rely solely on an icon for their visual representation of purpose.
 
-  beforeEach(() => {
-    vi.clearAllMocks(); // Reset mocks before each test
-  });
+**Acceptance Criteria:**
+1.  All icon-only interactive buttons in the application have a descriptive `aria-label` attribute.
+2.  The application builds successfully (`npm run build`).
+3.  The linter passes (`npm run lint`).
+4.  No new npm dependencies are introduced.
 
-  it('addItem should call addDoc with correct arguments', async () => {
-    await addItem(mockUserId, mockNailItem);
-    expect(collection).toHaveBeenCalledWith(expect.any(Object), `users/${mockUserId}/nailItems`);
-    expect(addDoc).toHaveBeenCalledWith(expect.any(Object), mockNailItem);
-  });
-
-  it('updateItem should call updateDoc with correct arguments', async () => {
-    const updatedItem = { name: 'Updated Nail' };
-    await updateItem(mockUserId, mockItemId, updatedItem);
-    expect(doc).toHaveBeenCalledWith(expect.any(Object), `users/${mockUserId}/nailItems`, mockItemId);
-    expect(updateDoc).toHaveBeenCalledWith(expect.any(Object), updatedItem);
-  });
-
-  it('deleteItem should call deleteDoc with correct arguments', async () => {
-    await deleteItem(mockUserId, mockItemId);
-    expect(doc).toHaveBeenCalledWith(expect.any(Object), `users/${mockUserId}/nailItems`, mockItemId);
-    expect(deleteDoc).toHaveBeenCalledWith(expect.any(Object));
-  });
-
-  it('getItems should fetch items and return correctly formatted data', async () => {
-    const items = await getItems(mockUserId);
-    expect(collection).toHaveBeenCalledWith(expect.any(Object), `users/${mockUserId}/nailItems`);
-    expect(getDocs).toHaveBeenCalled();
-    expect(items).toEqual([
-      { id: 'item1', name: 'Test Nail 1' },
-      { id: 'item2', name: 'Test Nail 2' },
-    ]);
-  });
-});
+**Required Test Commands:**
+```bash
+npm run build
+npm run lint
 ```
