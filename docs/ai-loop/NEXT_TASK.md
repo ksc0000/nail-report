@@ -1,18 +1,19 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The current phase (Phase 2) of the roadmap prioritizes improving stability, test coverage, and UX. Adding unit tests for core helper functions is a critical first step in enhancing stability and ensuring correctness. The test runner for the project is Vitest.
+The product roadmap focuses on improving stability, test coverage, and user experience in Phase 2. The current state shows that Phase 2 is active, and no specific feature-related tasks from the "Jules-ready Tasks" list have been started yet. This task targets accessibility improvements.
 
 ## Objective
 
-Implement unit tests for two key Firestore helper functions, `createNailItem` and `deleteNailItem`, located in `src/lib/firestore.ts` using Vitest. This task aims to establish initial test coverage for the Firestore module.
+Identify all icon-only buttons in the application and add appropriate `aria-label` attributes to improve accessibility.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions or small refactors if necessary for testing)
-- `src/__tests__/lib/firestore.test.ts` (new test file)
-- `src/App.css` (only if absolutely necessary for test setup/mocks, which is unlikely for this task)
+- `src/` (except `src/main.tsx`)
+- `src/components/` (modifying existing components)
+- `src/App.css` (minor adjustments if necessary, but unlikely)
 
 ## Forbidden Scope
 
@@ -25,13 +26,24 @@ Implement unit tests for two key Firestore helper functions, `createNailItem` an
 
 ## Requirements
 
-- Create a new test file, `src/__tests__/lib/firestore.test.ts`.
-- Write unit tests for `createNailItem` and `deleteNailItem` functions in `src/lib/firestore.ts`.
-- Mock Firebase SDK dependencies (e.g., `firebase/firestore`, `firebase/auth`) using `vi.mock` as required by Vitest to isolate the functions under test.
-- Ensure tests cover successful operations and basic error handling scenarios.
-- Keep the overall diff of the PR to a maximum of 150 lines.
-- Run `npm run build && npm run lint` before finishing to ensure code quality and build integrity.
-- All new tests must pass (`npm test`).
+- Keep diff ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files. (This task primarily involves UI components, so new tests are not strictly required unless new logic is added).
+- Report follow-up items as comments, not additional code.
+
+## Worker Prompt
+
+Your task is to enhance the accessibility of the `nail-report` application by adding `aria-label` attributes to all icon-only buttons.
+
+1.  **Identify Icon-Only Buttons:** Systematically review the application's React components, especially those rendering interactive elements like `button`s, to find any buttons that rely solely on an icon for their visual representation and do not have a visible text label. Examples might include delete buttons, edit buttons, share buttons, or navigation icons.
+
+2.  **Add `aria-label` Attributes:** For each identified icon-only button, add an `aria-label` attribute that clearly describes the button's purpose or action. The label should be concise and meaningful for screen reader users.
+    *   Example: For a trash can icon button that deletes an item, use `<button aria-label="Delete item">...</button>`.
+    *   Example: For an edit pencil icon, use `<button aria-label="Edit item">...</button>`.
+    *   Example: For a share icon, use `<button aria-label="Share">...</button>`.
+    *   Example: For a sign-out icon, use `<button aria-label="Sign out">...</button>`.
+
+3.  **Verify Functionality:** Ensure that adding `aria-label` attributes does not negatively impact existing visual styles or interactive behavior.
 
 ## Output Format
 
@@ -40,3 +52,4 @@ Implement unit tests for two key Firestore helper functions, `createNailItem` an
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+```
