@@ -1,19 +1,18 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap focuses on improving stability, test coverage, and UX in Phase 2. The current state shows that initial AI Loop setup is complete, and we're ready for the first substantive coding task. The task should be small, bounded, and align with Phase 2 objectives.
+The product roadmap prioritizes improving stability and test coverage in Phase 2. This task focuses on adding foundational unit tests for core Firebase operations to ensure data integrity and reliability.
 
 ## Objective
 
-Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. Focus on covering the main CRUD operations (add, get, update, delete) and any utility functions present.
+Implement unit tests for the helper functions located in `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor modifications for testability if strictly necessary, but prefer to only add tests)
-- `src/__tests__/firestore.test.ts` (or similar new test file in `src/__tests__/`)
-- `vitest.config.ts` (minor changes if needed for mocks, but prefer existing setup)
+- `src/lib/firestore.ts` (for minor refactoring to improve testability, if necessary)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `vite.config.ts` (only if Vitest configuration specifically for this file is needed)
 
 ## Forbidden Scope
 
@@ -23,17 +22,13 @@ Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. Fo
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/App.css` (not relevant for this task)
-- Any other files outside the explicit 'Allowed Scope'
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
-- Mock Firebase SDK dependencies as needed using `vi.mock` to ensure tests are isolated and run quickly without actual Firebase calls.
-- Cover at least the `addNailItem`, `getNailItem`, `updateNailItem`, and `deleteNailItem` (or similar CRUD-related) functions in `src/lib/firestore.ts`.
-- Ensure tests are clean, readable, and follow existing testing patterns if any are present.
-- Run `npm run build && npm run lint && npm test` before finishing.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -42,4 +37,29 @@ Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. Fo
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+
+## Worker Prompt
+
+Implement unit tests for the Firebase Firestore helper functions in `src/lib/firestore.ts`.
+
+1.  **Inspect `src/lib/firestore.ts`**: Identify the primary exported functions that interact with Firestore (e.g., `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`, etc.).
+2.  **Create `src/__tests__/firestore.test.ts`**: This new file will house your unit tests.
+3.  **Mock Firebase SDK**: Use `vitest`'s mocking capabilities (`vi.mock`) to mock the Firebase SDK functions (e.g., `getFirestore`, `collection`, `doc`, `getDocs`, `addDoc`, `updateDoc`, `deleteDoc`) to isolate the `firestore.ts` logic. You should mock these to return predictable values or throw specific errors to test different scenarios.
+4.  **Write Unit Tests**: For at least two key functions identified in step 1, write unit tests that cover:
+    *   Successful execution with expected data.
+    *   Error handling (e.g., if a Firestore operation fails).
+5.  **Ensure Test Isolation**: Tests should not interact with a live Firebase project.
+6.  **Code Quality**: Ensure the new test file adheres to existing code style and linting rules.
+
+**Acceptance Criteria:**
+- A new file `src/__tests__/firestore.test.ts` is created.
+- At least two key functions from `src/lib/firestore.ts` have mocked unit tests covering success and error paths.
+- All tests pass when `npm test` is run.
+- The `firestore.ts` file remains functional and passes existing linting/build checks.
+
+**Required Test Commands:**
+```bash
+npm test src/__tests__/firestore.test.ts
+npm run build
+npm run lint
 ```
