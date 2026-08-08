@@ -2,17 +2,18 @@
 
 ## Context
 
-The application is in Phase 2, focusing on improving stability, test coverage, and UX. The first priority within Phase 2 is enhancing test coverage. This task will initiate that effort by adding unit tests for a critical utility file.
+The application is in Phase 2, focusing on improving stability, test coverage, and UX. This task addresses the "2.1 Test coverage" goal by adding unit tests for core helper functions. Vitest is already configured.
 
 ## Objective
 
-Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. Focus on covering the main CRUD operations or utility functions present in the file.
+Implement unit tests for the helper functions within `src/lib/firestore.ts`.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for potential minor adjustments to make functions testable if necessary, but primarily adding tests)
-- `src/__tests__/` (create new test files, e.g., `src/__tests__/firestore.test.ts`)
-- `vitest.config.ts` (if minor configuration is needed for mocking, unlikely but allowed)
+- `src/lib/firestore.ts` (minor adjustments for testability, if necessary)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `package.json` (only to add a `test` script if missing and points to Vitest, but no new dependencies)
+- `vite.config.ts` (minor adjustments for Vitest setup, if necessary)
 
 ## Forbidden Scope
 
@@ -22,22 +23,39 @@ Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. Fo
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/App.css` or any other UI-related CSS files.
+- Any files outside `src/` except specified config files.
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create `src/__tests__/firestore.test.ts` to house the new tests.
-- Mock Firebase SDK dependencies (Firestore, Auth, Storage) using `vi.mock` as needed for isolation.
-- Write unit tests for at least 2-3 key helper functions in `src/lib/firestore.ts`. Examples include functions for adding, getting, or updating nail items/tags.
-- Ensure tests cover basic success cases and ideally some error cases for the mocked functions.
 - Run `npm run build && npm run lint` before finishing.
-- Run `npm run test` and ensure all new tests pass.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
-## Output Format
+## Worker prompt
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+You are tasked with adding unit tests for the Firebase Firestore helper functions located in `src/lib/firestore.ts`.
+
+1.  **Create a new test file**: Create `src/__tests__/firestore.test.ts`.
+2.  **Mock Firebase SDK**: Use `vi.mock` to mock Firebase Firestore SDK dependencies (`firebase/firestore`, `firebase/auth`, etc.) as needed to isolate the logic in `firestore.ts` for testing. Focus on mocking the Firestore client itself rather than hitting actual Firebase services.
+3.  **Write Unit Tests**: Add tests for key functions in `src/lib/firestore.ts`. Prioritize functions related to common CRUD operations or data retrieval that interact directly with Firestore.
+    *   Example functions to test: `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`, `getPublicShare`.
+4.  **Ensure Test Coverage**: Aim for good test coverage for the functions you choose to test.
+5.  **Run Tests**: Verify all tests pass by running `npm run test`.
+6.  **Lint and Build**: Ensure the project still builds and passes lint checks.
+
+## Acceptance Criteria
+
+-   A new file `src/__tests__/firestore.test.ts` exists.
+-   Key functions in `src/lib/firestore.ts` (e.g., `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`, `getPublicShare`) have corresponding unit tests.
+-   Tests use `vi.mock` effectively to simulate Firebase SDK behavior without making actual network calls.
+-   All tests pass when running `npm run test`.
+-   The total diff is less than 150 lines.
+
+## Required Test Commands
+
+```bash
+npm run test
+npm run build
+npm run lint
+```
