@@ -2,41 +2,42 @@
 
 ## Context
 
-The current roadmap (Phase 2.1) focuses on improving test coverage. This task will initiate unit testing for core helper functions.
+The product roadmap for `nail-report` is in Phase 2, focusing on stability, test coverage, and UX improvements. This includes accessibility enhancements.
 
 ## Objective
 
-Add unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
+Identify all icon-only buttons within the application and add a descriptive `aria-label` attribute to each of them to improve accessibility for screen reader users.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor modifications for testability if strictly necessary, but prefer not to alter functionality)
-- `src/__tests__/` (create new test files, e.g., `src/__tests__/firestore.test.ts`)
-- `vite.config.ts` (if Vitest configuration is needed, but prefer to use existing setup)
+-   `src/components/` (most UI elements)
+-   `src/pages/` (page-specific UI)
+-   `src/App.tsx`
+-   `src/App.css` (for minor styling adjustments related to accessibility, if necessary)
+-   `src/` (any other UI-related files where icon-only buttons might exist, except `src/main.tsx`)
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
-- Firebase deploy commands
-- Secrets and credentials
-- `src/App.css` (no CSS changes for this task)
+-   `src/main.tsx` (entry point — do not modify)
+-   `commands/` (PowerShell scripts — do not modify)
+-   `firestore.rules`, `storage.rules` (require human approval)
+-   `package.json` deps (no new npm packages without human approval)
+-   Firebase deploy commands
+-   Secrets and credentials
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- Add comprehensive unit tests for the functions in `src/lib/firestore.ts`, focusing on input/output and error conditions.
-- Ensure all new tests pass by running `npm run test`.
-- Mock Firebase SDK dependencies as needed using `vitest`'s mocking capabilities to ensure isolated unit tests.
-- Report follow-up items as comments, not additional code.
+-   Keep diff ≤ 150 lines.
+-   Run `npm run build && npm run lint` before finishing.
+-   Identify all `button` elements that contain only an icon (e.g., `<img>`, `<svg>`, or an icon font character) and no visible text label.
+-   Add an `aria-label="Descriptive Action"` attribute to each identified icon-only button, where "Descriptive Action" clearly communicates the button's purpose (e.g., "Delete item", "Edit profile", "Upload image").
+-   Ensure existing functionality and visual layout are not adversely affected.
+-   Prefer concise and accurate labels.
 
 ## Output Format
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+-   Summary of what changed
+-   Changed files list
+-   Commands run and results
+-   Known issues or limitations
+-   Suggested next task
