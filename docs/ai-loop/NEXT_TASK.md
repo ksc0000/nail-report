@@ -1,18 +1,19 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses an item under Phase 2.4, Accessibility. The goal is to enhance the user experience for assistive technologies by providing descriptive labels for interactive elements.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. A key item in Phase 2.1 is to add unit tests for Firebase helper functions. This task specifically targets the `firestore.ts` helper functions.
 
 ## Objective
 
-Add `aria-label` attributes to all icon-only buttons across the application to improve accessibility.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/components/` (modifying existing components)
-- `src/App.css` (minor layout adjustments if necessary, though unlikely for this task)
+- `src/lib/firestore.ts` (modifications to export functions for testing if necessary)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `src/__tests__/utils.ts` (if common testing utilities are needed, unlikely for this task)
 
 ## Forbidden Scope
 
@@ -26,11 +27,11 @@ Add `aria-label` attributes to all icon-only buttons across the application to i
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Identify all `button` elements that contain only an icon and no visible text.
-- Add a descriptive `aria-label` attribute to each identified button. The label should clearly explain the button's action (e.g., "Delete item", "Edit tag", "Upload image").
-- Ensure the `aria-label` content is localized if a localization framework is present (currently, no i18n is used, so direct strings are fine).
 - Run `npm run build && npm run lint` before finishing.
-- Report follow-up items as comments, not additional code.
+- Create a new test file: `src/__tests__/firestore.test.ts`.
+- Focus on testing key helper functions within `src/lib/firestore.ts` (e.g., functions for adding, getting, updating, deleting nail items or tags).
+- Mock Firebase SDK dependencies as needed using `vi.mock` from Vitest.
+- Ensure tests are independent and cover basic functionality.
 
 ## Output Format
 
@@ -39,3 +40,4 @@ Add `aria-label` attributes to all icon-only buttons across the application to i
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+```
