@@ -1,19 +1,20 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap prioritizes improving stability and test coverage in Phase 2. This task focuses on implementing unit tests for core Firebase Firestore helper functions.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. The first item in Phase 2.1 is "Unit tests for Firestore helper functions (`src/lib/firestore.ts`, `src/lib/storage.ts`, `src/lib/auth.ts`)". This task specifically targets the `firestore.ts` module.
+
+Vitest is specified as the test runner, and mocking Firebase SDK is a key requirement for these tests.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest, ensuring proper mocking of the Firebase SDK.
+Implement unit tests for the helper functions located in `src/lib/firestore.ts` using Vitest. The focus should be on demonstrating how to mock Firebase SDK calls to test the logic within these functions in isolation.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but prioritize adding tests)
-- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `src/lib/firestore.ts` (minor modifications for testability if strictly necessary, but prioritize testing existing logic)
+- `src/__tests__/` (create new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `vite.config.ts` (to add Vitest configuration if not already present or to improve it for coverage reporting)
 
 ## Forbidden Scope
 
@@ -27,44 +28,17 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 ## Requirements
 
 - Keep diff ≤ 150 lines.
+- Create a new test file `src/__tests__/firestore.test.ts`.
+- Use Vitest for writing unit tests.
+- Mock Firebase SDK dependencies (e.g., `getFirestore`, `collection`, `addDoc`, `getDocs`, `doc`, `updateDoc`, `deleteDoc`) to test the logic in `src/lib/firestore.ts` without actual Firestore calls.
+- Write tests for at least two functions from `src/lib/firestore.ts` (e.g., `addNailItem` and `getNailItems`).
+- Ensure tests cover basic success cases for the chosen functions.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
 
-## Worker prompt
+## Output Format
 
-Implement comprehensive unit tests for the functions within `src/lib/firestore.ts`.
-
-1.  **Create a new test file:** `src/__tests__/firestore.test.ts`.
-2.  **Mock Firebase SDK:** Utilize `vitest` and `vi.mock` to mock `firebase/firestore` functions, ensuring tests do not interact with actual Firebase services. Focus on mocking `collection`, `doc`, `getDocs`, `getDoc`, `addDoc`, `updateDoc`, `deleteDoc`, `query`, `where`, `orderBy`, `limit`, etc., as needed by the `firestore.ts` helpers.
-3.  **Test key helper functions:**
-    *   `addNailItem`: Test successful addition and error handling.
-    *   `updateNailItem`: Test successful update (e.g., merging data) and error handling.
-    *   `deleteNailItem`: Test successful deletion and error handling.
-    *   `getNailItems`: Test retrieving multiple items, including potential query parameters (if `firestore.ts` exposes them).
-    *   `getNailItemById`: Test retrieving a single item by ID.
-    *   Ensure edge cases like empty responses or non-existent items are handled correctly in tests.
-4.  **Assertions:** Use Vitest's assertion library (`expect`) to verify function behavior, return values, and error conditions.
-5.  **Code Coverage:** Aim for good coverage for the tested `firestore.ts` functions.
-
-## Acceptance Criteria
-
-- A new test file `src/__tests__/firestore.test.ts` is created.
-- `firestore.test.ts` includes unit tests for the primary CRUD and retrieval functions in `src/lib/firestore.ts`.
-- All tests pass when running `npm test`.
-- Firebase SDK interactions are mocked, and tests run in isolation.
-- `npm run build` completes without errors.
-- `npm run lint` completes without errors.
-
-## Required Test Commands
-
-```bash
-npm test
-npm run build
-npm run lint
-```
-
-## Suggested next task
-
-Add loading skeleton to nail item list (`src/App.tsx`).
-```
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
