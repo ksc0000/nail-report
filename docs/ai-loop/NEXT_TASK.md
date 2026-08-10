@@ -2,37 +2,32 @@
 
 ## Context
 
-The nail-report application is currently in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. Vitest has been selected as the test runner. This task aims to improve the test coverage by adding unit tests for core Firebase Firestore helper functions.
+The product roadmap for nail-report is currently in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses an accessibility improvement from section 2.4 of the roadmap.
 
 ## Objective
 
-Add Vitest unit tests for helper functions located in `src/lib/firestore.ts`.
+Identify all icon-only buttons throughout the application and add an appropriate `aria-label` attribute to each for improved accessibility.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but primarily to understand what to test)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `package.json` (only if Vitest or testing utilities are missing from `devDependencies` and are strictly required for *this* task, otherwise avoid) - *Self-correction: The roadmap implies Vitest is set up, so no `package.json` changes should be needed for adding dependencies.*
-- `vite.config.ts` (if minor configuration is needed for test setup, e.g., aliases)
+- `src/` (excluding `src/main.tsx`) - This includes components, views, and any files where icon buttons might be defined.
+- `src/App.css` (for minor layout adjustments if necessary, but not the primary focus)
 
 ## Forbidden Scope
 
 - `src/main.tsx` (entry point — do not modify)
 - `commands/` (PowerShell scripts — do not modify)
 - `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval, unless absolutely necessary for Vitest setup which should already be done)
+- `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
 
 ## Requirements
 
-- Create a new test file `src/__tests__/firestore.test.ts`.
-- Add unit tests for at least two distinct helper functions within `src/lib/firestore.ts` (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`).
-- Effectively mock Firebase SDK dependencies (e.g., `firebase/firestore`) to ensure tests are isolated and do not interact with a live Firestore instance.
-- Ensure all new tests pass when running `npm test`.
-- The total diff for this task (including test file and any minor changes to `firestore.ts` for testability) must be ≤ 150 lines.
+- Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Report follow-up items (e.g., testing more functions, improving mocking strategies) as comments in the PR, not as additional code within this task.
+- Prefer adding tests when touching `src/lib/` files (N/A for this task).
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -41,3 +36,17 @@ Add Vitest unit tests for helper functions located in `src/lib/firestore.ts`.
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+
+## Worker Prompt
+
+Your task is to enhance the accessibility of the nail-report application by adding `aria-label` attributes to all icon-only buttons.
+
+1.  **Identify Icon-Only Buttons:** Traverse the component tree, focusing on interactive elements that are visually represented by an icon but lack a visible text label (e.g., delete buttons, edit buttons, navigation icons).
+2.  **Add `aria-label`:** For each identified icon-only button, add an `aria-label` attribute.
+3.  **Descriptive Labels:** Ensure the `aria-label` accurately and concisely describes the button's purpose or action in a user-friendly manner.
+    *   Examples: `aria-label="Delete item"`, `aria-label="Edit tag"`, `aria-label="Upload image"`, `aria-label="Close dialog"`, `aria-label="Toggle navigation"`.
+4.  **Focus Areas:** Pay particular attention to components in the main list view, tag management modals, image upload interfaces, and any navigation elements.
+5.  **No New Dependencies:** Do not add any new npm packages.
+6.  **Lint and Build:** Ensure the project still builds and passes lint checks after your changes.
+
+This task is small and self-contained, directly contributing to the accessibility goals of Phase 2.4.
