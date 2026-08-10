@@ -2,17 +2,17 @@
 
 ## Context
 
-The `nail-report` application is in Phase 2 of its roadmap, focusing on stability, test coverage, and UX improvements. A key next step is to introduce unit tests for core utility functions.
+The `nail-report` application is currently in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This is the first substantive task for this phase. The roadmap explicitly calls for adding unit tests using Vitest and mocking Firebase SDK.
 
 ## Objective
 
-Implement unit tests for *two to three* helper functions within `src/lib/firestore.ts` using Vitest. The goal is to establish a testing pattern for Firebase-related helpers, specifically focusing on functions that interact with Firestore collections and documents.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest. This task aims to improve test coverage as per Phase 2.1 of the roadmap.
 
 ## Allowed Scope
 
--   `src/lib/firestore.ts` (modifications only if necessary for testability, e.g., exporting non-exported functions, but prefer not to modify)
--   `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
--   `vite.config.ts` (only if necessary for Vitest configuration, but Vitest is assumed to be set up)
+-   `src/lib/firestore.ts` (minor modifications for testability if necessary, but focus on testing existing logic)
+-   `src/__tests__/firestore.test.ts` (new file for tests)
+-   `package.json` (only to add `test` script or `vitest` config if strictly necessary and within constraints, but `vitest` should already be configured for testing)
 
 ## Forbidden Scope
 
@@ -22,17 +22,13 @@ Implement unit tests for *two to three* helper functions within `src/lib/firesto
 -   `package.json` deps (no new npm packages without human approval)
 -   Firebase deploy commands
 -   Secrets and credentials
--   `src/App.css`
 
 ## Requirements
 
--   Identify two to three simple helper functions in `src/lib/firestore.ts` that interact with Firestore (e.g., functions for fetching data, adding a document, or updating a document).
--   Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
--   Use Vitest for testing.
--   Mock the Firebase SDK (e.g., `firebase/firestore`) using `vi.mock` to isolate the `firestore.ts` functions and prevent actual database calls.
--   Ensure tests cover successful execution paths and basic error handling where applicable for the chosen functions.
--   Keep the overall diff ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing to ensure code quality and build integrity.
+-   Keep diff ≤ 150 lines.
+-   Run `npm run build && npm run lint` before finishing.
+-   Prefer adding tests when touching `src/lib/` files.
+-   Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -41,3 +37,33 @@ Implement unit tests for *two to three* helper functions within `src/lib/firesto
 -   Commands run and results
 -   Known issues or limitations
 -   Suggested next task
+
+## Worker prompt
+
+Implement unit tests for the functions defined in `src/lib/firestore.ts`.
+
+### Specifics
+
+1.  **Create a new test file**: Create `src/__tests__/firestore.test.ts`.
+2.  **Use Vitest**: Write tests using Vitest syntax.
+3.  **Mock Firebase SDK**: Utilize `vi.mock` to mock Firebase Firestore SDK functions (e.g., `getFirestore`, `collection`, `doc`, `getDocs`, `addDoc`, `updateDoc`, `deleteDoc`, etc.) to isolate the `firestore.ts` logic. Do not make actual network calls to Firebase.
+4.  **Cover key functions**: Focus on testing the primary CRUD operations and data retrieval functions like `getNailItems`, `addNailItem`, `updateNailItem`, `deleteNailItem`, and `getPublicShare`.
+5.  **Test success and error paths**: Ensure tests cover both successful execution and potential error scenarios (e.g., when Firestore operations fail). Mock Firebase functions to simulate these error conditions.
+6.  **Avoid new npm dependencies**: Do not add any new packages to `package.json`. Vitest should already be available and configured.
+7.  **Ensure tests pass**: Run the tests to confirm they pass.
+
+### Acceptance Criteria
+
+-   A new file `src/__tests__/firestore.test.ts` exists.
+-   This file contains unit tests for the major functions in `src/lib/firestore.ts`.
+-   Firebase Firestore SDK functions are properly mocked using `vi.mock`.
+-   The tests cover both successful and error conditions for the tested functions.
+-   All tests pass.
+
+### Required Test Commands
+
+```bash
+npm test
+npm run build
+npm run lint
+```
