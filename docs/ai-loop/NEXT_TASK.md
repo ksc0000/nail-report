@@ -2,18 +2,16 @@
 
 ## Context
 
-The product roadmap for nail-report is in Phase 2, focusing on stability, test coverage, and UX improvements. This includes enhancing accessibility. The current state shows no specific accessibility tasks are in progress.
+The current focus is Phase 2 of the roadmap, specifically improving Accessibility (2.4). This task aims to enhance the usability of interactive elements for assistive technologies.
 
 ## Objective
 
-Implement accessibility improvements by identifying all icon-only buttons within the application and adding appropriate `aria-label` attributes to each of them.
+Identify all icon-only buttons (buttons that display only an icon and no visible text label) within the application and add a descriptive `aria-label` attribute to each one. The `aria-label` should clearly convey the button's action or purpose.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/components/` (modifying existing components to add attributes)
-- `src/pages/` (modifying page-level components to add attributes)
-- `src/App.tsx` (if icon buttons are directly in the main app component)
+- `src/` (excluding `src/main.tsx`) - This includes React components, pages, and utility files where buttons might be defined.
+- `src/App.css` (for minor style adjustments if absolutely necessary, but not the primary goal).
 
 ## Forbidden Scope
 
@@ -27,10 +25,10 @@ Implement accessibility improvements by identifying all icon-only buttons within
 ## Requirements
 
 - Keep diff ≤ 150 lines.
+- For each icon-only button found, add a meaningful `aria-label` attribute.
+- The `aria-label` text should be concise and clearly describe the button's function (e.g., "Delete item", "Edit profile", "Share link").
 - Run `npm run build && npm run lint` before finishing.
-- Ensure `aria-label` values are descriptive and helpful for screen reader users (e.g., "Delete item", "Edit profile", "Share link").
-- Focus only on buttons that contain *only* an icon and no visible text.
-- Report follow-up items as comments, not additional code.
+- Report any edge cases or buttons that are ambiguous for labeling in the "Known issues or limitations" section.
 
 ## Output Format
 
