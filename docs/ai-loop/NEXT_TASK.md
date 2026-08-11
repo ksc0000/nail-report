@@ -1,20 +1,18 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The current focus is on improving the application's stability, test coverage, and UX, specifically addressing accessibility as part of Phase 2.4 of the roadmap. Many interactive elements, such as buttons that display only an icon, lack proper accessibility labels for screen readers.
+The application is in Phase 2, focusing on improving stability, test coverage, and UX. This task contributes to the test coverage goal by adding unit tests for core Firebase Firestore helper functions. Vitest is already configured as the test runner.
 
 ## Objective
 
-Enhance the application's accessibility by identifying all icon-only buttons and adding appropriate `aria-label` attributes to them.
+Add Vitest unit tests for the helper functions defined in `src/lib/firestore.ts`.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
-- `src/__tests__/` (new test files)
-- `src/App.css` (CSS improvements)
+- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but prioritize creating a separate test file)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `package.json` (only for adding or modifying test scripts if absolutely necessary, e.g., to ensure `npm test` runs vitest for this file, but assume `vitest` is already configured)
 
 ## Forbidden Scope
 
@@ -27,25 +25,12 @@ Enhance the application's accessibility by identifying all icon-only buttons and
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Identify all `button` elements that render only an icon without visible text.
-- Add a descriptive `aria-label` attribute to each identified button. The label should clearly communicate the button's purpose (e.g., "Delete item", "Edit tag", "Share report").
-- Ensure the `aria-label` content is concise and helpful for screen reader users.
-- Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
-
-## Acceptance Criteria
-
-- All icon-only buttons throughout the application have a meaningful `aria-label` attribute.
-- The application builds successfully and passes lint checks.
-
-## Required Test Commands
-
-```bash
-npm run build
-npm run lint
-```
+- Create a new test file: `src/__tests__/firestore.test.ts`.
+- Write unit tests for at least two key functions within `src/lib/firestore.ts`. Examples might include functions for fetching or adding nail items, or any other primary CRUD operations.
+- Ensure Firebase SDK dependencies are mocked using `vitest`'s mocking capabilities (e.g., `vi.mock`).
+- The test code should be clear and follow best practices for unit testing.
+- Keep the diff for this task ≤ 150 lines. Focus on testing core logic rather than achieving 100% coverage in a single PR.
+- Run `npm run build && npm run lint && npm run test` before finishing.
 
 ## Output Format
 
@@ -54,4 +39,3 @@ npm run lint
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-```
