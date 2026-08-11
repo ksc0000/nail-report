@@ -1,18 +1,18 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The current phase is 2.0, focusing on improving stability, test coverage, and UX. This task directly addresses Phase 2.4 Accessibility by ensuring interactive elements are properly labeled for assistive technologies.
+The product roadmap outlines Phase 2, focusing on improving stability, test coverage, and UX. Specifically, Phase 2.1 targets adding unit tests for Firebase helper functions. This task directly addresses the goal of increasing test coverage for core application logic.
 
 ## Objective
 
-Identify all icon-only buttons throughout the application and add an appropriate `aria-label` attribute to each of them. The `aria-label` should describe the button's action or purpose.
+Implement unit tests for selected helper functions within `src/lib/firestore.ts` using Vitest, ensuring proper mocking of the Firebase SDK.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/components/` (modify existing component files to add `aria-label`)
-- `src/App.tsx` (if icon buttons exist here)
+- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but ideally only the file itself is read and a new test file is created)
+- `src/__tests__/firestore.test.ts` (new test file)
 
 ## Forbidden Scope
 
@@ -25,12 +25,13 @@ Identify all icon-only buttons throughout the application and add an appropriate
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- For each icon-only button, add an `aria-label` attribute.
-- The `aria-label` text must be descriptive and concise (e.g., "Delete item", "Edit tag", "Upload image").
-- Do not modify buttons that already have visible text labels or clear `aria-labelledby` references.
+- Create a new test file: `src/__tests__/firestore.test.ts`.
+- Add unit tests for *at least two* helper functions in `src/lib/firestore.ts`. Good candidates include `addNailItem`, `getNailItems`, or `deleteNailItem`.
+- Ensure the Firebase SDK (e.g., `firebase/firestore` methods) is properly mocked using `vi.mock` to isolate the unit tests from actual Firebase calls.
+- Write clear, concise tests covering basic functionality and edge cases where appropriate.
+- Keep the diff for the entire PR to ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Report follow-up items as comments, not additional code.
+- Report any follow-up items or functions not tested as comments in the PR description, not additional code.
 
 ## Output Format
 
@@ -39,3 +40,4 @@ Identify all icon-only buttons throughout the application and add an appropriate
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+```
