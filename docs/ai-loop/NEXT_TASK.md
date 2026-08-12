@@ -3,17 +3,19 @@
 
 ## Context
 
-The application is in Phase 2, focusing on improving stability, test coverage, and UX. This task initiates the test coverage effort by adding unit tests for core Firebase Firestore helper functions. Vitest is the chosen test runner, and Firebase SDK mocking should be utilized.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically targets Phase 2.4, enhancing accessibility. Many icon-only buttons in the application lack proper accessibility labels, making them difficult for screen reader users to understand.
 
 ## Objective
 
-Implement unit tests for the helper functions located in `src/lib/firestore.ts` using Vitest, ensuring proper mocking of Firebase SDK dependencies.
+Add `aria-label` attributes to all icon-only buttons across the application to improve accessibility.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor refactoring for testability is acceptable, but focus on testing existing logic)
-- `src/__tests__/lib/firestore.test.ts` (new file for tests)
-- `vite.config.ts` (if minor adjustments are needed for Vitest configuration, e.g., alias resolution or test setup files)
+- `src/components/` (modify existing component files)
+- `src/App.tsx` (if it contains icon-only buttons directly)
+- `src/features/` (if it contains icon-only buttons directly)
+- `src/lib/` (read-only for context, but no modifications expected)
+- `src/App.css` (minimal CSS adjustments if absolutely necessary, but not expected)
 
 ## Forbidden Scope
 
@@ -23,23 +25,42 @@ Implement unit tests for the helper functions located in `src/lib/firestore.ts` 
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
+- Adding new components, unless strictly necessary and very small. Prefer modifying existing ones.
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- Create a new test file: `src/__tests__/lib/firestore.test.ts`.
-- Write unit tests for the primary functions within `src/lib/firestore.ts`, such as `addNailItem`, `updateNailItem`, `deleteNailItem`, `getNailItems`, `getNailItem`, `addPublicShare`, and `getPublicShare`.
-- Use `vi.mock` to mock Firebase SDK dependencies (e.g., `firebase/firestore`, `firebase/app`).
-- Ensure tests cover both successful operations and gracefully handled error scenarios.
-- Do not modify existing implementation files unless absolutely necessary to enable testing (e.g., exporting a non-exported helper function).
-- If Vitest is not fully set up to run tests in `src/__tests__/`, ensure `vite.config.ts` is updated minimally to allow this.
+- For each icon-only button, add an `aria-label` attribute that clearly describes its action (e.g., "Delete item", "Edit tag", "Share report").
+- Ensure that buttons that already have visible text labels (not just icons) do not receive redundant `aria-label`s, unless the visual label is insufficient. Focus primarily on buttons that are *only* icons.
+- Run `npm run build && npm run lint` before finishing to ensure code quality and no build errors.
+- Report any follow-up items or icon-only buttons that were missed in the comments of the PR, not by adding additional code.
 
-## Output Format
+## Worker prompt
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+Locate all instances of buttons that display only an icon and lack a visible text label. For each such button, add an `aria-label` attribute with a descriptive text reflecting the button's action.
+
+For example:
+If you find `<button onClick={handleDelete}><IconDelete /></button>`, change it to `<button onClick={handleDelete} aria-label="Delete item"><IconDelete /></button>`.
+
+Prioritize common interactive elements such as delete, edit, add, share, close, or navigation buttons. Ensure the labels are concise and accurately convey the button's purpose.
+
+### Acceptance Criteria
+
+1.  All icon-only buttons in the application have a descriptive `aria-label` attribute.
+2.  The application builds and lints without errors.
+3.  The diff size is within the specified limit (≤ 150 lines).
+
+### Required Test Commands
+
+```bash
+npm run build
+npm run lint
+```
+
+### Example Files to Inspect
+
+-   `src/components/NailItemCard/NailItemCard.tsx` (likely contains edit/delete buttons)
+-   `src/components/TagManager/TagManager.tsx` (likely contains add/edit/delete tag buttons)
+-   `src/App.tsx` or related layout components (if global actions exist)
+
 ```
