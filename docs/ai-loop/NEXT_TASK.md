@@ -2,35 +2,37 @@
 
 ## Context
 
-The product roadmap for nail-report is in Phase 2, focusing on stability, test coverage, and UX. Specifically, Phase 2.4 aims to improve accessibility. This task directly addresses an item in this phase by enhancing keyboard navigation and screen reader support.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This task addresses the "2.1 Test coverage" objective by adding unit tests for a core helper module.
 
 ## Objective
 
-Implement `aria-label` attributes for all icon-only buttons in the application to improve accessibility for screen reader users.
+Implement unit tests for the helper functions in `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/` (excluding `src/main.tsx`)
-- Specifically, component files (`.tsx`, `.jsx`) where buttons are defined.
-- `src/App.css` (only if minor styling adjustments are needed to accommodate accessibility changes, which is unlikely for this task).
+- `src/lib/firestore.ts` (modifications to export functions for testing if necessary, but prefer minimal changes)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `package.json` (only if adding a `test` script, no new dependencies)
 
 ## Forbidden Scope
 
 - `src/main.tsx` (entry point — do not modify)
 - `commands/` (PowerShell scripts — do not modify)
 - `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
+- `package.json` deps (no new npm packages without human approval, Vitest is assumed to be a dev dependency already)
 - Firebase deploy commands
 - Secrets and credentials
+- Any other files or directories not explicitly listed in "Allowed Scope"
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- For each identified icon-only button, add an `aria-label` attribute.
-- The `aria-label` text must be descriptive of the button's action (e.g., "Delete item", "Edit nail report", "Upload image", "Sign out").
-- Do not add `aria-label` to buttons that already have a visible text label.
-- Focus on interactive buttons rather than decorative elements.
+- Create a new test file `src/__tests__/firestore.test.ts`.
+- Focus on writing unit tests for core CRUD functions in `src/lib/firestore.ts` such as `addItem`, `updateItem`, `deleteItem`, `getItem`, `getPublicShares`, etc.
+- Mock the Firebase SDK (Firestore specifically) using `vi.mock` as indicated in the roadmap's "Test coverage" section.
+- Ensure tests cover basic success and error paths for the mocked functions.
+- Keep the diff ≤ 150 lines, focusing on the most critical functions first.
+- Run `npm run build && npm run lint && npm run test` before finishing and ensure all commands pass.
+- Report any follow-up items or limitations as comments in the PR or in the `NEXT_TASK.md` generated for the next iteration.
 
 ## Output Format
 
@@ -39,18 +41,3 @@ Implement `aria-label` attributes for all icon-only buttons in the application t
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
-## Worker prompt
-
-Your task is to identify all buttons in the `src/` directory that solely consist of an icon (e.g., `FontAwesomeIcon`) without any accompanying visible text label. For each of these buttons, add an `aria-label` attribute.
-
-**Detailed Steps:**
-
-1.  **Scan `src/` files:** Look for `<button>` elements that primarily contain an icon component (like `<FontAwesomeIcon />`) but no other text content.
-2.  **Add `aria-label`:** For each identified icon-only button, add an `aria-label` attribute. The value of this attribute should clearly describe the button's function.
-    *   **Example:** Change `<button onClick={handleDelete}><FontAwesomeIcon icon={faTrash} /></button>` to `<button onClick={handleDelete} aria-label="Delete item"><FontAwesomeIcon icon={faTrash} /></button>`.
-3.  **Choose descriptive labels:** Ensure the `aria-label` text is concise and accurately conveys the button's purpose to a user relying on a screen reader.
-4.  **Verify existing labels:** Do not add `aria-label` to buttons that already have visible text labels or `aria-labelledby` attributes that reference existing text. This task specifically targets *icon-only* buttons.
-5.  **Build and Lint:** After making changes, run `npm run build && npm run lint` to ensure no new errors or warnings are introduced.
-
-This task is small and focused, directly contributing to the application's accessibility goals outlined in the roadmap.
