@@ -1,21 +1,19 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically targets Phase 2.4, enhancing accessibility. Many icon-only buttons in the application lack proper accessibility labels, making them difficult for screen reader users to understand.
+The current focus is on Phase 2 of the roadmap, specifically improving stability, test coverage, and UX. This task addresses the "Test coverage" aspect by adding unit tests for existing Firebase-related helper functions.
 
 ## Objective
 
-Add `aria-label` attributes to all icon-only buttons across the application to improve accessibility.
+Add Vitest unit tests for selected helper functions within `src/lib/firestore.ts`, ensuring they correctly interact with the Firebase Firestore SDK.
 
 ## Allowed Scope
 
-- `src/components/` (modify existing component files)
-- `src/App.tsx` (if it contains icon-only buttons directly)
-- `src/features/` (if it contains icon-only buttons directly)
-- `src/lib/` (read-only for context, but no modifications expected)
-- `src/App.css` (minimal CSS adjustments if absolutely necessary, but not expected)
+- `src/` (except `src/main.tsx`)
+- `src/lib/firestore.ts`
+- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `src/App.css` (CSS improvements - not applicable for this task but listed for completeness)
 
 ## Forbidden Scope
 
@@ -25,42 +23,32 @@ Add `aria-label` attributes to all icon-only buttons across the application to i
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- Adding new components, unless strictly necessary and very small. Prefer modifying existing ones.
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- For each icon-only button, add an `aria-label` attribute that clearly describes its action (e.g., "Delete item", "Edit tag", "Share report").
-- Ensure that buttons that already have visible text labels (not just icons) do not receive redundant `aria-label`s, unless the visual label is insufficient. Focus primarily on buttons that are *only* icons.
-- Run `npm run build && npm run lint` before finishing to ensure code quality and no build errors.
-- Report any follow-up items or icon-only buttons that were missed in the comments of the PR, not by adding additional code.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
-## Worker prompt
+## Worker Prompt
 
-Locate all instances of buttons that display only an icon and lack a visible text label. For each such button, add an `aria-label` attribute with a descriptive text reflecting the button's action.
+Implement unit tests for `src/lib/firestore.ts` helper functions using Vitest.
 
-For example:
-If you find `<button onClick={handleDelete}><IconDelete /></button>`, change it to `<button onClick={handleDelete} aria-label="Delete item"><IconDelete /></button>`.
+1.  **Create a new test file:** Create `src/__tests__/firestore.test.ts`.
+2.  **Mock Firebase SDK:** Use `vi.mock` to mock the `firebase/firestore` module to prevent actual calls to Firebase during tests. Specifically, mock functions like `collection`, `doc`, `addDoc`, `updateDoc`, `deleteDoc`, `getDocs`, `query`, `where`, and `onSnapshot` as necessary.
+3.  **Identify target functions:** Focus on testing one or two simple CRUD helper functions in `src/lib/firestore.ts`, such as `addItem` or `deleteItem`, or `getNailItems`.
+4.  **Write unit tests:**
+    *   For `addItem`, test that `addDoc` is called with the correct collection reference and data.
+    *   For `deleteItem`, test that `deleteDoc` is called with the correct document reference.
+    *   For `getNailItems` or similar query functions, test that `collection`, `query`, and `getDocs` (or `onSnapshot` if applicable) are called with the expected arguments.
+5.  **Assert calls:** Use Vitest's `expect().toHaveBeenCalledWith()` or `toHaveBeenCalledTimes()` to verify that the mocked Firebase SDK functions are called as expected by your helper functions.
+6.  **Do not test Firebase itself:** The goal is to test that *your* helper functions correctly call the Firebase SDK, not to test the Firebase SDK's functionality.
 
-Prioritize common interactive elements such as delete, edit, add, share, close, or navigation buttons. Ensure the labels are concise and accurately convey the button's purpose.
+## Output Format
 
-### Acceptance Criteria
-
-1.  All icon-only buttons in the application have a descriptive `aria-label` attribute.
-2.  The application builds and lints without errors.
-3.  The diff size is within the specified limit (≤ 150 lines).
-
-### Required Test Commands
-
-```bash
-npm run build
-npm run lint
-```
-
-### Example Files to Inspect
-
--   `src/components/NailItemCard/NailItemCard.tsx` (likely contains edit/delete buttons)
--   `src/components/TagManager/TagManager.tsx` (likely contains add/edit/delete tag buttons)
--   `src/App.tsx` or related layout components (if global actions exist)
-
-```
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
