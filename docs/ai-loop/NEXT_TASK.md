@@ -1,18 +1,19 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The current phase (Phase 2) focuses on improving stability, test coverage, and UX. This task directly addresses "2.1 Test coverage" by adding unit tests for core Firebase Firestore helper functions, crucial for application stability and maintainability.
+The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. A key aspect of stability is ensuring core helper functions are well-tested.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest. Focus on covering essential CRUD operations for `nailItems` or `publicShares` that are handled by functions in this file.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest, focusing on increasing test coverage for these critical utilities. Mock the Firebase SDK as necessary to isolate the functions under test.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but prioritize creating a new test file)
-- `src/__tests__/firestore.test.ts` (new test file)
-- `vitest.config.ts` (minor additions for setup, if strictly necessary for mocks, but prefer using `vi.mock` directly in test files)
+- `src/lib/firestore.ts` (minor refactors for testability if strictly necessary, but prefer to keep changes here minimal)
+- `src/__tests__/firestore.test.ts` (create this new file for the tests)
+- `src/__tests__/*.test.ts` (any other new test files specifically related to `src/lib/firestore.ts` if deemed necessary)
 
 ## Forbidden Scope
 
@@ -22,15 +23,15 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
+- `vitest.config.ts` (assume Vitest is already configured; do not modify its configuration)
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Create a new test file `src/__tests__/firestore.test.ts`.
-- Use Vitest and its mocking capabilities (`vi.mock`) to isolate `src/lib/firestore.ts` functions from actual Firebase interactions.
-- Focus on testing at least 2-3 key helper functions from `src/lib/firestore.ts` (e.g., `addNailItem`, `getNailItem`, `deleteNailItem` or similar functions that interact with Firestore).
-- Ensure tests cover successful operations and basic error handling if applicable to the function's logic.
-- Run `npm run build && npm run lint` before finishing.
+- Keep the diff for the entire PR ≤ 150 lines.
+- All existing helper functions in `src/lib/firestore.ts` should have basic unit test coverage.
+- Use `vi.mock` to mock Firebase SDK dependencies (e.g., `firebase/firestore`) to ensure tests are isolated and do not hit actual Firebase services.
+- Ensure `npm run build`, `npm run lint`, and `npm test` all pass successfully before finishing the task.
+- Report any follow-up items (e.g., functions that couldn't be easily tested, or limitations of the current testing setup) as comments in the PR, not as additional code changes.
 
 ## Output Format
 
@@ -39,19 +40,4 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
----
-
-### Worker Prompt
-
-Your task is to add unit tests for the Firebase Firestore helper functions located in `src/lib/firestore.ts`.
-
-1.  **Create a new test file:** `src/__tests__/firestore.test.ts`.
-2.  **Set up Vitest mocks:** Use `vi.mock` to mock the Firebase Firestore SDK (e.g., `firebase/firestore`) so that tests do not make actual calls to Firebase. This typically involves mocking functions like `collection`, `doc`, `getDoc`, `setDoc`, `updateDoc`, `deleteDoc`, etc.
-3.  **Identify functions to test:** In `src/lib/firestore.ts`, identify the core functions that abstract Firestore operations, such as `addNailItem`, `getNailItem`, `updateNailItem`, `deleteNailItem`, and potentially those for `publicShares`.
-4.  **Write unit tests:** For at least 2-3 of these functions, write tests to verify their behavior under typical success conditions. For example:
-    *   Test `addNailItem` correctly calls `addDoc` with the provided data.
-    *   Test `getNailItem` correctly calls `getDoc` and transforms the snapshot data.
-    *   Test `deleteNailItem` correctly calls `deleteDoc`.
-5.  **Keep it small:** Aim to test a minimum set of functions to stay within the 150-line diff limit. Report any further functions as "Suggested next task".
-6.  **Run checks:** Before committing, ensure the project builds and lints correctly by running `npm run build && npm run lint`.
+```
