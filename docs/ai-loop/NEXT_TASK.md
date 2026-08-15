@@ -1,19 +1,19 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The current phase focuses on improving stability, test coverage, and UX. This task contributes to the "Test coverage" goal by adding unit tests to a core utility file.
+The application is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses an accessibility improvement from section 2.4 of the roadmap.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
+Identify all buttons in the application that contain only an icon (with no visible text label) and add an appropriate `aria-label` attribute to each of them. The `aria-label` should clearly describe the button's purpose or action for screen reader users.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts`
-- `src/__tests__/firestore.test.ts` (new file)
-- `src/App.css` (only if necessary for test setup, but unlikely)
+- `src/` (except `src/main.tsx`)
+- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+- `src/__tests__/` (new test files)
+- `src/App.css` (CSS improvements)
 
 ## Forbidden Scope
 
@@ -27,34 +27,9 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint && npm run test` before finishing.
+- Run `npm run build && npm run lint` before finishing.
 - Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
-
-## Worker prompt
-
-Jules,
-
-Your task is to add unit tests for the functions exported from `src/lib/firestore.ts`.
-You should create a new test file, `src/__tests__/firestore.test.ts`, and use Vitest for writing the tests.
-
-Focus on testing the core logic of functions like `addNailItem`, `updateNailItem`, `deleteNailItem`, `getNailItems`, `getNailItemById`, `getPublicShareLink`, `addPublicShareLink`, `deletePublicShareLink`.
-You will need to mock Firebase Firestore SDK calls to ensure tests are isolated and do not interact with a live database. Use `vi.mock` for this purpose.
-
-**Acceptance Criteria:**
-
-1.  A new file `src/__tests__/firestore.test.ts` is created.
-2.  This file contains unit tests for at least `addNailItem`, `updateNailItem`, `deleteNailItem`, and `getNailItems` functions from `src/lib/firestore.ts`.
-3.  Firebase Firestore SDK dependencies are mocked using `vi.mock` to allow for isolated testing.
-4.  All tests pass when running `npm run test`.
-5.  `npm run build` completes without errors.
-6.  `npm run lint` completes without errors.
-
-**Implementation Notes:**
-
--   Mock the `firebase/firestore` module to control the behavior of Firestore methods (e.g., `collection`, `doc`, `addDoc`, `updateDoc`, `deleteDoc`, `getDocs`, `getDoc`).
--   Consider testing edge cases such as empty data or error paths for future iterations, but for this task, focus on successful operations.
--   Start with a few key functions to keep the diff small.
 
 ## Output Format
 
@@ -64,8 +39,22 @@ You will need to mock Firebase Firestore SDK calls to ensure tests are isolated 
 - Known issues or limitations
 - Suggested next task
 
-```
-## Suggested next task
+## Worker prompt
 
-Add loading skeleton to nail item list (`src/App.tsx`).
+### Task: Add `aria-label` to all icon-only buttons
+
+**Description:**
+As part of improving the application's accessibility, locate all interactive button elements that display only an icon and lack a visible text label. For each identified button, add an `aria-label` attribute. The value of this `aria-label` must be a clear, concise, and descriptive string that conveys the button's function to screen reader users. For example, a trash icon button for deleting an item should have `aria-label="Delete item"`. Do not add any new visible text.
+
+**Acceptance Criteria:**
+1.  All icon-only buttons throughout the application have a well-chosen and descriptive `aria-label`.
+2.  The `aria-label` values accurately reflect the button's action or purpose.
+3.  No new visible text labels are introduced alongside or in place of the icons.
+4.  The application's visual layout and functionality remain unchanged.
+
+**Required Test Commands:**
+```bash
+npm install # Ensure all dependencies are installed
+npm run build # Verify the application builds successfully
+npm run lint # Ensure code style and quality standards are met
 ```
