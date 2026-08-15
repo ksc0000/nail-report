@@ -1,60 +1,67 @@
-# Worker Prompt Template
+# Worker Prompt
 
 ## Context
 
-The application is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses an accessibility improvement from section 2.4 of the roadmap.
+The current phase focuses on improving stability and test coverage. This task initiates unit testing for Firebase helper functions, starting with Firestore operations, as outlined in the roadmap under "2.1 Test coverage".
 
 ## Objective
 
-Identify all buttons in the application that contain only an icon (with no visible text label) and add an appropriate `aria-label` attribute to each of them. The `aria-label` should clearly describe the button's purpose or action for screen reader users.
+Add Vitest unit tests for key helper functions within `src/lib/firestore.ts`, specifically focusing on `addNailItem` and `getNailItems`.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
-- `src/__tests__/` (new test files)
-- `src/App.css` (CSS improvements)
+-   `src/lib/firestore.ts` (minor modifications for export/mocking if necessary)
+-   `src/__tests__/firestore.test.ts` (new file)
+-   `vite.config.ts` (if Vitest setup for mocking Firebase is incomplete)
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
-- Firebase deploy commands
-- Secrets and credentials
+-   `src/main.tsx` (entry point — do not modify)
+-   `commands/` (PowerShell scripts — do not modify)
+-   `firestore.rules`, `storage.rules` (require human approval)
+-   `package.json` deps (no new npm packages without human approval)
+-   Firebase deploy commands
+-   Secrets and credentials
+-   `src/App.css`
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
-
-## Output Format
-
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+-   Keep diff ≤ 150 lines.
+-   Run `npm run build && npm run lint` before finishing.
+-   Prefer adding tests when touching `src/lib/` files.
+-   Report follow-up items as comments, not additional code.
 
 ## Worker prompt
 
-### Task: Add `aria-label` to all icon-only buttons
+Your task is to implement unit tests for the `addNailItem` and `getNailItems` functions located in `src/lib/firestore.ts` using Vitest.
 
-**Description:**
-As part of improving the application's accessibility, locate all interactive button elements that display only an icon and lack a visible text label. For each identified button, add an `aria-label` attribute. The value of this `aria-label` must be a clear, concise, and descriptive string that conveys the button's function to screen reader users. For example, a trash icon button for deleting an item should have `aria-label="Delete item"`. Do not add any new visible text.
+1.  **Ensure Vitest Configuration for Firebase Mocking:**
+    *   Verify that `vite.config.ts` is configured to allow mocking of Firebase SDK modules. If not, add the necessary setup (e.g., `test.globals` or alias configurations) to support `vi.mock('firebase/firestore')`.
 
-**Acceptance Criteria:**
-1.  All icon-only buttons throughout the application have a well-chosen and descriptive `aria-label`.
-2.  The `aria-label` values accurately reflect the button's action or purpose.
-3.  No new visible text labels are introduced alongside or in place of the icons.
-4.  The application's visual layout and functionality remain unchanged.
+2.  **Create Test File:**
+    *   Create a new test file: `src/__tests__/firestore.test.ts`.
 
-**Required Test Commands:**
-```bash
-npm install # Ensure all dependencies are installed
-npm run build # Verify the application builds successfully
-npm run lint # Ensure code style and quality standards are met
-```
+3.  **Mock Firebase Firestore SDK:**
+    *   Inside `src/__tests__/firestore.test.ts`, use `vi.mock('firebase/firestore')` to mock the necessary Firestore functions like `collection`, `addDoc`, `query`, `getDocs`, `doc`, `where`, etc.
+    *   The mocks should simulate the behavior of these functions without actually interacting with a live Firebase instance. For `getDocs`, ensure it returns a mock `QuerySnapshot` with mock `QueryDocumentSnapshot` items when called. For `addDoc`, ensure it simulates adding a document and returns a mock `DocumentReference`.
+
+4.  **Write Tests for `addNailItem`:**
+    *   Add a test suite for `addNailItem` that verifies:
+        *   It calls `addDoc` with the correct `collection` reference and data.
+        *   It handles successful addition (e.g., returns a document ID or success status).
+        *   Consider a basic error case (e.g., if `addDoc` throws an error).
+
+5.  **Write Tests for `getNailItems`:**
+    *   Add a test suite for `getNailItems` that verifies:
+        *   It calls `collection` and `query` with the correct arguments (e.g., collection name, user ID, sorting).
+        *   It calls `getDocs` and correctly processes the returned mock snapshot into an array of `NailItem` objects.
+        *   Ensure the data transformation from Firestore document to application `NailItem` format is tested (e.g., `doc.id` is correctly mapped).
+        *   Consider a basic error case (e.g., if `getDocs` throws an error).
+
+## Output Format
+
+-   Summary of what changed
+-   Changed files list
+-   Commands run and results
+-   Known issues or limitations
+-   Suggested next task
