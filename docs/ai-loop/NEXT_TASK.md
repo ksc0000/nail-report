@@ -1,18 +1,21 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap outlines Phase 2, which focuses on improving stability, test coverage, and UX. This task contributes to Phase 2.4: Accessibility. The goal is to enhance the user experience for assistive technologies by providing clear labels for interactive elements.
+Read the roadmap, recent commits, and the current task.
 
 ## Objective
 
-Identify all icon-only buttons in the application and add an appropriate `aria-label` attribute to each. The `aria-label` should clearly describe the button's action or purpose.
+Implement exactly one bounded task from Phase 2 of the roadmap.
 
 ## Allowed Scope
 
 - `src/` (except `src/main.tsx`)
-- `src/components/` (modifying existing React components)
-- `src/pages/` (modifying existing page components)
+- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+- `src/__tests__/` (new test files)
+- `src/App.css` (CSS improvements)
+- `vite.config.ts` (only for minimal Vitest configuration if absolutely required)
 
 ## Forbidden Scope
 
@@ -27,6 +30,7 @@ Identify all icon-only buttons in the application and add an appropriate `aria-l
 
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -37,28 +41,40 @@ Identify all icon-only buttons in the application and add an appropriate `aria-l
 - Known issues or limitations
 - Suggested next task
 
-## Worker Prompt
+---
 
-Your task is to improve the accessibility of the `nail-report` application by adding `aria-label` attributes to all buttons that display only an icon without visible text.
+# Worker Prompt
 
-**Instructions:**
+## Task
 
-1.  **Identify Icon-Only Buttons:** Systematically go through the `src/` directory, focusing on `src/components/` and `src/pages/`, to locate all `<button>` elements that only contain an icon (e.g., an SVG, an `<img>` tag, or a UI library icon component) and no descriptive text content.
-2.  **Add `aria-label`:** For each identified button, add an `aria-label` attribute with a concise, descriptive text that explains the button's function to a screen reader.
-    *   **Example:** A button with a trash can icon for deleting an item should have `aria-label="Delete item"`.
-    *   **Example:** A button with a plus icon for adding a new item should have `aria-label="Add new item"`.
-    *   Ensure the `aria-label` is localized if the application supports multiple languages (though for this task, a simple English string is sufficient).
-3.  **Test:** Ensure the application still builds and passes lint checks.
+Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`.
 
-**Acceptance Criteria:**
+### Detailed Instructions
 
--   All icon-only buttons in `src/components/` and `src/pages/` must have a semantically appropriate `aria-label` attribute.
--   The application must build successfully (`npm run build`).
--   The linter must report no errors (`npm run lint`).
+1.  **Create a new test file**: Create `src/__tests__/lib/firestore.test.ts`.
+2.  **Import functions**: Import the relevant helper functions from `src/lib/firestore.ts` into the new test file.
+3.  **Mock Firebase SDK**: Use `vi.mock` from Vitest to mock the Firebase Firestore SDK calls (e.g., `getFirestore`, `doc`, `collection`, `getDoc`, `setDoc`, `updateDoc`, `deleteDoc`, etc.) to control their behavior during tests. Assume Vitest is already configured as a test runner.
+4.  **Write tests**: Write unit tests to cover the main functionalities of each helper function in `src/lib/firestore.ts`. Focus on:
+    *   Verifying that mocked Firebase methods are called correctly with expected arguments.
+    *   Testing successful data operations (create, read, update, delete).
+    *   Handling error scenarios where Firebase operations might fail.
+    *   Ensuring functions return the expected data structures.
+5.  **Avoid actual Firebase calls**: All tests must use mocked Firebase services; do not make real network requests to Firebase.
+6.  **Minor refactors (if necessary)**: If a function in `src/lib/firestore.ts` is difficult to test, you may apply minor refactors to improve testability, ensuring no change in external behavior. Keep such changes minimal and within the diff limit.
 
-**Required test commands:**
+### Acceptance Criteria
+
+-   A new file `src/__tests__/lib/firestore.test.ts` exists and contains unit tests.
+-   The tests successfully mock Firebase Firestore SDK interactions.
+-   The tests cover the primary helper functions in `src/lib/firestore.ts` (e.g., for creating, reading, updating, and deleting nail items or public shares).
+-   All new tests pass when `npm test` (or `vitest`) is run.
+-   The existing application functionality remains unchanged.
+
+### Required Test Commands
 
 ```bash
 npm run build
 npm run lint
+npm test
+```
 ```
