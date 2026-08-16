@@ -2,17 +2,18 @@
 
 ## Context
 
-The `nail-report` application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. A key objective for this phase is to add unit tests, starting with helper functions that interact with Firebase. This task specifically targets `src/lib/firestore.ts`.
+The application needs improved loading states for a better user experience, as outlined in Phase 2.3 of the product roadmap. The goal is to provide visual feedback to the user while data is being fetched, preventing perceived slowness.
 
 ## Objective
 
-Implement unit tests for selected helper functions within `src/lib/firestore.ts` using Vitest, ensuring proper mocking of the Firebase SDK.
+Implement a loading skeleton for the nail item list displayed on the main page (`src/App.tsx`). This skeleton should appear when the nail items are being loaded from Firestore.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for minor modifications if needed to make functions testable, e.g., exporting)
-- `src/__tests__/` (for creating new test files like `src/__tests__/firestore.test.ts`)
-- `vite.config.ts` (for Vitest configuration if necessary, though Vitest should already be set up)
+- `src/App.tsx`
+- `src/App.css` (for new skeleton styles)
+- `src/components/` (e.g., `src/components/NailItemSkeleton.tsx` if a new component is deemed appropriate)
+- `src/hooks/` (if a custom hook helps manage loading state, though unlikely for this simple task)
 
 ## Forbidden Scope
 
@@ -25,9 +26,12 @@ Implement unit tests for selected helper functions within `src/lib/firestore.ts`
 
 ## Requirements
 
+- When the `nailItems` data is being fetched (i.e., when the application is in a loading state for the list), display a skeleton UI instead of an empty list or a simple spinner.
+- The loading skeleton should visually represent the layout of several individual `NailItem` components (e.g., placeholders for an image, title, and a few tags).
+- Integrate the skeleton logic into `src/App.tsx` to conditionally render it based on the loading state.
+- Ensure the UI remains responsive and visually consistent with the rest of the application.
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -37,34 +41,3 @@ Implement unit tests for selected helper functions within `src/lib/firestore.ts`
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
-## Worker Prompt
-
-The current task is to enhance test coverage for the `nail-report` application. Your specific objective is to write unit tests for the helper functions located in `src/lib/firestore.ts`.
-
-**Steps:**
-
-1.  **Create a New Test File:** Create a new file named `src/__tests__/firestore.test.ts`.
-2.  **Identify Key Functions:** Review `src/lib/firestore.ts` and identify at least two core functions that interact with Firestore (e.g., `addNailItem`, `getNailItem`, `updateNailItem`, `deleteNailItem`, `getNailItems`, `addPublicShare`, `getPublicShare`).
-3.  **Implement Mocking:** Set up `vi.mock` to mock the Firebase Firestore SDK functions (`getFirestore`, `doc`, `collection`, `addDoc`, `getDoc`, `updateDoc`, `deleteDoc`, `query`, `getDocs`, `where`) to prevent actual calls to Firebase during testing. Ensure tests are isolated and run quickly.
-4.  **Write Unit Tests:** For the identified functions, write unit tests that cover:
-    *   Successful execution paths (e.g., item added, item retrieved successfully).
-    *   Basic error handling (e.g., what happens if a Firestore operation fails, if applicable).
-5.  **Test for Isolation:** Verify that the tests do not make actual network requests to Firebase.
-
-**Acceptance Criteria:**
-
-*   A new test file `src/__tests__/firestore.test.ts` is created.
-*   At least two functions from `src/lib/firestore.ts` have corresponding unit tests.
-*   The Firebase Firestore SDK is effectively mocked using `vi.mock` in `src/__tests__/firestore.test.ts`.
-*   All tests pass when running `npm run test`.
-*   `npm run build` and `npm run lint` execute successfully without errors or warnings.
-
-**Required Test Commands:**
-
-```bash
-npm install # Ensure all dependencies are up to date
-npm run test # Run the newly added unit tests
-npm run build # Verify the application builds correctly
-npm run lint # Ensure code style and quality standards are met
-```
