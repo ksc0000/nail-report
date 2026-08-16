@@ -1,19 +1,20 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The application needs improved loading states for a better user experience, as outlined in Phase 2.3 of the product roadmap. The goal is to provide visual feedback to the user while data is being fetched, preventing perceived slowness.
+Read the roadmap, recent commits, and the current task.
 
 ## Objective
 
-Implement a loading skeleton for the nail item list displayed on the main page (`src/App.tsx`). This skeleton should appear when the nail items are being loaded from Firestore.
+Implement exactly one bounded task from Phase 2 of the roadmap.
 
 ## Allowed Scope
 
-- `src/App.tsx`
-- `src/App.css` (for new skeleton styles)
-- `src/components/` (e.g., `src/components/NailItemSkeleton.tsx` if a new component is deemed appropriate)
-- `src/hooks/` (if a custom hook helps manage loading state, though unlikely for this simple task)
+- `src/` (except `src/main.tsx`)
+- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+- `src/__tests__/` (new test files)
+- `src/App.css` (CSS improvements)
 
 ## Forbidden Scope
 
@@ -26,12 +27,9 @@ Implement a loading skeleton for the nail item list displayed on the main page (
 
 ## Requirements
 
-- When the `nailItems` data is being fetched (i.e., when the application is in a loading state for the list), display a skeleton UI instead of an empty list or a simple spinner.
-- The loading skeleton should visually represent the layout of several individual `NailItem` components (e.g., placeholders for an image, title, and a few tags).
-- Integrate the skeleton logic into `src/App.tsx` to conditionally render it based on the loading state.
-- Ensure the UI remains responsive and visually consistent with the rest of the application.
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -41,3 +39,34 @@ Implement a loading skeleton for the nail item list displayed on the main page (
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+
+## Worker Prompt
+
+### Task: Add unit tests for Firestore helper functions
+
+Implement unit tests for the `getNailItems` and `addNailItem` helper functions located in `src/lib/firestore.ts`.
+
+**Details:**
+1.  Create a new test file: `src/__tests__/lib/firestore.test.ts`.
+2.  Set up Vitest and mock the Firebase SDK (specifically Firestore-related imports and methods) as needed to isolate the `firestore.ts` functions for testing. Refer to the roadmap's mention of "Mocking Firebase SDK (vitest + vi.mock)".
+3.  Write at least two unit tests:
+    *   One for `getNailItems` to ensure it correctly fetches data (using mocked Firestore responses).
+    *   One for `addNailItem` to ensure it correctly calls Firestore's `addDoc` (using mocked Firestore behavior).
+4.  Ensure that the tests do not make actual network calls to Firebase.
+5.  Keep the test file concise and focused.
+
+**Acceptance Criteria:**
+*   A new file `src/__tests__/lib/firestore.test.ts` exists.
+*   The tests mock Firebase Firestore dependencies correctly.
+*   `getNailItems` and `addNailItem` are tested for their core functionality.
+*   All new tests pass when `npm test` is run.
+*   The overall solution respects the diff limit of 150 lines.
+
+**Required Test Commands:**
+```bash
+npm install # Only if dependencies are needed for running tests, typically not for a new test file.
+npm test
+npm run build
+npm run lint
+```
+```
