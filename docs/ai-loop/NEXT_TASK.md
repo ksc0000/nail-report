@@ -2,18 +2,17 @@
 
 ## Context
 
-The product roadmap focuses on improving stability, test coverage, and UX in Phase 2. The current task is to begin addressing test coverage.
+The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. This task focuses on improving test coverage as outlined in section 2.1 of the roadmap. Vitest is already configured as the test runner.
 
 ## Objective
 
-Add Vitest unit tests for key helper functions within `src/lib/firestore.ts`. This task aims to establish a testing pattern for Firestore interactions and improve the robustness of data operations.
+Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor modifications for testability, if necessary, but primarily adding tests)
-- `src/__tests__/` (create new test files, e.g., `src/__tests__/firestore.test.ts`)
-- `package.json` (only for adding a `test` script if not already present, but no new `dependencies` or `devDependencies`)
-- `vite.config.ts` (minor adjustments for Vitest setup, if absolutely necessary, but prioritize existing setup)
+- `src/` (except `src/main.tsx`)
+- `src/lib/` (specifically `src/lib/firestore.ts`)
+- `src/__tests__/` (new test files, e.g., `src/__tests__/lib/firestore.test.ts`)
 
 ## Forbidden Scope
 
@@ -23,16 +22,28 @@ Add Vitest unit tests for key helper functions within `src/lib/firestore.ts`. Th
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/App.css` or any other CSS files
 
 ## Requirements
 
-- Keep diff ≤ 150 lines. Focus on 1-2 core helper functions initially (e.g., `getNailItems`, `addNailItem`).
-- Use Vitest for writing tests.
-- Mock the Firebase SDK (`firestore`) using `vi.mock` as appropriate to isolate unit tests from actual Firebase calls.
-- Ensure tests run successfully.
+- Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
+
+## Worker prompt
+
+Implement unit tests for the Firebase Firestore helper functions located in `src/lib/firestore.ts`.
+
+1.  **Create a new test file**: Add `src/__tests__/lib/firestore.test.ts`.
+2.  **Mock Firebase SDK**: Use `vitest` and `vi.mock` to mock Firebase Firestore SDK functions (e.g., `getFirestore`, `collection`, `getDocs`, `addDoc`, `updateDoc`, `deleteDoc`). Focus on mocking the *behavior* of these functions relevant to how `src/lib/firestore.ts` interacts with them.
+3.  **Write unit tests**:
+    *   Test `getNailItems` to ensure it correctly calls Firestore's `collection` and `getDocs` and maps the results.
+    *   Test `addNailItem` to verify it calls `collection` and `addDoc` with the correct payload.
+    *   Test `updateNailItem` to ensure it calls `doc` and `updateDoc` with the correct ID and partial data.
+    *   Test `deleteNailItem` to confirm it calls `doc` and `deleteDoc` with the correct ID.
+4.  **Assertions**: Use Vitest's assertion library to check that the mocked Firebase functions are called with the expected arguments and that the helper functions return the expected values.
+5.  **Run tests**: Verify all new tests pass by running `npm test`.
+6.  **Lint and Build**: Ensure `npm run lint` and `npm run build` pass without errors.
 
 ## Output Format
 
@@ -41,16 +52,3 @@ Add Vitest unit tests for key helper functions within `src/lib/firestore.ts`. Th
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
-## Worker prompt
-
-Implement Vitest unit tests for a subset of the functions in `src/lib/firestore.ts`.
-
-Specifically:
-1.  Create a new test file: `src/__tests__/firestore.test.ts`.
-2.  Add a test suite for `src/lib/firestore.ts`.
-3.  Implement tests for the `getNailItems` helper function. This should involve mocking `firebase/firestore` to simulate successful data fetching and potential errors, ensuring the helper correctly processes snapshots and handles exceptions.
-4.  Ensure that the tests cover basic success cases and error handling.
-5.  If Vitest is not fully configured, add a `test` script to `package.json` that runs `vitest`.
-
-This task focuses on establishing a robust testing foundation for our Firebase interaction layer.
