@@ -2,17 +2,17 @@
 
 ## Context
 
-The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. The current task is to begin implementing unit tests for the core helper functions.
+The product roadmap focuses on improving stability, test coverage, and UX in Phase 2. This task specifically addresses the "Test coverage" objective by adding unit tests for core Firebase helper functions.
 
 ## Objective
 
-Add Vitest unit tests for the functions defined in `src/lib/firestore.ts`. This involves setting up mocks for Firebase Firestore SDK interactions.
+Add Vitest unit tests for a helper function within `src/lib/firestore.ts`.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor adjustments if needed for testability, e.g., exporting)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `vite.config.ts` (if Vitest setup for mocks is needed, though likely already configured)
+- `src/lib/firestore.ts` (minor adjustments to aid testing are allowed)
+- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `vite.config.ts` (for Vitest configuration if necessary, but keep changes minimal)
 
 ## Forbidden Scope
 
@@ -25,13 +25,13 @@ Add Vitest unit tests for the functions defined in `src/lib/firestore.ts`. This 
 
 ## Requirements
 
+- Create a new test file, `src/__tests__/firestore.test.ts`.
+- Implement at least one unit test for a simple helper function in `src/lib/firestore.ts` (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, or `deleteNailItem`). Focus on one function to keep the PR small.
+- Use `vitest` and `vi.mock` to mock Firebase SDK dependencies (e.g., `firebase/firestore`).
+- Ensure the test can run independently and passes successfully.
 - Keep diff ≤ 150 lines.
-- Create a new test file `src/__tests__/firestore.test.ts`.
-- Write unit tests for at least two key functions in `src/lib/firestore.ts` (e.g., `addNailItem`, `getNailItems`).
-- Use `vi.mock` to mock Firebase Firestore SDK interactions.
-- Tests should cover typical success cases.
 - Run `npm run build && npm run lint` before finishing.
-- Run `npm test` and ensure new tests pass.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
