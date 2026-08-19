@@ -1,38 +1,39 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap focuses on improving stability, test coverage, and UX in Phase 2. The current state shows that no substantive roadmap tasks have been completed yet. This task addresses a key accessibility improvement by adding `aria-label` attributes to icon-only buttons, making the application more usable for assistive technologies.
+The product roadmap for `nail-report` is in Phase 2, focusing on stability, test coverage, and UX. This task specifically addresses `2.1 Test coverage`. The current state shows that no substantive tasks have been completed by the AI Loop yet, making this a foundational step for improving code quality.
 
 ## Objective
 
-Identify all icon-only buttons across the application and add appropriate `aria-label` attributes to improve accessibility.
+Add Vitest unit tests for the helper functions located in `src/lib/firestore.ts`. The focus should be on covering the core CRUD operations for nail items that interact with Firestore.
 
 ## Allowed Scope
 
-- `src/components/` (modifying existing UI components)
-- `src/App.css` (if minor styling adjustments are needed to accommodate accessibility)
-- `src/pages/` (if icon buttons are directly in page components)
+- `src/lib/firestore.ts` (minor adjustments if needed for testability, but primarily adding tests)
+- `src/__tests__/lib/firestore.test.ts` (new file for tests)
+- `vitest.config.ts` (if necessary for Firebase mocking setup, but prefer existing setup)
+- `package.json` (only if updating `scripts` for test command, no new `dependencies` or `devDependencies`)
 
 ## Forbidden Scope
 
 - `src/main.tsx` (entry point — do not modify)
 - `commands/` (PowerShell scripts — do not modify)
 - `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
+- `package.json` `dependencies` or `devDependencies` (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/lib/` (no changes to helper functions needed for this task)
-- `src/__tests__/` (no new test files required for this task, focus on direct implementation)
+- Any files or directories not explicitly listed in "Allowed Scope".
 
 ## Requirements
 
+- Create a new test file, e.g., `src/__tests__/lib/firestore.test.ts`.
+- Implement unit tests for at least two key functions in `src/lib/firestore.ts` (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`).
+- Use Vitest for testing.
+- Mock Firebase SDK dependencies as necessary to ensure tests are isolated unit tests (e.g., `firebase/firestore`, `firebase/auth`).
+- Ensure the tests can run successfully in an Ubuntu environment.
 - Keep diff ≤ 150 lines.
-- Identify all `button` elements that contain only an icon (e.g., `<button><Icon /></button>`) and add a descriptive `aria-label` attribute.
-- The `aria-label` should clearly describe the button's action (e.g., "Delete item", "Edit profile", "Upload image").
 - Run `npm run build && npm run lint` before finishing.
-- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -41,29 +42,3 @@ Identify all icon-only buttons across the application and add appropriate `aria-
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
----
-
-## Worker Prompt
-
-Please implement the following:
-
-1.  **Identify Icon-Only Buttons**: Traverse the `src/components/` and `src/pages/` directories to find all `<button>` elements that primarily display an icon and do not have visible text.
-2.  **Add `aria-label`**: For each identified button, add a concise and descriptive `aria-label` attribute that explains the button's purpose to screen readers. For example, a delete button with a trash can icon might get `aria-label="Delete item"`.
-3.  **Verify**: Visually inspect common pages (e.g., item list, item detail, edit forms) to ensure buttons still function as expected. Although not strictly required, consider using browser developer tools to check the accessibility tree if possible to confirm `aria-label` is present.
-4.  **Lint and Build**: Ensure the project still builds and passes lint checks.
-
-**Example Transformation:**
-
-```typescript jsx
-// Before
-<button onClick={handleDelete} className="icon-button">
-  <TrashIcon />
-</button>
-
-// After
-<button onClick={handleDelete} className="icon-button" aria-label="Delete item">
-  <TrashIcon />
-</button>
-```
-```
