@@ -2,35 +2,35 @@
 
 ## Context
 
-The `nail-report` application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. A key part of this is adding comprehensive unit tests. Your current objective is to kick off the test coverage initiative by targeting core Firebase helper functions.
+The current phase focuses on improving stability, test coverage, and UX. This task contributes to Phase 2.1 by adding foundational unit tests for core Firebase interactions.
 
 ## Objective
 
-Add unit tests for helper functions located in `src/lib/firestore.ts`. This task focuses on implementing initial test coverage for a few key functions in this module using Vitest, including setting up necessary Firebase SDK mocks.
+Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but ideally minimal changes to the original logic)
-- `src/__tests__/` (create new test files, e.g., `src/__tests__/firestore.test.ts`)
-- `vite.config.ts` (minor additions if Vitest setup for mocking is not complete, but should generally be ready)
+- `src/lib/firestore.ts` (minor changes if needed for testability, but focus on adding tests)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `vite.config.ts` (if Vitest configuration is needed, but prefer to use existing setup)
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
+- `src/main.tsx`
+- `commands/`
+- `firestore.rules`, `storage.rules`
+- `package.json` deps (no new npm packages)
 - Firebase deploy commands
 - Secrets and credentials
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- Create at least one new test file, e.g., `src/__tests__/firestore.test.ts`.
-- Add unit tests for at least two functions within `src/lib/firestore.ts` (e.g., `addNailItem`, `updateNailItem`, `deleteNailItem`, `getNailItemsForUser`).
-- Use `vitest` and mock Firebase SDK dependencies as needed (e.g., `firebase/firestore`).
-- Report follow-up items as comments, not additional code.
+- Create a new test file `src/__tests__/firestore.test.ts`.
+- Write unit tests for at least two key functions in `src/lib/firestore.ts`, such as `addNailItem`, `getNailItems`, `updateNailItem`, or `deleteNailItem`.
+- Mock Firebase Firestore SDK interactions using `vitest` and `vi.mock` to ensure tests are isolated and do not require actual Firebase connections.
+- Ensure tests cover successful operations and basic error handling for the mocked Firestore calls.
+- Run `npm run build && npm run lint && npm run test` before finishing.
 
 ## Output Format
 
@@ -39,3 +39,21 @@ Add unit tests for helper functions located in `src/lib/firestore.ts`. This task
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+
+---
+**Worker Prompt**
+
+Hello Jules,
+
+Your next task is to enhance the test coverage of the `nail-report` application by writing unit tests for the Firebase Firestore helper functions.
+
+Specifically, you need to:
+
+1.  Create a new test file: `src/__tests__/firestore.test.ts`.
+2.  Implement unit tests for at least two core functions found in `src/lib/firestore.ts`. Good candidates are `addNailItem` and `getNailItems`, but you can choose others if they are more straightforward to test first.
+3.  When writing tests, ensure that all interactions with the Firebase Firestore SDK are properly mocked using `vitest`'s mocking capabilities (e.g., `vi.mock('firebase/firestore', ...)`). The tests should not make actual calls to Firebase.
+4.  Verify both successful outcomes and basic error scenarios (e.g., a mocked Firestore operation rejects with an error).
+5.  After completing the tests, run the following commands to ensure everything is in order: `npm run build`, `npm run lint`, and `npm run test`.
+6.  Keep the changes concise, aiming for a diff of 150 lines or less. Focus on adding foundational tests, not exhaustive edge case coverage for this task.
+
+This task is crucial for improving the stability and maintainability of the application's data layer. Good luck!
