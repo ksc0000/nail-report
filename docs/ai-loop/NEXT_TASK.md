@@ -1,39 +1,36 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses Phase 2.1: Test coverage, by adding unit tests for core Firebase helper functions.
+The product roadmap for `nail-report` outlines improving stability, test coverage, and UX in Phase 2. This task focuses on beginning to establish unit test coverage. Vitest is already configured as the test runner.
 
 ## Objective
 
-Implement unit tests for one or two helper functions within `src/lib/firestore.ts` using Vitest. This task aims to establish a testing foundation for Firestore-related logic.
+Add Vitest unit tests for selected helper functions within `src/lib/firestore.ts`. The initial focus should be on one or two simpler, pure functions or those that perform straightforward Firestore operations.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for understanding the functions to be tested, no modification expected unless necessary for testability, e.g., exporting an internal helper)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `src/vitest.setup.ts` (if global mocks are needed for Firebase, though direct `vi.mock` in test file is preferred for specific modules)
+-   `src/lib/firestore.ts` (modifications to export functions for testing, if necessary)
+-   `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
-- Firebase deploy commands
-- Secrets and credentials
+-   `src/main.tsx` (entry point — do not modify)
+-   `commands/` (PowerShell scripts — do not modify)
+-   `firestore.rules`, `storage.rules` (require human approval)
+-   `package.json` deps (no new npm packages without human approval)
+-   Firebase deploy commands
+-   Secrets and credentials
 
 ## Requirements
 
--   Create a new test file: `src/__tests__/firestore.test.ts`.
--   Use `vitest` as the test runner.
--   Mock Firebase Firestore SDK dependencies (e.g., `getFirestore`, `collection`, `doc`, `getDocs`, `addDoc`, `updateDoc`, `deleteDoc`) using `vi.mock('firebase/firestore')` to isolate the logic in `firestore.ts`.
--   Implement unit tests for **two** functions from `src/lib/firestore.ts`. Recommended candidates for this task are `getNailItems` and `addNailItem`.
--   Ensure tests cover successful execution paths and at least one error handling path for the selected functions.
--   Keep the overall diff small (aim for ≤150 lines).
--   Run `npm test` to ensure all tests pass.
--   Run `npm run build && npm run lint` before finishing to ensure code quality and build integrity.
+-   Create a new test file `src/__tests__/firestore.test.ts`.
+-   Write unit tests for at least one function in `src/lib/firestore.ts`.
+-   Use Vitest for testing and mock Firebase SDK dependencies as needed.
+-   Ensure tests are focused and atomic.
+-   Keep the diff ≤ 150 lines.
+-   Run `npm run build && npm run lint && npm run test` before finishing.
+-   Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -42,6 +39,3 @@ Implement unit tests for one or two helper functions within `src/lib/firestore.t
 -   Commands run and results
 -   Known issues or limitations
 -   Suggested next task
-
----
-```
