@@ -2,17 +2,17 @@
 
 ## Context
 
-The product roadmap outlines Phase 2, focusing on improving stability, test coverage, and UX. This task specifically targets "2.1 Test coverage" by adding unit tests for Firebase helper functions. Vitest is identified as the test runner, implying it's already set up and ready for use.
+The current roadmap for `nail-report` focuses on improving stability, test coverage, and UX in Phase 2. One key aspect is increasing test coverage for helper functions.
 
 ## Objective
 
-Add comprehensive unit tests for the functions within `src/lib/firestore.ts` using Vitest and mock the Firebase SDK as needed to isolate tests.
+Add unit tests for the helper functions in `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor adjustments for testability, if strictly necessary)
+- `src/lib/firestore.ts` (modifications to export functions for testing if necessary)
 - `src/__tests__/firestore.test.ts` (new file for tests)
-- `vite.config.ts` (only if essential for Vitest configuration, e.g., aliasing for mocks)
+- `vitest.config.ts` (minimal modifications if absolutely required for mocks)
 
 ## Forbidden Scope
 
@@ -26,12 +26,12 @@ Add comprehensive unit tests for the functions within `src/lib/firestore.ts` usi
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create `src/__tests__/firestore.test.ts`.
-- Write unit tests for the core functions in `src/lib/firestore.ts` (e.g., functions for adding, getting, updating, deleting nail items or related data).
-- Effectively mock the Firebase Firestore SDK using `vitest` and `vi.mock` to ensure tests are isolated and do not interact with actual Firebase services.
-- Ensure all tests pass.
+- Create a new test file `src/__tests__/firestore.test.ts`.
+- Mock Firebase SDK dependencies as needed to isolate `firestore.ts` functions.
+- Write at least one unit test for each public helper function in `src/lib/firestore.ts` (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`, etc.).
+- Ensure tests cover basic success cases. Error handling tests are not strictly required for this task but can be added if simple.
+- Run `npm run test` to confirm tests pass.
 - Run `npm run build && npm run lint` before finishing.
-- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
