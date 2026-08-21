@@ -2,42 +2,54 @@
 
 ## Context
 
-The `nail-report` application requires improved test coverage to enhance stability. The core Firebase helper functions are a good starting point for adding unit tests. `src/lib/firestore.ts` contains critical functions for interacting with Firebase Firestore.
+The product roadmap for nail-report is currently in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses Phase 2.1: Test coverage, by adding unit tests for core Firebase helper functions. `src/lib/firestore.ts` contains crucial functions for interacting with Firestore.
 
 ## Objective
 
-Implement unit tests for the helper functions located in `src/lib/firestore.ts` using Vitest. This will involve setting up appropriate mocks for the Firebase SDK dependencies to isolate the functions under test.
+Add unit tests for helper functions within `src/lib/firestore.ts` using Vitest. Focus on testing one or two core helper functions to ensure the basic setup and mocking for Firestore are working correctly.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for minor, test-enabling refactoring if strictly necessary, but mainly for understanding target functions)
-- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
-- `vite.config.ts` (if Vitest configuration or aliases are needed for testing setup, but prefer `vi.mock` directly in test files)
+-   `src/lib/firestore.ts` (modifications only if necessary for testability, e.g., exporting a helper)
+-   `src/__tests__/firestore.test.ts` (new file for tests)
+-   `src/__tests__/` (new files within this directory)
 
 ## Forbidden Scope
 
-- `src/main.tsx` (entry point — do not modify)
-- `commands/` (PowerShell scripts — do not modify)
-- `firestore.rules`, `storage.rules` (require human approval)
-- `package.json` deps (no new npm packages without human approval)
-- Firebase deploy commands
-- Secrets and credentials
-- Any files outside `src/` except `vite.config.ts` if strictly necessary for test setup.
+-   `src/main.tsx` (entry point — do not modify)
+-   `commands/` (PowerShell scripts — do not modify)
+-   `firestore.rules`, `storage.rules` (require human approval)
+-   `package.json` deps (no new npm packages without human approval)
+-   Firebase deploy commands
+-   Secrets and credentials
+-   Any files outside of `src/` except for new test files in `src/__tests__/`
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint && npm run test` before finishing.
-- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
-- Mock Firebase SDK dependencies (e.g., `firebase/firestore`, `firebase/app`) as necessary using `vitest`'s mocking utilities (`vi.mock`).
-- Cover at least two key functions within `src/lib/firestore.ts` with unit tests, focusing on their logic rather than actual Firebase calls.
-- Ensure the tests are isolated and do not require a live Firebase connection.
-- Report follow-up items as comments, not additional code.
+-   Keep diff ≤ 150 lines.
+-   Ensure Vitest is correctly configured to mock Firebase SDK dependencies.
+-   Add tests for at least one function in `src/lib/firestore.ts`, such as `getNailItems` or `addNailItem`.
+-   Run `npm run build && npm run lint` before finishing to ensure code quality and prevent build errors.
+-   Report follow-up items as comments, not additional code.
 
 ## Output Format
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+### Summary of what changed
+
+A brief description of the implemented tests and any necessary modifications for testability.
+
+### Changed files list
+
+List all files that were added, modified, or deleted.
+
+### Commands run and results
+
+Provide the commands executed (e.g., `npm test`, `npm run build`, `npm run lint`) and their respective output summaries (e.g., test pass/fail count, build success/failure, linting issues).
+
+### Known issues or limitations
+
+Any identified problems or limitations in the implemented solution.
+
+### Suggested next task
+
+A specific, bounded task that logically follows the current one, derived from the product roadmap.
