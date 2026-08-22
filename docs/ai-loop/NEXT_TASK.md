@@ -2,17 +2,18 @@
 
 ## Context
 
-Phase 2 of the roadmap focuses on improving stability, test coverage, and UX. This task directly addresses "2.1 Test coverage" by adding unit tests for core Firebase Firestore helper functions, which is crucial for application stability.
+Read the roadmap, recent commits, and the current task.
 
 ## Objective
 
-Add Vitest unit tests for the helper functions defined in `src/lib/firestore.ts`. The focus should be on covering the main CRUD operations (add, get, update, delete) or any other significant utility functions within this file.
+Implement a skeleton loading UI for the nail item list while data is being fetched.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor adjustments for testability if strictly necessary, but prefer to mock)
-- `src/__tests__/` (e.g., creating `src/__tests__/firestore.test.ts` and adding test suites)
-- `vite.config.ts` (only if Vitest configuration *strictly* needs adjustment for mocking; otherwise, assume it's set up)
+- `src/App.tsx`
+- `src/components/` (for a new loading skeleton component if needed)
+- `src/App.css` or component-specific CSS files within `src/`
+- `src/types/` (if new types are strictly necessary, though unlikely for this task)
 
 ## Forbidden Scope
 
@@ -27,11 +28,32 @@ Add Vitest unit tests for the helper functions defined in `src/lib/firestore.ts`
 
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
-- Use `vi.mock` to mock Firebase SDK dependencies (e.g., `firebase/firestore`) to isolate `src/lib/firestore.ts` functions.
-- Write at least 2-3 meaningful unit tests for key helper functions in `src/lib/firestore.ts`.
-- Ensure tests pass with `npm test`.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
+## Worker prompt
+
+The application currently shows a blank screen or an empty list before nail items are loaded from Firebase Firestore. To improve user experience, add a loading skeleton that appears while the data is being fetched.
+
+**Detailed Steps:**
+
+1.  **Identify Loading State**: In `src/App.tsx`, determine the appropriate place where the nail item list is rendered and where the loading state for fetching these items can be accessed or introduced. You might need to add a local state variable (e.g., `isLoadingItems`) or hook into an existing data fetching mechanism.
+2.  **Create Skeleton UI**: Implement a simple, visually distinct skeleton UI. This can be done by:
+    *   Adding conditional rendering logic in `src/App.tsx` to display the skeleton when `isLoadingItems` is true.
+    *   Optionally, create a new, small React component (e.g., `src/components/NailItemSkeleton.tsx`) that renders the skeleton structure (e.g., a few `div` elements with background colors or shimmer effects).
+3.  **Apply Styles**: Add necessary CSS to `src/App.css` or a new component-specific CSS file to style the skeleton, making it resemble the layout of a single nail item but clearly indicating it's a placeholder.
+4.  **Integrate**: Ensure the skeleton is shown only when data is loading and automatically replaced by the actual list of nail items once the data has successfully loaded.
+
+**Acceptance Criteria:**
+
+*   A visual loading skeleton replaces the nail item list when the application is fetching items from Firestore.
+*   The skeleton provides a clear visual indication that content is loading.
+*   Once nail items are loaded, the skeleton disappears, and the actual list of nail items is displayed.
+*   No new npm packages are added to `package.json`.
+*   The diff size is kept under 150 lines.
+*   `npm run build` and `npm run lint` pass without errors.
+
+---
 ## Output Format
 
 - Summary of what changed
