@@ -2,18 +2,17 @@
 
 ## Context
 
-Read the roadmap, recent commits, and the current task.
+The product roadmap for nail-report is in Phase 2, focusing on stability, test coverage, and UX. This task addresses the "2.3 Loading states" goal by improving the user experience during data fetching.
 
 ## Objective
 
-Implement a skeleton loading UI for the nail item list while data is being fetched.
+Implement a simple loading skeleton for the main nail item list. The skeleton should appear while the list of nail items is being fetched from Firestore and disappear once the data is loaded and displayed.
 
 ## Allowed Scope
 
-- `src/App.tsx`
-- `src/components/` (for a new loading skeleton component if needed)
-- `src/App.css` or component-specific CSS files within `src/`
-- `src/types/` (if new types are strictly necessary, though unlikely for this task)
+- `src/` (except `src/main.tsx`)
+- `src/App.css` (for styling the skeleton)
+- Existing components that render the nail item list.
 
 ## Forbidden Scope
 
@@ -33,27 +32,22 @@ Implement a skeleton loading UI for the nail item list while data is being fetch
 
 ## Worker prompt
 
-The application currently shows a blank screen or an empty list before nail items are loaded from Firebase Firestore. To improve user experience, add a loading skeleton that appears while the data is being fetched.
+Implement a loading skeleton component for the nail item list.
 
-**Detailed Steps:**
+1.  **Identify the list component**: Locate the component responsible for rendering the list of `nailItems` (likely within `src/App.tsx` or a child component rendered by it).
+2.  **Add a loading state check**: Integrate the skeleton display based on a loading state variable (e.g., `isLoadingItems` or `itemsLoading`). This state should be true while `nailItems` are being fetched and false once they are available.
+3.  **Create a skeleton structure**: Design a simple visual skeleton using HTML and CSS that mimics the appearance of one or more nail item cards (e.g., grey rectangles for image, title, and tags). Consider creating a small, dedicated component for the skeleton if appropriate.
+4.  **Styling**: Add necessary CSS to `src/App.css` or a component-specific CSS module for the skeleton's appearance.
+5.  **Display logic**: When the loading state is true, render the skeleton. When the loading state is false and `nailItems` are available, render the actual list. If no items are found after loading, display the existing "no items" message.
 
-1.  **Identify Loading State**: In `src/App.tsx`, determine the appropriate place where the nail item list is rendered and where the loading state for fetching these items can be accessed or introduced. You might need to add a local state variable (e.g., `isLoadingItems`) or hook into an existing data fetching mechanism.
-2.  **Create Skeleton UI**: Implement a simple, visually distinct skeleton UI. This can be done by:
-    *   Adding conditional rendering logic in `src/App.tsx` to display the skeleton when `isLoadingItems` is true.
-    *   Optionally, create a new, small React component (e.g., `src/components/NailItemSkeleton.tsx`) that renders the skeleton structure (e.g., a few `div` elements with background colors or shimmer effects).
-3.  **Apply Styles**: Add necessary CSS to `src/App.css` or a new component-specific CSS file to style the skeleton, making it resemble the layout of a single nail item but clearly indicating it's a placeholder.
-4.  **Integrate**: Ensure the skeleton is shown only when data is loading and automatically replaced by the actual list of nail items once the data has successfully loaded.
+### Acceptance Criteria:
 
-**Acceptance Criteria:**
+-   A loading skeleton is displayed on the main screen when `nailItems` are being fetched.
+-   The skeleton visually resembles the layout of actual nail item cards (e.g., a few grey placeholders).
+-   The loading skeleton disappears, and the actual nail item list (or "no items" message) is displayed once fetching is complete.
+-   No new npm packages are added or modified in `package.json`.
+-   `npm run build` and `npm run lint` execute successfully without errors or warnings.
 
-*   A visual loading skeleton replaces the nail item list when the application is fetching items from Firestore.
-*   The skeleton provides a clear visual indication that content is loading.
-*   Once nail items are loaded, the skeleton disappears, and the actual list of nail items is displayed.
-*   No new npm packages are added to `package.json`.
-*   The diff size is kept under 150 lines.
-*   `npm run build` and `npm run lint` pass without errors.
-
----
 ## Output Format
 
 - Summary of what changed
