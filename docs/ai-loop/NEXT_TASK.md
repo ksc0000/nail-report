@@ -1,18 +1,18 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap for nail-report is in Phase 2, focusing on stability, test coverage, and UX. This task addresses the "2.3 Loading states" goal by improving the user experience during data fetching.
+The product roadmap for `nail-report` is currently in Phase 2, focusing on improving stability, test coverage, and UX. This task initiates work on Phase 2.1, which targets adding comprehensive test coverage to the application's core logic. The current state indicates that no substantive tasks have been completed yet.
 
 ## Objective
 
-Implement a simple loading skeleton for the main nail item list. The skeleton should appear while the list of nail items is being fetched from Firestore and disappear once the data is loaded and displayed.
+Implement unit tests for the helper functions located in `src/lib/firestore.ts` using Vitest. The goal is to ensure the reliability of Firestore interactions by testing CRUD operations and data serialization/deserialization.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/App.css` (for styling the skeleton)
-- Existing components that render the nail item list.
+- `src/lib/firestore.ts` (modifications to export functions if needed for testing, but ideally minimal changes to production code)
+- `src/__tests__/` (create `src/__tests__/firestore.test.ts` and potentially mock files within `src/__tests__/mocks/`)
 
 ## Forbidden Scope
 
@@ -25,28 +25,13 @@ Implement a simple loading skeleton for the main nail item list. The skeleton sh
 
 ## Requirements
 
+- Create a new test file: `src/__tests__/firestore.test.ts`.
+- Write unit tests for at least two key helper functions within `src/lib/firestore.ts` that interact with Firestore (e.g., `getNailItem`, `createNailItem`, `updateNailItem`, `deleteNailItem`, or similar CRUD operations).
+- Mock the Firebase SDK (Firestore specifically) using Vitest's `vi.mock` to ensure tests are isolated and do not make actual network requests.
+- Ensure the tests cover successful operations and, if applicable and straightforward, basic error handling (e.g., item not found).
 - Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
-
-## Worker prompt
-
-Implement a loading skeleton component for the nail item list.
-
-1.  **Identify the list component**: Locate the component responsible for rendering the list of `nailItems` (likely within `src/App.tsx` or a child component rendered by it).
-2.  **Add a loading state check**: Integrate the skeleton display based on a loading state variable (e.g., `isLoadingItems` or `itemsLoading`). This state should be true while `nailItems` are being fetched and false once they are available.
-3.  **Create a skeleton structure**: Design a simple visual skeleton using HTML and CSS that mimics the appearance of one or more nail item cards (e.g., grey rectangles for image, title, and tags). Consider creating a small, dedicated component for the skeleton if appropriate.
-4.  **Styling**: Add necessary CSS to `src/App.css` or a component-specific CSS module for the skeleton's appearance.
-5.  **Display logic**: When the loading state is true, render the skeleton. When the loading state is false and `nailItems` are available, render the actual list. If no items are found after loading, display the existing "no items" message.
-
-### Acceptance Criteria:
-
--   A loading skeleton is displayed on the main screen when `nailItems` are being fetched.
--   The skeleton visually resembles the layout of actual nail item cards (e.g., a few grey placeholders).
--   The loading skeleton disappears, and the actual nail item list (or "no items" message) is displayed once fetching is complete.
--   No new npm packages are added or modified in `package.json`.
--   `npm run build` and `npm run lint` execute successfully without errors or warnings.
+- Run `npm run build && npm run lint && npm run test` before finishing.
+- Ensure all new test files conform to existing project linting rules.
 
 ## Output Format
 
@@ -55,3 +40,4 @@ Implement a loading skeleton component for the nail item list.
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
+```
