@@ -2,18 +2,17 @@
 
 ## Context
 
-The current focus is on improving the stability, test coverage, and UX of the `nail-report` application as part of Phase 2 of the product roadmap. This task specifically addresses an accessibility improvement.
+The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. This task directly addresses Phase 2.4, Accessibility.
 
 ## Objective
 
-Improve accessibility by adding descriptive `aria-label` attributes to all icon-only buttons throughout the application.
+Add `aria-label` attributes to all icon-only buttons in the application to improve accessibility for screen reader users.
 
 ## Allowed Scope
 
 - `src/` (except `src/main.tsx`)
-- `src/components/` (modifying existing components)
-- `src/views/` (modifying existing views)
-- `src/App.css` (minor CSS adjustments if strictly necessary for styling an `aria-label` visually for testing, though not expected)
+- `src/components/` (modify existing component files)
+- `src/App.css` (only if absolutely necessary for button styles, but unlikely for this task)
 
 ## Forbidden Scope
 
@@ -28,17 +27,30 @@ Improve accessibility by adding descriptive `aria-label` attributes to all icon-
 
 - Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- **Acceptance Criteria**:
-    - Identify all interactive elements (buttons, `role="button"`, etc.) that display only an icon and no visible text.
-    - Add a concise and descriptive `aria-label` attribute to each identified element.
-    - The `aria-label` text must clearly convey the purpose or action of the button.
-    - Examples: a trashcan icon button -> `aria-label="Delete item"`, a pencil icon button -> `aria-label="Edit item"`, a share icon button -> `aria-label="Share item"`.
+- Prefer adding tests when touching `src/lib/` files (not applicable for this task).
 - Report follow-up items as comments, not additional code.
 
-## Output Format
+## Worker prompt
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+Implement the following:
+
+1.  **Identify all icon-only buttons**: Systematically go through the `src/` directory, especially component files (`src/components/`, `src/App.tsx`), to find all `<button>` elements that contain only an icon (e.g., `<button><Icon /></button>`, `<button><img /></button>`, or `<button><span><Icon /></span></button>`).
+2.  **Add `aria-label` attribute**: For each identified button, add an `aria-label` attribute with a concise, descriptive text that explains the button's action.
+    *   For example, a delete button might get `aria-label="Delete item"`.
+    *   A close button might get `aria-label="Close dialog"`.
+    *   A navigation button to go back might get `aria-label="Go back"`.
+3.  **Ensure descriptive labels**: The `aria-label` should provide a clear and useful description for users who cannot see the visual icon. Avoid redundant labels if the button already has visible text. This task specifically targets *icon-only* buttons.
+
+**Example Transformation:**
+
+```jsx
+// Before
+<button onClick={handleDelete}>
+  <TrashIcon />
+</button>
+
+// After
+<button onClick={handleDelete} aria-label="Delete item">
+  <TrashIcon />
+</button>
+```
