@@ -1,20 +1,18 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-Read the roadmap, recent commits, and the current task.
+The product roadmap outlines Phase 2, which focuses on improving stability, test coverage, and UX. This task directly addresses the "2.1 Test coverage" goal by adding unit tests for core Firebase helper functions.
 
 ## Objective
 
-Implement exactly one bounded task from Phase 2 of the roadmap: Add `aria-label` attributes to all icon-only buttons in the application to improve accessibility.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
-- `src/__tests__/` (new test files)
-- `src/App.css` (CSS improvements)
+- `src/lib/firestore.ts` (modifications to add testable exports if necessary, but prefer not to alter production code solely for testing)
+- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `vite.config.ts` (minor modifications for test setup if absolutely required for Vitest, but Vitest should already be configured as per roadmap)
 
 ## Forbidden Scope
 
@@ -24,13 +22,17 @@ Implement exactly one bounded task from Phase 2 of the roadmap: Add `aria-label`
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
+- `src/App.css` or other UI-related CSS files
+- Any files outside of `src/lib/firestore.ts`, `src/__tests__/`, and potentially `vite.config.ts`.
 
 ## Requirements
 
+- Create a new test file, `src/__tests__/firestore.test.ts`.
+- Write unit tests for at least two key helper functions in `src/lib/firestore.ts` (e.g., `addNailItem`, `updateNailItem`, `deleteNailItem`, `getNailItems`).
+- Ensure Firebase SDK calls are mocked using `vi.mock` to prevent actual network requests during tests.
+- Aim for good test coverage for the selected functions.
 - Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
+- Run `npm run test` (to confirm tests pass) and `npm run build && npm run lint` before finishing.
 
 ## Output Format
 
@@ -39,29 +41,3 @@ Implement exactly one bounded task from Phase 2 of the roadmap: Add `aria-label`
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
----
-
-## Worker Prompt
-
-### Summary of what changed
-This task focuses on improving the application's accessibility by adding `aria-label` attributes to all interactive elements that use only an icon without visible text. This includes buttons for actions like "edit," "delete," "share," "close," etc., ensuring screen reader users understand the purpose of these controls.
-
-### Changed files list
-Likely `src/App.tsx` and various component files within `src/components/` that contain icon-only buttons. Examples include `src/components/NailItemCard.tsx`, `src/components/NailItemDetail.tsx`, and any navigation or form components.
-
-### Commands run and results
-```bash
-npm install # Ensure all dependencies are up to date
-npm run build
-# Expected: Build completes successfully without errors.
-npm run lint
-# Expected: Linting completes successfully without errors or new warnings.
-```
-
-### Known issues or limitations
-- No known issues or limitations are anticipated for this specific task. The changes should be purely additive and enhance accessibility without altering visual presentation or core functionality.
-
-### Suggested next task
-Add Vitest + unit tests for `src/lib/firestore.ts` helpers.
-```
