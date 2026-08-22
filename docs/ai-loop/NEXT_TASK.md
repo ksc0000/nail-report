@@ -2,17 +2,18 @@
 
 ## Context
 
-The product roadmap outlines Phase 2, which focuses on improving stability, test coverage, and UX. This task directly addresses the "2.1 Test coverage" goal by adding unit tests for core Firebase helper functions.
+The current focus is on improving the stability, test coverage, and UX of the `nail-report` application as part of Phase 2 of the product roadmap. This task specifically addresses an accessibility improvement.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
+Improve accessibility by adding descriptive `aria-label` attributes to all icon-only buttons throughout the application.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to add testable exports if necessary, but prefer not to alter production code solely for testing)
-- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
-- `vite.config.ts` (minor modifications for test setup if absolutely required for Vitest, but Vitest should already be configured as per roadmap)
+- `src/` (except `src/main.tsx`)
+- `src/components/` (modifying existing components)
+- `src/views/` (modifying existing views)
+- `src/App.css` (minor CSS adjustments if strictly necessary for styling an `aria-label` visually for testing, though not expected)
 
 ## Forbidden Scope
 
@@ -22,17 +23,17 @@ Implement unit tests for the helper functions within `src/lib/firestore.ts` usin
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/App.css` or other UI-related CSS files
-- Any files outside of `src/lib/firestore.ts`, `src/__tests__/`, and potentially `vite.config.ts`.
 
 ## Requirements
 
-- Create a new test file, `src/__tests__/firestore.test.ts`.
-- Write unit tests for at least two key helper functions in `src/lib/firestore.ts` (e.g., `addNailItem`, `updateNailItem`, `deleteNailItem`, `getNailItems`).
-- Ensure Firebase SDK calls are mocked using `vi.mock` to prevent actual network requests during tests.
-- Aim for good test coverage for the selected functions.
 - Keep diff ≤ 150 lines.
-- Run `npm run test` (to confirm tests pass) and `npm run build && npm run lint` before finishing.
+- Run `npm run build && npm run lint` before finishing.
+- **Acceptance Criteria**:
+    - Identify all interactive elements (buttons, `role="button"`, etc.) that display only an icon and no visible text.
+    - Add a concise and descriptive `aria-label` attribute to each identified element.
+    - The `aria-label` text must clearly convey the purpose or action of the button.
+    - Examples: a trashcan icon button -> `aria-label="Delete item"`, a pencil icon button -> `aria-label="Edit item"`, a share icon button -> `aria-label="Share item"`.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
