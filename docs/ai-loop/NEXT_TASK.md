@@ -1,18 +1,20 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on stability, test coverage, and UX improvements. This task addresses item 2.3 "Loading states" by implementing a skeleton loading UI for the main nail item list.
+Read the roadmap, recent commits, and the current task.
 
 ## Objective
 
-Implement a skeleton loading state for the nail item list displayed in `src/App.tsx`. The skeleton should appear when the nail items are being fetched, providing a visual cue to the user that content is on its way, rather than a blank screen or a simple spinner.
+Implement exactly one bounded task from Phase 2 of the roadmap: Add `aria-label` attributes to all icon-only buttons in the application to improve accessibility.
 
 ## Allowed Scope
 
-- `src/App.tsx` (for implementing the conditional rendering and skeleton component)
-- `src/App.css` (for styling the skeleton elements)
-- Any new component files within `src/components/` if a reusable skeleton component is desired (ensure it remains small and doesn't add new npm dependencies).
+- `src/` (except `src/main.tsx`)
+- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+- `src/__tests__/` (new test files)
+- `src/App.css` (CSS improvements)
 
 ## Forbidden Scope
 
@@ -25,12 +27,10 @@ Implement a skeleton loading state for the nail item list displayed in `src/App.
 
 ## Requirements
 
-- When the application is loading the list of nail items, a placeholder skeleton UI should be displayed.
-- The skeleton should visually represent the structure of a few nail items (e.g., rectangles for images, titles, and tags).
-- Once the data is loaded, the actual nail item list should replace the skeleton.
-- Keep the overall diff for this change under 150 lines.
+- Keep diff ≤ 150 lines.
 - Run `npm run build && npm run lint` before finishing.
-- No new npm dependencies should be added.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
@@ -40,18 +40,28 @@ Implement a skeleton loading state for the nail item list displayed in `src/App.
 - Known issues or limitations
 - Suggested next task
 
-## Acceptance Criteria
+---
 
-- When the app initially loads or data is refetched, a skeleton UI is visible where the nail item list would normally appear.
-- The skeleton is replaced by the actual nail items once they are loaded from Firestore.
-- The solution does not introduce any new npm packages.
-- All code adheres to existing coding style and passes linting.
+## Worker Prompt
 
-## Required Test Commands
+### Summary of what changed
+This task focuses on improving the application's accessibility by adding `aria-label` attributes to all interactive elements that use only an icon without visible text. This includes buttons for actions like "edit," "delete," "share," "close," etc., ensuring screen reader users understand the purpose of these controls.
 
+### Changed files list
+Likely `src/App.tsx` and various component files within `src/components/` that contain icon-only buttons. Examples include `src/components/NailItemCard.tsx`, `src/components/NailItemDetail.tsx`, and any navigation or form components.
+
+### Commands run and results
 ```bash
-npm install # Ensure dependencies are up-to-date
+npm install # Ensure all dependencies are up to date
 npm run build
+# Expected: Build completes successfully without errors.
 npm run lint
-npm run dev # Manually verify the skeleton loading in the browser
+# Expected: Linting completes successfully without errors or new warnings.
+```
+
+### Known issues or limitations
+- No known issues or limitations are anticipated for this specific task. The changes should be purely additive and enhance accessibility without altering visual presentation or core functionality.
+
+### Suggested next task
+Add Vitest + unit tests for `src/lib/firestore.ts` helpers.
 ```
