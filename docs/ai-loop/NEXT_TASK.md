@@ -2,17 +2,17 @@
 
 ## Context
 
-The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. The current focus area is `2.1 Test coverage`, specifically adding unit tests. Vitest is already established as the test runner, and Firebase SDK mocking is a stated goal.
+The application is in Phase 2, focusing on improving stability, test coverage, and UX. This task initiates the test coverage improvements by targeting core Firebase helper functions.
 
 ## Objective
 
-Add unit tests for core Firestore helper functions within `src/lib/firestore.ts` using Vitest, focusing on mocking Firebase SDK interactions.
+Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (modifications to export functions for testing, if necessary)
-- `src/__tests__/` (new test files for firestore helpers)
-- `src/setupTests.ts` (if a global setup for Firebase mocking is needed and not already present)
+- `src/lib/firestore.ts` (for minor test-related adjustments if necessary, but primarily adding tests)
+- `src/__tests__/lib/firestore.test.ts` (new file for tests)
+- `vitest.config.ts` (for minor test environment adjustments if necessary)
 
 ## Forbidden Scope
 
@@ -30,27 +30,51 @@ Add unit tests for core Firestore helper functions within `src/lib/firestore.ts`
 - Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
+## Output Format
+
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
+
+---
+
 ## Worker Prompt
 
-Implement unit tests for the following key functions in `src/lib/firestore.ts`:
-1.  `addNailItem`
-2.  `getNailItems`
-3.  `deleteNailItem`
+### Summary of what changed
 
-These tests should reside in a new file, e.g., `src/__tests__/firestore.test.ts`. Focus on mocking Firebase Firestore SDK methods (e.g., `collection`, `doc`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`) to ensure tests are isolated and do not interact with a live Firebase project. Use `vi.mock` from Vitest for mocking. Ensure the tests verify correct data transformation, function calls, and error handling for these specific functions.
+This task involves creating a new test file `src/__tests__/lib/firestore.test.ts` and adding unit tests for the functions defined in `src/lib/firestore.ts`. Specifically, focus on testing functions that interact with the Firestore SDK, such as `addNailItem`, `updateNailItem`, `deleteNailItem`, and any retrieval functions like `getNailItems` or `getPublicShare`. Mock the Firebase SDK as necessary to ensure tests are isolated and do not require a live Firebase connection. The goal is to establish a robust testing foundation for our Firebase interactions.
 
-## Acceptance Criteria
+### Changed files list
 
-- A new test file `src/__tests__/firestore.test.ts` is created.
-- Unit tests cover the `addNailItem`, `getNailItems`, and `deleteNailItem` functions.
-- Firebase SDK interactions are fully mocked within the tests.
-- All new tests pass successfully.
-- Code style and linting checks pass.
+- `src/__tests__/lib/firestore.test.ts` (new file)
+- `src/lib/firestore.ts` (potential minor modifications for testability, e.g., exporting unexported functions, but keep changes minimal)
+- `vitest.config.ts` (if any specific Vitest configuration is needed for Firebase mocking)
 
-## Required Test Commands
+### Commands run and results
 
 ```bash
-npm test
+# Run tests to ensure new tests pass and existing ones are unaffected
+npm run test
+
+# Build the project to catch any compilation errors
 npm run build
+
+# Lint the project to ensure code quality standards are met
 npm run lint
 ```
+
+Expected results:
+- `npm run test`: All tests pass, including the newly added Firestore unit tests.
+- `npm run build`: Build succeeds with no errors.
+- `npm run lint`: Linting passes with no errors.
+
+### Known issues or limitations
+
+- The Firebase SDK mocking strategy should be robust enough to cover various scenarios (success, error, loading). Initial implementation may focus on happy path and basic error handling.
+- Complex queries or real-time listeners might require more advanced mocking, which can be handled in subsequent tasks.
+
+### Suggested next task
+
+Add loading skeleton to nail item list (`src/App.tsx`)
