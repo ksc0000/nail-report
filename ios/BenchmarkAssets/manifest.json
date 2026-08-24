@@ -1,0 +1,60 @@
+{
+  "cases": [
+    {
+      "file": "hand_up_01.png",
+      "expectedNails": 5
+    },
+    {
+      "file": "hand_up_02.png",
+      "expectedNails": 5
+    },
+    {
+      "file": "hand_up_03.png",
+      "expectedNails": 5
+    },
+    {
+      "file": "hand_sideways_left.png",
+      "expectedNails": 5
+    },
+    {
+      "file": "hand_sideways_right.png",
+      "expectedNails": 5
+    },
+    {
+      "file": "hand_down_01.png",
+      "expectedNails": 5
+    },
+    {
+      "file": "hand_tilted_45.png",
+      "expectedNails": 5
+    },
+    {
+      "file": "hand_partial_3finger.png",
+      "expectedNails": 3
+    },
+    {
+      "file": "hand_dark_01.png",
+      "expectedNails": 5
+    },
+    {
+      "file": "hand_dark_sideways.png",
+      "expectedNails": 5
+    },
+    {
+      "file": "single_nail_01.png",
+      "expectedNails": 1
+    },
+    {
+      "file": "single_nail_02.png",
+      "expectedNails": 1
+    },
+    {
+      "file": "single_nail_dark.png",
+      "expectedNails": 1
+    },
+    {
+      "file": "no_hand_background.png",
+      "expectedNails": 0
+    }
+  ]
+}

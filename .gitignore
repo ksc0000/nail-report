@@ -29,3 +29,6 @@ dist-ssr
 
 # Firebase deploy cache
 .firebase/
+
+# iOS benchmark build output (scripts/bench-detect.sh)
+/.build/

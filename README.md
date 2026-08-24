@@ -59,6 +59,26 @@ Important constraints:
 - `src/main.tsx` is the entry point and should not be changed for normal feature work.
 - Production deploy target is Firebase Hosting, but production deploy is human-gated.
 
+## iOS (native app, `ios/Nailous/`)
+
+```bash
+cd ios && xcodegen generate   # after adding/removing source or resource files
+xcodebuild -project ios/Nailous.xcodeproj -scheme Nailous \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+```
+
+Nail-detection benchmark (issue #352) — measures Vision hand-pose accuracy
+against the checked-in `ios/BenchmarkAssets/` image set:
+
+```bash
+scripts/bench-detect.sh
+```
+
+Builds the app, launches it in the iPhone 17 Pro simulator with
+`-benchDetect 1`, and prints `N枚中M枚成功 (X%)`. Any PR that changes nail
+detection (`NailDetector.swift`, `PhotoCropView.swift`) must report this
+number before and after the change.
+
 ## React Compiler
 
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).

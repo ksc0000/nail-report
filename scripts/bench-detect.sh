@@ -1,0 +1,99 @@
+#!/bin/bash
+# Nail-detection benchmark (issue #352).
+#
+# Builds Nailous, launches it in the iPhone 17 Pro simulator with
+# `-benchDetect 1`, which makes the app run NailDetector against the
+# checked-in ios/BenchmarkAssets image set and write a JSON summary to its
+# Documents directory. This script waits for that file, then prints
+# "N枚中M枚成功 (X%)".
+#
+# Any detection-accuracy PR (NailDetector.swift / PhotoCropView.swift) must
+# run this before/after and report both numbers.
+set -euo pipefail
+
+DEVICE_NAME="iPhone 17 Pro"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT="$PROJECT_DIR/ios/Nailous.xcodeproj"
+SCHEME="Nailous"
+BUNDLE_ID="com.ksc0000.nailous"
+DERIVED_DATA="$PROJECT_DIR/.build/bench-derived-data"
+TIMEOUT_SECONDS=60
+
+cd "$PROJECT_DIR"
+
+echo "==> Locating '$DEVICE_NAME' simulator"
+DEVICE_ID=$(xcrun simctl list devices available | grep -E "iPhone 17 Pro \(" | head -1 | sed -E 's/.*\(([0-9A-F-]+)\).*/\1/')
+if [ -z "$DEVICE_ID" ]; then
+  echo "error: simulator '$DEVICE_NAME' not found (run: xcrun simctl list devices available)" >&2
+  exit 1
+fi
+echo "    device: $DEVICE_ID"
+
+STATE=$(xcrun simctl list devices | grep "$DEVICE_ID" | sed -E 's/.*\(([A-Za-z]+)\)$/\1/')
+if [ "$STATE" != "Booted" ]; then
+  echo "==> Booting simulator"
+  xcrun simctl boot "$DEVICE_ID"
+fi
+xcrun simctl bootstatus "$DEVICE_ID" -b >/dev/null
+
+echo "==> Building $SCHEME (Debug, $DEVICE_NAME)"
+BUILD_LOG="$(mktemp)"
+if ! xcodebuild -project "$PROJECT" -scheme "$SCHEME" \
+    -destination "id=$DEVICE_ID" \
+    -derivedDataPath "$DERIVED_DATA" \
+    build > "$BUILD_LOG" 2>&1; then
+  echo "error: build failed, see $BUILD_LOG" >&2
+  tail -60 "$BUILD_LOG" >&2
+  exit 1
+fi
+echo "    build OK"
+
+APP_PATH="$DERIVED_DATA/Build/Products/Debug-iphonesimulator/Nailous.app"
+if [ ! -d "$APP_PATH" ]; then
+  echo "error: built app not found at $APP_PATH" >&2
+  exit 1
+fi
+
+echo "==> Installing & launching with -benchDetect 1"
+xcrun simctl install "$DEVICE_ID" "$APP_PATH"
+xcrun simctl terminate "$DEVICE_ID" "$BUNDLE_ID" >/dev/null 2>&1 || true
+
+DATA_DIR=$(xcrun simctl get_app_container "$DEVICE_ID" "$BUNDLE_ID" data)
+RESULTS_FILE="$DATA_DIR/Documents/bench-results.json"
+rm -f "$RESULTS_FILE"
+
+xcrun simctl launch "$DEVICE_ID" "$BUNDLE_ID" -benchDetect 1 >/dev/null
+
+echo "==> Waiting for bench-results.json"
+elapsed=0
+while [ ! -f "$RESULTS_FILE" ]; do
+  sleep 1
+  elapsed=$((elapsed + 1))
+  if [ "$elapsed" -ge "$TIMEOUT_SECONDS" ]; then
+    echo "error: timed out waiting for $RESULTS_FILE" >&2
+    exit 1
+  fi
+done
+# Detection can take a beat past file creation; give the writer a moment.
+sleep 1
+
+xcrun simctl terminate "$DEVICE_ID" "$BUNDLE_ID" >/dev/null 2>&1 || true
+
+python3 - "$RESULTS_FILE" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1]) as f:
+    summary = json.load(f)
+
+total = summary["total"]
+succeeded = summary["succeeded"]
+rate = summary["successRate"] * 100
+
+print()
+for r in summary["results"]:
+    mark = "OK" if r["success"] else "NG"
+    print(f"  [{mark}] {r['file']}: detected={r['detectedNails']} expected={r['expectedNails']}")
+print()
+print(f"{total}枚中{succeeded}枚成功 ({rate:.1f}%)")
+PY
