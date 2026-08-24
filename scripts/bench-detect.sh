@@ -29,11 +29,9 @@ if [ -z "$DEVICE_ID" ]; then
 fi
 echo "    device: $DEVICE_ID"
 
-STATE=$(xcrun simctl list devices | grep "$DEVICE_ID" | sed -E 's/.*\(([A-Za-z]+)\)$/\1/')
-if [ "$STATE" != "Booted" ]; then
-  echo "==> Booting simulator"
-  xcrun simctl boot "$DEVICE_ID"
-fi
+# boot is a no-op (405) when already booted — tolerate both states
+echo "==> Booting simulator (no-op if already booted)"
+xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
 xcrun simctl bootstatus "$DEVICE_ID" -b >/dev/null
 
 echo "==> Building $SCHEME (Debug, $DEVICE_NAME)"
