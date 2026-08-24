@@ -1,20 +1,20 @@
+```markdown
 # Worker Prompt Template
 
 ## Context
 
-Read the roadmap, recent commits, and the current task.
-
-The application is in Phase 2, focusing on improving stability, test coverage, and UX. The current task is to enhance test coverage by adding unit tests for core Firebase helper functions.
+The product roadmap is in Phase 2, focusing on improving stability, test coverage, and UX. A key item in Phase 2.1 is adding unit tests for Firebase helper functions. This task addresses that by focusing on `firestore.ts`.
 
 ## Objective
 
-Add Vitest unit tests for the helper functions in `src/lib/firestore.ts`.
+Add unit tests for helper functions defined in `src/lib/firestore.ts` using Vitest, specifically targeting functions that interact with the Firestore SDK.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/lib/firestore.ts` (for potential minor refactoring to enable easier testing)
-- `src/__tests__/firestore.test.ts` (new test file)
+- `src/lib/firestore.ts` (modifications to export functions if needed for testing)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `vite.config.ts` (only to ensure Vitest is configured correctly, if necessary)
+- `package.json` (only to confirm Vitest as a dev dependency, no new packages)
 
 ## Forbidden Scope
 
@@ -27,34 +27,28 @@ Add Vitest unit tests for the helper functions in `src/lib/firestore.ts`.
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
+- Keep diff ≤ 150 lines. Focus on testing a representative subset of functions to meet the line limit.
 - Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
+- Ensure tests mock the Firebase Firestore SDK correctly to avoid actual database calls.
+- Write tests for at least `createNailItem` and `getNailItems` in `src/lib/firestore.ts`. If the line limit allows, add tests for `updateNailItem` or `deleteNailItem`.
 
-## Worker prompt
+## Output Format
 
-You are tasked with writing unit tests for the functions within `src/lib/firestore.ts`. This file contains helper functions for interacting with Firestore, such as adding, updating, and deleting nail items, as well as managing tags and public shares.
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
 
-1.  **Create a new test file:** `src/__tests__/firestore.test.ts`.
-2.  **Mock Firebase SDK:** Use `vitest`'s mocking capabilities (`vi.mock`) to mock Firebase SDK methods (e.g., `getFirestore`, `collection`, `doc`, `addDoc`, `updateDoc`, `deleteDoc`, `getDocs`, `query`, `where`, `orderBy`, `limit`, `startAfter`) to ensure tests are isolated and do not interact with a live Firestore instance. Focus on mocking the return values that simulate successful operations and specific data retrieval.
-3.  **Identify key functions:** Prioritize testing the main CRUD operations for `nailItems` and `tags`, and functions related to `publicShares`. Examples include `addNailItem`, `updateNailItem`, `deleteNailItem`, `getNailItems`, `addTag`, `getTags`, `addPublicShare`, `getPublicShare`.
-4.  **Write unit tests:** For each selected function, write one or more `test` blocks to verify its behavior under different conditions (e.g., successful creation, successful retrieval, successful update, successful deletion).
-5.  **Focus on mocking return values:** Ensure that your mocks provide realistic (but static) return values for Firestore operations, such as document references, snapshots, and query results.
-6.  **Avoid testing Firebase integration:** The goal is to test the logic *within* the `firestore.ts` helpers, not the Firebase SDK itself.
+## Worker Prompt
 
-**Acceptance Criteria:**
+Your task is to implement unit tests for the Firebase Firestore helper functions located in `src/lib/firestore.ts`.
 
--   A new file `src/__tests__/firestore.test.ts` exists.
--   At least three key helper functions from `src/lib/firestore.ts` have corresponding unit tests.
--   Firebase SDK interactions are properly mocked using `vitest`.
--   All tests pass when running `npm test`.
-
-**Required Test Commands:**
-
-```bash
-npm install # Ensure all dependencies are in place
-npm run build
-npm run lint
-npm test
+1.  **Create a new test file:** Create `src/__tests__/firestore.test.ts`.
+2.  **Mock Firebase SDK:** Inside `firestore.test.ts`, use `vi.mock` to mock the Firebase Firestore SDK. Specifically, mock the `getFirestore`, `collection`, `doc`, `getDocs`, `getDoc`, `addDoc`, `updateDoc`, `deleteDoc` functions/methods to simulate their behavior without making actual network requests. Refer to Vitest documentation for mocking modules.
+3.  **Test `createNailItem`:** Write a unit test that verifies `createNailItem` correctly calls `addDoc` with the provided data and returns the expected ID.
+4.  **Test `getNailItems`:** Write a unit test that verifies `getNailItems` correctly calls `collection` and `getDocs` and transforms the mock snapshot data into the expected array of `NailItem` objects.
+5.  **Run tests:** Execute `npm test` to ensure your new tests pass.
+6.  **Lint and Build:** Run `npm run lint` and `npm run build` to ensure no new errors are introduced.
+7.  **Keep it concise:** Prioritize `createNailItem` and `getNailItems` tests to stay within the ~150 line diff limit. If there's room, add one more function test (e.g., `updateNailItem`).
 ```
