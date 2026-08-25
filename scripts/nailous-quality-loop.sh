@@ -12,6 +12,14 @@ mkdir -p "$LOG_DIR"
 
 cd "$REPO" || exit 1
 
+# 多重起動防止（前の回が長引いた場合、次の回はスキップ）
+LOCK="/tmp/nailous-quality-loop.lock"
+if ! mkdir "$LOCK" 2>/dev/null; then
+  echo "$(date '+%Y-%m-%d %H:%M:%S') SKIP: another run in progress" >> "$LOG"
+  exit 0
+fi
+trap 'rmdir "$LOCK" 2>/dev/null' EXIT
+
 {
   echo "===== $(date '+%Y-%m-%d %H:%M:%S') run start ====="
 
@@ -26,12 +34,20 @@ cd "$REPO" || exit 1
   if [ -n "$(git status --porcelain)" ]; then
     echo "SKIP: working tree dirty — leaving it alone"; exit 0
   fi
-  # 対象Issueが無ければ即終了（無駄なトークンを使わない）
+  # Issueが尽きたら監査モード: 実測に基づき新しい品質Issueを起票する
+  PROMPT_FILE="scripts/quality-loop-prompt.md"
   if [ -z "$(gh issue list --label nailous-auto --state open --limit 1 2>/dev/null)" ]; then
-    echo "DONE: no open nailous-auto issues"; exit 0
+    # 監査は1日1回まで（直近20時間以内に監査済みならスキップ）
+    STAMP="/tmp/nailous-quality-audit.stamp"
+    if [ -f "$STAMP" ] && [ -n "$(find "$STAMP" -mmin -1200 2>/dev/null)" ]; then
+      echo "DONE: backlog empty, audit already ran recently"; exit 0
+    fi
+    touch "$STAMP"
+    PROMPT_FILE="scripts/quality-audit-prompt.md"
+    echo "MODE: audit (backlog empty)"
   fi
 
-  claude -p "$(cat scripts/quality-loop-prompt.md)" \
+  claude -p "$(cat "$PROMPT_FILE")" \
     --model sonnet \
     --max-turns 120 \
     --allowedTools "Read,Glob,Grep,Edit,Write,Bash(git:*),Bash(gh:*),Bash(xcodebuild:*),Bash(xcrun:*),Bash(xcodegen:*),Bash(cd:*),Bash(ls:*),Bash(find:*),Bash(cat:*),Bash(cp:*),Bash(mkdir:*),Bash(python3:*),Bash(sips:*),Bash(md5:*),Bash(plutil:*),Bash(sleep:*),Bash(scripts/bench-detect.sh:*)" \
