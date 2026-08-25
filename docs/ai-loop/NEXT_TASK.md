@@ -1,51 +1,62 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-Read the roadmap, recent commits, and the current task.
-
-The project is currently in Phase 2, focusing on improving stability, test coverage, and UX. This task initiates the test coverage effort by targeting core utility functions.
+The application currently displays a blank screen or an empty list while `nailItems` are being fetched from Firestore. Improving the user experience during loading times is a key focus of Phase 2.3 of the roadmap.
 
 ## Objective
 
-Implement unit tests for the helper functions within `src/lib/firestore.ts` using Vitest, focusing on key CRUD and sharing operations.
+Implement a loading skeleton UI for the nail item list in `src/App.tsx` that appears while data is being fetched.
 
 ## Allowed Scope
 
--   `src/lib/firestore.ts` (minor changes to export functions for testing, if necessary, but primarily for testing)
--   `src/lib/__tests__/firestore.test.ts` (new test file)
--   `vite.config.ts` (only for minimal Vitest configuration if absolutely required, e.g., for test setup files, but prefer existing config)
--   `src/` (general usage, but specific to testing `firestore.ts`)
+- `src/App.tsx`
+- `src/App.css`
+- New components within `src/components/` if necessary (e.g., `src/components/NailItemSkeleton.tsx`)
+- `src/__tests__/` (new test files if component is created)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
--   Modifying UI components directly (unless strictly necessary for testing `firestore.ts` indirectly, which is unlikely for this task).
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   **Create a new test file:** `src/lib/__tests__/firestore.test.ts`.
--   **Implement unit tests:** Write comprehensive unit tests for the primary Firestore helper functions exposed by `src/lib/firestore.ts`. These should include, but not be limited to, functions related to:
-    *   Adding, getting, updating, and deleting `nailItems`.
-    *   Getting, adding, and deleting `publicShares`.
--   **Mock Firebase SDK:** Utilize `vitest`'s mocking capabilities (`vi.mock`) to mock Firebase SDK dependencies (e.g., `firebase/firestore` functions like `doc`, `collection`, `getDoc`, `setDoc`, `updateDoc`, `deleteDoc`). Tests must be isolated unit tests, not integration tests that hit actual Firebase services.
--   **Pass all tests:** Ensure all newly created tests pass successfully when running `npm run test`.
--   **Code Quality:** The new code must adhere to existing coding standards.
--   **Linter & Build:** Run `npm run build && npm run lint` before finishing and resolve any issues.
--   **Diff Size:** Keep the diff for the Pull Request ≤ 150 lines.
--   **Follow-up Items:** Report any limitations or potential improvements for future tasks as comments within the PR description.
+- Keep diff ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
-```
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
+
+## Worker Prompt
+
+Implement a loading skeleton for the nail item list within `src/App.tsx`.
+
+1.  **Identify Loading State**: Determine the appropriate state variable(s) in `src/App.tsx` that indicate when `nailItems` are being fetched (e.g., an `isLoading` flag, or when `nailItems` is empty and a fetch is in progress).
+2.  **Create Skeleton UI**:
+    *   Design a simple visual skeleton using HTML/CSS that mimics the approximate size and shape of a single `NailItem` component. You can create this directly within `src/App.tsx` or as a small, new component (e.g., `src/components/NailItemSkeleton.tsx`).
+    *   Add the necessary CSS rules to `src/App.css` to style this skeleton (e.g., gray background, pulse animation if desired).
+3.  **Conditional Rendering**: Modify the rendering logic in `src/App.tsx` to:
+    *   Display multiple instances of the skeleton UI (e.g., 3-5 items) when the loading state is active.
+    *   Replace the skeletons with the actual `NailItem` components once the `nailItems` data has successfully loaded.
+4.  **Acceptance Criteria**:
+    *   When the application first loads or refreshes, a placeholder skeleton UI is visible where the nail item list would normally appear.
+    *   The skeleton UI disappears and is replaced by the actual nail item list once data fetching is complete.
+    *   The visual style of the skeleton is consistent with the app's aesthetic (e.g., uses subtle gray tones).
+    *   No new npm dependencies are added.
+    *   The total line diff for the PR is less than or equal to 150 lines.
+
+## Suggested next task
+
+Add Vitest + unit tests for `src/lib/firestore.ts` helpers
