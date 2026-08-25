@@ -2,18 +2,18 @@
 
 ## Context
 
-The application currently displays a blank screen or an empty list while `nailItems` are being fetched from Firestore. Improving the user experience during loading times is a key focus of Phase 2.3 of the roadmap.
+The current phase (Phase 2) of the roadmap focuses on improving stability, test coverage, and user experience. A key aspect of UX is accessibility. This task focuses on enhancing the accessibility of interactive elements.
 
 ## Objective
 
-Implement a loading skeleton UI for the nail item list in `src/App.tsx` that appears while data is being fetched.
+Add `aria-label` attributes to all existing icon-only buttons across the application to improve usability for assistive technologies.
 
 ## Allowed Scope
 
-- `src/App.tsx`
-- `src/App.css`
-- New components within `src/components/` if necessary (e.g., `src/components/NailItemSkeleton.tsx`)
-- `src/__tests__/` (new test files if component is created)
+- `src/` (except `src/main.tsx`)
+- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+- `src/__tests__/` (new test files)
+- `src/App.css` (CSS improvements)
 
 ## Forbidden Scope
 
@@ -31,32 +31,20 @@ Implement a loading skeleton UI for the nail item list in `src/App.tsx` that app
 - Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
-## Output Format
+## Worker prompt
 
-- Summary of what changed
-- Changed files list
-- Commands run and results
-- Known issues or limitations
-- Suggested next task
+Implement `aria-label` attributes for all interactive elements that are visually represented by an icon but do not have visible text. For example, if a button uses an icon to indicate "delete", add `aria-label="Delete item"`.
 
-## Worker Prompt
+**Acceptance Criteria:**
 
-Implement a loading skeleton for the nail item list within `src/App.tsx`.
+1.  Identify all buttons that display only an icon without accompanying text.
+2.  For each identified button, add a descriptive `aria-label` attribute.
+3.  The `aria-label` content must accurately describe the button's action or purpose.
+4.  Ensure no new npm dependencies are introduced.
+5.  The total line diff for the pull request must be ≤ 150 lines.
 
-1.  **Identify Loading State**: Determine the appropriate state variable(s) in `src/App.tsx` that indicate when `nailItems` are being fetched (e.g., an `isLoading` flag, or when `nailItems` is empty and a fetch is in progress).
-2.  **Create Skeleton UI**:
-    *   Design a simple visual skeleton using HTML/CSS that mimics the approximate size and shape of a single `NailItem` component. You can create this directly within `src/App.tsx` or as a small, new component (e.g., `src/components/NailItemSkeleton.tsx`).
-    *   Add the necessary CSS rules to `src/App.css` to style this skeleton (e.g., gray background, pulse animation if desired).
-3.  **Conditional Rendering**: Modify the rendering logic in `src/App.tsx` to:
-    *   Display multiple instances of the skeleton UI (e.g., 3-5 items) when the loading state is active.
-    *   Replace the skeletons with the actual `NailItem` components once the `nailItems` data has successfully loaded.
-4.  **Acceptance Criteria**:
-    *   When the application first loads or refreshes, a placeholder skeleton UI is visible where the nail item list would normally appear.
-    *   The skeleton UI disappears and is replaced by the actual nail item list once data fetching is complete.
-    *   The visual style of the skeleton is consistent with the app's aesthetic (e.g., uses subtle gray tones).
-    *   No new npm dependencies are added.
-    *   The total line diff for the PR is less than or equal to 150 lines.
+**Required Test Commands:**
 
-## Suggested next task
-
-Add Vitest + unit tests for `src/lib/firestore.ts` helpers
+```bash
+npm run build && npm run lint
+```
