@@ -2,17 +2,17 @@
 
 ## Context
 
-The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This task contributes to the "2.1 Test coverage" goal by adding unit tests for core helper functions. `vitest` is expected to be configured and available as a dev dependency.
+The product roadmap indicates that Phase 2.1 focuses on improving test coverage. This task aims to kickstart this effort by adding unit tests for core Firestore helper functions.
 
 ## Objective
 
-Add unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
+Implement unit tests for the `addNailItem` and `deleteNailItem` functions within `src/lib/firestore.ts` using Vitest. This task should demonstrate mocking Firebase Firestore interactions.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (for potential minor adjustments to aid testing, e.g., exporting functions)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `vite.config.ts` (only if necessary for Vitest configuration, but prefer to assume it's set up)
+- `src/lib/firestore.ts` (modifications to export functions for testing if necessary, but prefer not to alter application logic)
+- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `package.json` (only to add a `vitest` script if missing, but assume Vitest is already configured for the most part as per roadmap)
 
 ## Forbidden Scope
 
@@ -22,16 +22,15 @@ Add unit tests for the helper functions within `src/lib/firestore.ts` using Vite
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- `src/App.css`
 
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create `src/__tests__/firestore.test.ts`.
-- Write unit tests for at least two key helper functions in `src/lib/firestore.ts` (e.g., functions for adding, updating, or fetching nail items).
-- Use Vitest and mock Firebase SDK dependencies as needed.
-- Ensure the tests can run independently and do not interact with actual Firebase services.
-- Run `npm run test`, `npm run build && npm run lint` before finishing.
+- Create `src/__tests__/firestore.test.ts` (or similar) for the new tests.
+- Mock Firebase Firestore SDK calls within the tests to avoid actual database interactions.
+- Ensure tests cover successful execution paths for `addNailItem` and `deleteNailItem`.
+- Run `npm run build && npm run lint` before finishing.
+- Run `npm test` (or `vitest`) and ensure the new tests pass.
 
 ## Output Format
 
