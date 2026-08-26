@@ -2,18 +2,17 @@
 
 ## Context
 
-The current phase (Phase 2) of the roadmap focuses on improving stability, test coverage, and user experience. A key aspect of UX is accessibility. This task focuses on enhancing the accessibility of interactive elements.
+Read the roadmap, recent commits, and the current task.
 
 ## Objective
 
-Add `aria-label` attributes to all existing icon-only buttons across the application to improve usability for assistive technologies.
+Implement unit tests for Firestore helper functions in `src/lib/firestore.ts` using Vitest. This addresses Phase 2.1 of the roadmap, focusing on improving test coverage.
 
 ## Allowed Scope
 
-- `src/` (except `src/main.tsx`)
-- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+- `src/lib/firestore.ts`
 - `src/__tests__/` (new test files)
-- `src/App.css` (CSS improvements)
+- `src/App.css` (not directly relevant for this task, but allowed)
 
 ## Forbidden Scope
 
@@ -31,20 +30,26 @@ Add `aria-label` attributes to all existing icon-only buttons across the applica
 - Prefer adding tests when touching `src/lib/` files.
 - Report follow-up items as comments, not additional code.
 
-## Worker prompt
+### Acceptance Criteria
 
-Implement `aria-label` attributes for all interactive elements that are visually represented by an icon but do not have visible text. For example, if a button uses an icon to indicate "delete", add `aria-label="Delete item"`.
+1.  Add unit tests for at least two helper functions within `src/lib/firestore.ts`.
+2.  Use Vitest for the tests.
+3.  Ensure Firebase SDK interactions within the tested functions are properly mocked.
+4.  Place new test files in `src/__tests__/`.
+5.  The tests should pass successfully.
 
-**Acceptance Criteria:**
-
-1.  Identify all buttons that display only an icon without accompanying text.
-2.  For each identified button, add a descriptive `aria-label` attribute.
-3.  The `aria-label` content must accurately describe the button's action or purpose.
-4.  Ensure no new npm dependencies are introduced.
-5.  The total line diff for the pull request must be ≤ 150 lines.
-
-**Required Test Commands:**
+### Required Test Commands
 
 ```bash
-npm run build && npm run lint
+npm run test
+npm run build
+npm run lint
 ```
+
+## Output Format
+
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
