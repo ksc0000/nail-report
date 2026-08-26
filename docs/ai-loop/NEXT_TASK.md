@@ -2,131 +2,63 @@
 
 ## Context
 
-The product roadmap outlines Phase 2, focusing on improving stability, test coverage, and UX. This task initiates the test coverage effort by introducing Vitest and adding unit tests for a core Firebase utility file.
+Read the roadmap, recent commits, and the current task.
 
 ## Objective
 
-Implement exactly one bounded task from Phase 2: Add Vitest + unit tests for `src/lib/firestore.ts` helpers.
-
-Specifically:
-1.  Ensure Vitest is set up and configured correctly in the project (e.g., in `vite.config.ts`).
-2.  Create a new test file `src/__tests__/firestore.test.ts`.
-3.  Add unit tests for the functions within `src/lib/firestore.ts`. Focus on testing the core CRUD operations such as `addNailItem`, `getNailItems`, `updateNailItem`, and `deleteNailItem` (assuming these functions exist).
-4.  Mock Firebase SDK dependencies using `vi.mock` as necessary to isolate `firestore.ts` logic for unit testing.
-5.  Tests should verify that the functions correctly interact with the mocked Firebase services (e.g., `collection`, `doc`, `setDoc`, `getDocs`, `updateDoc`, `deleteDoc`).
+Implement a loading skeleton for the nail item list to improve user experience during data fetching.
 
 ## Allowed Scope
 
--   `src/lib/firestore.ts` (modifications to export functions if needed for testing, but primarily adding tests for it)
--   `src/__tests__/firestore.test.ts` (new file for tests)
--   `vite.config.ts` (for Vitest configuration, if not already present)
--   `package.json` (to add `vitest` and related testing dev dependencies, as explicitly required by Phase 2.1 of the roadmap)
+- `src/` (except `src/main.tsx`)
+- `src/lib/` helpers (firestore.ts, storage.ts, auth.ts, publicShares.ts)
+- `src/__tests__/` (new test files)
+- `src/App.css` (CSS improvements)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   Any new *runtime* npm packages (dev dependencies for testing, like Vitest, are allowed as per roadmap)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
 
 ## Requirements
 
--   Keep diff ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing.
--   Ensure Vitest is properly configured to run tests.
--   Mocks for Firebase SDK should be robust enough to test the `firestore.ts` functions in isolation.
--   Report follow-up items as comments, not additional code.
+- Keep diff ≤ 150 lines.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
 
-**Worker prompt:**
+## Worker Prompt
 
-```markdown
-# Worker Prompt
+Implement a loading skeleton component that displays while the list of nail items is being fetched.
 
-## Context
+1.  **Create a new component** (e.g., `src/components/NailItemSkeleton.tsx`) that represents a placeholder for a single nail item. This should visually mimic the structure of a nail item (e.g., a grey box for the image, a few lines for text).
+2.  **Integrate the skeleton** into `src/App.tsx`.
+    *   Introduce a loading state variable (e.g., `isLoadingNailItems`).
+    *   Conditionally render multiple instances of the `NailItemSkeleton` component when `isLoadingNailItems` is `true`. A reasonable number would be 3-5 skeletons to fill the initial view.
+    *   Once the nail items are successfully fetched, set `isLoadingNailItems` to `false` and render the actual `NailItemList`.
+3.  **Add necessary CSS** to `src/App.css` (or a new component-specific CSS file if preferred and minor) to style the skeleton components, making them visually distinct and animating them if desired (e.g., subtle pulse effect).
 
-The current task is to kickstart test coverage by implementing unit tests for the Firebase Firestore utility functions. This is a direct implementation of "Phase 2.1 Test coverage" from the roadmap.
+### Acceptance Criteria
 
-## Objective
+-   When the application first loads or when nail items are being fetched (before the data is retrieved from Firestore), a visual loading skeleton should be displayed in place of the nail item list.
+-   The skeleton should disappear and be replaced by the actual nail item list once the data has loaded.
+-   The skeleton should consist of placeholder elements (e.g., for image, title, tags) that visually resemble the structure of actual nail items.
+-   No new npm dependencies are added to `package.json`.
 
-Introduce Vitest to the project if not already present, configure it for running unit tests, and write initial unit tests for the functions defined in `src/lib/firestore.ts`.
-
-## Detailed Steps
-
-1.  **Vitest Setup (if needed):**
-    *   If `vitest` is not in `package.json`'s `devDependencies`, add it. You might also need `@vitest/coverage-v8` for coverage reporting, and `jsdom` for environment.
-    *   Configure `vite.config.ts` to include Vitest settings. Ensure `test.environment` is set to `jsdom` if DOM interactions are relevant (though not strictly for `firestore.ts` itself, it's a common setup).
-    *   Add a test script to `package.json` (e.g., `"test": "vitest"`).
-
-2.  **Create Test File:**
-    *   Create a new file `src/__tests__/firestore.test.ts`.
-
-3.  **Mock Firebase SDK:**
-    *   Use `vi.mock('firebase/firestore', ...)` to mock the necessary Firebase Firestore functions and objects (e.g., `collection`, `doc`, `getDocs`, `setDoc`, `updateDoc`, `deleteDoc`).
-    *   Ensure mocks return predictable values or resolve promises appropriately to simulate Firebase responses.
-
-4.  **Write Unit Tests for `src/lib/firestore.ts`:**
-    *   Focus on the main CRUD helper functions: `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`.
-    *   Each function should have at least one test case verifying its successful execution path.
-    *   Consider edge cases where a function might throw an error (e.g., invalid input, though mocking might not fully cover this without more complex setup). For this task, prioritize successful path testing.
-    *   Use `expect` assertions to verify that the mocked Firebase functions were called with the correct arguments and that the `firestore.ts` functions return expected values.
-
-## Acceptance Criteria
-
--   `npm test` runs successfully without errors.
--   `src/__tests__/firestore.test.ts` exists and contains unit tests for at least `addNailItem`, `getNailItems`, `updateNailItem`, and `deleteNailItem` (if they exist in `src/lib/firestore.ts`).
--   Firebase SDK interactions within `firestore.ts` are mocked, isolating the logic of the helper functions.
--   The changes result in a diff of ≤ 150 lines.
-
-## Required Test Commands
+### Required Test Commands
 
 ```bash
-npm install # if new dev dependencies were added
-npm run test
-npm run build
-npm run lint
-```
-
-## Output Summary
-
-```markdown
-### Summary of changes
-
-Introduced Vitest as the unit test runner and created `src/__tests__/firestore.test.ts` with initial unit tests for the Firebase Firestore helper functions (`addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`) in `src/lib/firestore.ts`. Firebase SDK was mocked using `vi.mock` to allow isolated testing.
-
-### Changed files
-
-- `package.json` (added vitest dev dependency)
-- `vite.config.ts` (updated for Vitest configuration)
-- `src/__tests__/firestore.test.ts` (new file)
-- `src/lib/firestore.ts` (minor changes if needed for testability, e.g., exports)
-
-### Commands run and results
-
-```bash
-# npm install -D vitest @vitest/coverage-v8 jsdom # (if vitest not present)
-# npm install
-# npm run test
-# npm run build
-# npm run lint
-```
-(Provide actual output here)
-
-### Known issues or limitations
-
-*   Error handling paths for Firestore functions are not extensively tested in this initial pass.
-*   Only basic CRUD operations in `firestore.ts` are covered; other utility functions (if any) are not yet tested.
-
-### Suggested next task
-
-Add Vitest + unit tests for `src/lib/storage.ts` helpers.
+npm run build && npm run lint
 ```
