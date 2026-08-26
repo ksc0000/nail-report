@@ -230,4 +230,54 @@ enum AICleanup {
             image.draw(in: CGRect(origin: .zero, size: size))
         }
     }
+
+    // MARK: - set-wide colour balance
+
+    private static let ciContext = CIContext()
+
+    /// After per-texture cloud enhancement, a nail photographed at an angle or
+    /// in harsh light can come back washed-out next to its set-mates. Pulls
+    /// outlier-low-saturation textures toward the set's typical (median)
+    /// saturation instead of grading every texture independently, so a
+    /// 5-piece set reads as one consistent manicure.
+    static func colorBalanced(_ images: [UIImage]) -> [UIImage] {
+        guard images.count > 1 else { return images }
+        let saturations = images.map(saturation(of:))
+        let target = median(saturations)
+        guard target > 0.03 else { return images }
+
+        return zip(images, saturations).map { image, sat in
+            // Only touch textures that clearly stand out as flat/washed-out —
+            // well-saturated nails must pass through unchanged.
+            guard sat < target * 0.7 else { return image }
+            let boost = min(2.0, max(1.1, target / max(sat, 0.03)))
+            return colorAdjusted(image, saturation: boost, contrast: 1.05)
+        }
+    }
+
+    static func saturation(of image: UIImage) -> CGFloat {
+        var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        NailCleanup.dominantCenterColor(of: image).getHue(&h, saturation: &s, brightness: &b, alpha: &a)
+        return s
+    }
+
+    private static func median(_ values: [CGFloat]) -> CGFloat {
+        let sorted = values.sorted()
+        guard !sorted.isEmpty else { return 0 }
+        let mid = sorted.count / 2
+        return sorted.count % 2 == 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid]
+    }
+
+    private static func colorAdjusted(_ image: UIImage, saturation: Double, contrast: Double) -> UIImage {
+        guard let cgImage = image.cgImage else { return image }
+        let input = CIImage(cgImage: cgImage)
+        let filter = CIFilter.colorControls()
+        filter.inputImage = input
+        filter.saturation = Float(saturation)
+        filter.contrast = Float(contrast)
+        guard let output = filter.outputImage,
+              let rendered = ciContext.createCGImage(output, from: input.extent)
+        else { return image }
+        return UIImage(cgImage: rendered)
+    }
 }

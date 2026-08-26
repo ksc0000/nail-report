@@ -32,6 +32,9 @@ struct NailousApp: App {
                     if DetectionBenchmark.isRequested {
                         await DetectionBenchmark.run()
                     }
+                    if ColorBalanceBenchmark.isRequested {
+                        ColorBalanceBenchmark.run()
+                    }
                 }
         }
         .modelContainer(for: NailRecord.self)

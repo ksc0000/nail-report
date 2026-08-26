@@ -360,7 +360,7 @@ struct AddNailView: View {
                     let enhanced = try await AICleanup.enhance(texture)
                     results.append(enhanced)
                 }
-                bakedTextures = results
+                bakedTextures = AICleanup.colorBalanced(results)
                 applyRetouch()
                 aiApplied = true
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
