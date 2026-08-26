@@ -8,7 +8,7 @@
    - シミュレータ「iPhone 17 Pro」でアプリをビルド・起動し、主要フロー（ホーム表示 → `-seedDemo 1` でのコレクション表示 → `-openAdd 1` での登録画面 → `-openGrid 1` での一覧）をスクリーンショットで巡回し、視覚的な不具合・違和感を探す
    - 直近のコミットログと `gh issue list --state closed --label nailous-auto --limit 5` を読み、既知の改善の回帰がないか確認
 3. 発見した問題から、**価値の高い順に最大2件**をIssueとして起票する:
-   - `gh issue create --label "nailous-auto,ios-quality"` を使う
+   - `gh issue create --label "nailous-auto,ios-quality"` を使う。ただし**アセット生成・画像系・レビュー系のタスクは `codex-auto,ios-quality`**（相棒のCodexループ担当）にする
    - 本文に必ず含める: 現象（スクショやベンチ数値などの証拠）、対象ファイルパス、改善候補、受け入れ基準
    - 既存Open Issue（ラベル問わず）と重複するものは起票しない
    - アプリ内文言の提案では「宝石箱」等チープな語を使わない
