@@ -2,54 +2,43 @@
 
 ## Context
 
-The nail-report application is currently in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. The first sub-phase, 2.1, explicitly targets adding unit tests for Firebase helper functions. This task focuses on `src/lib/firestore.ts` as the initial step in building out test coverage.
+The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. This task specifically addresses Phase 2.1: Test coverage. The current state indicates that no substantive task has been completed yet, making a core test coverage task a logical next step.
 
 ## Objective
 
-Add initial Vitest unit tests for the core CRUD helper functions within `src/lib/firestore.ts`.
+Implement Vitest unit tests for selected helper functions within `src/lib/firestore.ts` to improve test coverage for the application's data layer.
 
 ## Allowed Scope
 
--   `src/` (except `src/main.tsx`)
--   `src/lib/firestore.ts`
--   `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
--   `src/App.css` (CSS improvements)
+- `src/lib/firestore.ts` (minor adjustments if needed for testability, but focus on testing existing logic)
+- `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `package.json` (only if adding a test script, but Vitest should already be configured)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` deps (no new npm packages without human approval)
+- Firebase deploy commands
+- Secrets and credentials
+- `src/App.css` (not relevant for this task)
 
 ## Requirements
 
--   Keep diff ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing.
--   Prefer adding tests when touching `src/lib/` files.
--   Report follow-up items as comments, not additional code.
-
-## Worker Prompt
-
-Your task is to implement unit tests for the `src/lib/firestore.ts` helper functions using Vitest.
-
-1.  **Create a new test file**: Create `src/__tests__/firestore.test.ts` if it doesn't already exist.
-2.  **Focus on core CRUD operations**: Write tests for the following functions within `src/lib/firestore.ts`:
-    *   `addItem`
-    *   `updateItem`
-    *   `deleteItem`
-    *   `getItems`
-3.  **Mock Firebase SDK**: Use `vitest`'s mocking capabilities (`vi.mock`) to mock Firebase SDK dependencies (e.g., `firebase/firestore` functions like `collection`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`). This ensures that tests run in isolation without actual interaction with Firebase.
-4.  **Assert outcomes**: Ensure tests assert the correct behavior and error handling (if applicable) of these helper functions.
-5.  **Do not add new npm dependencies**: Vitest should be configured already as per the roadmap. Do not add `vitest` or any other new package to `package.json`.
-6.  **Keep it minimal**: Focus on a few clear test cases for each function to stay within the line limit.
+- Keep diff ≤ 150 lines.
+- Create a new test file, preferably `src/__tests__/firestore.test.ts`.
+- Focus on writing unit tests for core CRUD operations in `src/lib/firestore.ts`, such as `addNailItem`, `getNailItems`, `updateNailItem`, and `deleteNailItem`.
+- Use Vitest and mock Firebase SDK functions (e.g., `getFirestore`, `collection`, `doc`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`) to isolate the logic being tested. Refer to existing test setups for mocking patterns if available.
+- Ensure tests cover successful operations and basic error handling scenarios if applicable within the helper functions.
+- Run `npm run test` to verify tests pass.
+- Run `npm run build && npm run lint` before finishing.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
