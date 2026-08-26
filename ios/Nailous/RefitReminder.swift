@@ -5,10 +5,24 @@ import UserNotifications
 /// (or unmarking) replaces/cancels it.
 enum RefitReminder {
     private static let identifier = "refit-reminder"
-    private static let interval: TimeInterval = 21 * 24 * 3600
+    private static let defaultInterval: TimeInterval = 21 * 24 * 3600
+
+    /// A short interval can be injected by UI-test/simulator launches without
+    /// changing the production reminder interval.
+    private static var interval: TimeInterval {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let argumentIndex = arguments.firstIndex(of: "-debugReminderSeconds"),
+              arguments.indices.contains(argumentIndex + 1),
+              let seconds = TimeInterval(arguments[argumentIndex + 1]),
+              seconds >= 1 else {
+            return defaultInterval
+        }
+        return seconds
+    }
 
     static func schedule(designTitle: String) {
         let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
         center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
             guard granted else { return }
             let content = UNMutableNotificationContent()
@@ -16,13 +30,13 @@ enum RefitReminder {
             content.body = "「\(designTitle)」をつけて3週間。次のデザインを選びませんか？"
             content.sound = .default
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
-            center.removePendingNotificationRequests(withIdentifiers: [identifier])
             center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: trigger))
         }
     }
 
     static func cancel() {
-        UNUserNotificationCenter.current()
-            .removePendingNotificationRequests(withIdentifiers: [identifier])
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
+        center.removeDeliveredNotifications(withIdentifiers: [identifier])
     }
 }
