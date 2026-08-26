@@ -83,6 +83,10 @@ struct CollectionView: View {
                 try? await Task.sleep(for: .seconds(0.4))
                 gridShown = true
             }
+            if UserDefaults.standard.string(forKey: "openFirst") == "1", let first = records.first {
+                try? await Task.sleep(for: .seconds(0.4))
+                selected = first
+            }
         }
     }
 

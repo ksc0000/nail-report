@@ -531,6 +531,12 @@ struct NailDetailView: View {
                 dismiss()
             }
         }
+        .onAppear {
+            if let dbg = UserDefaults.standard.string(forKey: "debugStageTheme"),
+               let t = StageTheme(rawValue: dbg) {
+                theme = t
+            }
+        }
     }
 }
 
@@ -569,7 +575,7 @@ struct StageBackground: View {
                                         ShaderLibrary.waterSway(
                                             .float(Float(t.truncatingRemainder(dividingBy: 100_000))),
                                             .float2(proxy.size),
-                                            .float(4.5),
+                                            .float(2.5 * theme.swayAmplitude),
                                             .float2(CGPoint(
                                                 x: (stir?.point.x ?? 0.5) * proxy.size.width,
                                                 y: (stir?.point.y ?? 0.5) * proxy.size.height

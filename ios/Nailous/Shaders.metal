@@ -16,9 +16,15 @@ using namespace metal;
 ) {
     float2 uv = position / max(size, float2(1.0));
 
+    // Straight architectural lines (frames, doors, dresser edges) tend to sit
+    // near the image border, so the ambient sway is damped there and kept
+    // full-strength toward the center where there's usually just backdrop.
+    float edgeDist = length(uv - 0.5) * 2.0;
+    float ambientMask = mix(1.0, 0.2, saturate(edgeDist));
+
     float wave1 = sin(uv.y * 12.0 + time * 0.9) * cos(uv.x * 9.0 - time * 0.55);
     float wave2 = sin((uv.x + uv.y) * 7.0 - time * 0.4);
-    float2 ambient = float2(wave1, wave2 * 0.7) * strength;
+    float2 ambient = float2(wave1, wave2 * 0.7) * strength * ambientMask;
 
     float2 offset = ambient;
     if (stirAmp > 0.001) {

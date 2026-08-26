@@ -46,6 +46,16 @@ enum StageTheme: String, CaseIterable, Identifiable {
             return [Color(red: 0.30, green: 0.23, blue: 0.20), Color(red: 0.10, green: 0.07, blue: 0.07)]
         }
     }
+
+    /// Multiplier on the water-sway ambient amplitude. Dresser backdrops are
+    /// full of straight furniture edges, so its sway is damped further than
+    /// the others to keep those lines readable.
+    var swayAmplitude: Float {
+        switch self {
+        case .dresser: return 0.55
+        default: return 1.0
+        }
+    }
 }
 
 /// Ambient decoration drifting around the stage — a user preference, since
