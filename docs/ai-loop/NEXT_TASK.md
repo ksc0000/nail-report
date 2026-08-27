@@ -1,19 +1,20 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The application is in Phase 2 of the roadmap, focusing on improving stability, test coverage, and UX. This task directly addresses "2.1 Test coverage" by adding unit tests for core Firebase Firestore helper functions.
+The current phase of the roadmap focuses on improving stability, test coverage, and user experience, including accessibility (Phase 2.4). One crucial aspect of accessibility is ensuring that interactive elements are properly labeled for screen reader users.
 
 ## Objective
 
-Add Vitest unit tests for a selection of helper functions within `src/lib/firestore.ts`, specifically focusing on mocking Firebase Firestore interactions to enable isolated testing.
+Identify all button elements (`<button>`) that contain only an icon (e.g., an `<img>`, `<svg>`, or a text-hidden icon font) and no visible text label. For each such button, add an appropriate `aria-label` attribute that clearly describes the button's action to screen reader users.
+
+For example, a delete icon button might receive `aria-label="Delete item"`, and an edit icon button might receive `aria-label="Edit item"`.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (to export functions if needed for testing, minor changes only)
-- `src/__tests__/lib/firestore.test.ts` (new file for tests)
-- `vite.config.ts` (if minor Vitest configuration is needed, e.g., for `vi.mock` setup)
+- `src/` (excluding `src/main.tsx`)
+- `src/components/` (modifying existing components)
+- `src/views/` (modifying existing views)
 
 ## Forbidden Scope
 
@@ -23,14 +24,15 @@ Add Vitest unit tests for a selection of helper functions within `src/lib/firest
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- Any CSS files (App.css, etc.)
 
 ## Requirements
 
-- Keep diff ≤ 150 lines.
-- Run `npm run build && npm run lint` before finishing.
-- Prefer adding tests when touching `src/lib/` files.
-- Report follow-up items as comments, not additional code.
+- Keep the total diff for this task to ≤ 150 lines.
+- For each identified icon-only button, add a descriptive `aria-label`.
+- The `aria-label` content should be concise and accurately reflect the button's purpose.
+- Run `npm run build && npm run lint` before finishing and ensure no errors or warnings are introduced.
+- Prefer existing i18n mechanisms if available, otherwise use plain strings for labels.
+- Report follow-up items as comments in the output, not additional code.
 
 ## Output Format
 
@@ -39,32 +41,3 @@ Add Vitest unit tests for a selection of helper functions within `src/lib/firest
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
-## Worker Prompt
-
-Your task is to implement initial unit tests for `src/lib/firestore.ts` using Vitest.
-
-1.  **Create a new test file:** `src/__tests__/lib/firestore.test.ts`.
-2.  **Mock Firebase Firestore SDK:** Implement `vi.mock('firebase/firestore', ...)` to prevent actual database calls during tests. The mock should provide mock implementations for functions like `getFirestore`, `collection`, `doc`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`, etc. Focus on simulating successful operations for now.
-3.  **Write unit tests for at least one core function in `src/lib/firestore.ts`:**
-    *   Prioritize `addNailItem` and/or `getNailItems`.
-    *   Ensure tests assert the expected behavior and verify that the mocked Firestore functions are called correctly with the right arguments.
-    *   Focus on covering a happy path scenario for the selected function(s).
-4.  **Ensure `src/lib/firestore.ts` functions are testable:** If any functions are not currently exported, ensure they are exported for testing purposes (this change should be minimal).
-
-**Acceptance Criteria:**
-
-*   A new test file `src/__tests__/lib/firestore.test.ts` exists.
-*   The Firebase Firestore SDK is mocked using `vi.mock`.
-*   At least one function (`addNailItem` or `getNailItems`) from `src/lib/firestore.ts` has a passing unit test.
-*   The tests verify the correct interaction with the mocked Firestore functions.
-
-**Required Test Commands:**
-
-```bash
-npm install # Ensure all dependencies are up to date
-npm run test # Run the newly added Vitest tests
-npm run build
-npm run lint
-```
-```
