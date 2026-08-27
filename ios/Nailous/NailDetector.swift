@@ -1,5 +1,6 @@
 import CoreGraphics
-import UIKit
+import CoreImage
+import Foundation
 import Vision
 
 /// A fingertip (= nail) candidate detected in a photo, in the photo's
@@ -11,17 +12,27 @@ struct DetectedNail: Identifiable {
     let axisAngle: CGFloat // finger DIP→TIP direction vs straight-up, radians
 }
 
-/// Fingertip detection via Vision hand-pose, extracted from `PhotoCropView`
-/// so it can be exercised standalone (e.g. by the detection benchmark).
+/// Fingertip detection via Vision hand-pose.
+///
+/// Built on CGImage/CoreImage/Vision only (no UIKit), so the exact same
+/// detection core runs both in the iOS app (see `NailDetector+UIImage.swift`
+/// for the `UIImage` entry point) and in the macOS bench tool
+/// (`ios/BenchTool`, driven by `scripts/bench-detect.sh`). The iOS Simulator's
+/// `VNDetectHumanHandPoseRequest` reliably returns zero hands even on real
+/// photos (see #360), so detection accuracy can only be measured by running
+/// this core directly on macOS.
 enum NailDetector {
     /// Finds fingertips with Vision hand-pose detection. Hand pose expects
     /// upright hands, so the photo is tried in four orientations (fingers
     /// down / sideways happen a lot in nail photos) and results are merged
     /// back into the displayed image's coordinate space.
-    static func detectNails(in image: UIImage) async -> [DetectedNail] {
-        let detectionImage = normalizedForDetection(image)
-        guard let cgImage = detectionImage.cgImage else { return [] }
-        let displaySize = image.size
+    ///
+    /// - Parameters:
+    ///   - cgImage: the raw, un-oriented pixel buffer (as decoded from disk).
+    ///   - orientation: the image's EXIF/source orientation to bake in before
+    ///     detection, so `cgImage`'s pixels don't need to be pre-rotated.
+    static func detectNails(cgImage: CGImage, orientation: CGImagePropertyOrientation) async -> [DetectedNail] {
+        guard let (normalized, displaySize) = normalizedForDetection(cgImage, orientation: orientation) else { return [] }
         return await Task.detached(priority: .userInitiated) { () -> [DetectedNail] in
             // (orientation Vision applies, inverse map back to display space)
             let attempts: [(CGImagePropertyOrientation, (CGPoint) -> CGPoint)] = [
@@ -33,7 +44,7 @@ enum NailDetector {
             var merged: [DetectedNail] = []
             for (orientation, unmap) in attempts {
                 let found = runHandPose(
-                    cgImage: cgImage,
+                    cgImage: normalized,
                     orientation: orientation,
                     unmap: unmap,
                     displaySize: displaySize
@@ -67,11 +78,11 @@ enum NailDetector {
         } catch {
             // Surfaced in bench runs; silently degraded in the app (a failed
             // pass just yields no candidates for this orientation).
-            if DetectionBenchmark.isRequested {
+            if diagnosticsEnabled {
                 print("BENCH_DIAG handpose perform failed (orientation \(orientation.rawValue)): \(error)")
             }
         }
-        if DetectionBenchmark.isRequested {
+        if diagnosticsEnabled {
             print("BENCH_DIAG orientation \(orientation.rawValue): hands=\(request.results?.count ?? 0)")
         }
         guard let observations = request.results, !observations.isEmpty else { return [] }
@@ -112,32 +123,29 @@ enum NailDetector {
         return nails
     }
 
-    /// Bakes EXIF orientation out and downsizes for fast multi-pass detection.
-    static func normalizedForDetection(_ image: UIImage) -> UIImage {
+    /// Bakes the source orientation out (via CoreImage, which handles all 8
+    /// EXIF orientations correctly) and downsizes for fast multi-pass
+    /// detection. Returns the normalized, upright image plus its size in
+    /// "display points" (the oriented size, pre-downscale) — the coordinate
+    /// space `DetectedNail.center` is expressed in.
+    static func normalizedForDetection(
+        _ cgImage: CGImage,
+        orientation: CGImagePropertyOrientation
+    ) -> (image: CGImage, displaySize: CGSize)? {
         let maxDimension: CGFloat = 1800
-        let scale = min(1, maxDimension / max(image.size.width, image.size.height))
-        if scale == 1 && image.imageOrientation == .up { return image }
-        let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
-        let format = UIGraphicsImageRendererFormat()
-        format.scale = 1
-        return UIGraphicsImageRenderer(size: size, format: format).image { _ in
-            image.draw(in: CGRect(origin: .zero, size: size))
-        }
+        let oriented = CIImage(cgImage: cgImage).oriented(orientation)
+        let displaySize = oriented.extent.size
+        let scale = min(1, maxDimension / max(displaySize.width, displaySize.height))
+        let scaled = scale < 1 ? oriented.transformed(by: CGAffineTransform(scaleX: scale, y: scale)) : oriented
+        let context = CIContext()
+        guard let normalized = context.createCGImage(scaled, from: scaled.extent) else { return nil }
+        return (normalized, displaySize)
     }
-}
 
-extension CGImagePropertyOrientation {
-    init(_ orientation: UIImage.Orientation) {
-        switch orientation {
-        case .up: self = .up
-        case .down: self = .down
-        case .left: self = .left
-        case .right: self = .right
-        case .upMirrored: self = .upMirrored
-        case .downMirrored: self = .downMirrored
-        case .leftMirrored: self = .leftMirrored
-        case .rightMirrored: self = .rightMirrored
-        @unknown default: self = .up
-        }
+    /// Gates verbose `BENCH_DIAG` logging used by both the in-app
+    /// `-benchDetect` path and the macOS bench tool, without requiring
+    /// UIKit-only types (like `DetectionBenchmark`) to be linked in.
+    static var diagnosticsEnabled: Bool {
+        ProcessInfo.processInfo.arguments.contains("-benchDetect")
     }
 }
