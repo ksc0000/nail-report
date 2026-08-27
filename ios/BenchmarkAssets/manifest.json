@@ -1,6 +1,10 @@
 {
   "cases": [
-    { "file": "real_magnet_bothhands.jpg", "expectedNails": 10 },
+    {
+      "file": "real_magnet_bothhands.jpg",
+      "expectedNails": 10,
+      "expectedNailCenters": [[275, 620], [446, 773], [664, 593], [718, 497], [770, 476], [1864, 434], [1611, 609], [1445, 497], [1253, 455], [1222, 335]]
+    },
     {
       "file": "real_glitter_closeup.jpg",
       "expectedNails": 5,
