@@ -90,6 +90,8 @@ function App() {
 
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
   const MAX_FILE_BYTES = 5 * 1024 * 1024
+  const MAX_TAGS = 10
+  const MAX_TITLE = 100
 
   const validateImageFile = (file: File): string | null => {
     if (!ALLOWED_TYPES.includes(file.type))
@@ -249,6 +251,10 @@ function App() {
 
   const editingItem = editingId ? nailItems.find(i => i.id === editingId) : null
 
+  const currentTagCount = parseTags(nailTags).length
+  const tagOverLimit = currentTagCount > MAX_TAGS
+  const titleLen = nailTitle.length
+
   const filteredItems = searchQuery.trim()
     ? nailItems.filter(item => {
         const q = searchQuery.trim().toLowerCase()
@@ -280,20 +286,34 @@ function App() {
         <div id="nail-section">
           <div id="nail-form">
             <h2 className="nail-form-title">{editingId ? 'Edit Nail Item' : 'Add Nail Item'}</h2>
-            <input
-              type="text"
-              value={nailTitle}
-              onChange={e => setNailTitle(e.target.value)}
-              placeholder="Title *"
-              className="nail-input"
-            />
-            <input
-              type="text"
-              value={nailTags}
-              onChange={e => setNailTags(e.target.value)}
-              placeholder="Tags (comma separated)"
-              className="nail-input"
-            />
+            <div className="nail-field-wrap">
+              <input
+                type="text"
+                value={nailTitle}
+                onChange={e => setNailTitle(e.target.value)}
+                placeholder="Title *"
+                className="nail-input"
+                maxLength={MAX_TITLE}
+              />
+              <span className={`nail-char-count${titleLen >= MAX_TITLE ? ' nail-char-count--limit' : ''}`}>
+                {titleLen}/{MAX_TITLE}
+              </span>
+            </div>
+            <div className="nail-field-wrap">
+              <input
+                type="text"
+                value={nailTags}
+                onChange={e => setNailTags(e.target.value)}
+                placeholder="Tags (comma separated)"
+                className={`nail-input${tagOverLimit ? ' nail-input--error' : ''}`}
+              />
+              <span className={`nail-char-count${tagOverLimit ? ' nail-char-count--limit' : ''}`}>
+                {currentTagCount}/{MAX_TAGS}
+              </span>
+            </div>
+            {tagOverLimit && (
+              <p className="nail-field-hint nail-field-hint--error">タグは {MAX_TAGS} 件以内にしてください。</p>
+            )}
             <textarea
               value={nailMemo}
               onChange={e => setNailMemo(e.target.value)}
@@ -340,7 +360,7 @@ function App() {
                 type="button"
                 className="btn-primary"
                 onClick={handleSubmitNailItem}
-                disabled={nailLoading || nailTitle.trim() === ''}
+                disabled={nailLoading || nailTitle.trim() === '' || tagOverLimit}
               >
                 {nailLoading ? 'Saving...' : editingId ? 'Update' : 'Add'}
               </button>
