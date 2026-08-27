@@ -17,7 +17,9 @@ final class NailousAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        completionHandler([.banner, .sound])
+        // .list keeps a missed banner in Notification Center — a refit
+        // reminder must remain findable, not vanish after five seconds.
+        completionHandler([.banner, .list, .sound])
     }
 }
 
