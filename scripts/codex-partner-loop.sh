@@ -32,7 +32,17 @@ trap 'rmdir "$LOCK" 2>/dev/null' EXIT
     --sandbox danger-full-access \
     --cd "$REPO" \
     "$(cat scripts/codex-partner-prompt.md)" \
-    2>&1
+    2>&1 &
+  AGENT_PID=$!
+  ( sleep 5400; if kill -0 $AGENT_PID 2>/dev/null; then
+      echo "WATCHDOG: codex run exceeded 90min — killing $AGENT_PID"
+      kill -9 $AGENT_PID 2>/dev/null
+    fi ) &
+  WATCHDOG_PID=$!
+  wait $AGENT_PID
+  AGENT_RC=$?
+  kill $WATCHDOG_PID 2>/dev/null
+  echo "agent exit: $AGENT_RC"
 
   echo "===== $(date '+%Y-%m-%d %H:%M:%S') codex run end (exit $?) ====="
 } >> "$LOG" 2>&1

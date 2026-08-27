@@ -51,7 +51,17 @@ trap 'rmdir "$LOCK" 2>/dev/null' EXIT
     --model sonnet \
     --max-turns 120 \
     --allowedTools "Read,Glob,Grep,Edit,Write,Bash(git:*),Bash(gh:*),Bash(xcodebuild:*),Bash(xcrun:*),Bash(xcodegen:*),Bash(cd:*),Bash(ls:*),Bash(find:*),Bash(cat:*),Bash(cp:*),Bash(mkdir:*),Bash(python3:*),Bash(sips:*),Bash(md5:*),Bash(plutil:*),Bash(sleep:*),Bash(scripts/bench-detect.sh:*)" \
-    2>&1
+    2>&1 &
+  AGENT_PID=$!
+  ( sleep 5400; if kill -0 $AGENT_PID 2>/dev/null; then
+      echo "WATCHDOG: claude run exceeded 90min — killing $AGENT_PID"
+      kill -9 $AGENT_PID 2>/dev/null
+    fi ) &
+  WATCHDOG_PID=$!
+  wait $AGENT_PID
+  AGENT_RC=$?
+  kill $WATCHDOG_PID 2>/dev/null
+  echo "agent exit: $AGENT_RC"
 
   echo "===== $(date '+%Y-%m-%d %H:%M:%S') run end (exit $?) ====="
 } >> "$LOG" 2>&1
