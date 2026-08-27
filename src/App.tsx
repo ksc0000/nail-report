@@ -53,6 +53,7 @@ function App() {
   const [nailError, setNailError] = useState('')
   const [nailItemsUserId, setNailItemsUserId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [showStats, setShowStats] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const previewUrlRef = useRef<string | null>(null)
 
@@ -263,6 +264,13 @@ function App() {
       })
     : nailItems
 
+  const tagStats = nailItems.reduce<Record<string, number>>((acc, item) => {
+    item.tags.forEach(tag => { acc[tag] = (acc[tag] ?? 0) + 1 })
+    return acc
+  }, {})
+  const tagStatsSorted = Object.entries(tagStats).sort((a, b) => b[1] - a[1])
+  const maxTagCount = tagStatsSorted[0]?.[1] ?? 1
+
   return (
     <section id="center">
       <h1 id="app-title">Nailous</h1>
@@ -382,6 +390,14 @@ function App() {
                   placeholder="タイトル・タグで検索"
                   className="nail-search-input"
                 />
+                <button
+                  type="button"
+                  className={`btn-stats-toggle${showStats ? ' btn-stats-toggle--active' : ''}`}
+                  onClick={() => setShowStats(v => !v)}
+                  aria-pressed={showStats}
+                >
+                  {showStats ? '一覧' : '統計'}
+                </button>
               </div>
               <div id="nail-export">
                 <span className="nail-export-label">エクスポート</span>
@@ -406,6 +422,36 @@ function App() {
                 <li>タイトル・写真・タグ・メモを記録できます</li>
                 <li>タグや検索でいつでも素早く見つかります</li>
               </ul>
+            </div>
+          ) : showStats ? (
+            <div id="nail-stats">
+              <p className="nail-stats-summary">
+                {nailItems.length} 件 · タグ {tagStatsSorted.length} 種
+              </p>
+              {tagStatsSorted.length === 0 ? (
+                <p className="nail-stats-empty">タグが登録されていません。</p>
+              ) : (
+                <ul className="nail-stats-list">
+                  {tagStatsSorted.map(([tag, count]) => (
+                    <li key={tag} className="nail-stats-row">
+                      <span className="nail-stats-tag">{tag}</span>
+                      <div className="nail-stats-bar-wrap">
+                        <div
+                          className="nail-stats-bar"
+                          style={{ width: `${Math.round((count / maxTagCount) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="nail-stats-count">{count}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {(() => {
+                const noTagCount = nailItems.filter(i => i.tags.length === 0).length
+                return noTagCount > 0 ? (
+                  <p className="nail-stats-notag">タグなし: {noTagCount} 件</p>
+                ) : null
+              })()}
             </div>
           ) : filteredItems.length === 0 ? (
             <p className="nail-search-empty">「{searchQuery}」に一致するアイテムがありません。</p>
