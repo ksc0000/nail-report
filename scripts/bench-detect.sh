@@ -49,7 +49,14 @@ rate = summary["successRate"] * 100
 print()
 for r in summary["results"]:
     mark = "OK" if r["success"] else "NG"
-    print(f"  [{mark}] {r['file']}: detected={r['detectedNails']} expected={r['expectedNails']}")
+    line = f"  [{mark}] {r['file']}: detected={r['detectedNails']} expected={r['expectedNails']}"
+    offset = r.get("meanCenterOffsetPx")
+    if offset is not None:
+        line += f"  centerOffset={offset:.1f}px (n={r['matchedCenters']})"
+    print(line)
 print()
 print(f"{total}枚中{succeeded}枚成功 ({rate:.1f}%)")
+overall_offset = summary.get("overallMeanCenterOffsetPx")
+if overall_offset is not None:
+    print(f"平均中心ズレ: {overall_offset:.1f}px（ground truth付き画像のみ）")
 PY

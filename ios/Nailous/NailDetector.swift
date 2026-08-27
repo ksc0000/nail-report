@@ -101,17 +101,26 @@ enum NailDetector {
         }
         guard let observations = request.results, !observations.isEmpty else { return [] }
 
-        let jointPairs: [(VNHumanHandPoseObservation.JointName, VNHumanHandPoseObservation.JointName)] = [
-            (.thumbTip, .thumbIP),
-            (.indexTip, .indexDIP),
-            (.middleTip, .middleDIP),
-            (.ringTip, .ringDIP),
-            (.littleTip, .littleDIP),
+        // Fraction of the tip→DIP segment to back off from the tip to land on the
+        // nail's visual center, per finger. Tuned against hand-annotated
+        // ground-truth centers on real photos (see
+        // ios/BenchmarkAssets/manifest.json `expectedNailCenters`, #356):
+        // index/middle/ring clustered tightly around 0.34-0.36 (up from the prior
+        // flat 0.32), while the little finger's shorter nail bed consistently
+        // measured lower. The thumb sample was too noisy (near-edge-on framing
+        // shrinks its tip→DIP segment to a few dozen points, making the fraction
+        // numerically unstable) to justify moving off the original value.
+        let jointPairs: [(VNHumanHandPoseObservation.JointName, VNHumanHandPoseObservation.JointName, CGFloat)] = [
+            (.thumbTip, .thumbIP, 0.32),
+            (.indexTip, .indexDIP, 0.34),
+            (.middleTip, .middleDIP, 0.34),
+            (.ringTip, .ringDIP, 0.34),
+            (.littleTip, .littleDIP, 0.22),
         ]
 
         var nails: [DetectedNail] = []
         for observation in observations {
-            for (tipName, dipName) in jointPairs {
+            for (tipName, dipName, tipFraction) in jointPairs {
                 guard let tip = try? observation.recognizedPoint(tipName), tip.confidence > 0.15,
                       let dip = try? observation.recognizedPoint(dipName), dip.confidence > 0.1
                 else { continue }
@@ -126,8 +135,8 @@ enum NailDetector {
                 guard segment > 4 else { continue }
                 let axisAngle = atan2(vx, -vy)
                 let nailCenter = CGPoint(
-                    x: tipPoint.x - vx * 0.32,
-                    y: tipPoint.y - vy * 0.32
+                    x: tipPoint.x - vx * tipFraction,
+                    y: tipPoint.y - vy * tipFraction
                 )
                 nails.append(
                     DetectedNail(center: nailCenter, cropHeight: segment * 1.2, axisAngle: axisAngle)

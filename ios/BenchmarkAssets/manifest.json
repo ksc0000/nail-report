@@ -1,13 +1,25 @@
 {
   "cases": [
     { "file": "real_magnet_bothhands.jpg", "expectedNails": 10 },
-    { "file": "real_glitter_closeup.jpg", "expectedNails": 5 },
+    {
+      "file": "real_glitter_closeup.jpg",
+      "expectedNails": 5,
+      "expectedNailCenters": [[590, 610], [940, 975], [295, 1275], [985, 1420], [730, 1800]]
+    },
     { "file": "real_mosaic_bothhands_sun.jpg", "expectedNails": 10 },
-    { "file": "real_red_onehand.jpg", "expectedNails": 5 },
+    {
+      "file": "real_red_onehand.jpg",
+      "expectedNails": 5,
+      "expectedNailCenters": [[500, 175], [480, 750], [575, 855], [705, 965], [810, 1057]]
+    },
     { "file": "real_leopard_bothhands_lowres.jpg", "expectedNails": 10 },
     { "file": "real_beige_bothhands.jpg", "expectedNails": 10 },
     { "file": "real_sheer_bothhands.jpg", "expectedNails": 10 },
-    { "file": "real_gray_onehand.jpg", "expectedNails": 5 },
+    {
+      "file": "real_gray_onehand.jpg",
+      "expectedNails": 5,
+      "expectedNailCenters": [[465, 700], [690, 710], [810, 875], [795, 1040], [440, 1055]]
+    },
     { "file": "no_hand_background.png", "expectedNails": 0 }
   ]
 }

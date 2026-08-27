@@ -12,6 +12,11 @@ import ImageIO
 struct ImageCase: Decodable {
     let file: String
     let expectedNails: Int
+    /// Ground-truth marker centers (image pixel coords, top-left origin,
+    /// same space as `DetectedNail.center`), hand-annotated on the
+    /// checked-in photo for cases where present. Optional: only a subset of
+    /// cases have this so far (#356).
+    let expectedNailCenters: [[Double]]?
 }
 
 struct Manifest: Decodable {
@@ -23,13 +28,48 @@ struct CaseResult: Encodable {
     let expectedNails: Int
     let detectedNails: Int
     let success: Bool
+    /// Mean pixel distance between each ground-truth nail center and its
+    /// nearest detected marker, greedily matched (nil if this case has no
+    /// `expectedNailCenters`).
+    let meanCenterOffsetPx: Double?
+    let matchedCenters: Int?
 }
 
 struct Summary: Encodable {
     let total: Int
     let succeeded: Int
     let successRate: Double
+    /// Mean of `meanCenterOffsetPx` across all cases that have ground-truth
+    /// centers (nil if none do).
+    let overallMeanCenterOffsetPx: Double?
     let results: [CaseResult]
+}
+
+/// Greedily matches each expected center to its nearest not-yet-used
+/// detected center (smallest distances assigned first) and returns the mean
+/// distance over matched pairs. Not a globally optimal assignment, but
+/// stable and good enough to track before/after tuning deltas.
+func meanCenterOffset(expected: [[Double]], detected: [CGPoint]) -> (mean: Double, matched: Int)? {
+    guard !expected.isEmpty, !detected.isEmpty else { return nil }
+    var pairs: [(e: Int, d: Int, dist: Double)] = []
+    for (e, ePoint) in expected.enumerated() {
+        for (d, dPoint) in detected.enumerated() {
+            let dist = hypot(ePoint[0] - Double(dPoint.x), ePoint[1] - Double(dPoint.y))
+            pairs.append((e, d, dist))
+        }
+    }
+    pairs.sort { $0.dist < $1.dist }
+    var usedExpected = Set<Int>()
+    var usedDetected = Set<Int>()
+    var distances: [Double] = []
+    for pair in pairs {
+        guard !usedExpected.contains(pair.e), !usedDetected.contains(pair.d) else { continue }
+        usedExpected.insert(pair.e)
+        usedDetected.insert(pair.d)
+        distances.append(pair.dist)
+    }
+    guard !distances.isEmpty else { return nil }
+    return (distances.reduce(0, +) / Double(distances.count), distances.count)
 }
 
 guard CommandLine.arguments.count > 1 else {
@@ -64,16 +104,26 @@ func run() async -> Summary {
         let imageURL = assetsDir.appendingPathComponent(testCase.file)
         guard let (cgImage, orientation) = loadOrientedCGImage(at: imageURL) else {
             FileHandle.standardError.write(Data("warning: failed to load \(imageURL.path)\n".utf8))
-            results.append(CaseResult(file: testCase.file, expectedNails: testCase.expectedNails, detectedNails: 0, success: false))
+            results.append(CaseResult(file: testCase.file, expectedNails: testCase.expectedNails, detectedNails: 0, success: false, meanCenterOffsetPx: nil, matchedCenters: nil))
             continue
         }
         let detected = await NailDetector.detectNails(cgImage: cgImage, orientation: orientation)
         let success = detected.count == testCase.expectedNails
-        results.append(CaseResult(file: testCase.file, expectedNails: testCase.expectedNails, detectedNails: detected.count, success: success))
+        let offset = testCase.expectedNailCenters.flatMap { meanCenterOffset(expected: $0, detected: detected.map(\.center)) }
+        results.append(CaseResult(
+            file: testCase.file,
+            expectedNails: testCase.expectedNails,
+            detectedNails: detected.count,
+            success: success,
+            meanCenterOffsetPx: offset?.mean,
+            matchedCenters: offset?.matched
+        ))
     }
     let succeeded = results.filter(\.success).count
     let rate = results.isEmpty ? 0 : Double(succeeded) / Double(results.count)
-    return Summary(total: results.count, succeeded: succeeded, successRate: rate, results: results)
+    let offsets = results.compactMap(\.meanCenterOffsetPx)
+    let overallOffset = offsets.isEmpty ? nil : offsets.reduce(0, +) / Double(offsets.count)
+    return Summary(total: results.count, succeeded: succeeded, successRate: rate, overallMeanCenterOffsetPx: overallOffset, results: results)
 }
 
 let summary = await run()

@@ -67,17 +67,21 @@ xcodebuild -project ios/Nailous.xcodeproj -scheme Nailous \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
 ```
 
-Nail-detection benchmark (issue #352) — measures Vision hand-pose accuracy
-against the checked-in `ios/BenchmarkAssets/` image set:
+Nail-detection benchmark (issues #352, #360) — measures Vision hand-pose
+accuracy against the checked-in `ios/BenchmarkAssets/` image set:
 
 ```bash
 scripts/bench-detect.sh
 ```
 
-Builds the app, launches it in the iPhone 17 Pro simulator with
-`-benchDetect 1`, and prints `N枚中M枚成功 (X%)`. Any PR that changes nail
-detection (`NailDetector.swift`, `PhotoCropView.swift`) must report this
-number before and after the change.
+Compiles the shared `NailDetector` core as a macOS command-line tool
+(`ios/BenchTool/`) and runs it directly on the host — the iOS Simulator's
+`VNDetectHumanHandPoseRequest` reliably returns zero hands even on real
+photos, so detection can't be measured there. Prints `N枚中M枚成功 (X%)` plus,
+for manifest cases that carry hand-annotated `expectedNailCenters`, the mean
+pixel distance between each detected marker and its ground-truth nail center
+(`平均中心ズレ`). Any PR that changes nail detection (`NailDetector.swift`,
+`PhotoCropView.swift`) must report both numbers before and after the change.
 
 ## React Compiler
 
