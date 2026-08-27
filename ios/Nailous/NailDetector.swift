@@ -49,14 +49,28 @@ enum NailDetector {
                     unmap: unmap,
                     displaySize: displaySize
                 )
+                // Dedup against nails accumulated from *earlier* orientation
+                // attempts only (the same physical finger re-detected on a
+                // different pass). Candidates within `found` itself are each
+                // a distinct named joint (at most 5 fingers x 2 hands), so
+                // comparing them against each other as they're appended
+                // wrongly dropped adjacent fingers, or a second hand's
+                // fingers near the first hand, as "duplicates" of one
+                // another purely from being close together in the photo.
+                let priorAttempts = merged
                 for nail in found {
-                    let isDuplicate = merged.contains { existing in
+                    let isDuplicate = priorAttempts.contains { existing in
                         let d = hypot(existing.center.x - nail.center.x, existing.center.y - nail.center.y)
                         return d < max(existing.cropHeight, nail.cropHeight) * 0.6
                     }
                     if !isDuplicate { merged.append(nail) }
                 }
-                if merged.count >= 5 { break }
+                // maximumHandCount is 2, so up to 10 nails (two full hands) can
+                // legitimately be found; breaking at 5 stopped scanning further
+                // orientations as soon as one hand was captured, so a second
+                // hand held at a different angle in the same photo was never
+                // looked for.
+                if merged.count >= 10 { break }
             }
             return merged
         }.value
@@ -98,8 +112,8 @@ enum NailDetector {
         var nails: [DetectedNail] = []
         for observation in observations {
             for (tipName, dipName) in jointPairs {
-                guard let tip = try? observation.recognizedPoint(tipName), tip.confidence > 0.35,
-                      let dip = try? observation.recognizedPoint(dipName), dip.confidence > 0.2
+                guard let tip = try? observation.recognizedPoint(tipName), tip.confidence > 0.15,
+                      let dip = try? observation.recognizedPoint(dipName), dip.confidence > 0.1
                 else { continue }
                 // Vision: normalized, bottom-left origin → display space (top-left origin)
                 let tipNorm = unmap(CGPoint(x: tip.location.x, y: tip.location.y))
