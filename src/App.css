@@ -83,7 +83,42 @@
 }
 
 #nail-search {
+  margin-bottom: 8px;
+}
+
+#nail-export {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 16px;
+  justify-content: flex-end;
+}
+
+.nail-export-label {
+  font-size: 0.78rem;
+  color: #888;
+  margin-right: 2px;
+}
+
+.btn-export {
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.btn-export:hover {
+  background: var(--accent-bg);
+}
+
+.btn-export:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .nail-search-input {

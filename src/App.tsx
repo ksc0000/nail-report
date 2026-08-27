@@ -13,6 +13,22 @@ const sortByDate = (items: NailItemDoc[]): NailItemDoc[] =>
     return tb - ta
   })
 
+const toDateStr = (ts: { toDate(): Date } | null | undefined): string => {
+  if (!ts) return ''
+  try { return ts.toDate().toLocaleDateString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric' }) }
+  catch { return '' }
+}
+
+const escapeCSVCell = (v: string): string => `"${v.replace(/"/g, '""')}"`
+
+const downloadFile = (content: string, filename: string, mimeType: string) => {
+  const blob = new Blob([content], { type: mimeType })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
+
 const formatDate = (ts: { toDate(): Date } | null | undefined): string | null => {
   if (!ts) return null
   try {
@@ -201,6 +217,36 @@ function App() {
     }
   }
 
+  const handleExportJSON = () => {
+    const date = new Date().toISOString().slice(0, 10)
+    const data = nailItems.map(item => ({
+      id: item.id,
+      title: item.title,
+      tags: item.tags,
+      memo: item.memo,
+      imageUrl: item.imageUrl,
+      createdAt: toDateStr(item.createdAt),
+      updatedAt: toDateStr(item.updatedAt),
+    }))
+    downloadFile(JSON.stringify(data, null, 2), `nailous-export-${date}.json`, 'application/json')
+  }
+
+  const handleExportCSV = () => {
+    const date = new Date().toISOString().slice(0, 10)
+    const header = ['id', 'title', 'tags', 'memo', 'imageUrl', 'createdAt', 'updatedAt']
+      .map(escapeCSVCell).join(',')
+    const rows = nailItems.map(item => [
+      item.id,
+      item.title,
+      item.tags.join(','),
+      item.memo,
+      item.imageUrl,
+      toDateStr(item.createdAt),
+      toDateStr(item.updatedAt),
+    ].map(escapeCSVCell).join(','))
+    downloadFile([header, ...rows].join('\n'), `nailous-export-${date}.csv`, 'text/csv;charset=utf-8;')
+  }
+
   const editingItem = editingId ? nailItems.find(i => i.id === editingId) : null
 
   const filteredItems = searchQuery.trim()
@@ -307,15 +353,22 @@ function App() {
             {nailError && <p className="nail-error">{nailError}</p>}
           </div>
           {!isFetching && nailItems.length > 0 && (
-            <div id="nail-search">
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="タイトル・タグで検索"
-                className="nail-search-input"
-              />
-            </div>
+            <>
+              <div id="nail-search">
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="タイトル・タグで検索"
+                  className="nail-search-input"
+                />
+              </div>
+              <div id="nail-export">
+                <span className="nail-export-label">エクスポート</span>
+                <button type="button" className="btn-export" onClick={handleExportCSV}>CSV</button>
+                <button type="button" className="btn-export" onClick={handleExportJSON}>JSON</button>
+              </div>
+            </>
           )}
           {isFetching ? (
             <p className="nail-loading">Loading...</p>
