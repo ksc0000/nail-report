@@ -62,7 +62,18 @@ enum NailDetector {
         let request = VNDetectHumanHandPoseRequest()
         request.maximumHandCount = 2
         let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation, options: [:])
-        try? handler.perform([request])
+        do {
+            try handler.perform([request])
+        } catch {
+            // Surfaced in bench runs; silently degraded in the app (a failed
+            // pass just yields no candidates for this orientation).
+            if DetectionBenchmark.isRequested {
+                print("BENCH_DIAG handpose perform failed (orientation \(orientation.rawValue)): \(error)")
+            }
+        }
+        if DetectionBenchmark.isRequested {
+            print("BENCH_DIAG orientation \(orientation.rawValue): hands=\(request.results?.count ?? 0)")
+        }
         guard let observations = request.results, !observations.isEmpty else { return [] }
 
         let jointPairs: [(VNHumanHandPoseObservation.JointName, VNHumanHandPoseObservation.JointName)] = [
