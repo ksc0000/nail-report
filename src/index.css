@@ -1,18 +1,22 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
+  --text: #6b4d5a;
+  --text-h: #1a0a12;
+  --bg: #fdf8f9;
+  --border: #f0d9e3;
+  --code-bg: #fce8f2;
+  --accent: #e91e8c;
+  --accent-bg: rgba(233, 30, 140, 0.10);
+  --accent-border: rgba(233, 30, 140, 0.40);
+  --social-bg: rgba(252, 236, 244, 0.6);
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  --gold: #c9922a;
+  --gold-bg: rgba(201, 146, 42, 0.12);
+  --radius-card: 14px;
+  --glass-bg: rgba(253, 248, 249, 0.72);
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: 'Cormorant Garamond', 'Georgia', serif;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);
@@ -32,17 +36,19 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
+    --text: #c9a8bc;
+    --text-h: #f9e8f3;
+    --bg: #0d0810;
+    --border: #2d1824;
+    --code-bg: #1a0e16;
+    --accent: #f472b6;
+    --accent-bg: rgba(244, 114, 182, 0.15);
+    --accent-border: rgba(244, 114, 182, 0.45);
+    --social-bg: rgba(45, 24, 36, 0.70);
     --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+      rgba(0, 0, 0, 0.55) 0 10px 15px -3px, rgba(0, 0, 0, 0.30) 0 4px 6px -2px;
+    --gold: #e8ba5c;
+    --glass-bg: rgba(13, 8, 16, 0.72);
   }
 
   #social .button-icon {

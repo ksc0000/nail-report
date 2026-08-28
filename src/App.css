@@ -16,11 +16,12 @@
 }
 
 #app-title {
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   margin: 0;
   color: var(--text-h);
+  font-family: var(--heading);
 }
 
 #auth-bar {
@@ -243,7 +244,7 @@
 #nail-form {
   background: var(--social-bg);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -527,7 +528,7 @@
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
