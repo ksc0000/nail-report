@@ -146,11 +146,28 @@
     },
     {
       "file": "real_silver_bothhands_extended.jpg",
-      "expectedNails": 9
+      "expectedNails": 8,
+      "expectedNailCenters": [
+        [350, 99],
+        [201, 324],
+        [304, 340],
+        [394, 264],
+        [370, 410],
+        [167, 437],
+        [227, 480],
+        [280, 466]
+      ]
     },
     {
       "file": "real_pink_onehand_extended.jpg",
-      "expectedNails": 5
+      "expectedNails": 5,
+      "expectedNailCenters": [
+        [122, 160],
+        [282, 107],
+        [352, 115],
+        [398, 173],
+        [372, 420]
+      ]
     }
   ]
 }
