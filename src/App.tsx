@@ -53,7 +53,7 @@ function App() {
   const [nailError, setNailError] = useState('')
   const [nailItemsUserId, setNailItemsUserId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [showStats, setShowStats] = useState(false)
+  const [activeTab, setActiveTab] = useState<'collection' | 'add' | 'stats'>('collection')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const previewUrlRef = useRef<string | null>(null)
 
@@ -137,6 +137,7 @@ function App() {
     s.split(',').map(t => t.trim()).filter(Boolean)
 
   const resetForm = () => {
+    setActiveTab('collection')
     setNailTitle('')
     setNailTags('')
     setNailMemo('')
@@ -187,6 +188,7 @@ function App() {
   }
 
   const handleStartEdit = (item: NailItemDoc) => {
+    setActiveTab('add')
     setEditingId(item.id)
     setNailTitle(item.title)
     setNailTags(item.tags.join(', '))
@@ -291,7 +293,8 @@ function App() {
         )}
       </div>
       {user && (
-        <div id="nail-section">
+        <div id="nail-section" data-tab={activeTab}>
+          <div className="nail-form-panel">
           <div id="nail-form">
             <h2 className="nail-form-title">{editingId ? 'Edit Nail Item' : 'Add Nail Item'}</h2>
             <div className="nail-field-wrap">
@@ -380,6 +383,8 @@ function App() {
             </div>
             {nailError && <p className="nail-error">{nailError}</p>}
           </div>
+          </div>
+          <div className="nail-content-panel">
           {!isFetching && nailItems.length > 0 && (
             <>
               <div id="nail-search">
@@ -392,11 +397,11 @@ function App() {
                 />
                 <button
                   type="button"
-                  className={`btn-stats-toggle${showStats ? ' btn-stats-toggle--active' : ''}`}
-                  onClick={() => setShowStats(v => !v)}
-                  aria-pressed={showStats}
+                  className={`btn-stats-toggle desktop-only${activeTab === 'stats' ? ' btn-stats-toggle--active' : ''}`}
+                  onClick={() => setActiveTab(t => t === 'stats' ? 'collection' : 'stats')}
+                  aria-pressed={activeTab === 'stats'}
                 >
-                  {showStats ? '一覧' : '統計'}
+                  {activeTab === 'stats' ? '一覧' : '統計'}
                 </button>
               </div>
               <div id="nail-export">
@@ -423,7 +428,7 @@ function App() {
                 <li>タグや検索でいつでも素早く見つかります</li>
               </ul>
             </div>
-          ) : showStats ? (
+          ) : activeTab === 'stats' ? (
             <div id="nail-stats">
               <p className="nail-stats-summary">
                 {nailItems.length} 件 · タグ {tagStatsSorted.length} 種
@@ -511,6 +516,47 @@ function App() {
               })}
             </ul>
           )}
+          </div>
+          <nav id="bottom-nav" aria-label="メインナビゲーション">
+            <button
+              type="button"
+              className={`bottom-nav-btn${activeTab === 'collection' ? ' active' : ''}`}
+              onClick={() => setActiveTab('collection')}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+                <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+              </svg>
+              <span>コレクション</span>
+            </button>
+            <button
+              type="button"
+              className={`bottom-nav-btn${activeTab === 'add' ? ' active' : ''}`}
+              onClick={() => setActiveTab('add')}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/>
+                <line x1="12" y1="8" x2="12" y2="16"/>
+                <line x1="8" y1="12" x2="16" y2="12"/>
+              </svg>
+              <span>追加</span>
+            </button>
+            <button
+              type="button"
+              className={`bottom-nav-btn${activeTab === 'stats' ? ' active' : ''}`}
+              onClick={() => setActiveTab('stats')}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                <line x1="4" y1="20" x2="20" y2="20"/>
+                <rect x="5" y="12" width="4" height="8" rx="1"/>
+                <rect x="10" y="7" width="4" height="13" rx="1"/>
+                <rect x="15" y="4" width="4" height="16" rx="1"/>
+              </svg>
+              <span>統計</span>
+            </button>
+          </nav>
         </div>
       )}
     </section>
