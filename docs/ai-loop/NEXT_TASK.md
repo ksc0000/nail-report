@@ -2,19 +2,17 @@
 
 ## Context
 
-The current phase of the roadmap focuses on improving stability, test coverage, and user experience, including accessibility (Phase 2.4). One crucial aspect of accessibility is ensuring that interactive elements are properly labeled for screen reader users.
+The product roadmap for nail-report is in Phase 2, focusing on improving stability, test coverage, and UX. The first priority in Phase 2 is to increase test coverage, starting with helper functions.
 
 ## Objective
 
-Identify all button elements (`<button>`) that contain only an icon (e.g., an `<img>`, `<svg>`, or a text-hidden icon font) and no visible text label. For each such button, add an appropriate `aria-label` attribute that clearly describes the button's action to screen reader users.
-
-For example, a delete icon button might receive `aria-label="Delete item"`, and an edit icon button might receive `aria-label="Edit item"`.
+Implement unit tests for the functions within `src/lib/firestore.ts` using Vitest. The tests should mock Firebase SDK dependencies to ensure unit isolation.
 
 ## Allowed Scope
 
-- `src/` (excluding `src/main.tsx`)
-- `src/components/` (modifying existing components)
-- `src/views/` (modifying existing views)
+- `src/lib/firestore.ts` (minor changes to export functions if needed for testing, but ideally not)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `vitest.config.ts` (only if necessary for basic test configuration, e.g., alias paths)
 
 ## Forbidden Scope
 
@@ -27,12 +25,14 @@ For example, a delete icon button might receive `aria-label="Delete item"`, and 
 
 ## Requirements
 
-- Keep the total diff for this task to ≤ 150 lines.
-- For each identified icon-only button, add a descriptive `aria-label`.
-- The `aria-label` content should be concise and accurately reflect the button's purpose.
-- Run `npm run build && npm run lint` before finishing and ensure no errors or warnings are introduced.
-- Prefer existing i18n mechanisms if available, otherwise use plain strings for labels.
-- Report follow-up items as comments in the output, not additional code.
+- Keep diff ≤ 150 lines.
+- Create a new test file: `src/__tests__/firestore.test.ts`.
+- Write unit tests for at least `addNailItem` and `getNailItems` functions in `src/lib/firestore.ts`.
+- Use Vitest's mocking capabilities (`vi.mock`) to mock Firebase Firestore SDK calls (e.g., `getFirestore`, `collection`, `addDoc`, `getDocs`).
+- Ensure the tests cover successful operations and basic error handling scenarios (e.g., a Firestore operation failing).
+- Run `npm run build && npm run lint && npm test` before finishing.
+- Prefer adding tests when touching `src/lib/` files.
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
