@@ -19,6 +19,9 @@ if ! mkdir "$LOCK" 2>/dev/null; then
 fi
 trap 'rmdir "$LOCK" 2>/dev/null' EXIT
 
+# ラン中のアイドルスリープを防止（蓋閉じスリープは防げない点に注意）
+caffeinate -i -w $$ &
+
 {
   echo "===== $(date '+%Y-%m-%d %H:%M:%S') codex run start ====="
   if ! gh auth status >/dev/null 2>&1; then
