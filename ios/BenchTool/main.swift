@@ -45,31 +45,46 @@ struct Summary: Encodable {
     let results: [CaseResult]
 }
 
-/// Greedily matches each expected center to its nearest not-yet-used
-/// detected center (smallest distances assigned first) and returns the mean
-/// distance over matched pairs. Not a globally optimal assignment, but
-/// stable and good enough to track before/after tuning deltas.
+/// Finds the globally minimum-cost one-to-one assignment of expected
+/// centers to detected centers (each expected matched to at most one
+/// detected, each detected used at most once), via bitmask DP over subsets
+/// of `detected` (exact, not greedy — see #356: on photos with crossed or
+/// closely-packed fingers, a nearest-first greedy match could mis-pair
+/// centers with a swap that's individually "nearest" but globally
+/// suboptimal, by tens of px). `detected.count` is capped at ~13 in
+/// practice (`NailDetector` stops merging past 10, plus stray extras), so
+/// `1 << detected.count` subsets is cheap.
 func meanCenterOffset(expected: [[Double]], detected: [CGPoint]) -> (mean: Double, matched: Int)? {
     guard !expected.isEmpty, !detected.isEmpty else { return nil }
-    var pairs: [(e: Int, d: Int, dist: Double)] = []
-    for (e, ePoint) in expected.enumerated() {
-        for (d, dPoint) in detected.enumerated() {
-            let dist = hypot(ePoint[0] - Double(dPoint.x), ePoint[1] - Double(dPoint.y))
-            pairs.append((e, d, dist))
+    let m = expected.count
+    let n = detected.count
+    var dist = [[Double]](repeating: [Double](repeating: 0, count: n), count: m)
+    for e in 0..<m {
+        for d in 0..<n {
+            dist[e][d] = hypot(expected[e][0] - Double(detected[d].x), expected[e][1] - Double(detected[d].y))
         }
     }
-    pairs.sort { $0.dist < $1.dist }
-    var usedExpected = Set<Int>()
-    var usedDetected = Set<Int>()
-    var distances: [Double] = []
-    for pair in pairs {
-        guard !usedExpected.contains(pair.e), !usedDetected.contains(pair.d) else { continue }
-        usedExpected.insert(pair.e)
-        usedDetected.insert(pair.d)
-        distances.append(pair.dist)
+    // dp[mask] = min cost of assigning the first popcount(mask) expected
+    // points to exactly the detected indices in `mask`.
+    let subsetCount = 1 << n
+    var dp = [Double](repeating: .infinity, count: subsetCount)
+    dp[0] = 0
+    for mask in 0..<subsetCount {
+        let assigned = mask.nonzeroBitCount
+        guard assigned < m, dp[mask].isFinite else { continue }
+        for d in 0..<n where mask & (1 << d) == 0 {
+            let newMask = mask | (1 << d)
+            let candidate = dp[mask] + dist[assigned][d]
+            if candidate < dp[newMask] { dp[newMask] = candidate }
+        }
     }
-    guard !distances.isEmpty else { return nil }
-    return (distances.reduce(0, +) / Double(distances.count), distances.count)
+    let matched = min(m, n)
+    var best = Double.infinity
+    for mask in 0..<subsetCount where mask.nonzeroBitCount == matched && dp[mask] < best {
+        best = dp[mask]
+    }
+    guard best.isFinite else { return nil }
+    return (best / Double(matched), matched)
 }
 
 guard CommandLine.arguments.count > 1 else {
