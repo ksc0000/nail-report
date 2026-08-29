@@ -39,8 +39,10 @@ OPEN_CODEX=$(gh issue list --label codex-auto --state open --json number,title -
 CLOSED_RECENT=$(gh issue list --label ios-quality --state closed --search "closed:>=$(date -v-1d '+%Y-%m-%d')" --json number,title --jq '.[] | "  #\(.number) \(.title)"' 2>/dev/null)
 ERRORS=$(grep -h "Failed\|401\|error:" "$QLOG" "$CLOG" 2>/dev/null | tail -5)
 # スリープ切断は最大の実務ロス要因なので件数を明示する
-SLEEP_KILLS=$(cat "$QLOG" "$CLOG" 2>/dev/null | grep -c "went to sleep mid-response" || echo 0)
-MAXTURNS=$(cat "$QLOG" 2>/dev/null | grep -c "Reached max turns" || echo 0)
+# grep -c prints 0 and still exits 1 on no match, so `|| echo 0` would append
+# a second zero — count with grep alone and let an empty file yield 0.
+SLEEP_KILLS=$(cat "$QLOG" "$CLOG" 2>/dev/null | grep -c "went to sleep mid-response")
+MAXTURNS=$(cat "$QLOG" 2>/dev/null | grep -c "Reached max turns")
 [ -z "$ERRORS" ] && ERRORS="  なし"
 [ -z "$OPEN_AUTO" ] && OPEN_AUTO="  (なし)"
 [ -z "$OPEN_CODEX" ] && OPEN_CODEX="  (なし)"
