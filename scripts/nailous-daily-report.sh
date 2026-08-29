@@ -38,6 +38,9 @@ OPEN_AUTO=$(gh issue list --label nailous-auto --state open --json number,title 
 OPEN_CODEX=$(gh issue list --label codex-auto --state open --json number,title --jq '.[] | "  #\(.number) \(.title)"' 2>/dev/null)
 CLOSED_RECENT=$(gh issue list --label ios-quality --state closed --search "closed:>=$(date -v-1d '+%Y-%m-%d')" --json number,title --jq '.[] | "  #\(.number) \(.title)"' 2>/dev/null)
 ERRORS=$(grep -h "Failed\|401\|error:" "$QLOG" "$CLOG" 2>/dev/null | tail -5)
+# スリープ切断は最大の実務ロス要因なので件数を明示する
+SLEEP_KILLS=$(cat "$QLOG" "$CLOG" 2>/dev/null | grep -c "went to sleep mid-response" || echo 0)
+MAXTURNS=$(cat "$QLOG" 2>/dev/null | grep -c "Reached max turns" || echo 0)
 [ -z "$ERRORS" ] && ERRORS="  なし"
 [ -z "$OPEN_AUTO" ] && OPEN_AUTO="  (なし)"
 [ -z "$OPEN_CODEX" ] && OPEN_CODEX="  (なし)"
@@ -62,6 +65,12 @@ ${CLAUDE_RUNS:-  (実行なし)}
 
 ■ Codexループ実行履歴
 ${CODEX_RUNS:-  (実行なし)}
+
+■ 中断（作業ロスの主因・累計）
+  スリープによる切断: ${SLEEP_KILLS:-0} 件
+  最大ターン到達: ${MAXTURNS:-0} 件
+  ※スリープ切断が多い場合は、Macの蓋を開けたままにするか、
+    スケジュールを起きている時間帯に寄せると回復します。
 
 ■ エラー（要対応の可能性）
 $ERRORS
