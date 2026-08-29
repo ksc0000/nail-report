@@ -24,8 +24,9 @@ caffeinate -i -w $$ &
 
 {
   echo "===== $(date '+%Y-%m-%d %H:%M:%S') codex run start ====="
-  if ! gh auth status >/dev/null 2>&1; then
-    echo "SKIP: gh not authenticated"; exit 0
+  # ネットワーク非依存のローカルトークン確認（詳細は quality-loop 側のコメント参照）
+  if ! gh auth token >/dev/null 2>&1; then
+    echo "SKIP: gh has no stored token"; exit 0
   fi
   if [ -n "$(git status --porcelain)" ]; then
     echo "SKIP: working tree dirty — leaving it alone"; exit 0

@@ -27,8 +27,12 @@ caffeinate -i -w $$ &
   echo "===== $(date '+%Y-%m-%d %H:%M:%S') run start ====="
 
   # 前提チェック: gh 認証・シミュレータ存在
-  if ! gh auth status >/dev/null 2>&1; then
-    echo "SKIP: gh not authenticated"; exit 0
+  # `gh auth status` はトークン検証でネットワークに出るため、スリープ復帰直後の
+  # 一時的なオフラインを「未認証」と誤判定する。ローカルにトークンがあるかだけを
+  # 見る（値は出力させない）。ネットワークが本当に落ちていれば後続のgh呼び出しが
+  # 素直に失敗する。
+  if ! gh auth token >/dev/null 2>&1; then
+    echo "SKIP: gh has no stored token"; exit 0
   fi
   if ! xcrun simctl list devices | grep -q "iPhone 17 Pro"; then
     echo "SKIP: simulator 'iPhone 17 Pro' not found"; exit 0
