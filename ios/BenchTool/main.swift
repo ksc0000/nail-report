@@ -48,37 +48,49 @@ struct Summary: Encodable {
 /// Finds the globally minimum-cost one-to-one assignment of expected
 /// centers to detected centers (each expected matched to at most one
 /// detected, each detected used at most once), via bitmask DP over subsets
-/// of `detected` (exact, not greedy — see #356: on photos with crossed or
-/// closely-packed fingers, a nearest-first greedy match could mis-pair
+/// of the larger side (exact, not greedy — see #356: on photos with crossed
+/// or closely-packed fingers, a nearest-first greedy match could mis-pair
 /// centers with a swap that's individually "nearest" but globally
-/// suboptimal, by tens of px). `detected.count` is capped at ~13 in
-/// practice (`NailDetector` stops merging past 10, plus stray extras), so
-/// `1 << detected.count` subsets is cheap.
+/// suboptimal, by tens of px).
+///
+/// The DP processes "rows" in a fixed order (row `i` gets assigned exactly
+/// when `mask.nonzeroBitCount == i`), and picks a "column" subset for them
+/// via the mask, so *every* row is always matched to something but *not*
+/// every column needs to be. Rows must therefore be the smaller set —
+/// picking `expected` as rows unconditionally (as an earlier version did)
+/// meant that whenever `expected.count > detected.count`, only the first
+/// `detected.count` expected points (in manifest order) could ever be
+/// matched, silently ignoring the rest instead of choosing the
+/// best-matching subset (caught in cross-review, #356).
 func meanCenterOffset(expected: [[Double]], detected: [CGPoint]) -> (mean: Double, matched: Int)? {
     guard !expected.isEmpty, !detected.isEmpty else { return nil }
-    let m = expected.count
-    let n = detected.count
+    let expectedPoints = expected.map { (Double($0[0]), Double($0[1])) }
+    let detectedPoints = detected.map { (Double($0.x), Double($0.y)) }
+    let rows = expectedPoints.count <= detectedPoints.count ? expectedPoints : detectedPoints
+    let cols = expectedPoints.count <= detectedPoints.count ? detectedPoints : expectedPoints
+    let m = rows.count
+    let n = cols.count
     var dist = [[Double]](repeating: [Double](repeating: 0, count: n), count: m)
-    for e in 0..<m {
-        for d in 0..<n {
-            dist[e][d] = hypot(expected[e][0] - Double(detected[d].x), expected[e][1] - Double(detected[d].y))
+    for r in 0..<m {
+        for c in 0..<n {
+            dist[r][c] = hypot(rows[r].0 - cols[c].0, rows[r].1 - cols[c].1)
         }
     }
-    // dp[mask] = min cost of assigning the first popcount(mask) expected
-    // points to exactly the detected indices in `mask`.
+    // dp[mask] = min cost of assigning the first popcount(mask) rows to
+    // exactly the column indices in `mask`.
     let subsetCount = 1 << n
     var dp = [Double](repeating: .infinity, count: subsetCount)
     dp[0] = 0
     for mask in 0..<subsetCount {
         let assigned = mask.nonzeroBitCount
         guard assigned < m, dp[mask].isFinite else { continue }
-        for d in 0..<n where mask & (1 << d) == 0 {
-            let newMask = mask | (1 << d)
-            let candidate = dp[mask] + dist[assigned][d]
+        for c in 0..<n where mask & (1 << c) == 0 {
+            let newMask = mask | (1 << c)
+            let candidate = dp[mask] + dist[assigned][c]
             if candidate < dp[newMask] { dp[newMask] = candidate }
         }
     }
-    let matched = min(m, n)
+    let matched = m
     var best = Double.infinity
     for mask in 0..<subsetCount where mask.nonzeroBitCount == matched && dp[mask] < best {
         best = dp[mask]
@@ -86,6 +98,54 @@ func meanCenterOffset(expected: [[Double]], detected: [CGPoint]) -> (mean: Doubl
     guard best.isFinite else { return nil }
     return (best / Double(matched), matched)
 }
+
+/// Regression guard for `meanCenterOffset` (#356). There is no XCTest
+/// target for this macOS host tool, so this runs unconditionally at
+/// startup instead; a failure aborts before touching the manifest.
+func runSelfTests() {
+    func fail(_ message: String) -> Never {
+        FileHandle.standardError.write(Data("self-test failed: \(message)\n".utf8))
+        exit(1)
+    }
+    func assertClose(_ actual: Double, _ expected: Double, _ message: String, tolerance: Double = 1e-6) {
+        guard abs(actual - expected) < tolerance else {
+            fail("\(message) (actual=\(actual), expected=\(expected))")
+        }
+    }
+
+    // expected.count > detected.count: must pick the best-matching subset
+    // of expected points, not just the first N in manifest order (the exact
+    // case caught in cross-review).
+    do {
+        guard let result = meanCenterOffset(expected: [[0, 0], [100, 0]], detected: [CGPoint(x: 100, y: 0)]) else {
+            fail("expected>detected case returned nil")
+        }
+        assertClose(result.mean, 0, "expected>detected should match the closer expected point exactly")
+        assertClose(Double(result.matched), 1, "expected>detected matched count")
+    }
+
+    // detected.count > expected.count: symmetric case, the extra detected
+    // (false-positive) point must be ignored rather than dragging the mean.
+    do {
+        guard let result = meanCenterOffset(expected: [[100, 0]], detected: [CGPoint(x: 0, y: 0), CGPoint(x: 100, y: 0)]) else {
+            fail("detected>expected case returned nil")
+        }
+        assertClose(result.mean, 0, "detected>expected should match the closer detected point exactly")
+    }
+
+    // Equal counts, non-trivial optimal assignment: a nearest-first greedy
+    // match would mis-pair these (e.g. by processing in manifest order).
+    do {
+        let expected = [[0.0, 0.0], [10.0, 0.0]]
+        let detectedPoints = [CGPoint(x: 9, y: 0), CGPoint(x: 1, y: 0)]
+        guard let result = meanCenterOffset(expected: expected, detected: detectedPoints) else {
+            fail("equal-count case returned nil")
+        }
+        assertClose(result.mean, 1, "equal-count optimal assignment should pair nearest points")
+    }
+}
+
+runSelfTests()
 
 guard CommandLine.arguments.count > 1 else {
     FileHandle.standardError.write(Data("usage: bench-tool <assets-dir>\n".utf8))
