@@ -2,7 +2,8 @@
 
 ## 手順（厳守）
 
-1. `gh issue list --label nailous-auto --state open --json number,title --jq 'sort_by(.number)'` で対象を確認し、**番号が最小の1件だけ**選ぶ。0件なら「対象なし」とだけ出力して終了。
+1. 対象を選ぶ。まず `gh issue list --label nailous-auto,priority-high --state open --json number,title --jq 'sort_by(.number)'` を見て、**あれば その中で番号最小の1件**。無ければ `gh issue list --label nailous-auto --state open --json number,title --jq 'sort_by(.number)'` の番号最小の1件。どちらも0件なら「対象なし」とだけ出力して終了。
+   - `priority-high` はオーナーが「これを先にやってほしい」と付けるラベル。番号の若さより優先する。
 2. 選んだIssueの本文を `gh issue view <n>` で読み、受け入れ基準を把握する。
 3. `git status --porcelain` を確認。**未コミットの変更があれば何もせず終了**（人間の作業を壊さない）。
 4. 実装する。必須ルール:

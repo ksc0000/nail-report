@@ -4,7 +4,7 @@
 
 まず `git status --porcelain` を確認。**未コミットの変更があれば何もせず終了**（人間や相棒の作業を壊さない）。
 
-次に `gh issue list --label codex-auto --state open --json number --jq 'sort_by(.number)[0].number'` を確認:
+次に対象を確認する。`gh issue list --label codex-auto,priority-high --state open --json number --jq 'sort_by(.number)[0].number'` に番号があればそれを優先し、無ければ `gh issue list --label codex-auto --state open --json number --jq 'sort_by(.number)[0].number'` を使う:
 - 番号が返る → **モードA: 実装**
 - 空 → **モードB: クロスレビュー**
 
