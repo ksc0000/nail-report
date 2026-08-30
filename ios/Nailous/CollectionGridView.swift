@@ -11,6 +11,8 @@ struct CollectionGridView: View {
     /// nil = すべて, "" sentinel = favourites, otherwise a tag.
     @State private var activeTag: String?
     @State private var favoritesOnly = false
+    @State private var searchText = ""
+    @State private var sortOrder: CollectionSortOrder = .newest
 
     private let columns = [GridItem(.adaptive(minimum: 104), spacing: 16)]
 
@@ -25,10 +27,14 @@ struct CollectionGridView: View {
     }
 
     private var filtered: [NailRecord] {
-        records.filter { record in
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        let matching = records.filter { record in
             (!favoritesOnly || record.isFavorite)
                 && (activeTag == nil || record.tags.contains(activeTag!))
+                && (query.isEmpty || record.searchableText.localizedCaseInsensitiveContains(query))
         }
+        return matching.sorted { sortOrder.areInOrder($0, $1) }
     }
 
     var body: some View {
@@ -36,6 +42,10 @@ struct CollectionGridView: View {
             StageBackground()
 
             ScrollView {
+                searchBar
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 10)
+
                 filterBar
                     .padding(.top, 8)
                     .padding(.bottom, 14)
@@ -62,23 +72,61 @@ struct CollectionGridView: View {
     }
 
     private var filterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                StagePill(label: "すべて", isOn: activeTag == nil && !favoritesOnly) {
-                    activeTag = nil
-                    favoritesOnly = false
-                }
-                StagePill(label: "♡ お気に入り", isOn: favoritesOnly) {
-                    favoritesOnly.toggle()
-                }
-                ForEach(allTags, id: \.self) { tag in
-                    StagePill(label: "#\(tag)", isOn: activeTag == tag) {
-                        activeTag = (activeTag == tag) ? nil : tag
+        HStack(spacing: 8) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    StagePill(label: "すべて", isOn: activeTag == nil && !favoritesOnly) {
+                        activeTag = nil
+                        favoritesOnly = false
+                    }
+                    StagePill(label: "♡ お気に入り", isOn: favoritesOnly) {
+                        favoritesOnly.toggle()
+                    }
+                    ForEach(allTags, id: \.self) { tag in
+                        StagePill(label: "#\(tag)", isOn: activeTag == tag) {
+                            activeTag = (activeTag == tag) ? nil : tag
+                        }
                     }
                 }
+                .padding(.horizontal, 20)
             }
-            .padding(.horizontal, 20)
+
+            Menu {
+                Picker("並べ替え", selection: $sortOrder) {
+                    ForEach(CollectionSortOrder.allCases) { order in
+                        Text(order.title).tag(order)
+                    }
+                }
+            } label: {
+                Image(systemName: "arrow.up.arrow.down")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Palette.goldBright)
+                    .frame(width: 38, height: 34)
+                    .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+            }
+            .padding(.trailing, 20)
         }
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.white.opacity(0.5))
+            TextField("タイトル・サロン・メモ・タグを検索", text: $searchText)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .foregroundStyle(.white)
+            if !searchText.isEmpty {
+                Button { searchText = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.white.opacity(0.5))
+                }
+                .accessibilityLabel("検索を消去")
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 42)
+        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func card(_ record: NailRecord) -> some View {
@@ -123,13 +171,52 @@ struct CollectionGridView: View {
 
     private var emptyFilter: some View {
         VStack(spacing: 10) {
-            Image(systemName: favoritesOnly ? "heart" : "tag")
+            Image(systemName: searchText.isEmpty && !favoritesOnly && activeTag == nil ? "square.grid.2x2" : "magnifyingglass")
                 .font(.system(size: 30))
                 .foregroundStyle(Palette.gold.opacity(0.7))
-            Text(favoritesOnly ? "お気に入りはまだありません" : "このタグのネイルはありません")
+            Text(emptyFilterTitle)
                 .font(.system(size: 14))
                 .foregroundStyle(.white.opacity(0.6))
         }
         .padding(.top, 80)
+    }
+
+    private var emptyFilterTitle: String {
+        if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return "検索条件に一致するネイルはありません"
+        }
+        if favoritesOnly { return "お気に入りはまだありません" }
+        if activeTag != nil { return "このタグのネイルはありません" }
+        return "表示できるネイルはありません"
+    }
+}
+
+private enum CollectionSortOrder: String, CaseIterable, Identifiable {
+    case newest, oldest, priceHigh, priceLow
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .newest: return "新しい順"
+        case .oldest: return "古い順"
+        case .priceHigh: return "価格の高い順"
+        case .priceLow: return "価格の安い順"
+        }
+    }
+
+    func areInOrder(_ lhs: NailRecord, _ rhs: NailRecord) -> Bool {
+        switch self {
+        case .newest: return lhs.createdAt > rhs.createdAt
+        case .oldest: return lhs.createdAt < rhs.createdAt
+        case .priceHigh: return (lhs.priceYen ?? Int.min) > (rhs.priceYen ?? Int.min)
+        case .priceLow: return (lhs.priceYen ?? Int.max) < (rhs.priceYen ?? Int.max)
+        }
+    }
+}
+
+private extension NailRecord {
+    var searchableText: String {
+        ([title, salon, memo] + tags).joined(separator: " ")
     }
 }
