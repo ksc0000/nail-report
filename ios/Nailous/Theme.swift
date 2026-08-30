@@ -187,6 +187,29 @@ struct LuxuryFrame: View {
     }
 }
 
+/// A soft translucent text field for freeform story details (title, tags,
+/// salon, price, memo) — shared between the capture flow and record editing.
+struct StoryField: View {
+    let prompt: String
+    @Binding var text: String
+    var axis: Axis = .horizontal
+
+    var body: some View {
+        TextField(
+            "",
+            text: $text,
+            prompt: Text(prompt).foregroundStyle(.white.opacity(0.35)),
+            axis: axis
+        )
+        .lineLimit(axis == .vertical ? 3...5 : 1...1)
+        .textFieldStyle(.plain)
+        .foregroundStyle(.white)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 11)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.08)))
+    }
+}
+
 /// Gold circular "+" (or any icon) toolbar button with a ring.
 struct GoldIconButton: View {
     let systemName: String

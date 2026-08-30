@@ -222,7 +222,7 @@ struct AddNailView: View {
                             }
 
                             VStack(spacing: 10) {
-                                storyField("タイトル（例: 深海ネイル）", text: $title)
+                                StoryField(prompt: "タイトル（例: 深海ネイル）", text: $title)
                                 Button {
                                     withAnimation(.easeInOut(duration: 0.22)) { showDetails.toggle() }
                                 } label: {
@@ -238,11 +238,11 @@ struct AddNailView: View {
                                     .padding(.vertical, 2)
                                 }
                                 if showDetails {
-                                    storyField("タグ（カンマ区切り。例: ピンク, マグネット）", text: $tagsText)
-                                    storyField("サロン名（任意）", text: $salon)
-                                    storyField("価格（任意・円）", text: $priceText)
+                                    StoryField(prompt: "タグ（カンマ区切り。例: ピンク, マグネット）", text: $tagsText)
+                                    StoryField(prompt: "サロン名（任意）", text: $salon)
+                                    StoryField(prompt: "価格（任意・円）", text: $priceText)
                                         .keyboardType(.numberPad)
-                                    storyField("メモ（任意）", text: $memo, axis: .vertical)
+                                    StoryField(prompt: "メモ（任意）", text: $memo, axis: .vertical)
                                 }
                             }
                             .padding(.horizontal, 24)
@@ -524,25 +524,6 @@ struct AddNailView: View {
     }
 
     // MARK: - Save
-
-    private func storyField(
-        _ prompt: String,
-        text: Binding<String>,
-        axis: Axis = .horizontal
-    ) -> some View {
-        TextField(
-            "",
-            text: text,
-            prompt: Text(prompt).foregroundStyle(.white.opacity(0.35)),
-            axis: axis
-        )
-        .lineLimit(axis == .vertical ? 3...5 : 1...1)
-        .textFieldStyle(.plain)
-        .foregroundStyle(.white)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 11)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.08)))
-    }
 
     private func save() {
         guard let primary = displayTextures.first,

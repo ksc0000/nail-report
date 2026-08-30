@@ -13,8 +13,14 @@ struct NailDetailView: View {
     @State private var shape: NailShape
     @State private var plateParams: NailPlateParams
     @State private var finish: NailFinish
+    @State private var editTitle: String
+    @State private var editTagsText: String
+    @State private var editSalon: String
+    @State private var editPriceText: String
+    @State private var editMemo: String
     @State private var showTuneSheet = false
     @State private var showStageSheet = false
+    @State private var showEditSheet = false
     @State private var mode: StageMode = .single
     @State private var layout: SetLayout = .arc
     @State private var motion: AutoMotion = .off
@@ -39,6 +45,11 @@ struct NailDetailView: View {
         _shape = State(initialValue: record?.shape ?? .squoval)
         _plateParams = State(initialValue: record?.plateParams ?? .default)
         _finish = State(initialValue: record?.finish ?? appearance.finish)
+        _editTitle = State(initialValue: record?.title ?? title)
+        _editTagsText = State(initialValue: record?.tags.joined(separator: ", ") ?? "")
+        _editSalon = State(initialValue: record?.salon ?? "")
+        _editPriceText = State(initialValue: record?.priceYen.map(String.init) ?? "")
+        _editMemo = State(initialValue: record?.memo ?? "")
         // A whole-hand capture opens as the five-piece set by default.
         _mode = State(initialValue: (record?.setAppearances?.count ?? 0) > 1 ? .set : .single)
     }
@@ -191,6 +202,50 @@ struct NailDetailView: View {
         .onChange(of: finish) { persistTuning() }
     }
 
+    /// Edit the story fields set at save time — title, tags, salon, price,
+    /// memo — so a rushed save doesn't lock those in forever.
+    private var editSheet: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SectionHeader(title: "記録を編集")
+                .padding(.top, 18)
+            VStack(spacing: 10) {
+                StoryField(prompt: "タイトル", text: $editTitle)
+                StoryField(prompt: "タグ（カンマ区切り。例: ピンク, マグネット）", text: $editTagsText)
+                StoryField(prompt: "サロン名（任意）", text: $editSalon)
+                StoryField(prompt: "価格（任意・円）", text: $editPriceText)
+                    .keyboardType(.numberPad)
+                StoryField(prompt: "メモ（任意）", text: $editMemo, axis: .vertical)
+            }
+            .padding(.horizontal, 24)
+
+            Text("変更はこの記録にそのまま保存されます")
+                .font(.system(size: 11))
+                .foregroundStyle(.white.opacity(0.45))
+                .frame(maxWidth: .infinity)
+            Spacer(minLength: 0)
+        }
+        .onChange(of: editTitle) { persistStory() }
+        .onChange(of: editTagsText) { persistStory() }
+        .onChange(of: editSalon) { persistStory() }
+        .onChange(of: editPriceText) { persistStory() }
+        .onChange(of: editMemo) { persistStory() }
+    }
+
+    private func persistStory() {
+        guard let record else { return }
+        let trimmedTitle = editTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedTitle.isEmpty {
+            record.title = trimmedTitle
+        }
+        record.salon = editSalon.trimmingCharacters(in: .whitespacesAndNewlines)
+        record.priceYen = Int(editPriceText.trimmingCharacters(in: .whitespaces))
+        record.memo = editMemo.trimmingCharacters(in: .whitespacesAndNewlines)
+        record.tags = editTagsText
+            .split(whereSeparator: { $0 == "," || $0 == "、" })
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+    }
+
     private func tuneShapeChip(_ candidate: NailShape) -> some View {
         let isOn = shape == candidate
         return Button {
@@ -277,7 +332,7 @@ struct NailDetailView: View {
                         .font(.system(size: 12, weight: .semibold))
                         .kerning(4)
                         .foregroundStyle(.white.opacity(0.5))
-                    Text(title)
+                    Text(record?.title ?? title)
                         .font(.system(size: 23, weight: .medium, design: .serif))
                         .foregroundStyle(.white)
                     if let subtitle {
@@ -452,6 +507,14 @@ struct NailDetailView: View {
                             .foregroundStyle(record.isFavorite ? Palette.goldBright : .white)
                     }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showEditSheet = true
+                    } label: {
+                        Image(systemName: "pencil")
+                            .foregroundStyle(.white)
+                    }
+                }
             }
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -478,6 +541,14 @@ struct NailDetailView: View {
             ScrollView { tuneSheet }
                 .presentationDetents([.height(400), .height(600)])
                 .presentationBackgroundInteraction(.enabled(upThrough: .height(600)))
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Color(red: 0.09, green: 0.06, blue: 0.1).opacity(0.97))
+                .preferredColorScheme(.dark)
+        }
+        .sheet(isPresented: $showEditSheet) {
+            ScrollView { editSheet }
+                .presentationDetents([.height(460), .height(640)])
+                .presentationBackgroundInteraction(.enabled(upThrough: .height(640)))
                 .presentationDragIndicator(.visible)
                 .presentationBackground(Color(red: 0.09, green: 0.06, blue: 0.1).opacity(0.97))
                 .preferredColorScheme(.dark)
@@ -514,7 +585,7 @@ struct NailDetailView: View {
                         CardRenderer.render(
                             template: template,
                             stamp: stampImage,
-                            title: title,
+                            title: record?.title ?? title,
                             date: record?.createdAt ?? Date(),
                             subtitle: record.flatMap { $0.salon.isEmpty ? nil : $0.salon }
                         )
