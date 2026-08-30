@@ -244,6 +244,9 @@ struct NailDetailView: View {
             .split(whereSeparator: { $0 == "," || $0 == "、" })
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
+        // Explicit save: autosave alone can lose an edit if the app is
+        // killed moments after typing, which defeats the point of this sheet.
+        try? modelContext.save()
     }
 
     private func tuneShapeChip(_ candidate: NailShape) -> some View {
@@ -606,6 +609,19 @@ struct NailDetailView: View {
             if let dbg = UserDefaults.standard.string(forKey: "debugStageTheme"),
                let t = StageTheme(rawValue: dbg) {
                 theme = t
+            }
+            // `-openEdit 1` (+ optional -editTitle/-editSalon/-editPriceYen/
+            // -editMemo/-editTags) opens the edit sheet and applies the given
+            // values headlessly, so the edit→persist flow can be verified in
+            // the simulator without a touch driver.
+            if UserDefaults.standard.string(forKey: "openEdit") == "1" {
+                if let v = UserDefaults.standard.string(forKey: "editTitle") { editTitle = v }
+                if let v = UserDefaults.standard.string(forKey: "editSalon") { editSalon = v }
+                if let v = UserDefaults.standard.string(forKey: "editPriceYen") { editPriceText = v }
+                if let v = UserDefaults.standard.string(forKey: "editMemo") { editMemo = v }
+                if let v = UserDefaults.standard.string(forKey: "editTags") { editTagsText = v }
+                persistStory()
+                showEditSheet = true
             }
         }
     }
