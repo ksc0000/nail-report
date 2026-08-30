@@ -41,9 +41,15 @@ caffeinate -i -w $$ &
   if [ -n "$(git status --porcelain)" ]; then
     echo "SKIP: working tree dirty — leaving it alone"; exit 0
   fi
-  # Issueが尽きたら監査モード: 実測に基づき新しい品質Issueを起票する
+  # Issueが尽きたら監査モード: 実測に基づき新しい品質Issueを起票する。
+  # 通信断で gh が失敗した場合も出力は空になるため、終了コードで
+  # 「本当に0件」と「取得できなかった」を必ず区別する（誤って監査モードに
+  # 入ると、実際には残っているIssueを放置して重複起票しかねない）。
   PROMPT_FILE="scripts/quality-loop-prompt.md"
-  if [ -z "$(gh issue list --label nailous-auto --state open --limit 1 2>/dev/null)" ]; then
+  if ! BACKLOG=$(gh issue list --label nailous-auto --state open --limit 1 2>/dev/null); then
+    echo "SKIP: could not query issues (network?)"; exit 0
+  fi
+  if [ -z "$BACKLOG" ]; then
     # 監査は1日1回まで（直近20時間以内に監査済みならスキップ）
     STAMP="/tmp/nailous-quality-audit.stamp"
     if [ -f "$STAMP" ] && [ -n "$(find "$STAMP" -mmin -1200 2>/dev/null)" ]; then
