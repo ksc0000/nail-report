@@ -6,6 +6,7 @@ import UserNotifications
 enum RefitReminder {
     private static let identifier = "refit-reminder"
     private static let defaultInterval: TimeInterval = 21 * 24 * 3600
+    private static let versionQueue = DispatchQueue(label: "com.nailous.refitReminder.requestVersion")
     private static var requestVersion = 0
 
     /// A short interval can be injected by UI-test/simulator launches without
@@ -23,11 +24,14 @@ enum RefitReminder {
 
     static func schedule(designTitle: String) {
         let center = UNUserNotificationCenter.current()
-        requestVersion += 1
-        let version = requestVersion
+        let version = versionQueue.sync {
+            requestVersion += 1
+            return requestVersion
+        }
         center.removePendingNotificationRequests(withIdentifiers: [identifier])
         center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
-            guard granted, requestVersion == version else { return }
+            let isCurrent = versionQueue.sync { requestVersion == version }
+            guard granted, isCurrent else { return }
             let content = UNMutableNotificationContent()
             content.title = "そろそろ付け替えの時期です"
             content.body = "「\(designTitle)」をつけて3週間。次のデザインを選びませんか？"
@@ -39,7 +43,7 @@ enum RefitReminder {
 
     static func cancel() {
         let center = UNUserNotificationCenter.current()
-        requestVersion += 1
+        versionQueue.sync { requestVersion += 1 }
         center.removePendingNotificationRequests(withIdentifiers: [identifier])
         center.removeDeliveredNotifications(withIdentifiers: [identifier])
     }
