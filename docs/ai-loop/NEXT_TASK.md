@@ -1,20 +1,17 @@
-```markdown
 # Worker Prompt Template
 
 ## Context
 
-The product roadmap indicates that Phase 2.1 focuses on improving test coverage. The current state shows that no specific unit test tasks for `src/lib/firestore.ts` have been completed yet. Vitest is the designated test runner.
+The current phase is 2.0, focusing on improving stability, test coverage, and UX. This task contributes to Phase 2.4, enhancing accessibility for the application. The goal is to make interactive elements more descriptive for assistive technologies without changing visual appearance or core functionality.
 
 ## Objective
 
-Implement unit tests for helper functions within `src/lib/firestore.ts` using Vitest, specifically focusing on mocking Firebase SDK interactions.
+Identify all icon-only buttons in the application and add an appropriate `aria-label` attribute to each of them. The `aria-label` should clearly describe the button's action.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (read only to understand functions for testing)
-- `src/__tests__/firestore.test.ts` (new file for tests)
-- `src/__tests__/` (any new necessary mock files for Firebase)
-- `package.json` (to verify test scripts, no modifications allowed)
+- `src/` (except `src/main.tsx`)
+- `src/App.css` (minor adjustments if necessary for layout, but not expected for this task)
 
 ## Forbidden Scope
 
@@ -27,11 +24,13 @@ Implement unit tests for helper functions within `src/lib/firestore.ts` using Vi
 
 ## Requirements
 
-- Add unit tests for at least two simple helper functions in `src/lib/firestore.ts` (e.g., `addNailItem` and `getNailItems`).
-- Effectively mock Firebase Firestore SDK interactions using `vi.mock` to ensure tests are isolated and do not hit actual Firebase services.
-- Ensure the tests can be run successfully using `npm test`.
 - Keep diff ≤ 150 lines.
+- Locate all buttons that contain only an icon and no visible text.
+- Add an `aria-label="[descriptive text]"` attribute to these buttons.
+- The `aria-label` content should be concise and accurately describe the button's purpose (e.g., "Delete item", "Edit tag", "Upload image").
+- Do not add `aria-label` to buttons that already have visible text or an `aria-labelledby` attribute pointing to visible text.
 - Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files (not applicable here as no `src/lib/` files are modified).
 - Report follow-up items as comments, not additional code.
 
 ## Output Format
@@ -41,18 +40,3 @@ Implement unit tests for helper functions within `src/lib/firestore.ts` using Vi
 - Commands run and results
 - Known issues or limitations
 - Suggested next task
-
----
-**Worker Prompt**
-
-Your task is to create a new test file `src/__tests__/firestore.test.ts` and add unit tests for functions in `src/lib/firestore.ts`.
-
-1.  **Create Test File**: Create `src/__tests__/firestore.test.ts`.
-2.  **Mock Firebase Firestore**: Use `vi.mock` to mock the Firebase Firestore SDK. You will need to mock functions like `getFirestore`, `collection`, `addDoc`, `getDocs`, etc., as needed by the functions you are testing.
-3.  **Test `addNailItem`**: Write a test for the `addNailItem` function that verifies it calls the underlying Firestore `addDoc` with the correct collection and data.
-4.  **Test `getNailItems`**: Write a test for the `getNailItems` function that verifies it fetches documents correctly and maps them to the expected structure.
-5.  **Run Tests**: Execute `npm test` and ensure all new tests pass.
-6.  **Lint and Build**: Run `npm run lint` and `npm run build` to confirm no new errors are introduced.
-
-Focus on creating robust mocks that allow the `firestore.ts` functions to be tested in isolation.
-```
