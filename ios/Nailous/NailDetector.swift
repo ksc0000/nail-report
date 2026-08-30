@@ -120,6 +120,7 @@ enum NailDetector {
 
         var nails: [DetectedNail] = []
         for observation in observations {
+            var candidates: [(nail: DetectedNail, confidence: Float)] = []
             for (tipName, dipName, tipFraction) in jointPairs {
                 guard let tip = try? observation.recognizedPoint(tipName), tip.confidence > 0.15,
                       let dip = try? observation.recognizedPoint(dipName), dip.confidence > 0.1
@@ -138,10 +139,42 @@ enum NailDetector {
                     x: tipPoint.x - vx * tipFraction,
                     y: tipPoint.y - vy * tipFraction
                 )
-                nails.append(
-                    DetectedNail(center: nailCenter, cropHeight: segment * 1.2, axisAngle: axisAngle)
-                )
+                candidates.append((
+                    DetectedNail(center: nailCenter, cropHeight: segment * 1.2, axisAngle: axisAngle),
+                    tip.confidence + dip.confidence
+                ))
             }
+            // Within a single hand's observation, Vision can misassign two
+            // different joint names (e.g. middle/ring tip) to essentially the
+            // same physical fingertip when fingers cross or overlap in the
+            // photo (#363: a crossed-hands pose produced middle/ring tips
+            // 43px apart at a 0.61 confidence ratio, well inside anatomical
+            // finger spacing). But close spacing alone isn't a reliable
+            // signal: real adjacent fingers in a normal pose can measure just
+            // as close (in a closeup photo, segment length — which
+            // `cropHeight` scales from — can be a large fraction of the
+            // whole hand's span, so a distance-only threshold at any
+            // reasonably permissive factor also collapsed genuine
+            // ring/pinky-type pairs that both had high, near-equal
+            // confidence). So this only drops a close candidate when it is
+            // *also* meaningfully less confident than the one it collides
+            // with (< 0.8x) — a real second finger detected independently
+            // tends to have comparable confidence to its neighbor, while a
+            // misassigned duplicate of an already-found joint is markedly
+            // weaker. Candidates from *different* observations (different
+            // hands) are never compared here — two hands' fingers
+            // legitimately land near each other without being duplicates of
+            // one another.
+            var kept: [(nail: DetectedNail, confidence: Float)] = []
+            for (nail, confidence) in candidates.sorted(by: { $0.confidence > $1.confidence }) {
+                let isDuplicate = kept.contains { existing in
+                    let d = hypot(existing.nail.center.x - nail.center.x, existing.nail.center.y - nail.center.y)
+                    return d < max(existing.nail.cropHeight, nail.cropHeight) * 0.45
+                        && confidence < existing.confidence * 0.8
+                }
+                if !isDuplicate { kept.append((nail, confidence)) }
+            }
+            nails.append(contentsOf: kept.map(\.nail))
         }
         return nails
     }
