@@ -116,6 +116,11 @@ struct NailSceneView: UIViewRepresentable {
     var controller: StageController? = nil
     /// Fresh token plays the "new jewel drops into the box" arrival animation.
     var arrivalID: String? = nil
+    /// When true, a drag that starts mostly vertical is left to the parent
+    /// ScrollView instead of spinning the stage — for showcases embedded in a
+    /// scrolling page. Full-screen viewers (detail, capture) leave this off so
+    /// rotation stays free in every direction.
+    var restrictPanToHorizontal: Bool = false
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -193,6 +198,7 @@ struct NailSceneView: UIViewRepresentable {
             target: context.coordinator,
             action: #selector(Coordinator.handlePan(_:))
         )
+        pan.delegate = context.coordinator
         view.addGestureRecognizer(pan)
 
         let pinch = UIPinchGestureRecognizer(
@@ -225,6 +231,7 @@ struct NailSceneView: UIViewRepresentable {
         context.coordinator.onTipTap = onTipTap
         context.coordinator.onStageLongPress = onStageLongPress
         context.coordinator.onPanStir = onPanStir
+        context.coordinator.restrictPanToHorizontal = restrictPanToHorizontal
         controller?.scnView = view
         controller?.coordinator = context.coordinator
         return view
@@ -238,11 +245,12 @@ struct NailSceneView: UIViewRepresentable {
         context.coordinator.onTipTap = onTipTap
         context.coordinator.onStageLongPress = onStageLongPress
         context.coordinator.onPanStir = onPanStir
+        context.coordinator.restrictPanToHorizontal = restrictPanToHorizontal
         controller?.scnView = uiView
         controller?.coordinator = context.coordinator
     }
 
-    final class Coordinator: NSObject {
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var onTipLongPress: ((Int) -> Void)?
         var onTipTap: ((Int) -> Void)?
         var onStageLongPress: (() -> Void)?
@@ -254,6 +262,7 @@ struct NailSceneView: UIViewRepresentable {
         weak var scene: SCNScene?
         var restOrientation = SCNQuaternion(0, 0, 0, 1)
         var onPanStir: ((CGPoint) -> Void)?
+        var restrictPanToHorizontal = false
         private var particleNode: SCNNode?
         private var currentTheme: StageTheme?
         private var currentDecor: StageDecor?
@@ -495,6 +504,17 @@ struct NailSceneView: UIViewRepresentable {
         }
 
         private var lastAxis = SCNVector3(0, 1, 0)
+
+        /// In restricted mode, a drag that starts mostly vertical is left
+        /// unclaimed so the enclosing ScrollView can take over scrolling —
+        /// only a mostly-horizontal drag spins the stage.
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            guard restrictPanToHorizontal,
+                  let pan = gestureRecognizer as? UIPanGestureRecognizer,
+                  let view = pan.view else { return true }
+            let translation = pan.translation(in: view)
+            return abs(translation.x) > abs(translation.y)
+        }
 
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
             guard let spinNode, let view = gesture.view else { return }

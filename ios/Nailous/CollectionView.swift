@@ -154,7 +154,8 @@ struct CollectionView: View {
                                 selected = showcase[index]
                             }
                         },
-                        arrivalID: arrivalID
+                        arrivalID: arrivalID,
+                        restrictPanToHorizontal: true
                     )
                 }
                 .frame(height: 400)
@@ -166,7 +167,7 @@ struct CollectionView: View {
                             .foregroundStyle(Palette.goldBright.opacity(0.9))
                     }
                 }
-                Text("タップで開く・ドラッグで回転")
+                Text("タップで開く・横ドラッグで回転・ダブルタップで戻す")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.4))
             }
