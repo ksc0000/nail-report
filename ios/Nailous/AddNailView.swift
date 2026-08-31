@@ -411,6 +411,22 @@ struct AddNailView: View {
         }
     }
 
+    /// Downscales the picked photo to a size worth keeping for reference —
+    /// big enough to show a nail artist, small enough that a long collection
+    /// stays light (long edge 1600pt, JPEG 0.8 ≈ a few hundred KB).
+    private static func archivalJPEG(_ image: UIImage) -> Data? {
+        let maxEdge: CGFloat = 1600
+        let scale = min(1, maxEdge / max(image.size.width, image.size.height))
+        guard scale < 1 else { return image.jpegData(compressionQuality: 0.8) }
+        let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let resized = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
+        return resized.jpegData(compressionQuality: 0.8)
+    }
+
     private static let ciContext = CIContext()
 
     private func applyRetouch() {
@@ -545,6 +561,7 @@ struct AddNailView: View {
                 .map { $0.trimmingCharacters(in: .whitespaces) }
                 .filter { !$0.isEmpty },
             fingerPhotoData: fingerData,
+            originalPhotoData: originalImage.flatMap(Self.archivalJPEG),
             plateParams: plateParams
         )
         modelContext.insert(record)

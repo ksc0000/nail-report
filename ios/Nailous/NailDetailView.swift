@@ -29,6 +29,7 @@ struct NailDetailView: View {
     @State private var stageController = StageController()
     @State private var stampImage: UIImage?
     @State private var showStampSheet = false
+    @State private var showOriginalPhoto = false
     @State private var showCopiedToast = false
     @State private var stir: StirEvent?
     @AppStorage("stageDecor") private var decorRaw = StageDecor.sparkle.rawValue
@@ -472,6 +473,29 @@ struct NailDetailView: View {
                     .padding(.bottom, 14)
                 }
 
+                if let original = record?.originalPhoto {
+                    Button { showOriginalPhoto = true } label: {
+                        HStack(spacing: 8) {
+                            Image(uiImage: original)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 34, height: 34)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Palette.gold.opacity(0.45), lineWidth: 1)
+                                )
+                            Text("元の写真を見る")
+                                .font(.system(size: 12.5, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.75))
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(Capsule().fill(Color.white.opacity(0.06)))
+                    }
+                    .padding(.bottom, 12)
+                }
+
                 HStack(spacing: 8) {
                     if record != nil {
                         wearPill
@@ -531,6 +555,11 @@ struct NailDetailView: View {
                     Label("スタンプ", systemImage: "square.and.arrow.up")
                         .foregroundStyle(.white)
                 }
+            }
+        }
+        .sheet(isPresented: $showOriginalPhoto) {
+            if let original = record?.originalPhoto {
+                OriginalPhotoView(image: original, title: title)
             }
         }
         .sheet(isPresented: $showStageSheet) {
@@ -731,5 +760,71 @@ struct StagePill: View {
                 )
                 .foregroundStyle(isOn ? Palette.ink0 : .white.opacity(0.75))
         }
+    }
+}
+
+/// A photo shared as JPEG, so the receiving app gets a sensibly sized file
+/// with the right extension (the stamp's transferable is PNG-only).
+struct SharedPhotoJPEG: Transferable {
+    let data: Data
+
+    static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .jpeg) { $0.data }
+    }
+}
+
+/// The user's own photo at full size — the thing you actually show a nail
+/// artist. Pinch to zoom, and share it straight out to LINE or a message.
+struct OriginalPhotoView: View {
+    let image: UIImage
+    let title: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var zoom: CGFloat = 1
+    @State private var zoomAnchor: CGFloat = 1
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .scaleEffect(zoom)
+                    .gesture(
+                        MagnificationGesture()
+                            .onChanged { value in
+                                zoom = min(5, max(1, zoomAnchor * value))
+                            }
+                            .onEnded { _ in zoomAnchor = zoom }
+                    )
+                    .onTapGesture(count: 2) {
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            zoom = zoom > 1 ? 1 : 2.5
+                            zoomAnchor = zoom
+                        }
+                    }
+            }
+            .navigationTitle("元の写真")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("閉じる") { dismiss() }
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    if let jpeg = image.jpegData(compressionQuality: 0.9) {
+                        ShareLink(
+                            item: SharedPhotoJPEG(data: jpeg),
+                            preview: SharePreview(title, image: Image(uiImage: image))
+                        ) {
+                            Image(systemName: "square.and.arrow.up")
+                                .foregroundStyle(.white)
+                        }
+                    }
+                }
+            }
+        }
+        .preferredColorScheme(.dark)
     }
 }

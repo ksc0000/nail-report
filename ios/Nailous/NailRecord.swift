@@ -14,6 +14,7 @@ struct DeletedNailSnapshot {
     let memo: String
     let tags: [String]
     let fingerPhotoData: [Data]
+    let originalPhotoData: Data?
     let wornSince: Date?
     let isFavorite: Bool
     let lengthAdj: Float
@@ -58,6 +59,10 @@ final class NailRecord {
     var shapeRaw: String
     var finishRaw: String
     var photoData: Data
+    /// The photo the user actually picked, kept alongside the baked nail
+    /// texture: it is what gets shown to a nail artist ("this one, please")
+    /// and what reads as the memory. nil for records saved before this existed.
+    var originalPhotoData: Data?
     // Story fields (defaults keep lightweight migration painless)
     var salon: String = ""
     var priceYen: Int?
@@ -89,6 +94,7 @@ final class NailRecord {
         memo: String = "",
         tags: [String] = [],
         fingerPhotoData: [Data] = [],
+        originalPhotoData: Data? = nil,
         plateParams: NailPlateParams = .default
     ) {
         self.id = UUID()
@@ -102,6 +108,7 @@ final class NailRecord {
         self.memo = memo
         self.tags = tags
         self.fingerPhotoData = fingerPhotoData
+        self.originalPhotoData = originalPhotoData
         self.lengthAdj = plateParams.length
         self.widthAdj = plateParams.width
         self.curveHAdj = plateParams.curveH
@@ -122,6 +129,7 @@ final class NailRecord {
         memo = snapshot.memo
         tags = snapshot.tags
         fingerPhotoData = snapshot.fingerPhotoData
+        originalPhotoData = snapshot.originalPhotoData
         wornSince = snapshot.wornSince
         isFavorite = snapshot.isFavorite
         lengthAdj = snapshot.lengthAdj
@@ -137,7 +145,8 @@ final class NailRecord {
             id: id, title: title, createdAt: createdAt, shapeRaw: shapeRaw,
             finishRaw: finishRaw, photoData: photoData, salon: salon,
             priceYen: priceYen, memo: memo, tags: tags,
-            fingerPhotoData: fingerPhotoData, wornSince: wornSince,
+            fingerPhotoData: fingerPhotoData,
+            originalPhotoData: originalPhotoData, wornSince: wornSince,
             isFavorite: isFavorite, lengthAdj: lengthAdj, widthAdj: widthAdj,
             curveHAdj: curveHAdj, curveVAdj: curveVAdj,
             thicknessAdj: thicknessAdj, cornerAdj: cornerAdj
@@ -166,6 +175,9 @@ final class NailRecord {
     var finish: NailFinish { NailFinish(rawValue: finishRaw) ?? .gloss }
 
     var texture: UIImage? { UIImage(data: photoData) }
+
+    /// The user's own photo, when the record was saved with one.
+    var originalPhoto: UIImage? { originalPhotoData.flatMap(UIImage.init(data:)) }
 
     var appearance: NailAppearance? {
         texture.map {
