@@ -58,7 +58,7 @@ enum DetectionBenchmark {
                 results.append(CaseResult(file: testCase.file, expectedNails: testCase.expectedNails, detectedNails: 0, success: false))
                 continue
             }
-            let detected = await NailDetector.detectNails(in: image)
+            let detected = await NailDetector.detectNails(in: image).nails
             let success = detected.count == testCase.expectedNails
             results.append(CaseResult(file: testCase.file, expectedNails: testCase.expectedNails, detectedNails: detected.count, success: success))
         }

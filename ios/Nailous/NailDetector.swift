@@ -10,6 +10,37 @@ struct DetectedNail: Identifiable {
     let center: CGPoint // image coords, top-left origin, in image points
     let cropHeight: CGFloat // suggested crop height in image points
     let axisAngle: CGFloat // finger DIP→TIP direction vs straight-up, radians
+    /// Interior angle at the DIP joint between PIP→DIP and DIP→TIP, degrees.
+    /// 180° is a straight finger; smaller means more curled. `nil` when the
+    /// PIP joint wasn't measurable (thumb has no PIP, or Vision's confidence
+    /// was too low) — see `DetectionQuality` (#366).
+    var curlDegrees: CGFloat?
+}
+
+/// Photo-level signal for "was this framing easy for Vision's hand-pose to
+/// read correctly", computed alongside detection rather than post-hoc on its
+/// results. #361 found that post-processing can't recover a bad tip
+/// placement (curled/crossed/close-up fingers make Vision place the tip
+/// joint away from the actual fingertip, with no per-candidate signal that
+/// distinguishes it from a good detection) — so instead of trying to correct
+/// results, this flags the *framing* so the app can suggest a retake while
+/// still using whatever was detected.
+struct DetectionQuality: Encodable {
+    /// Mean curl angle (degrees) across nails where it was measurable.
+    let meanCurlDegrees: Double?
+    /// Most-curled single finger (degrees); a bent pose can still average
+    /// out if only one finger is curled, so this catches that case too.
+    let minCurlDegrees: Double?
+    /// Same-hand joints Vision assigned to essentially the same physical
+    /// fingertip (#363) — a direct sign the pose confused Vision (crossed or
+    /// overlapping fingers).
+    let ambiguousJoints: Int
+    /// Hands Vision located in the photo (0 when it found none).
+    let handCount: Int
+    /// Nails found per located hand — the signal the retake hint keys off.
+    let nailsPerHand: Double?
+    /// Suggest "retake with fingers extended" to the user.
+    let suggestsRetake: Bool
 }
 
 /// Fingertip detection via Vision hand-pose.
@@ -31,9 +62,14 @@ enum NailDetector {
     ///   - cgImage: the raw, un-oriented pixel buffer (as decoded from disk).
     ///   - orientation: the image's EXIF/source orientation to bake in before
     ///     detection, so `cgImage`'s pixels don't need to be pre-rotated.
-    static func detectNails(cgImage: CGImage, orientation: CGImagePropertyOrientation) async -> [DetectedNail] {
-        guard let (normalized, displaySize) = normalizedForDetection(cgImage, orientation: orientation) else { return [] }
-        return await Task.detached(priority: .userInitiated) { () -> [DetectedNail] in
+    static func detectNails(
+        cgImage: CGImage,
+        orientation: CGImagePropertyOrientation
+    ) async -> (nails: [DetectedNail], quality: DetectionQuality) {
+        guard let (normalized, displaySize) = normalizedForDetection(cgImage, orientation: orientation) else {
+            return ([], assessQuality(nails: [], ambiguousJoints: 0, handCount: 0))
+        }
+        return await Task.detached(priority: .userInitiated) { () -> (nails: [DetectedNail], quality: DetectionQuality) in
             // (orientation Vision applies, inverse map back to display space)
             let attempts: [(CGImagePropertyOrientation, (CGPoint) -> CGPoint)] = [
                 (.up, { $0 }),
@@ -42,13 +78,17 @@ enum NailDetector {
                 (.down, { CGPoint(x: 1 - $0.x, y: 1 - $0.y) }),
             ]
             var merged: [DetectedNail] = []
+            var ambiguousJoints = 0
+            var handCount = 0
             for (orientation, unmap) in attempts {
-                let found = runHandPose(
+                let (found, ambiguous, hands) = runHandPose(
                     cgImage: normalized,
                     orientation: orientation,
                     unmap: unmap,
                     displaySize: displaySize
                 )
+                ambiguousJoints += ambiguous
+                handCount = max(handCount, hands)
                 // Dedup against nails accumulated from *earlier* orientation
                 // attempts only (the same physical finger re-detected on a
                 // different pass). Candidates within `found` itself are each
@@ -72,8 +112,52 @@ enum NailDetector {
                 // looked for.
                 if merged.count >= 10 { break }
             }
-            return merged
+            return (merged, assessQuality(nails: merged, ambiguousJoints: ambiguousJoints, handCount: handCount))
         }.value
+    }
+
+    /// Photo-level "was this an easy framing" signal (#366) computed
+    /// alongside detection, not from its results after the fact — see
+    /// `DetectionQuality`.
+    static func assessQuality(
+        nails: [DetectedNail],
+        ambiguousJoints: Int,
+        handCount: Int
+    ) -> DetectionQuality {
+        let curls = nails.compactMap(\.curlDegrees)
+        let meanCurl = curls.isEmpty ? nil : Double(curls.reduce(0, +)) / Double(curls.count)
+        let minCurl = curls.min().map(Double.init)
+
+        // How many nails we found per hand Vision actually located. A hand it
+        // can see should yield about five; landing far short means the pose
+        // defeated the joint model, which is exactly when the user is better
+        // served by re-framing than by us guessing.
+        //
+        // Calibrated on ios/BenchmarkAssets (#366). Every correctly detected
+        // photo sits at 4.0-5.0 nails per hand — including the ones with a
+        // sharply bent finger (44°) or several same-fingertip collisions,
+        // which is why neither curl angle nor ambiguousJoints can be the
+        // trigger: both fire on photos that detected perfectly. Good photos
+        // all land at 5.0 or above (the five-fingers ceiling), the
+        // under-detected ones at 3.0-4.0, so 4.5 splits them cleanly.
+        //
+        // The metric can only be inflated, never deflated, by Vision's own
+        // error: it undercounts hands (one bench photo reports 8 nails over
+        // "1" hand), which hides problems rather than inventing them. So a
+        // low ratio really does mean nails are missing, and a false retake
+        // prompt — the failure that would actually annoy someone whose photo
+        // was fine — stays unlikely even at this tighter line.
+        let nailsPerHand = handCount > 0 ? Double(nails.count) / Double(handCount) : nil
+        let suggestsRetake = (nailsPerHand ?? .greatestFiniteMagnitude) < 4.5
+
+        return DetectionQuality(
+            meanCurlDegrees: meanCurl,
+            minCurlDegrees: minCurl,
+            ambiguousJoints: ambiguousJoints,
+            handCount: handCount,
+            nailsPerHand: nailsPerHand,
+            suggestsRetake: suggestsRetake
+        )
     }
 
     /// One hand-pose pass at a given orientation; points are unmapped back to
@@ -83,7 +167,7 @@ enum NailDetector {
         orientation: CGImagePropertyOrientation,
         unmap: (CGPoint) -> CGPoint,
         displaySize: CGSize
-    ) -> [DetectedNail] {
+    ) -> (nails: [DetectedNail], ambiguousJoints: Int, handCount: Int) {
         let request = VNDetectHumanHandPoseRequest()
         request.maximumHandCount = 2
         let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation, options: [:])
@@ -99,7 +183,7 @@ enum NailDetector {
         if diagnosticsEnabled {
             print("BENCH_DIAG orientation \(orientation.rawValue): hands=\(request.results?.count ?? 0)")
         }
-        guard let observations = request.results, !observations.isEmpty else { return [] }
+        guard let observations = request.results, !observations.isEmpty else { return ([], 0, 0) }
 
         // Fraction of the tip→DIP segment to back off from the tip to land on the
         // nail's visual center, per finger. Tuned against hand-annotated
@@ -110,18 +194,23 @@ enum NailDetector {
         // measured lower. The thumb sample was too noisy (near-edge-on framing
         // shrinks its tip→DIP segment to a few dozen points, making the fraction
         // numerically unstable) to justify moving off the original value.
-        let jointPairs: [(VNHumanHandPoseObservation.JointName, VNHumanHandPoseObservation.JointName, CGFloat)] = [
-            (.thumbTip, .thumbIP, 0.32),
-            (.indexTip, .indexDIP, 0.34),
-            (.middleTip, .middleDIP, 0.34),
-            (.ringTip, .ringDIP, 0.34),
-            (.littleTip, .littleDIP, 0.22),
+        //
+        // The optional 4th element is the PIP joint used to measure how
+        // curled the finger is (#366) — omitted for the thumb, which has no
+        // PIP joint and whose curl behaves differently anatomically anyway.
+        let jointPairs: [(VNHumanHandPoseObservation.JointName, VNHumanHandPoseObservation.JointName, CGFloat, VNHumanHandPoseObservation.JointName?)] = [
+            (.thumbTip, .thumbIP, 0.32, nil),
+            (.indexTip, .indexDIP, 0.34, .indexPIP),
+            (.middleTip, .middleDIP, 0.34, .middlePIP),
+            (.ringTip, .ringDIP, 0.34, .ringPIP),
+            (.littleTip, .littleDIP, 0.22, .littlePIP),
         ]
 
         var nails: [DetectedNail] = []
+        var ambiguousJoints = 0
         for observation in observations {
             var candidates: [(nail: DetectedNail, confidence: Float)] = []
-            for (tipName, dipName, tipFraction) in jointPairs {
+            for (tipName, dipName, tipFraction, pipName) in jointPairs {
                 guard let tip = try? observation.recognizedPoint(tipName), tip.confidence > 0.15,
                       let dip = try? observation.recognizedPoint(dipName), dip.confidence > 0.1
                 else { continue }
@@ -139,8 +228,24 @@ enum NailDetector {
                     x: tipPoint.x - vx * tipFraction,
                     y: tipPoint.y - vy * tipFraction
                 )
+                let curlDegrees: CGFloat? = pipName.flatMap { pipName -> CGFloat? in
+                    guard let pip = try? observation.recognizedPoint(pipName), pip.confidence > 0.1 else { return nil }
+                    let pipNorm = unmap(CGPoint(x: pip.location.x, y: pip.location.y))
+                    let pipPoint = CGPoint(x: pipNorm.x * displaySize.width, y: (1 - pipNorm.y) * displaySize.height)
+                    // Interior angle at the DIP between DIP→PIP and DIP→TIP;
+                    // 180° is a straight finger, smaller is more bent.
+                    let ux = pipPoint.x - dipPoint.x, uy = pipPoint.y - dipPoint.y
+                    let pipSegment = hypot(ux, uy)
+                    guard pipSegment > 4 else { return nil }
+                    // DIP→PIP vs DIP→TIP (= vx, vy): a straight finger has
+                    // PIP and TIP on opposite sides of the DIP, so these
+                    // point in roughly opposite directions (~180°); a curled
+                    // finger brings the tip back toward the PIP (~0°).
+                    let cosTheta = (ux * vx + uy * vy) / (pipSegment * segment)
+                    return CGFloat(acos(max(-1, min(1, cosTheta)))) * 180 / .pi
+                }
                 candidates.append((
-                    DetectedNail(center: nailCenter, cropHeight: segment * 1.2, axisAngle: axisAngle),
+                    DetectedNail(center: nailCenter, cropHeight: segment * 1.2, axisAngle: axisAngle, curlDegrees: curlDegrees),
                     tip.confidence + dip.confidence
                 ))
             }
@@ -174,9 +279,10 @@ enum NailDetector {
                 }
                 if !isDuplicate { kept.append((nail, confidence)) }
             }
+            ambiguousJoints += candidates.count - kept.count
             nails.append(contentsOf: kept.map(\.nail))
         }
-        return nails
+        return (nails, ambiguousJoints, observations.count)
     }
 
     /// Bakes the source orientation out (via CoreImage, which handles all 8

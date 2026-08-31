@@ -26,6 +26,7 @@ struct PhotoCropView: View {
     @State private var sortedNails: [DetectedNail] = []
     @State private var currentIndex: Int = 0
     @State private var lastAddedSignature = ""
+    @State private var suggestsRetake = false
 
     private let window = CGSize(width: 216, height: 324) // 2:3, matches texture
     private let maxZoom: CGFloat = 16
@@ -132,6 +133,17 @@ struct PhotoCropView: View {
                     .padding(.vertical, 8)
                     .background(Capsule().fill(Color.black.opacity(0.45)))
                     .padding(.top, 14)
+
+                    if suggestsRetake {
+                        Text("指をまっすぐ伸ばして撮り直すと、検出の精度が上がります。このまま位置を手動で合わせても使えます")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.75))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(Capsule().fill(Color.black.opacity(0.4)))
+                            .padding(.top, 6)
+                    }
 
                     HStack(spacing: 6) {
                         ForEach(NailShape.allCases) { candidate in
@@ -310,7 +322,9 @@ struct PhotoCropView: View {
                 previewTexture = bakeCurrent()
                 return
             }
-            let found = (await NailDetector.detectNails(in: image)).sorted { $0.center.x < $1.center.x }
+            let result = await NailDetector.detectNails(in: image)
+            let found = result.nails.sorted { $0.center.x < $1.center.x }
+            suggestsRetake = result.quality.suggestsRetake
             if found.count >= 2 {
                 // Guided tour: thumb → pinky, starting zoomed on the first nail.
                 detectedNails = found

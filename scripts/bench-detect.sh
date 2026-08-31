@@ -53,6 +53,11 @@ for r in summary["results"]:
     offset = r.get("meanCenterOffsetPx")
     if offset is not None:
         line += f"  centerOffset={offset:.1f}px (n={r['matchedCenters']})"
+    quality = r.get("quality") or {}
+    retake = "retake-hint=YES" if quality.get("suggestsRetake") else "retake-hint=no"
+    perHand = quality.get("nailsPerHand")
+    perHandStr = f"nails/hand={perHand:.1f}" if perHand is not None else "nails/hand=n/a"
+    line += f"  {retake} ({perHandStr}, hands={quality.get('handCount', 0)})"
     print(line)
 print()
 print(f"{total}枚中{succeeded}枚成功 ({rate:.1f}%)")

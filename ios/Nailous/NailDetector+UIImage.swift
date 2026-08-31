@@ -5,8 +5,8 @@ import UIKit
 /// core in `NailDetector.swift` stays UIKit-free and can be compiled
 /// standalone by the macOS bench tool (`ios/BenchTool`, see #360).
 extension NailDetector {
-    static func detectNails(in image: UIImage) async -> [DetectedNail] {
-        guard let cgImage = image.cgImage else { return [] }
+    static func detectNails(in image: UIImage) async -> (nails: [DetectedNail], quality: DetectionQuality) {
+        guard let cgImage = image.cgImage else { return ([], assessQuality(nails: [], ambiguousJoints: 0, handCount: 0)) }
         let orientation = CGImagePropertyOrientation(image.imageOrientation)
         return await detectNails(cgImage: cgImage, orientation: orientation)
     }

@@ -33,6 +33,10 @@ struct CaseResult: Encodable {
     /// `expectedNailCenters`).
     let meanCenterOffsetPx: Double?
     let matchedCenters: Int?
+    /// Photo-framing quality signal (#366) — used to decide whether to
+    /// suggest a retake in `PhotoCropView`, reported here so a threshold
+    /// change can be checked against the whole benchmark set before landing.
+    let quality: DetectionQuality
 }
 
 struct Summary: Encodable {
@@ -179,10 +183,14 @@ func run() async -> Summary {
         let imageURL = assetsDir.appendingPathComponent(testCase.file)
         guard let (cgImage, orientation) = loadOrientedCGImage(at: imageURL) else {
             FileHandle.standardError.write(Data("warning: failed to load \(imageURL.path)\n".utf8))
-            results.append(CaseResult(file: testCase.file, expectedNails: testCase.expectedNails, detectedNails: 0, success: false, meanCenterOffsetPx: nil, matchedCenters: nil))
+            results.append(CaseResult(
+                file: testCase.file, expectedNails: testCase.expectedNails, detectedNails: 0, success: false,
+                meanCenterOffsetPx: nil, matchedCenters: nil,
+                quality: NailDetector.assessQuality(nails: [], ambiguousJoints: 0, handCount: 0)
+            ))
             continue
         }
-        let detected = await NailDetector.detectNails(cgImage: cgImage, orientation: orientation)
+        let (detected, quality) = await NailDetector.detectNails(cgImage: cgImage, orientation: orientation)
         let success = detected.count == testCase.expectedNails
         let offset = testCase.expectedNailCenters.flatMap { meanCenterOffset(expected: $0, detected: detected.map(\.center)) }
         results.append(CaseResult(
@@ -191,7 +199,8 @@ func run() async -> Summary {
             detectedNails: detected.count,
             success: success,
             meanCenterOffsetPx: offset?.mean,
-            matchedCenters: offset?.matched
+            matchedCenters: offset?.matched,
+            quality: quality
         ))
     }
     let succeeded = results.filter(\.success).count
