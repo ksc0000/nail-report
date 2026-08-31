@@ -34,6 +34,7 @@ struct NailDetailView: View {
     @AppStorage("stageDecor") private var decorRaw = StageDecor.sparkle.rawValue
     @AppStorage("stageLiquid") private var liquidOn = true
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var deletionUndo: DeletionUndoStore
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingDelete = false
 
@@ -600,7 +601,9 @@ struct NailDetailView: View {
         .confirmationDialog("この記録を削除しますか？", isPresented: $confirmingDelete, titleVisibility: .visible) {
             Button("削除する", role: .destructive) {
                 if let record {
+                    deletionUndo.stage(record)
                     modelContext.delete(record)
+                    try? modelContext.save()
                 }
                 dismiss()
             }

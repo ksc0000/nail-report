@@ -26,10 +26,12 @@ final class NailousAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
 @main
 struct NailousApp: App {
     @UIApplicationDelegateAdaptor(NailousAppDelegate.self) private var appDelegate
+    @StateObject private var deletionUndo = DeletionUndoStore()
 
     var body: some Scene {
         WindowGroup {
             CollectionView()
+                .environmentObject(deletionUndo)
                 .task {
                     if DetectionBenchmark.isRequested {
                         await DetectionBenchmark.run()

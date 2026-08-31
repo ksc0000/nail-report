@@ -1,5 +1,52 @@
 import SwiftData
 import UIKit
+import Combine
+
+struct DeletedNailSnapshot {
+    let id: UUID
+    let title: String
+    let createdAt: Date
+    let shapeRaw: String
+    let finishRaw: String
+    let photoData: Data
+    let salon: String
+    let priceYen: Int?
+    let memo: String
+    let tags: [String]
+    let fingerPhotoData: [Data]
+    let wornSince: Date?
+    let isFavorite: Bool
+    let lengthAdj: Float
+    let widthAdj: Float
+    let curveHAdj: Float
+    let curveVAdj: Float
+    let thicknessAdj: Float
+    let cornerAdj: Float
+}
+
+@MainActor
+final class DeletionUndoStore: ObservableObject {
+    @Published private(set) var pending: DeletedNailSnapshot?
+    private var expiryTask: Task<Void, Never>?
+
+    func stage(_ record: NailRecord) {
+        expiryTask?.cancel()
+        pending = record.deletedSnapshot
+        expiryTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(6))
+            guard !Task.isCancelled else { return }
+            self?.pending = nil
+        }
+    }
+
+    func undo(in context: ModelContext) {
+        guard let snapshot = pending else { return }
+        expiryTask?.cancel()
+        pending = nil
+        context.insert(NailRecord(snapshot: snapshot))
+        try? context.save()
+    }
+}
 
 /// One saved nail: the user's photo (pre-cropped to the nail-texture aspect)
 /// plus metadata. Local-first; Firebase sync is a later phase.
@@ -61,6 +108,40 @@ final class NailRecord {
         self.curveVAdj = plateParams.curveV
         self.thicknessAdj = plateParams.thickness
         self.cornerAdj = plateParams.corner
+    }
+
+    init(snapshot: DeletedNailSnapshot) {
+        id = snapshot.id
+        title = snapshot.title
+        createdAt = snapshot.createdAt
+        shapeRaw = snapshot.shapeRaw
+        finishRaw = snapshot.finishRaw
+        photoData = snapshot.photoData
+        salon = snapshot.salon
+        priceYen = snapshot.priceYen
+        memo = snapshot.memo
+        tags = snapshot.tags
+        fingerPhotoData = snapshot.fingerPhotoData
+        wornSince = snapshot.wornSince
+        isFavorite = snapshot.isFavorite
+        lengthAdj = snapshot.lengthAdj
+        widthAdj = snapshot.widthAdj
+        curveHAdj = snapshot.curveHAdj
+        curveVAdj = snapshot.curveVAdj
+        thicknessAdj = snapshot.thicknessAdj
+        cornerAdj = snapshot.cornerAdj
+    }
+
+    var deletedSnapshot: DeletedNailSnapshot {
+        DeletedNailSnapshot(
+            id: id, title: title, createdAt: createdAt, shapeRaw: shapeRaw,
+            finishRaw: finishRaw, photoData: photoData, salon: salon,
+            priceYen: priceYen, memo: memo, tags: tags,
+            fingerPhotoData: fingerPhotoData, wornSince: wornSince,
+            isFavorite: isFavorite, lengthAdj: lengthAdj, widthAdj: widthAdj,
+            curveHAdj: curveHAdj, curveVAdj: curveVAdj,
+            thicknessAdj: thicknessAdj, cornerAdj: cornerAdj
+        )
     }
 
     var shape: NailShape { NailShape(rawValue: shapeRaw) ?? .squoval }

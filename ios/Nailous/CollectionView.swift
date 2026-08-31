@@ -5,6 +5,7 @@ import SwiftUI
 /// tapping one opens the spinnable stage. The"＋" starts the capture flow.
 struct CollectionView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var deletionUndo: DeletionUndoStore
     @Query(sort: \NailRecord.createdAt, order: .reverse) private var records: [NailRecord]
     @State private var isAdding = false
     @State private var glowingID: UUID?
@@ -36,7 +37,29 @@ struct CollectionView: View {
                 }
 
                 StageForeground(theme: .glass)
+
+                if deletionUndo.pending != nil {
+                    HStack(spacing: 16) {
+                        Text("削除しました")
+                            .font(.system(size: 14, weight: .medium))
+                        Button("取り消す") {
+                            deletionUndo.undo(in: modelContext)
+                        }
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(Palette.goldBright)
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 13)
+                    .background(.black.opacity(0.82), in: Capsule())
+                    .shadow(color: .black.opacity(0.35), radius: 12, y: 5)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
+            .animation(.easeInOut(duration: 0.25), value: deletionUndo.pending != nil)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     GoldIconButton(systemName: "plus") { isAdding = true }
