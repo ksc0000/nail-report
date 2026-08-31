@@ -28,15 +28,36 @@ struct DeletedNailSnapshot {
 @MainActor
 final class DeletionUndoStore: ObservableObject {
     @Published private(set) var pending: DeletedNailSnapshot?
+    @Published private(set) var remainingProgress = 1.0
+    @Published private(set) var blocksUnderlyingInteraction = false
     private var expiryTask: Task<Void, Never>?
+    private let undoDurationSeconds = 9.0
 
     func stage(_ record: NailRecord) {
         expiryTask?.cancel()
         pending = record.deletedSnapshot
+        remainingProgress = 1
+        blocksUnderlyingInteraction = true
         expiryTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(6))
+            guard let self else { return }
+            let start = ContinuousClock.now
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(100))
+                guard !Task.isCancelled else { return }
+                let elapsed = start.duration(to: .now)
+                let components = elapsed.components
+                let elapsedSeconds = Double(components.seconds)
+                    + Double(components.attoseconds) / 1_000_000_000_000_000_000
+                let fraction = max(0.0, 1.0 - elapsedSeconds / self.undoDurationSeconds)
+                self.remainingProgress = fraction
+                if fraction <= 0 { break }
+            }
+            self.pending = nil
+            // Keep the former banner area non-interactive briefly so a tap
+            // already in flight cannot fall through to a card underneath.
+            try? await Task.sleep(for: .milliseconds(600))
             guard !Task.isCancelled else { return }
-            self?.pending = nil
+            self.blocksUnderlyingInteraction = false
         }
     }
 
@@ -44,6 +65,8 @@ final class DeletionUndoStore: ObservableObject {
         guard let snapshot = pending else { return }
         expiryTask?.cancel()
         pending = nil
+        remainingProgress = 0
+        blocksUnderlyingInteraction = false
         context.insert(NailRecord(snapshot: snapshot))
         try? context.save()
     }

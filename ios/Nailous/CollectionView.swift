@@ -38,10 +38,21 @@ struct CollectionView: View {
 
                 StageForeground(theme: .glass)
 
+                if deletionUndo.blocksUnderlyingInteraction {
+                    Rectangle()
+                        .fill(.clear)
+                        .contentShape(Rectangle())
+                        .ignoresSafeArea()
+                        .onTapGesture { }
+                }
+
                 if deletionUndo.pending != nil {
                     HStack(spacing: 16) {
                         Text("削除しました")
                             .font(.system(size: 14, weight: .medium))
+                        ProgressView(value: deletionUndo.remainingProgress)
+                            .tint(Palette.goldBright)
+                            .frame(width: 42)
                         Button("取り消す") {
                             deletionUndo.undo(in: modelContext)
                         }
