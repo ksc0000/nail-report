@@ -141,14 +141,16 @@ enum CardRenderer {
         }
     }
 
-    private static func serif(_ size: CGFloat, weight: UIFont.Weight) -> UIFont {
+    /// Not private: `RecapCardRenderer` draws its own typography with the
+    /// same serif/kerning language so the two card families read as one set.
+    static func serif(_ size: CGFloat, weight: UIFont.Weight) -> UIFont {
         let base = UIFont.systemFont(ofSize: size, weight: weight)
         guard let descriptor = base.fontDescriptor.withDesign(.serif) else { return base }
         return UIFont(descriptor: descriptor, size: size)
     }
 
     /// Centred single line at a fractional Y (top of the line box).
-    private static func draw(
+    static func draw(
         _ text: String,
         at fractionY: CGFloat,
         in size: CGSize,

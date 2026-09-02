@@ -42,6 +42,7 @@ struct CollectionView: View {
     @State private var glowingID: UUID?
     @State private var selected: NailRecord?
     @State private var gridShown = false
+    @State private var recapCard: RecapCardPayload?
     @AppStorage("monthLabelStyle") private var monthLabelStyleRaw = MonthLabelStyle.kanji.rawValue
 
     private var monthLabelStyle: MonthLabelStyle {
@@ -129,8 +130,12 @@ struct CollectionView: View {
                 }
             }
         }
+        .sheet(item: $recapCard) { card in
+            RecapSheet(image: card.image, monthTitle: card.monthTitle)
+        }
         .task {
             renderDebugCards()
+            renderDebugRecap()
             seedIfRequested()
             if UserDefaults.standard.string(forKey: "openAdd") == "1" {
                 isAdding = true
@@ -138,6 +143,10 @@ struct CollectionView: View {
             if UserDefaults.standard.string(forKey: "openGrid") == "1" {
                 try? await Task.sleep(for: .seconds(0.4))
                 gridShown = true
+            }
+            if UserDefaults.standard.string(forKey: "openRecap") == "1", let firstGroup = monthGroups.first {
+                try? await Task.sleep(for: .seconds(0.4))
+                presentRecap(for: firstGroup)
             }
             if UserDefaults.standard.string(forKey: "openFirst") == "1", let first = records.first {
                 try? await Task.sleep(for: .seconds(0.4))
@@ -264,11 +273,37 @@ struct CollectionView: View {
                             chip(record)
                         }
                     }
+                    Button {
+                        presentRecap(for: group)
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundStyle(Palette.mutedWarm)
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 22)
+                    .accessibilityLabel("\(group.month)月のリキャップを共有")
                 }
             }
         }
         .padding(.horizontal, 30)
         .padding(.top, 52)
+    }
+
+    /// One month's records as a share payload; `Identifiable` so `.sheet(item:)`
+    /// can present it directly.
+    private struct RecapCardPayload: Identifiable {
+        let id: String
+        let image: UIImage
+        let monthTitle: String
+    }
+
+    private func presentRecap(for group: MonthGroup) {
+        guard let image = RecapCardRenderer.render(records: group.records, month: group.month, year: group.year)
+        else { return }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        recapCard = RecapCardPayload(id: group.id, image: image, monthTitle: monthLabelStyle.label(month: group.month))
     }
 
     private func chip(_ record: NailRecord) -> some View {
@@ -405,6 +440,35 @@ struct CollectionView: View {
                 subtitle: template == .salon ? "Salon Lumière" : nil
             ), let png = card.pngData() {
                 try? png.write(to: docs.appendingPathComponent("card_\(template.rawValue).png"))
+            }
+        }
+    }
+
+    /// `-debugRecap 1` renders the monthly recap card for 1/3/8-nail months,
+    /// twice each, so the scatter composition and its determinism (pass 1 ==
+    /// pass 2 for the same records) can both be checked headlessly (#374).
+    private func renderDebugRecap() {
+        guard UserDefaults.standard.string(forKey: "debugRecap") == "1" else { return }
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        for count in [1, 3, 8] {
+            let sample = (0..<count).map { i -> NailRecord in
+                let style = NailStyle.samples[i % NailStyle.samples.count]
+                let jpeg = style.texture.jpegData(compressionQuality: 0.85) ?? Data()
+                let record = NailRecord(
+                    title: "サンプル\(i)",
+                    shape: NailShape.allCases[i % NailShape.allCases.count],
+                    finish: .gloss,
+                    photoData: jpeg
+                )
+                if i == 0 { record.wornSince = Date() }
+                if i == 1 { record.isFavorite = true }
+                return record
+            }
+            for pass in 1...2 {
+                if let card = RecapCardRenderer.render(records: sample, month: 7, year: 2026),
+                   let png = card.pngData() {
+                    try? png.write(to: docs.appendingPathComponent("recap_\(count)_pass\(pass).png"))
+                }
             }
         }
     }
