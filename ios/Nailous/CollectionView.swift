@@ -1,6 +1,35 @@
 import SwiftData
 import SwiftUI
 
+/// How the month rows on the home field are labelled (#373). Stored as a raw
+/// string so `@AppStorage` can hold it; `kanji` is the default.
+enum MonthLabelStyle: String, CaseIterable, Identifiable {
+    case kanji, abbreviated, full
+
+    var id: String { rawValue }
+
+    /// Sample shown in the picker so the choice is visual, not described.
+    var sample: String { label(month: 7) }
+
+    func label(month: Int) -> String {
+        let name = Self.englishMonths[max(0, min(11, month - 1))]
+        switch self {
+        case .kanji: return "\(month)月"
+        case .abbreviated: return String(name.prefix(3)).uppercased()
+        case .full: return name
+        }
+    }
+
+    /// Kerning that keeps each style legible inside the label column.
+    var kerning: CGFloat { self == .full ? 0.5 : 2 }
+    var columnWidth: CGFloat { self == .full ? 72 : 44 }
+
+    private static let englishMonths = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December",
+    ]
+}
+
 /// Home = the collection itself: every saved nail as a small chip, laid out in
 /// rows by month like a salon's colour chart kept on your own timeline. The
 /// one being worn carries a thin gold ring. Tapping a chip opens the 3D stage —
@@ -13,6 +42,11 @@ struct CollectionView: View {
     @State private var glowingID: UUID?
     @State private var selected: NailRecord?
     @State private var gridShown = false
+    @AppStorage("monthLabelStyle") private var monthLabelStyleRaw = MonthLabelStyle.kanji.rawValue
+
+    private var monthLabelStyle: MonthLabelStyle {
+        MonthLabelStyle(rawValue: monthLabelStyleRaw) ?? .kanji
+    }
 
 
     var body: some View {
@@ -135,6 +169,7 @@ struct CollectionView: View {
                 if !records.isEmpty {
                     outlineButton(systemName: "magnifyingglass") { gridShown = true }
                 }
+                displayMenu
                 outlineButton(systemName: "plus") { isAdding = true }
             }
         }
@@ -144,27 +179,48 @@ struct CollectionView: View {
 
     private func outlineButton(systemName: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 14, weight: .regular))
-                .foregroundStyle(Palette.inkWarm)
-                .frame(width: 36, height: 36)
-                .overlay(Circle().stroke(Palette.inkWarm, lineWidth: 1))
-                .contentShape(Circle())
+            outlineIcon(systemName)
         }
         .buttonStyle(.plain)
+    }
+
+    private func outlineIcon(_ systemName: String) -> some View {
+        Image(systemName: systemName)
+            .font(.system(size: 14, weight: .regular))
+            .foregroundStyle(Palette.inkWarm)
+            .frame(width: 36, height: 36)
+            .overlay(Circle().stroke(Palette.inkWarm, lineWidth: 1))
+            .contentShape(Circle())
+    }
+
+    /// Display preferences for the field. Kept as a quiet menu rather than a
+    /// settings screen: one choice today (#373), room for more later.
+    private var displayMenu: some View {
+        Menu {
+            Picker("月の表記", selection: $monthLabelStyleRaw) {
+                ForEach(MonthLabelStyle.allCases) { style in
+                    Text(style.sample).tag(style.rawValue)
+                }
+            }
+        } label: {
+            outlineIcon("ellipsis")
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("表示設定")
     }
 
     // MARK: - Month field
 
     private struct MonthGroup: Identifiable {
         let id: String
-        let label: String
+        let year: Int
+        let month: Int
         let records: [NailRecord]
     }
 
     /// Records grouped by calendar month, newest month first, newest nail
-    /// first within the month. The current year drops the year from its
-    /// label; earlier years keep it so the chart stays legible across years.
+    /// first within the month. Earlier years get a small year line under the
+    /// month so the chart stays legible across years.
     private var monthGroups: [MonthGroup] {
         let calendar = Calendar.current
         var buckets: [String: (year: Int, month: Int, items: [NailRecord])] = [:]
@@ -177,11 +233,7 @@ struct CollectionView: View {
         return buckets
             .sorted { $0.key > $1.key }
             .map { key, value in
-                MonthGroup(
-                    id: key,
-                    label: value.year == thisYear ? "\(value.month)月" : "\(value.year)年\(value.month)月",
-                    records: value.items
-                )
+                MonthGroup(id: key, year: value.year, month: value.month, records: value.items)
             }
     }
 
@@ -192,12 +244,21 @@ struct CollectionView: View {
         VStack(alignment: .leading, spacing: 28) {
             ForEach(monthGroups) { group in
                 HStack(alignment: .top, spacing: 18) {
-                    Text(group.label)
-                        .font(.system(size: 13, weight: .regular, design: .serif))
-                        .kerning(2)
-                        .foregroundStyle(Palette.mutedWarm)
-                        .frame(width: 44, alignment: .leading)
-                        .padding(.top, 22)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(monthLabelStyle.label(month: group.month))
+                            .font(.system(size: 13, weight: .regular, design: .serif))
+                            .kerning(monthLabelStyle.kerning)
+                        if group.year != thisYear {
+                            Text(String(group.year))
+                                .font(.system(size: 10, weight: .regular, design: .serif))
+                                .kerning(1.5)
+                        }
+                    }
+                    .foregroundStyle(Palette.mutedWarm)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                    .frame(width: monthLabelStyle.columnWidth, alignment: .leading)
+                    .padding(.top, 22)
                     LazyVGrid(columns: chipColumns, alignment: .leading, spacing: 16) {
                         ForEach(group.records) { record in
                             chip(record)
