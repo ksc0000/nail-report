@@ -2,18 +2,17 @@
 
 ## Context
 
-The product roadmap focuses on improving stability, test coverage, and UX in Phase 2. The immediate next step is to address test coverage for core utility functions.
+The nail-report application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This task contributes to the Accessibility goal (2.4).
 
 ## Objective
 
-Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. Focus on basic CRUD operations and data marshalling functions.
+Add `aria-label` attributes to all icon-only buttons throughout the application to improve accessibility for screen reader users.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (minor modifications for testability if necessary, but prefer to test existing public functions)
-- `src/__tests__/lib/firestore.test.ts` (new file)
-- `package.json` (only to add a `test` script if not already present, but do not add new dependencies)
-- `vite.config.ts` (only to configure Vitest if needed)
+- `src/` (excluding `src/main.tsx`)
+- Specifically, component files in `src/components/` and potentially `src/App.tsx` where icon buttons are rendered.
+- `src/App.css` (only if absolutely necessary for layout adjustments related to labels, but should not be the primary focus).
 
 ## Forbidden Scope
 
@@ -23,16 +22,16 @@ Add Vitest unit tests for the helper functions within `src/lib/firestore.ts`. Fo
 - `package.json` deps (no new npm packages without human approval)
 - Firebase deploy commands
 - Secrets and credentials
-- Any files outside the `src/` directory other than `package.json` or `vite.config.ts` for Vitest setup.
 
 ## Requirements
 
+- Identify all button elements that contain only an icon (e.g., `<button><Icon /></button>`) and do not have visible text.
+- Add a descriptive `aria-label` attribute to these buttons. The label should clearly communicate the button's purpose (e.g., `aria-label="Delete item"`, `aria-label="Edit item"`, `aria-label="Upload image"`).
+- Ensure the `aria-label` text is localized if the app supports multiple languages (for this task, assume English for simplicity, but consider how it would be translated).
 - Keep diff ≤ 150 lines.
-- Create a new test file: `src/__tests__/lib/firestore.test.ts`.
-- Mock Firebase SDK dependencies as necessary using `vi.mock` to ensure unit isolation.
-- Write tests for at least two key helper functions in `src/lib/firestore.ts`, such as `addNailItem`, `getNailItems`, or `updateNailItem`.
-- Ensure tests cover basic success cases and potential error paths if easily mockable.
-- Run `npm run build && npm run lint && npm run test` before finishing.
+- Run `npm run build && npm run lint` before finishing.
+- Prefer adding tests when touching `src/lib/` files (not applicable for this UI-focused task).
+- Report follow-up items as comments, not additional code.
 
 ## Output Format
 
