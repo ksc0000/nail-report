@@ -30,12 +30,20 @@ struct NailSilhouette: Shape {
 struct NailThumbnail: View {
     let image: UIImage
     let nailShape: NailShape
+    /// Default matches the original shelf size; the home field renders chips
+    /// smaller so a month reads at a glance.
+    var size: CGSize = CGSize(width: 84, height: 128)
+    /// Deep shadow suits the dark stage; the light home uses a soft one so
+    /// chips sit on the paper like objects rather than float.
+    var shadowColor: Color = .black.opacity(0.45)
+    var shadowRadius: CGFloat = 10
+    var shadowY: CGFloat = 7
 
     var body: some View {
         Image(uiImage: image)
             .resizable()
             .scaledToFill()
-            .frame(width: 84, height: 128)
+            .frame(width: size.width, height: size.height)
             .clipShape(NailSilhouette(nailShape: nailShape))
             .overlay(
                 LinearGradient(
@@ -49,6 +57,6 @@ struct NailThumbnail: View {
                 NailSilhouette(nailShape: nailShape)
                     .stroke(.white.opacity(0.22), lineWidth: 1)
             )
-            .shadow(color: .black.opacity(0.45), radius: 10, y: 7)
+            .shadow(color: shadowColor, radius: shadowRadius, y: shadowY)
     }
 }

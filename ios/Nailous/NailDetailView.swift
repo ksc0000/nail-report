@@ -627,6 +627,7 @@ struct NailDetailView: View {
                 .presentationDetents([.height(620), .large])
             }
         }
+        .preferredColorScheme(.dark)
         .confirmationDialog("この記録を削除しますか？", isPresented: $confirmingDelete, titleVisibility: .visible) {
             Button("削除する", role: .destructive) {
                 if let record {

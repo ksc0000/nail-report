@@ -1,8 +1,10 @@
 import SwiftData
 import SwiftUI
 
-/// Home = the jewelry box. Saved nails sit on the shelf as nail-shaped jewels;
-/// tapping one opens the spinnable stage. The"＋" starts the capture flow.
+/// Home = the collection itself: every saved nail as a small chip, laid out in
+/// rows by month like a salon's colour chart kept on your own timeline. The
+/// one being worn carries a thin gold ring. Tapping a chip opens the 3D stage —
+/// the spin is the reward for touching, not the default view.
 struct CollectionView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var deletionUndo: DeletionUndoStore
@@ -10,33 +12,27 @@ struct CollectionView: View {
     @State private var isAdding = false
     @State private var glowingID: UUID?
     @State private var selected: NailRecord?
-    @State private var arrivalID: String?
     @State private var gridShown = false
 
-    private let columns = [GridItem(.adaptive(minimum: 100), spacing: 18)]
 
     var body: some View {
         NavigationStack {
             ZStack {
-                StageBackground()
+                Palette.paper.ignoresSafeArea()
 
                 ScrollView {
-                    VStack(spacing: 24) {
+                    VStack(alignment: .leading, spacing: 0) {
                         header
 
                         if records.isEmpty {
                             emptyState
+                            sampleSection
                         } else {
-                            jewelStage
-                            shelf
+                            monthField
                         }
-
-                        sampleSection
                     }
-                    .padding(.bottom, 48)
+                    .padding(.bottom, 56)
                 }
-
-                StageForeground(theme: .glass)
 
                 if deletionUndo.blocksUnderlyingInteraction {
                     Rectangle()
@@ -62,8 +58,8 @@ struct CollectionView: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 18)
                     .padding(.vertical, 13)
-                    .background(.black.opacity(0.82), in: Capsule())
-                    .shadow(color: .black.opacity(0.35), radius: 12, y: 5)
+                    .background(Palette.inkWarm.opacity(0.94), in: Capsule())
+                    .shadow(color: .black.opacity(0.18), radius: 12, y: 5)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
                     .frame(maxHeight: .infinity, alignment: .bottom)
@@ -71,12 +67,7 @@ struct CollectionView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.25), value: deletionUndo.pending != nil)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    GoldIconButton(systemName: "plus") { isAdding = true }
-                }
-            }
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $isAdding) {
                 AddNailView()
             }
@@ -92,12 +83,10 @@ struct CollectionView: View {
                 CollectionGridView(records: records) { selected = $0 }
             }
             .onChange(of: records.first?.id) { _, newID in
-                // A nail just joined the box: drop-in animation on the stage,
-                // welcome glow on the shelf, success haptic.
+                // A nail just joined: a brief gold glow on its chip, success haptic.
                 guard let newID,
                       let newest = records.first,
                       Date().timeIntervalSince(newest.createdAt) < 8 else { return }
-                arrivalID = newID.uuidString
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                 withAnimation(.easeInOut(duration: 0.7)) { glowingID = newID }
                 Task {
@@ -106,7 +95,6 @@ struct CollectionView: View {
                 }
             }
         }
-        .preferredColorScheme(.dark)
         .task {
             renderDebugCards()
             seedIfRequested()
@@ -124,161 +112,187 @@ struct CollectionView: View {
         }
     }
 
+    // MARK: - Header
+
+    private var thisYear: Int { Calendar.current.component(.year, from: Date()) }
+
     private var header: some View {
-        DisplayTitle(
-            title: "コレクション",
-            subtitle: records.isEmpty ? nil : "\(records.count) 個のネイル"
-        )
-        .padding(.top, 12)
+        HStack(alignment: .bottom) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("NAILOUS")
+                    .font(.system(size: 11, weight: .regular, design: .serif))
+                    .kerning(5)
+                    .foregroundStyle(Palette.mutedWarm)
+                if !records.isEmpty {
+                    Text("\(String(thisYear)) ・ \(records.count)本")
+                        .font(.system(size: 11, weight: .light))
+                        .kerning(2)
+                        .foregroundStyle(Palette.mutedWarm)
+                }
+            }
+            Spacer()
+            HStack(spacing: 10) {
+                if !records.isEmpty {
+                    outlineButton(systemName: "magnifyingglass") { gridShown = true }
+                }
+                outlineButton(systemName: "plus") { isAdding = true }
+            }
+        }
+        .padding(.horizontal, 30)
+        .padding(.top, 18)
     }
+
+    private func outlineButton(systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(Palette.inkWarm)
+                .frame(width: 36, height: 36)
+                .overlay(Circle().stroke(Palette.inkWarm, lineWidth: 1))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Month field
+
+    private struct MonthGroup: Identifiable {
+        let id: String
+        let label: String
+        let records: [NailRecord]
+    }
+
+    /// Records grouped by calendar month, newest month first, newest nail
+    /// first within the month. The current year drops the year from its
+    /// label; earlier years keep it so the chart stays legible across years.
+    private var monthGroups: [MonthGroup] {
+        let calendar = Calendar.current
+        var buckets: [String: (year: Int, month: Int, items: [NailRecord])] = [:]
+        for record in records {
+            let comps = calendar.dateComponents([.year, .month], from: record.createdAt)
+            guard let y = comps.year, let m = comps.month else { continue }
+            let key = String(format: "%04d-%02d", y, m)
+            buckets[key, default: (y, m, [])].items.append(record)
+        }
+        return buckets
+            .sorted { $0.key > $1.key }
+            .map { key, value in
+                MonthGroup(
+                    id: key,
+                    label: value.year == thisYear ? "\(value.month)月" : "\(value.year)年\(value.month)月",
+                    records: value.items
+                )
+            }
+    }
+
+    private let chipSize = CGSize(width: 44, height: 64)
+    private let chipColumns = [GridItem(.adaptive(minimum: 44, maximum: 44), spacing: 12, alignment: .top)]
+
+    private var monthField: some View {
+        VStack(alignment: .leading, spacing: 28) {
+            ForEach(monthGroups) { group in
+                HStack(alignment: .top, spacing: 18) {
+                    Text(group.label)
+                        .font(.system(size: 13, weight: .regular, design: .serif))
+                        .kerning(2)
+                        .foregroundStyle(Palette.mutedWarm)
+                        .frame(width: 44, alignment: .leading)
+                        .padding(.top, 22)
+                    LazyVGrid(columns: chipColumns, alignment: .leading, spacing: 16) {
+                        ForEach(group.records) { record in
+                            chip(record)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 30)
+        .padding(.top, 52)
+    }
+
+    private func chip(_ record: NailRecord) -> some View {
+        Group {
+            if let texture = record.texture {
+                Button {
+                    selected = record
+                } label: {
+                    VStack(spacing: 7) {
+                        NailThumbnail(
+                            image: texture,
+                            nailShape: record.shape,
+                            size: chipSize,
+                            shadowColor: .black.opacity(0.12),
+                            shadowRadius: 8,
+                            shadowY: 4
+                        )
+                        .overlay {
+                            if record.wornSince != nil {
+                                Ellipse()
+                                    .stroke(Palette.goldHairline, lineWidth: 1.2)
+                                    .padding(-7)
+                            }
+                        }
+                        .shadow(
+                            color: glowingID == record.id ? Palette.goldHairline.opacity(0.9) : .clear,
+                            radius: 14
+                        )
+                        if let days = record.wearDays {
+                            Text("\(days)日目")
+                                .font(.system(size: 9, weight: .regular))
+                                .kerning(1)
+                                .foregroundStyle(Palette.mutedWarm)
+                        }
+                    }
+                    .padding(.top, 8)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - Empty state
 
     private var emptyState: some View {
         VStack(spacing: 14) {
             Image(systemName: "sparkles")
-                .font(.system(size: 34))
-                .foregroundStyle(Palette.gold)
+                .font(.system(size: 30))
+                .foregroundStyle(Palette.goldHairline)
             Text("最初のネイルをコレクションへ")
-                .font(.system(size: 17, weight: .medium))
-                .foregroundStyle(.white)
+                .font(.system(size: 17, weight: .medium, design: .serif))
+                .foregroundStyle(Palette.inkWarm)
             Text("サロン帰りの写真を選ぶだけで、\nあなたのネイルが指先で回せる3Dチップになります。")
-                .font(.system(size: 13))
+                .font(.system(size: 13, weight: .light))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(Palette.mutedWarm)
                 .lineSpacing(3)
             Button {
                 isAdding = true
             } label: {
                 Text("ネイルを記録する")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 13, weight: .regular))
+                    .kerning(2)
+                    .foregroundStyle(Palette.inkWarm)
                     .padding(.horizontal, 28)
-                    .padding(.vertical, 12)
-                    .background(Capsule().fill(Palette.goldGradient))
-                    .foregroundStyle(Palette.ink0)
+                    .padding(.vertical, 13)
+                    .overlay(Capsule().stroke(Palette.inkWarm, lineWidth: 1))
             }
+            .buttonStyle(.plain)
             .padding(.top, 6)
         }
-        .padding(.vertical, 30)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 120)
+        .padding(.bottom, 40)
     }
 
-    /// The five designs drifting on stage: the one being worn (if any) front
-    /// and centre, then the newest.
-    private var showcase: [NailRecord] {
-        guard let wearing = records.first(where: { $0.wornSince != nil }) else {
-            return Array(records.prefix(5))
-        }
-        return [wearing] + records.filter { $0.id != wearing.id }.prefix(4)
-    }
-
-    private var jewelStage: some View {
-        VStack(spacing: 4) {
-            if let first = showcase.first, let firstAppearance = first.appearance {
-                ZStack {
-                    JewelPodium()
-                    NailSceneView(
-                        appearance: firstAppearance,
-                        shape: first.shape,
-                        mode: .set,
-                        plateParams: first.plateParams,
-                        setAppearances: showcase.compactMap(\.appearance),
-                        setShapes: showcase.map(\.shape),
-                        layout: .cloud,
-                        theme: .glass,
-                        onTipTap: { index in
-                            if showcase.indices.contains(index) {
-                                selected = showcase[index]
-                            }
-                        },
-                        arrivalID: arrivalID,
-                        restrictPanToHorizontal: true
-                    )
-                }
-                .frame(height: 400)
-                if let days = showcase.first?.wearDays, let title = showcase.first?.title {
-                    HStack(spacing: 6) {
-                        Circle().fill(Palette.goldBright).frame(width: 5, height: 5)
-                        Text("装着中 ・ \(days)日目 — \(title)")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Palette.goldBright.opacity(0.9))
-                    }
-                }
-                Text("タップで開く・横ドラッグで回転・ダブルタップで戻す")
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.4))
-            }
-        }
-    }
-
-    private var shelf: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                SectionHeader(title: "最近のネイル")
-                Spacer()
-                NavigationLink {
-                    CollectionGridView(records: records) { selected = $0 }
-                } label: {
-                    HStack(spacing: 3) {
-                        Text("すべて見る")
-                        Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold))
-                    }
-                    .font(.system(size: 12.5, weight: .medium))
-                    .foregroundStyle(Palette.gold)
-                }
-                .padding(.trailing, 24)
-            }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 14) {
-                    ForEach(records) { record in
-                        if let texture = record.texture {
-                            Button {
-                                selected = record
-                            } label: {
-                                VStack(spacing: 6) {
-                                    NailThumbnail(image: texture, nailShape: record.shape)
-                                        .scaleEffect(0.76)
-                                        .frame(width: 66, height: 100)
-                                        .shadow(
-                                            color: glowingID == record.id
-                                                ? Palette.goldBright.opacity(0.85)
-                                                : .clear,
-                                            radius: 14
-                                        )
-                                        .overlay(alignment: .topTrailing) {
-                                            HStack(spacing: 3) {
-                                                if record.wornSince != nil {
-                                                    Circle()
-                                                        .fill(Palette.goldBright)
-                                                        .frame(width: 7, height: 7)
-                                                        .shadow(color: Palette.gold, radius: 4)
-                                                }
-                                                if record.isFavorite {
-                                                    Image(systemName: "heart.fill")
-                                                        .font(.system(size: 10))
-                                                        .foregroundStyle(Palette.goldBright)
-                                                        .shadow(color: .black.opacity(0.5), radius: 2)
-                                                }
-                                            }
-                                            .offset(x: -4, y: 8)
-                                        }
-                                    Text(record.title)
-                                        .font(.system(size: 11))
-                                        .lineLimit(1)
-                                        .foregroundStyle(.white.opacity(0.7))
-                                        .frame(width: 76)
-                                }
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 4)
-            }
-        }
-    }
-
+    /// Sample designs to try before the first real record — hidden once the
+    /// collection has anything of the user's own in it.
     private var sampleSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionHeader(title: "サンプルデザイン")
+            Text("サンプル")
+                .font(.system(size: 11, weight: .regular, design: .serif))
+                .kerning(3)
+                .foregroundStyle(Palette.mutedWarm)
+                .padding(.horizontal, 30)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 18) {
@@ -291,19 +305,28 @@ struct CollectionView: View {
                             )
                         } label: {
                             VStack(spacing: 10) {
-                                NailThumbnail(image: style.texture, nailShape: .squoval)
+                                NailThumbnail(
+                                    image: style.texture,
+                                    nailShape: .squoval,
+                                    size: CGSize(width: 60, height: 88),
+                                    shadowColor: .black.opacity(0.12),
+                                    shadowRadius: 8,
+                                    shadowY: 4
+                                )
                                 Text(style.label)
-                                    .font(.system(size: 12))
+                                    .font(.system(size: 11))
                                     .lineLimit(1)
-                                    .foregroundStyle(.white.opacity(0.75))
+                                    .foregroundStyle(Palette.mutedWarm)
                             }
                         }
+                        .buttonStyle(.plain)
                     }
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 30)
                 .padding(.vertical, 6)
             }
         }
+        .padding(.top, 10)
     }
 
     /// `-debugCards 1` renders every card template to Documents so the
@@ -329,16 +352,23 @@ struct CollectionView: View {
     /// UI can be verified headlessly in the simulator.
     private func seedIfRequested() {
         guard UserDefaults.standard.string(forKey: "seedDemo") == "1", records.isEmpty else { return }
-        let specs: [(NailStyle, String, NailShape, [String], Bool)] = [
-            (NailStyle.samples[3], "深海ネイル", .oval, ["ブルー", "グラデ"], true),
-            (NailStyle.samples[1], "グレージュ", .squoval, ["ベージュ", "マグネット"], false),
-            (NailStyle.samples[0], "シアーローズ", .almond, ["ピンク", "シアー"], true),
-            (NailStyle.samples[2], "ラメフレンチ", .coffin, ["フレンチ", "ラメ"], false),
+        let specs: [(NailStyle, String, NailShape, [String], Bool, Int)] = [
+            (NailStyle.samples[3], "深海ネイル", .oval, ["ブルー", "グラデ"], true, 0),
+            (NailStyle.samples[1], "グレージュ", .squoval, ["ベージュ", "マグネット"], false, 9),
+            (NailStyle.samples[0], "シアーローズ", .almond, ["ピンク", "シアー"], true, 18),
+            (NailStyle.samples[2], "ラメフレンチ", .coffin, ["フレンチ", "ラメ"], false, 27),
+            (NailStyle.samples[1], "ミルクティー", .round, ["ベージュ"], false, 41),
+            (NailStyle.samples[0], "桜", .oval, ["ピンク"], false, 55),
+            (NailStyle.samples[3], "ネイビー", .squoval, ["ブルー"], false, 63),
+            (NailStyle.samples[2], "パールフレンチ", .almond, ["フレンチ"], true, 84),
+            (NailStyle.samples[1], "グレージュ2", .coffin, ["ベージュ"], false, 95),
         ]
-        for (style, title, shape, tags, fav) in specs {
+        for (index, (style, title, shape, tags, fav, daysAgo)) in specs.enumerated() {
             guard let jpeg = style.texture.jpegData(compressionQuality: 0.85) else { continue }
             let record = NailRecord(title: title, shape: shape, finish: .gloss, photoData: jpeg, tags: tags)
             record.isFavorite = fav
+            record.createdAt = Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date()) ?? Date()
+            if index == 0 { record.wornSince = Calendar.current.date(byAdding: .day, value: -2, to: Date()) }
             modelContext.insert(record)
         }
     }

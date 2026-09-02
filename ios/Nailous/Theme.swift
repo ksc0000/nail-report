@@ -15,6 +15,14 @@ enum Palette {
     /// Retained accent for actions that shouldn't read as "metal" (kept warm).
     static let rose = Color(red: 0.83, green: 0.54, blue: 0.61)
 
+    // Quiet-luxury light surface used by the home collection: warm paper,
+    // warm ink, and gold reduced to a hairline. The dark stage palette above
+    // stays for the detail/capture screens where the 3D nail is the hero.
+    static let paper = Color(red: 0.980, green: 0.969, blue: 0.949)
+    static let inkWarm = Color(red: 0.227, green: 0.208, blue: 0.196)
+    static let mutedWarm = Color(red: 0.612, green: 0.580, blue: 0.549)
+    static let goldHairline = Color(red: 0.788, green: 0.663, blue: 0.431)
+
     static let goldGradient = LinearGradient(
         colors: [goldBright, gold, goldDeep],
         startPoint: .topLeading,
