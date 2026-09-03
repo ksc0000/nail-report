@@ -2,16 +2,18 @@
 
 ## Context
 
-The application is in Phase 2 of its roadmap, focusing on improving stability, test coverage, and UX. This task initiates the test coverage improvements by adding unit tests for core helper functions.
+Phase 2.1 of the roadmap focuses on improving test coverage. This task is the first step towards adding unit tests for core helper functions.
 
 ## Objective
 
-Add unit tests for the helper functions within `src/lib/firestore.ts` using Vitest.
+Implement unit tests for helper functions within `src/lib/firestore.ts` using Vitest and mock the Firebase SDK.
 
 ## Allowed Scope
 
-- `src/lib/firestore.ts` (small modifications to export functions if needed for testing, but ideally not needed)
+- `src/lib/firestore.ts` (modifications to export functions for testing, if necessary, but focus on testing existing logic)
 - `src/__tests__/` (new test files, e.g., `src/__tests__/firestore.test.ts`)
+- `vite.config.ts` (minimal Vitest configuration if required, e.g., for `globals`)
+- `package.json` (only for adding `test` script, no new dependencies)
 
 ## Forbidden Scope
 
@@ -25,11 +27,14 @@ Add unit tests for the helper functions within `src/lib/firestore.ts` using Vite
 ## Requirements
 
 - Keep diff ≤ 150 lines.
-- Create a new test file, e.g., `src/__tests__/firestore.test.ts`.
-- Focus on testing the functions that interact with Firestore (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, `deleteNailItem`, `getPublicShareLink`, `setPublicShareLink`, `deletePublicShareLink`).
-- Use `vi.mock` to mock Firebase SDK dependencies (Firestore instances, doc/collection references, etc.) to ensure tests are isolated unit tests.
-- Ensure the tests cover basic CRUD operations and error handling where applicable.
-- Run `npm run test` and `npm run build && npm run lint` before finishing.
+- Add a new test file `src/__tests__/firestore.test.ts`.
+- Use Vitest as the test runner.
+- Mock the Firebase Firestore SDK using `vi.mock` to prevent actual Firebase calls during tests.
+- Write unit tests for at least one helper function in `src/lib/firestore.ts` (e.g., `addNailItem`, `getNailItems`, `updateNailItem`, or `deleteNailItem`).
+- Ensure tests verify that the correct Firestore methods (e.g., `collection`, `doc`, `addDoc`, `getDocs`, `updateDoc`, `deleteDoc`) are called with the expected arguments.
+- Run `npm run build && npm run lint` before finishing.
+- Do not add new npm dependencies.
+- Ensure `npm test` runs the new tests.
 
 ## Output Format
 
