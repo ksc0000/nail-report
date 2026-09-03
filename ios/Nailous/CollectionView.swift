@@ -20,9 +20,30 @@ enum MonthLabelStyle: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Same as `label(month:)`, but folds `year` into the text whenever it
+    /// isn't `currentYear` so the year never gets lost — earlier revisions
+    /// dropped it entirely for `abbreviated`/`full` (#377).
+    func label(month: Int, year: Int, currentYear: Int) -> String {
+        let bare = label(month: month)
+        guard year != currentYear else { return bare }
+        switch self {
+        case .kanji: return "\(year)年\(month)月"
+        case .abbreviated, .full: return "\(bare) \(year)"
+        }
+    }
+
     /// Kerning that keeps each style legible inside the label column.
     var kerning: CGFloat { self == .full ? 0.5 : 2 }
-    var columnWidth: CGFloat { self == .full ? 72 : 44 }
+
+    /// Wide enough for the longest label this style can produce, including
+    /// a past year (e.g. "2025年12月", "DEC 2025", "December 2025").
+    var columnWidth: CGFloat {
+        switch self {
+        case .kanji: return 84
+        case .abbreviated: return 78
+        case .full: return 96
+        }
+    }
 
     private static let englishMonths = [
         "January", "February", "March", "April", "May", "June",
@@ -253,21 +274,14 @@ struct CollectionView: View {
         VStack(alignment: .leading, spacing: 28) {
             ForEach(monthGroups) { group in
                 HStack(alignment: .top, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(monthLabelStyle.label(month: group.month))
-                            .font(.system(size: 13, weight: .regular, design: .serif))
-                            .kerning(monthLabelStyle.kerning)
-                        if group.year != thisYear {
-                            Text(String(group.year))
-                                .font(.system(size: 10, weight: .regular, design: .serif))
-                                .kerning(1.5)
-                        }
-                    }
-                    .foregroundStyle(Palette.mutedWarm)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                    .frame(width: monthLabelStyle.columnWidth, alignment: .leading)
-                    .padding(.top, 22)
+                    Text(monthLabelStyle.label(month: group.month, year: group.year, currentYear: thisYear))
+                        .font(.system(size: 13, weight: .regular, design: .serif))
+                        .kerning(monthLabelStyle.kerning)
+                        .foregroundStyle(Palette.mutedWarm)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .frame(width: monthLabelStyle.columnWidth, alignment: .leading)
+                        .padding(.top, 22)
                     LazyVGrid(columns: chipColumns, alignment: .leading, spacing: 16) {
                         ForEach(group.records) { record in
                             chip(record)
@@ -303,7 +317,11 @@ struct CollectionView: View {
         guard let image = RecapCardRenderer.render(records: group.records, month: group.month, year: group.year)
         else { return }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        recapCard = RecapCardPayload(id: group.id, image: image, monthTitle: monthLabelStyle.label(month: group.month))
+        recapCard = RecapCardPayload(
+            id: group.id,
+            image: image,
+            monthTitle: monthLabelStyle.label(month: group.month, year: group.year, currentYear: thisYear)
+        )
     }
 
     private func chip(_ record: NailRecord) -> some View {
