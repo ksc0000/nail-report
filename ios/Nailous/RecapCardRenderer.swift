@@ -83,6 +83,15 @@ enum RecapCardRenderer {
             chipH = chipW / nailAspect
         }
 
+        // Jitter is scaled to each chip's own leftover margin within its cell,
+        // not a fixed fraction of the cell itself — dense grids (little
+        // leftover margin, e.g. 8 nails in 3×3) automatically get gentler
+        // nudges instead of the fixed-fraction jitter eating past the natural
+        // gap and stacking chips on top of each other (#376).
+        let marginX = max(0, (cellW - chipW) / 2)
+        let marginY = max(0, (cellH - chipH) / 2)
+        let jitterFrac: CGFloat = 0.55
+
         var placements: [Placement] = []
         var index = 0
         var row = 0
@@ -94,8 +103,8 @@ enum RecapCardRenderer {
             for col in 0..<itemsInRow {
                 let cellCenter = CGPoint(x: rowStartX + cellW * (CGFloat(col) + 0.5), y: rowY)
                 var rng = SeededGenerator(seed: seeds[index])
-                let jitterX = CGFloat.random(in: -0.16...0.16, using: &rng) * cellW
-                let jitterY = CGFloat.random(in: -0.16...0.16, using: &rng) * cellH
+                let jitterX = CGFloat.random(in: -jitterFrac...jitterFrac, using: &rng) * marginX
+                let jitterY = CGFloat.random(in: -jitterFrac...jitterFrac, using: &rng) * marginY
                 let center = CGPoint(x: cellCenter.x + jitterX, y: cellCenter.y + jitterY)
                 let angle = CGFloat.random(in: -12...12, using: &rng) * .pi / 180
                 let rect = CGRect(x: center.x - chipW / 2, y: center.y - chipH / 2, width: chipW, height: chipH)
