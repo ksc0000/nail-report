@@ -2,69 +2,44 @@
 
 ## Context
 
-The product roadmap for `nail-report` is in Phase 2, focusing on improving stability, test coverage, and UX. The first sub-point for Phase 2 is "2.1 Test coverage", specifically mentioning "Unit tests for Firestore helper functions (`src/lib/firestore.ts`)". This task aims to kickstart the test coverage efforts by implementing unit tests for the core Firestore utility functions.
+Read the roadmap, recent commits, and the current task. Phase 2.1 of the roadmap focuses on "Test coverage" with "Test runner: Vitest". This task initiates the implementation of unit tests for core application logic, specifically for Firebase Firestore helper functions.
 
 ## Objective
 
-Add unit tests for the helper functions defined in `src/lib/firestore.ts` using Vitest, focusing on mocking the Firebase SDK.
+Implement initial unit tests for helper functions within `src/lib/firestore.ts` using Vitest. This involves setting up Vitest if it's not already configured, and writing at least two isolated unit tests.
 
 ## Allowed Scope
 
--   `src/lib/firestore.ts` (modifications to export functions if needed for testing, but prioritize minimal changes)
--   `src/__tests__/firestore.test.ts` (new file for tests)
--   `vite.config.ts` (minor additions for Vitest setup if not already complete, e.g., `test` configuration)
+- `src/lib/firestore.ts` (minor refactors for testability if necessary, e.g., exporting unexported functions, but keep changes minimal)
+- `src/__tests__/firestore.test.ts` (new file for tests)
+- `vite.config.ts` (to add or update Vitest configuration, e.g., `test:` property)
+- `package.json` (to add `vitest` as a `devDependency` if it's not already present, and to add an `npm run test` script; *no other dependencies or changes allowed*)
 
 ## Forbidden Scope
 
--   `src/main.tsx` (entry point — do not modify)
--   `commands/` (PowerShell scripts — do not modify)
--   `firestore.rules`, `storage.rules` (require human approval)
--   `package.json` deps (no new npm packages without human approval)
--   Firebase deploy commands
--   Secrets and credentials
+- `src/main.tsx` (entry point — do not modify)
+- `commands/` (PowerShell scripts — do not modify)
+- `firestore.rules`, `storage.rules` (require human approval)
+- `package.json` (except for explicitly adding `vitest` as a `devDependency` and adding an `npm run test` script)
+- Firebase deploy commands
+- Secrets and credentials
+- Modifying `src/App.css` or other CSS files for this task.
 
 ## Requirements
 
--   Keep diff ≤ 150 lines.
--   Run `npm run build && npm run lint` before finishing.
--   Implement unit tests for functions within `src/lib/firestore.ts`, such as `getCollection`, `getDocument`, `addDocument`, `updateDocument`, `deleteDocument`, etc.
--   Mock the Firebase SDK (Firestore specifically) using `vitest` and `vi.mock` to ensure tests run in isolation without requiring a live Firebase connection.
--   Ensure tests cover common success and failure scenarios for the Firestore operations.
--   The new test file `src/__tests__/firestore.test.ts` must be created.
+- Keep diff ≤ 150 lines.
+- **Install Vitest**: If `vitest` is not already a `devDependency` in `package.json`, add it.
+- **Configure Vitest**: Ensure `vite.config.ts` is configured to run Vitest tests.
+- **Add Test Script**: Add an `npm run test` script to `package.json` that executes `vitest run` if one does not already exist.
+- **Mock Firebase SDK**: Use `vi.mock` to mock Firebase SDK methods (e.g., Firestore instance, collection, doc, addDoc, getDoc, updateDoc, deleteDoc) to ensure tests are isolated and don't interact with a live Firebase project.
+- **Write Unit Tests**: Add at least two simple unit tests for core functions in `src/lib/firestore.ts`. Examples could include testing `addNailItem`, `updateNailItem`, or `deleteNailItem`. Focus on testing the logic of the helper functions themselves, not actual Firebase integration.
+- Run `npm run build && npm run lint && npm run test` before finishing. All commands must pass without errors.
+- Report follow-up items as comments in the PR, not additional code.
 
 ## Output Format
 
--   Summary of what changed
--   Changed files list
--   Commands run and results
--   Known issues or limitations
--   Suggested next task
-
-## Worker Prompt
-
-Your task is to implement unit tests for the Firebase Firestore helper functions located in `src/lib/firestore.ts`.
-
-1.  **Vitest Setup**: Confirm that Vitest is correctly configured for the project. If `vite.config.ts` lacks a `test` property in its configuration, add a basic one, e.g., `test: { environment: 'jsdom' }`.
-2.  **Firebase SDK Mocking**: Use `vi.mock('firebase/firestore', ...)` to mock the necessary Firebase Firestore functions (e.g., `collection`, `doc`, `getDocs`, `getDoc`, `addDoc`, `updateDoc`, `deleteDoc`). This will allow you to control their return values and test your helper functions in isolation.
-3.  **Test File Creation**: Create a new test file at `src/__tests__/firestore.test.ts`.
-4.  **Write Unit Tests**: For each significant helper function in `src/lib/firestore.ts`:
-    *   Write `describe` blocks and `it` tests.
-    *   Test successful scenarios where Firestore operations complete as expected.
-    *   Test error scenarios where Firestore operations might fail (e.g., permission denied, network issues) and ensure your helper functions handle them gracefully.
-    *   Use `expect` assertions to verify the behavior and return values of your helper functions.
-5.  **Build and Lint**: Before completing the task, run `npm run build` and `npm run lint` to ensure no new errors are introduced.
-6.  **Run Tests**: Execute `npm test` and ensure all new tests pass.
-
-**Acceptance Criteria:**
-*   A new file `src/__tests__/firestore.test.ts` exists.
-*   This file contains `describe` blocks and `it` tests covering at least the `getCollection`, `getDocument`, `addDocument`, `updateDocument`, and `deleteDocument` functions from `src/lib/firestore.ts`.
-*   The tests effectively mock the `firebase/firestore` module to run in isolation.
-*   All tests pass when running `npm test`.
-*   `npm run build` and `npm run lint` execute without errors.
-
-**Required Test Commands:**
-```bash
-npm test
-npm run build
-npm run lint
-```
+- Summary of what changed
+- Changed files list
+- Commands run and results
+- Known issues or limitations
+- Suggested next task
