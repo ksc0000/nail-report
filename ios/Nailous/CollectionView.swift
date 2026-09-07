@@ -56,6 +56,11 @@ enum MonthLabelStyle: String, CaseIterable, Identifiable {
 /// one being worn carries a thin gold ring. Tapping a chip opens the 3D stage —
 /// the spin is the reward for touching, not the default view.
 struct CollectionView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .caption) private var monthFontSize = 13.0
+    @ScaledMetric(relativeTo: .caption2) private var captionFontSize = 11.0
+    @ScaledMetric(relativeTo: .caption2) private var wearFontSize = 9.0
+    @ScaledMetric(relativeTo: .headline) private var emptyTitleFontSize = 17.0
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var deletionUndo: DeletionUndoStore
     @Query(sort: \NailRecord.createdAt, order: .reverse) private var records: [NailRecord]
@@ -181,20 +186,23 @@ struct CollectionView: View {
     private var thisYear: Int { Calendar.current.component(.year, from: Date()) }
 
     private var header: some View {
-        HStack(alignment: .bottom) {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+            : AnyLayout(HStackLayout(alignment: .bottom))
+        return layout {
             VStack(alignment: .leading, spacing: 6) {
                 Text("NAILOUS")
-                    .font(.system(size: 11, weight: .regular, design: .serif))
+                    .font(.system(size: captionFontSize, weight: .regular, design: .serif))
                     .kerning(5)
                     .foregroundStyle(Palette.mutedWarm)
                 if !records.isEmpty {
                     Text("\(String(thisYear)) ・ \(records.count)本")
-                        .font(.system(size: 11, weight: .light))
+                        .font(.system(size: captionFontSize, weight: .light))
                         .kerning(2)
                         .foregroundStyle(Palette.mutedWarm)
                 }
             }
-            Spacer()
+            if !dynamicTypeSize.isAccessibilitySize { Spacer() }
             HStack(spacing: 10) {
                 if !records.isEmpty {
                     outlineButton(systemName: "magnifyingglass", label: "コレクションを検索") { gridShown = true }
@@ -270,42 +278,78 @@ struct CollectionView: View {
     }
 
     private let chipSize = CGSize(width: 44, height: 64)
-    private let chipColumns = [GridItem(.adaptive(minimum: 44, maximum: 44), spacing: 12, alignment: .top)]
+    private var usesStackedMonths: Bool { dynamicTypeSize >= .xxxLarge }
+
+    private var chipColumns: [GridItem] {
+        let width = usesStackedMonths ? max(44, wearFontSize * 6) : 44
+        return [GridItem(.adaptive(minimum: width, maximum: width), spacing: 12, alignment: .top)]
+    }
 
     private var monthField: some View {
         VStack(alignment: .leading, spacing: 28) {
             ForEach(monthGroups) { group in
-                HStack(alignment: .top, spacing: 18) {
-                    Text(monthLabelStyle.label(month: group.month, year: group.year, currentYear: thisYear))
-                        .font(.system(size: 13, weight: .regular, design: .serif))
-                        .kerning(monthLabelStyle.kerning)
-                        .foregroundStyle(Palette.mutedWarm)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
-                        .frame(width: monthLabelStyle.columnWidth, alignment: .leading)
-                        .padding(.top, 22)
-                    LazyVGrid(columns: chipColumns, alignment: .leading, spacing: 16) {
-                        ForEach(group.records) { record in
-                            chip(record)
+                if usesStackedMonths {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            monthLabel(group)
+                            Spacer(minLength: 12)
+                            recapButton(group)
                         }
+                        monthChips(group)
                     }
-                    Button {
-                        presentRecap(for: group)
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 12, weight: .regular))
-                            .foregroundStyle(Palette.mutedWarm)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
+                } else {
+                    HStack(alignment: .top, spacing: 18) {
+                        monthLabel(group)
+                            .frame(width: monthLabelStyle.columnWidth * monthFontSize / 13, alignment: .leading)
+                            .padding(.top, 22)
+                        monthChips(group)
+                        recapButton(group)
+                            .padding(.top, 14)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.top, 14)
-                    .accessibilityLabel("\(String(group.year))年\(group.month)月のリキャップを共有")
                 }
             }
         }
         .padding(.horizontal, 30)
         .padding(.top, 52)
+    }
+
+    private func monthLabel(_ group: MonthGroup) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(monthLabelStyle.label(month: group.month))
+                .font(.system(size: monthFontSize, weight: .regular, design: .serif))
+                .kerning(monthLabelStyle.kerning)
+            if group.year != thisYear {
+                Text(String(group.year))
+                    .font(.system(size: captionFontSize))
+            }
+        }
+        .foregroundStyle(Palette.mutedWarm)
+        .fixedSize(horizontal: false, vertical: true)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(String(group.year))年\(group.month)月")
+        .accessibilityAddTraits(.isHeader)
+    }
+
+    private func monthChips(_ group: MonthGroup) -> some View {
+        LazyVGrid(columns: chipColumns, alignment: .leading, spacing: 16) {
+            ForEach(group.records) { record in
+                chip(record)
+            }
+        }
+    }
+
+    private func recapButton(_ group: MonthGroup) -> some View {
+        Button {
+            presentRecap(for: group)
+        } label: {
+            Image(systemName: "square.and.arrow.up")
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(Palette.mutedWarm)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(String(group.year))年\(group.month)月のリキャップを共有")
     }
 
     /// One month's records as a share payload; `Identifiable` so `.sheet(item:)`
@@ -333,7 +377,7 @@ struct CollectionView: View {
                 Button {
                     selected = record
                 } label: {
-                    VStack(spacing: 7) {
+                    VStack(spacing: 12) {
                         NailThumbnail(
                             image: texture,
                             nailShape: record.shape,
@@ -355,7 +399,7 @@ struct CollectionView: View {
                         )
                         if let days = record.wearDays {
                             Text("\(days)日目")
-                                .font(.system(size: 9, weight: .regular))
+                                .font(.system(size: wearFontSize, weight: .regular))
                                 .kerning(1)
                                 .foregroundStyle(Palette.mutedWarm)
                         }
@@ -380,10 +424,11 @@ struct CollectionView: View {
                 .font(.system(size: 30))
                 .foregroundStyle(Palette.goldHairline)
             Text("最初のネイルをコレクションへ")
-                .font(.system(size: 17, weight: .medium, design: .serif))
+                .font(.system(size: emptyTitleFontSize, weight: .medium, design: .serif))
+                .multilineTextAlignment(.center)
                 .foregroundStyle(Palette.inkWarm)
             Text("サロン帰りの写真を選ぶだけで、\nあなたのネイルが指先で回せる3Dチップになります。")
-                .font(.system(size: 13, weight: .light))
+                .font(.system(size: monthFontSize, weight: .light))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Palette.mutedWarm)
                 .lineSpacing(3)
@@ -391,7 +436,8 @@ struct CollectionView: View {
                 isAdding = true
             } label: {
                 Text("ネイルを記録する")
-                    .font(.system(size: 13, weight: .regular))
+                    .font(.system(size: monthFontSize, weight: .regular))
+                    .multilineTextAlignment(.center)
                     .kerning(2)
                     .foregroundStyle(Palette.inkWarm)
                     .padding(.horizontal, 28)
@@ -402,7 +448,8 @@ struct CollectionView: View {
             .padding(.top, 6)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 120)
+        .padding(.horizontal, 24)
+        .padding(.top, dynamicTypeSize.isAccessibilitySize ? 40 : 120)
         .padding(.bottom, 40)
     }
 
@@ -411,7 +458,7 @@ struct CollectionView: View {
     private var sampleSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("サンプル")
-                .font(.system(size: 11, weight: .regular, design: .serif))
+                .font(.system(size: captionFontSize, weight: .regular, design: .serif))
                 .kerning(3)
                 .foregroundStyle(Palette.mutedWarm)
                 .padding(.horizontal, 30)
@@ -436,7 +483,7 @@ struct CollectionView: View {
                                     shadowY: 4
                                 )
                                 Text(style.label)
-                                    .font(.system(size: 11))
+                                    .font(.system(size: captionFontSize))
                                     .lineLimit(1)
                                     .foregroundStyle(Palette.mutedWarm)
                             }
