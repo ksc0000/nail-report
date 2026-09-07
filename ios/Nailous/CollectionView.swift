@@ -366,12 +366,13 @@ struct CollectionView: View {
     }
 
     private func chip(_ record: NailRecord) -> some View {
-        Group {
-            if let texture = record.texture {
-                Button {
-                    selected = record
-                } label: {
-                    VStack(spacing: 12) {
+        let texture = record.texture
+        return Button {
+            selected = record
+        } label: {
+            VStack(spacing: 12) {
+                Group {
+                    if let texture {
                         NailThumbnail(
                             image: texture,
                             nailShape: record.shape,
@@ -380,34 +381,43 @@ struct CollectionView: View {
                             shadowRadius: 8,
                             shadowY: 4
                         )
-                        .overlay {
-                            if record.wornSince != nil {
-                                Ellipse()
-                                    .stroke(Palette.goldHairline, lineWidth: 1.2)
-                                    .padding(-7)
+                    } else {
+                        NailSilhouette(nailShape: record.shape)
+                            .fill(Palette.mutedWarm.opacity(0.12))
+                            .overlay {
+                                Image(systemName: "photo.badge.exclamationmark")
+                                    .font(.system(size: 17))
+                                    .foregroundStyle(Palette.mutedWarm)
                             }
-                        }
-                        .shadow(
-                            color: glowingID == record.id ? Palette.goldHairline.opacity(0.9) : .clear,
-                            radius: 14
-                        )
-                        if let days = record.wearDays {
-                            Text("\(days)日目")
-                                .font(.system(size: wearFontSize, weight: .regular))
-                                .kerning(1)
-                                .foregroundStyle(Palette.mutedWarm)
-                        }
+                            .frame(width: chipSize.width, height: chipSize.height)
                     }
-                    .padding(.top, 8)
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("\(record.title)、\(record.createdAt.formatted(.dateTime.year().month().day()))")
-                .accessibilityValue(record.wearDays.map { "着用中、\($0)日目" } ?? "")
-                .accessibilityHint("ネイルの詳細を開きます")
+                .overlay {
+                    if record.wornSince != nil {
+                        Ellipse()
+                            .stroke(Palette.goldHairline, lineWidth: 1.2)
+                            .padding(-7)
+                    }
+                }
+                .shadow(
+                    color: glowingID == record.id ? Palette.goldHairline.opacity(0.9) : .clear,
+                    radius: 14
+                )
+                if let days = record.wearDays {
+                    Text("\(days)日目")
+                        .font(.system(size: wearFontSize, weight: .regular))
+                        .kerning(1)
+                        .foregroundStyle(Palette.mutedWarm)
+                }
             }
+            .padding(.top, 8)
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(record.title)、\(record.createdAt.formatted(.dateTime.year().month().day()))")
+        .accessibilityValue([texture == nil ? "写真を読み込めません" : nil, record.wearDays.map { "着用中、\($0)日目" }].compactMap { $0 }.joined(separator: "、"))
+        .accessibilityHint("ネイルの詳細を開きます")
     }
 
     // MARK: - Empty state

@@ -56,6 +56,10 @@ struct NailDetailView: View {
         _mode = State(initialValue: (record?.setAppearances?.count ?? 0) > 1 ? .set : .single)
     }
 
+    private var photoUnavailable: Bool {
+        record.map { $0.texture == nil } ?? false
+    }
+
     /// The hero appearance with the live-edited finish applied.
     private var liveAppearance: NailAppearance {
         NailAppearance(id: appearance.id, texture: appearance.texture, finish: finish)
@@ -118,7 +122,7 @@ struct NailDetailView: View {
                 HStack(spacing: 12) {
                     ForEach(StageTheme.allCases) { candidate in
                         themeThumb(candidate)
-                    }
+                        }
                 }
                 .padding(.horizontal, 24)
             }
@@ -348,88 +352,95 @@ struct NailDetailView: View {
                 }
                 .padding(.top, 6)
 
-                NailSceneView(
-                    appearance: liveAppearance,
-                    shape: shape,
-                    mode: mode,
-                    plateParams: plateParams,
-                    onPanStir: { point in
-                        stir = StirEvent(point: point, time: Date())
-                    },
-                    setAppearances: liveSetAppearances,
-                    layout: layout,
-                    motion: motion,
-                    theme: theme,
-                    onTipLongPress: { index in
-                        // One gesture, two uses: the nail goes straight onto the
-                        // system clipboard (paste in Instagram etc.), and stays
-                        // armed for in-app apply via a tap on another tip.
-                        copyToClipboard(stageController.makeStamp(tipIndex: index))
-                        if mode == .set, record?.setAppearances != nil {
-                            stampSource = index
+                if photoUnavailable {
+                    ContentUnavailableView("写真を読み込めません", systemImage: "photo.badge.exclamationmark",
+                                           description: Text("記録の編集や削除は引き続き行えます"))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    NailSceneView(
+                        appearance: liveAppearance,
+                        shape: shape,
+                        mode: mode,
+                        plateParams: plateParams,
+                        onPanStir: { point in
+                            stir = StirEvent(point: point, time: Date())
+                        },
+                        setAppearances: liveSetAppearances,
+                        layout: layout,
+                        motion: motion,
+                        theme: theme,
+                        onTipLongPress: { index in
+                            // One gesture, two uses: the nail goes straight onto the
+                            // system clipboard (paste in Instagram etc.), and stays
+                            // armed for in-app apply via a tap on another tip.
+                            copyToClipboard(stageController.makeStamp(tipIndex: index))
+                            if mode == .set, record?.setAppearances != nil {
+                                stampSource = index
+                            }
+                            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                        },
+                        onTipTap: { index in
+                            guard let source = stampSource else { return }
+                            defer { stampSource = nil }
+                            guard let record,
+                                  record.fingerPhotoData.indices.contains(source),
+                                  record.fingerPhotoData.indices.contains(index),
+                                  source != index else { return }
+                            record.fingerPhotoData[index] = record.fingerPhotoData[source]
+                            UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        },
+                        onStageLongPress: {
+                            copyToClipboard(stageController.makeStamp())
+                            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                        },
+                        controller: stageController
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .offset(y: (showTuneSheet || showStageSheet) ? -132 : 0)
+                    .animation(.easeInOut(duration: 0.3), value: showTuneSheet || showStageSheet)
+                    .overlay(alignment: .bottom) {
+                        if showCopiedToast {
+                            Label("コピーしました — 他のアプリでそのまま貼り付けできます", systemImage: "checkmark.circle.fill")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 9)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.black.opacity(0.72))
+                                        .overlay(Capsule().stroke(Palette.gold.opacity(0.55), lineWidth: 1))
+                                )
+                                .padding(.bottom, 8)
+                                .transition(.opacity.combined(with: .move(edge: .bottom)))
                         }
-                        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-                    },
-                    onTipTap: { index in
-                        guard let source = stampSource else { return }
-                        defer { stampSource = nil }
-                        guard let record,
-                              record.fingerPhotoData.indices.contains(source),
-                              record.fingerPhotoData.indices.contains(index),
-                              source != index else { return }
-                        record.fingerPhotoData[index] = record.fingerPhotoData[source]
-                        UINotificationFeedbackGenerator().notificationOccurred(.success)
-                    },
-                    onStageLongPress: {
-                        copyToClipboard(stageController.makeStamp())
-                        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-                    },
-                    controller: stageController
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .offset(y: (showTuneSheet || showStageSheet) ? -132 : 0)
-                .animation(.easeInOut(duration: 0.3), value: showTuneSheet || showStageSheet)
-                .overlay(alignment: .bottom) {
-                    if showCopiedToast {
-                        Label("コピーしました — 他のアプリでそのまま貼り付けできます", systemImage: "checkmark.circle.fill")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.white)
+                    }
+                    .overlay(alignment: .top) {
+                        if stampSource != nil {
+                            HStack(spacing: 10) {
+                                Text("コピーしました：爪をタップで適用・他アプリでペースト可")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(.white)
+                                Button("解除") { stampSource = nil }
+                                    .font(.system(size: 12.5, weight: .semibold))
+                                    .foregroundStyle(Palette.goldBright)
+                            }
                             .padding(.horizontal, 14)
-                            .padding(.vertical, 9)
+                            .padding(.vertical, 8)
                             .background(
                                 Capsule()
                                     .fill(Color.black.opacity(0.72))
                                     .overlay(Capsule().stroke(Palette.gold.opacity(0.55), lineWidth: 1))
                             )
-                            .padding(.bottom, 8)
-                            .transition(.opacity.combined(with: .move(edge: .bottom)))
-                    }
-                }
-                .overlay(alignment: .top) {
-                    if stampSource != nil {
-                        HStack(spacing: 10) {
-                            Text("コピーしました：爪をタップで適用・他アプリでペースト可")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(.white)
-                            Button("解除") { stampSource = nil }
-                                .font(.system(size: 12.5, weight: .semibold))
-                                .foregroundStyle(Palette.goldBright)
+                            .padding(.top, 6)
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule()
-                                .fill(Color.black.opacity(0.72))
-                                .overlay(Capsule().stroke(Palette.gold.opacity(0.55), lineWidth: 1))
-                        )
-                        .padding(.top, 6)
                     }
-                }
 
-                Text(mode == .set ? "ドラッグで回転・爪を長押しでコピー" : "ドラッグで回転・長押しでコピー")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.45))
-                    .padding(.bottom, 12)
+                    Text(mode == .set ? "ドラッグで回転・爪を長押しでコピー" : "ドラッグで回転・長押しでコピー")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.45))
+                        .padding(.bottom, 12)
+
+                }
 
                 if let record, !record.tags.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -500,12 +511,14 @@ struct NailDetailView: View {
                     if record != nil {
                         wearPill
                     }
-                    StagePill(label: "ステージ", isOn: showStageSheet) {
-                        showStageSheet = true
-                    }
-                    StagePill(label: "調整", isOn: showTuneSheet) {
-                        showTuneSheet = true
-                    }
+                    if !photoUnavailable {
+                        StagePill(label: "ステージ", isOn: showStageSheet) {
+                            showStageSheet = true
+                        }
+                        StagePill(label: "調整", isOn: showTuneSheet) {
+                            showTuneSheet = true
+                        }
+                }
                 }
                 .padding(.bottom, record == nil ? 28 : 16)
 
@@ -544,16 +557,18 @@ struct NailDetailView: View {
                     }
                 }
             }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    if let stamp = stageController.makeStamp() {
-                        stampImage = stamp
-                        showStampSheet = true
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            if !photoUnavailable {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        if let stamp = stageController.makeStamp() {
+                            stampImage = stamp
+                            showStampSheet = true
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        }
+                    } label: {
+                        Label("スタンプ", systemImage: "square.and.arrow.up")
+                            .foregroundStyle(.white)
                     }
-                } label: {
-                    Label("スタンプ", systemImage: "square.and.arrow.up")
-                        .foregroundStyle(.white)
                 }
             }
         }
