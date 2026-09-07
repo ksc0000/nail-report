@@ -20,9 +20,8 @@ enum MonthLabelStyle: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Same as `label(month:)`, but folds `year` into the text whenever it
-    /// isn't `currentYear` so the year never gets lost — earlier revisions
-    /// dropped it entirely for `abbreviated`/`full` (#377).
+    /// `label(month:)` with `year` folded in when it isn't `currentYear`;
+    /// used where the month stands alone, such as the recap card title (#377).
     func label(month: Int, year: Int, currentYear: Int) -> String {
         let bare = label(month: month)
         guard year != currentYear else { return bare }
@@ -35,15 +34,9 @@ enum MonthLabelStyle: String, CaseIterable, Identifiable {
     /// Kerning that keeps each style legible inside the label column.
     var kerning: CGFloat { self == .full ? 0.5 : 2 }
 
-    /// Wide enough for the longest label this style can produce, including
-    /// a past year (e.g. "2025年12月", "DEC 2025", "December 2025").
-    var columnWidth: CGFloat {
-        switch self {
-        case .kanji: return 84
-        case .abbreviated: return 78
-        case .full: return 96
-        }
-    }
+    /// Wide enough for the month alone; a past year sits on its own line
+    /// under the month, so the column stays narrow and the chips stay close.
+    var columnWidth: CGFloat { self == .full ? 72 : 44 }
 
     private static let englishMonths = [
         "January", "February", "March", "April", "May", "June",
@@ -280,11 +273,6 @@ struct CollectionView: View {
     private let chipSize = CGSize(width: 44, height: 64)
     private var usesStackedMonths: Bool { dynamicTypeSize >= .xxxLarge }
 
-    private var chipColumns: [GridItem] {
-        let width = usesStackedMonths ? max(44, wearFontSize * 6) : 44
-        return [GridItem(.adaptive(minimum: width, maximum: width), spacing: 12, alignment: .top)]
-    }
-
     private var monthField: some View {
         VStack(alignment: .leading, spacing: 28) {
             ForEach(monthGroups) { group in
@@ -300,7 +288,7 @@ struct CollectionView: View {
                 } else {
                     HStack(alignment: .top, spacing: 18) {
                         monthLabel(group)
-                            .frame(width: monthLabelStyle.columnWidth * monthFontSize / 13, alignment: .leading)
+                            .frame(width: monthLabelStyle.columnWidth * max(1, monthFontSize / 13), alignment: .leading)
                             .padding(.top, 22)
                         monthChips(group)
                         recapButton(group)
@@ -318,6 +306,8 @@ struct CollectionView: View {
             Text(monthLabelStyle.label(month: group.month))
                 .font(.system(size: monthFontSize, weight: .regular, design: .serif))
                 .kerning(monthLabelStyle.kerning)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
             if group.year != thisYear {
                 Text(String(group.year))
                     .font(.system(size: captionFontSize))
@@ -331,11 +321,15 @@ struct CollectionView: View {
     }
 
     private func monthChips(_ group: MonthGroup) -> some View {
-        LazyVGrid(columns: chipColumns, alignment: .leading, spacing: 16) {
+        // A leading-aligned flow rather than LazyVGrid: inside the month row's
+        // HStack a lazy grid claimed only two columns and centred them, so the
+        // chips drifted away from their month label.
+        ChipFlow(horizontalSpacing: 12, verticalSpacing: 16) {
             ForEach(group.records) { record in
                 chip(record)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func recapButton(_ group: MonthGroup) -> some View {
@@ -569,5 +563,48 @@ struct CollectionView: View {
             if index == 0 { record.wornSince = Calendar.current.date(byAdding: .day, value: -2, to: Date()) }
             modelContext.insert(record)
         }
+    }
+}
+
+/// Leading-aligned wrapping row of fixed-size chips. Each subview keeps its
+/// own size; rows break when the next chip would overflow the proposed width.
+private struct ChipFlow: Layout {
+    var horizontalSpacing: CGFloat
+    var verticalSpacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let frames = layout(in: proposal.width ?? .infinity, subviews: subviews)
+        let width = frames.map(\.maxX).max() ?? 0
+        let height = frames.map(\.maxY).max() ?? 0
+        return CGSize(width: proposal.width ?? width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let frames = layout(in: bounds.width, subviews: subviews)
+        for (subview, frame) in zip(subviews, frames) {
+            subview.place(
+                at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
+                proposal: ProposedViewSize(frame.size)
+            )
+        }
+    }
+
+    private func layout(in width: CGFloat, subviews: Subviews) -> [CGRect] {
+        var frames: [CGRect] = []
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > 0, x + size.width > width {
+                x = 0
+                y += rowHeight + verticalSpacing
+                rowHeight = 0
+            }
+            frames.append(CGRect(origin: CGPoint(x: x, y: y), size: size))
+            x += size.width + horizontalSpacing
+            rowHeight = max(rowHeight, size.height)
+        }
+        return frames
     }
 }
