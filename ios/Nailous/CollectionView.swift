@@ -197,21 +197,22 @@ struct CollectionView: View {
             Spacer()
             HStack(spacing: 10) {
                 if !records.isEmpty {
-                    outlineButton(systemName: "magnifyingglass") { gridShown = true }
+                    outlineButton(systemName: "magnifyingglass", label: "コレクションを検索") { gridShown = true }
                 }
                 displayMenu
-                outlineButton(systemName: "plus") { isAdding = true }
+                outlineButton(systemName: "plus", label: "ネイルを記録する") { isAdding = true }
             }
         }
         .padding(.horizontal, 30)
         .padding(.top, 18)
     }
 
-    private func outlineButton(systemName: String, action: @escaping () -> Void) -> some View {
+    private func outlineButton(systemName: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             outlineIcon(systemName)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 
     private func outlineIcon(_ systemName: String) -> some View {
@@ -220,7 +221,8 @@ struct CollectionView: View {
             .foregroundStyle(Palette.inkWarm)
             .frame(width: 36, height: 36)
             .overlay(Circle().stroke(Palette.inkWarm, lineWidth: 1))
-            .contentShape(Circle())
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
     }
 
     /// Display preferences for the field. Kept as a quiet menu rather than a
@@ -293,11 +295,12 @@ struct CollectionView: View {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 12, weight: .regular))
                             .foregroundStyle(Palette.mutedWarm)
-                            .frame(width: 28, height: 28)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .padding(.top, 22)
-                    .accessibilityLabel("\(group.month)月のリキャップを共有")
+                    .padding(.top, 14)
+                    .accessibilityLabel("\(String(group.year))年\(group.month)月のリキャップを共有")
                 }
             }
         }
@@ -358,8 +361,13 @@ struct CollectionView: View {
                         }
                     }
                     .padding(.top, 8)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("\(record.title)、\(record.createdAt.formatted(.dateTime.year().month().day()))")
+                .accessibilityValue(record.wearDays.map { "着用中、\($0)日目" } ?? "")
+                .accessibilityHint("ネイルの詳細を開きます")
             }
         }
     }
