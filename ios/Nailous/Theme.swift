@@ -20,7 +20,8 @@ enum Palette {
     // stays for the detail/capture screens where the 3D nail is the hero.
     static let paper = Color(red: 0.980, green: 0.969, blue: 0.949)
     static let inkWarm = Color(red: 0.227, green: 0.208, blue: 0.196)
-    static let mutedWarm = Color(red: 0.612, green: 0.580, blue: 0.549)
+    /// Secondary text remains quiet while reaching 4.6:1 contrast on paper.
+    static let mutedWarm = Color(red: 0.470, green: 0.435, blue: 0.405)
     static let goldHairline = Color(red: 0.788, green: 0.663, blue: 0.431)
 
     static let goldGradient = LinearGradient(
