@@ -14,6 +14,11 @@ struct CollectionGridView: View {
     @State private var searchText = ""
     @State private var sortOrder: CollectionSortOrder = .newest
 
+    @ScaledMetric(relativeTo: .caption) private var pillFontSize = 12.5
+    @ScaledMetric(relativeTo: .caption) private var cardTitleFontSize = 12.0
+    @ScaledMetric(relativeTo: .caption2) private var cardDateFontSize = 10.0
+    @ScaledMetric(relativeTo: .subheadline) private var emptyFilterFontSize = 14.0
+
     private let columns = [GridItem(.adaptive(minimum: 104), spacing: 16)]
 
     /// Tags across the collection, most frequent first.
@@ -79,15 +84,15 @@ struct CollectionGridView: View {
         ZStack(alignment: .trailing) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    StagePill(label: "すべて", isOn: activeTag == nil && !favoritesOnly) {
+                    StagePill(label: "すべて", isOn: activeTag == nil && !favoritesOnly, fontSize: pillFontSize) {
                         activeTag = nil
                         favoritesOnly = false
                     }
-                    StagePill(label: "♡ お気に入り", isOn: favoritesOnly) {
+                    StagePill(label: "♡ お気に入り", isOn: favoritesOnly, fontSize: pillFontSize) {
                         favoritesOnly.toggle()
                     }
                     ForEach(allTags, id: \.self) { tag in
-                        StagePill(label: "#\(tag)", isOn: activeTag == tag) {
+                        StagePill(label: "#\(tag)", isOn: activeTag == tag, fontSize: pillFontSize) {
                             activeTag = (activeTag == tag) ? nil : tag
                         }
                     }
@@ -173,11 +178,12 @@ struct CollectionGridView: View {
                                 .offset(x: -2, y: 6)
                             }
                         Text(record.title)
-                            .font(.system(size: 12))
+                            .font(.system(size: cardTitleFontSize))
                             .lineLimit(1)
                             .foregroundStyle(.white.opacity(0.8))
                         Text(record.createdAt.formatted(.dateTime.year().month(.abbreviated)))
-                            .font(.system(size: 10))
+                            .font(.system(size: cardDateFontSize))
+                            .lineLimit(1)
                             .foregroundStyle(.white.opacity(0.4))
                     }
                 }
@@ -191,7 +197,7 @@ struct CollectionGridView: View {
                 .font(.system(size: 30))
                 .foregroundStyle(Palette.gold.opacity(0.7))
             Text(emptyFilterTitle)
-                .font(.system(size: 14))
+                .font(.system(size: emptyFilterFontSize))
                 .foregroundStyle(.white.opacity(0.6))
         }
         .padding(.top, 80)

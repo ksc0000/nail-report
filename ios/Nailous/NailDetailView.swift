@@ -759,12 +759,13 @@ struct StageBackground: View {
 struct StagePill: View {
     let label: String
     let isOn: Bool
+    var fontSize: CGFloat = 12.5
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 12.5, weight: .medium))
+                .font(.system(size: fontSize, weight: .medium))
                 .lineLimit(1)
                 .fixedSize()
                 .padding(.horizontal, 13)
