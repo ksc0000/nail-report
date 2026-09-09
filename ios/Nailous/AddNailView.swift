@@ -65,17 +65,22 @@ struct AddNailView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                StageBackground()
+                Palette.ink0.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    NailSceneView(
-                        appearance: previewAppearance,
-                        shape: shape,
-                        mode: isSetCapture ? .set : .single,
-                        plateParams: plateParams,
-                        setAppearances: previewSetAppearances
-                    )
+                    ZStack {
+                        StageBackground()
+                        NailSceneView(
+                            appearance: previewAppearance,
+                            shape: shape,
+                            mode: isSetCapture ? .set : .single,
+                            plateParams: plateParams,
+                            setAppearances: previewSetAppearances
+                        )
+                        StageForeground(theme: .glass)
+                    }
                     .frame(height: 290)
+                    .clipped()
                     .overlay(alignment: .bottom) {
                         if !hasTexture {
                             Text("写真を選ぶと、この爪にデザインが映ります")
@@ -272,8 +277,6 @@ struct AddNailView: View {
                     }
                     .scrollDismissesKeyboard(.interactively)
                 }
-
-                StageForeground(theme: .glass)
             }
             .navigationTitle("ネイルを記録")
             .navigationBarTitleDisplayMode(.inline)
