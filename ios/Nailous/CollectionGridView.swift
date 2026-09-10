@@ -76,12 +76,11 @@ struct CollectionGridView: View {
         .preferredColorScheme(.dark)
     }
 
-    /// Space the horizontal tag scroller must reserve on its trailing edge so
-    /// chip text never sits under the sort button that floats on top of it.
-    private let sortButtonReservedWidth: CGFloat = 20 + 38 + 8
-
     private var filterBar: some View {
-        ZStack(alignment: .trailing) {
+        // The sort button lives in its own fixed column, outside the
+        // horizontal scroller, so no chip can ever end up underneath it
+        // regardless of scroll position (see #380, #384).
+        HStack(spacing: 4) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     StagePill(label: "すべて", isOn: activeTag == nil && !favoritesOnly, fontSize: pillFontSize) {
@@ -98,13 +97,13 @@ struct CollectionGridView: View {
                     }
                 }
                 .padding(.leading, 20)
-                .padding(.trailing, sortButtonReservedWidth)
+                .padding(.trailing, 4)
             }
             .mask(
                 LinearGradient(
                     stops: [
                         .init(color: .black, location: 0),
-                        .init(color: .black, location: 0.9),
+                        .init(color: .black, location: 0.92),
                         .init(color: .clear, location: 1),
                     ],
                     startPoint: .leading,
