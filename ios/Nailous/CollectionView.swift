@@ -424,9 +424,12 @@ struct CollectionView: View {
 
     private var emptyState: some View {
         VStack(spacing: 14) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 30))
-                .foregroundStyle(Palette.goldHairline)
+            // Brand mark: one almond chip drawn with a single gold hairline.
+            NailSilhouette(nailShape: .almond)
+                .stroke(Palette.goldHairline, lineWidth: 1.2)
+                .frame(width: 24, height: 50)
+                .padding(.bottom, 6)
+                .accessibilityHidden(true)
             Text("最初のネイルをコレクションへ")
                 .font(.system(size: emptyTitleFontSize, weight: .medium, design: .serif))
                 .multilineTextAlignment(.center)

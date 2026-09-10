@@ -77,25 +77,30 @@ enum CardRenderer {
             let cg = ctx.cgContext
             background.draw(in: CGRect(origin: .zero, size: size))
 
-            // --- brand mark ---
+            // --- brand mark + wordmark ---
+            // Dark templates carry the gold hairline chip above the name. The
+            // mark is a transparent PNG; a soft dark shadow keeps the hairline
+            // legible where a template's background is bright (lamps, glass).
+            var wordmarkY: CGFloat = 0.05
             if template.isDark, let logo = UIImage(named: "logo_nailous_mark") {
-                // gold-on-black mark: screen blend melts the black away
-                let logoWidth = size.width * 0.2
-                let logoHeight = logoWidth * (logo.size.height / max(1, logo.size.width))
+                let logoSide = size.width * 0.16
+                cg.saveGState()
+                cg.setShadow(offset: .zero, blur: 6, color: UIColor.black.withAlphaComponent(0.7).cgColor)
                 logo.draw(
                     in: CGRect(
-                        x: (size.width - logoWidth) / 2,
-                        y: size.height * 0.022,
-                        width: logoWidth,
-                        height: logoHeight
+                        x: (size.width - logoSide) / 2,
+                        y: size.height * 0.012,
+                        width: logoSide,
+                        height: logoSide
                     ),
-                    blendMode: .screen,
+                    blendMode: .normal,
                     alpha: 1
                 )
-            } else {
-                draw("NAILOUS", at: 0.05, in: size,
-                     font: serif(15, weight: .semibold), color: template.accentColor, kern: 9)
+                cg.restoreGState()
+                wordmarkY = 0.012 + logoSide / size.height
             }
+            draw("NAILOUS", at: wordmarkY, in: size,
+                 font: serif(15, weight: .semibold), color: template.accentColor, kern: 9)
 
             // --- the nail ---
             let layout = template.layout
