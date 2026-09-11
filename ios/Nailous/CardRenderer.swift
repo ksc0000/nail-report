@@ -55,6 +55,19 @@ enum CardTemplate: String, CaseIterable, Identifiable {
         case .minimal: return (0.45, 0.5, 0.845)
         }
     }
+
+    /// Top Y (fraction) for the gold brand mark on dark templates, tuned per
+    /// background so it clears each artwork's own top-centre motif (the
+    /// showcase spotlight pendant, the salon pearl medallion, the memory
+    /// crescent moon) instead of sitting on top of it.
+    var markY: CGFloat {
+        switch self {
+        case .showcase: return 0.125
+        case .salon: return 0.115
+        case .memory: return 0.06
+        case .minimal: return 0.012
+        }
+    }
 }
 
 enum CardRenderer {
@@ -78,18 +91,21 @@ enum CardRenderer {
             background.draw(in: CGRect(origin: .zero, size: size))
 
             // --- brand mark + wordmark ---
-            // Dark templates carry the gold hairline chip above the name. The
-            // mark is a transparent PNG; a soft dark shadow keeps the hairline
-            // legible where a template's background is bright (lamps, glass).
+            // Dark templates carry the gold hairline chip above the name, at a
+            // per-template Y (`markY`) tuned to clear that background's own
+            // top-centre motif (spotlight pendant, pearl medallion, crescent
+            // moon). A soft dark shadow keeps the hairline legible where a
+            // template's background is bright (lamps, glass).
             var wordmarkY: CGFloat = 0.05
             if template.isDark, let logo = UIImage(named: "logo_nailous_mark") {
                 let logoSide = size.width * 0.16
+                let markY = template.markY
                 cg.saveGState()
                 cg.setShadow(offset: .zero, blur: 6, color: UIColor.black.withAlphaComponent(0.7).cgColor)
                 logo.draw(
                     in: CGRect(
                         x: (size.width - logoSide) / 2,
-                        y: size.height * 0.012,
+                        y: size.height * markY,
                         width: logoSide,
                         height: logoSide
                     ),
@@ -97,7 +113,7 @@ enum CardRenderer {
                     alpha: 1
                 )
                 cg.restoreGState()
-                wordmarkY = 0.012 + logoSide / size.height
+                wordmarkY = markY + logoSide / size.height
             }
             draw("NAILOUS", at: wordmarkY, in: size,
                  font: serif(15, weight: .semibold), color: template.accentColor, kern: 9)
