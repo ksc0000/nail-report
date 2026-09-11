@@ -136,11 +136,16 @@ struct AddNailView: View {
         }
         .fullScreenCover(isPresented: $showCamera) {
             NailCameraView(
-                onCapture: { image in
+                nailShape: $shape,
+                onCapture: { image, mode in
                     showCamera = false
-                    cameraSingle = true
+                    cameraSingle = mode == .single
                     originalImage = image
-                    cropSource = CropSource(image: image, single: true)
+                    cropSource = CropSource(
+                        image: image,
+                        single: mode == .single,
+                        initialZoom: mode == .single ? NailCameraView.singleMargin : 1
+                    )
                 },
                 onCancel: { showCamera = false }
             )
@@ -151,6 +156,7 @@ struct AddNailView: View {
                 image: source.image,
                 nailShape: $shape,
                 forceSingle: source.single,
+                initialZoom: source.initialZoom,
                 onConfirm: { baked in
                     cropSource = nil
                     cleanupAndSet([baked])
@@ -343,7 +349,7 @@ struct AddNailView: View {
             }
             if UIImagePickerController.isSourceTypeAvailable(.camera) {
                 Button { showCamera = true } label: {
-                    actionRow(icon: "camera", title: "カメラで撮る", detail: "真上から近づいて")
+                    actionRow(icon: "camera", title: "カメラで撮る", detail: "1本のアップ、または手全体")
                 }
             }
         }
@@ -637,4 +643,5 @@ private struct CropSource: Identifiable {
     let id = UUID()
     let image: UIImage
     let single: Bool
+    var initialZoom: CGFloat = 1
 }

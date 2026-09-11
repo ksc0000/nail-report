@@ -4,6 +4,8 @@ import SwiftUI
 /// mesh uses — thumbnails match the real shape exactly. Tip points up.
 struct NailSilhouette: Shape {
     let nailShape: NailShape
+    /// Corner rounding as tuned on the record (0 = the shape's default).
+    var corner: Float = 0
 
     func path(in rect: CGRect) -> Path {
         let samples = 48
@@ -11,7 +13,7 @@ struct NailSilhouette: Shape {
         var rightSide: [CGPoint] = []
         for i in 0...samples {
             let t = Float(i) / Float(samples)
-            let half = CGFloat(NailGeometry.widthFactor(t: t, shape: nailShape)) * rect.width / 2
+            let half = CGFloat(NailGeometry.widthFactor(t: t, shape: nailShape, corner: corner)) * rect.width / 2
             let y = rect.maxY - CGFloat(t) * rect.height
             leftSide.append(CGPoint(x: rect.midX - half, y: y))
             rightSide.append(CGPoint(x: rect.midX + half, y: y))
@@ -30,33 +32,65 @@ struct NailSilhouette: Shape {
 struct NailThumbnail: View {
     let image: UIImage
     let nailShape: NailShape
-    /// Default matches the original shelf size; the home field renders chips
-    /// smaller so a month reads at a glance.
+    /// Length / width / corner as tuned on the record, so a long almond stays
+    /// long here too instead of being squashed into one fixed box.
+    var params: NailPlateParams = .default
+    /// Bounding box the chip is fitted into (the drawn plate keeps the 3D
+    /// plate's proportions). Default matches the original shelf size; the
+    /// home field renders chips smaller so a month reads at a glance.
     var size: CGSize = CGSize(width: 84, height: 128)
     /// Deep shadow suits the dark stage; the light home uses a soft one so
     /// chips sit on the paper like objects rather than float.
     var shadowColor: Color = .black.opacity(0.45)
     var shadowRadius: CGFloat = 10
     var shadowY: CGFloat = 7
+    /// Draws the thin gold ring that marks the nail being worn, sized to the
+    /// drawn chip rather than the bounding box.
+    var worn: Bool = false
+
+    /// The plate's real proportions (per-shape base size × tuning), fitted
+    /// inside `size`.
+    private var drawnSize: CGSize {
+        let base = NailGeometry.plateSize(for: nailShape)
+        let aspect = CGFloat(base.width * (1 + 0.25 * params.width))
+            / CGFloat(max(0.1, base.height * (1 + 0.25 * params.length)))
+        if size.width / size.height > aspect {
+            return CGSize(width: size.height * aspect, height: size.height)
+        }
+        return CGSize(width: size.width, height: size.width / aspect)
+    }
+
+    private var silhouette: NailSilhouette {
+        NailSilhouette(nailShape: nailShape, corner: params.corner)
+    }
 
     var body: some View {
+        let drawn = drawnSize
         Image(uiImage: image)
             .resizable()
             .scaledToFill()
-            .frame(width: size.width, height: size.height)
-            .clipShape(NailSilhouette(nailShape: nailShape))
+            .frame(width: drawn.width, height: drawn.height)
+            .clipShape(silhouette)
             .overlay(
                 LinearGradient(
                     colors: [.white.opacity(0.38), .white.opacity(0.06), .clear],
                     startPoint: .topLeading,
                     endPoint: .center
                 )
-                .clipShape(NailSilhouette(nailShape: nailShape))
+                .clipShape(silhouette)
             )
             .overlay(
-                NailSilhouette(nailShape: nailShape)
+                silhouette
                     .stroke(.white.opacity(0.22), lineWidth: 1)
             )
             .shadow(color: shadowColor, radius: shadowRadius, y: shadowY)
+            .overlay {
+                if worn {
+                    Ellipse()
+                        .stroke(Palette.goldHairline, lineWidth: 1.2)
+                        .padding(-max(6, drawn.width * 0.14))
+                }
+            }
+            .frame(width: size.width, height: size.height)
     }
 }

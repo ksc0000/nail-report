@@ -44,7 +44,7 @@ struct CollectionGridView: View {
 
     var body: some View {
         ZStack {
-            StageBackground()
+            Palette.paper.ignoresSafeArea()
 
             ScrollView {
                 searchBar
@@ -68,12 +68,13 @@ struct CollectionGridView: View {
                 }
             }
 
-            StageForeground(theme: .glass)
         }
         .navigationTitle("すべてのネイル")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarColorScheme(.dark, for: .navigationBar)
-        .preferredColorScheme(.dark)
+        .toolbarColorScheme(.light, for: .navigationBar)
+        .tint(Palette.inkWarm)
+        .environment(\.stageIsLight, true)
+        .preferredColorScheme(.light)
     }
 
     private var filterBar: some View {
@@ -119,10 +120,10 @@ struct CollectionGridView: View {
                 }
             } label: {
                 Image(systemName: "arrow.up.arrow.down")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Palette.goldBright)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(Palette.inkWarm)
                     .frame(width: 38, height: 34)
-                    .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Palette.inkWarm.opacity(0.35), lineWidth: 1))
             }
             .padding(.trailing, 20)
         }
@@ -131,22 +132,22 @@ struct CollectionGridView: View {
     private var searchBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundStyle(Palette.mutedWarm)
             TextField("タイトル・サロン・メモ・タグを検索", text: $searchText)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-                .foregroundStyle(.white)
+                .foregroundStyle(Palette.inkWarm)
             if !searchText.isEmpty {
                 Button { searchText = "" } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(Palette.mutedWarm)
                 }
                 .accessibilityLabel("検索を消去")
             }
         }
         .padding(.horizontal, 12)
         .frame(height: 42)
-        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+        .background(Palette.inkWarm.opacity(0.05), in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func card(_ record: NailRecord) -> some View {
@@ -156,34 +157,33 @@ struct CollectionGridView: View {
                     onSelect(record)
                 } label: {
                     VStack(spacing: 7) {
-                        NailThumbnail(image: texture, nailShape: record.shape)
-                            .frame(width: 96, height: 132)
-                            .overlay(alignment: .topTrailing) {
-                                HStack(spacing: 3) {
-                                    if record.wornSince != nil {
-                                        Image(systemName: "hand.point.up.left.fill")
-                                            .font(.system(size: 9))
-                                            .foregroundStyle(Palette.ink0)
-                                            .padding(4)
-                                            .background(Circle().fill(Palette.goldBright))
-                                    }
-                                    if record.isFavorite {
-                                        Image(systemName: "heart.fill")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(Palette.goldBright)
-                                            .shadow(color: .black.opacity(0.5), radius: 2)
-                                    }
-                                }
-                                .offset(x: -2, y: 6)
+                        NailThumbnail(
+                            image: texture,
+                            nailShape: record.shape,
+                            params: record.plateParams,
+                            size: CGSize(width: 96, height: 132),
+                            shadowColor: .black.opacity(0.12),
+                            shadowRadius: 8,
+                            shadowY: 4,
+                            worn: record.wornSince != nil
+                        )
+                        .overlay(alignment: .topTrailing) {
+                            if record.isFavorite {
+                                Image(systemName: "heart.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(Palette.goldHairline)
+                                    .offset(x: 2, y: -2)
                             }
+                        }
                         Text(record.title)
                             .font(.system(size: cardTitleFontSize))
                             .lineLimit(1)
-                            .foregroundStyle(.white.opacity(0.8))
+                            .foregroundStyle(Palette.inkWarm)
                         Text(record.createdAt.formatted(.dateTime.year().month(.abbreviated)))
                             .font(.system(size: cardDateFontSize))
+                            .kerning(0.5)
                             .lineLimit(1)
-                            .foregroundStyle(.white.opacity(0.4))
+                            .foregroundStyle(Palette.mutedWarm)
                     }
                 }
             }
@@ -193,11 +193,11 @@ struct CollectionGridView: View {
     private var emptyFilter: some View {
         VStack(spacing: 10) {
             Image(systemName: searchText.isEmpty && !favoritesOnly && activeTag == nil ? "square.grid.2x2" : "magnifyingglass")
-                .font(.system(size: 30))
-                .foregroundStyle(Palette.gold.opacity(0.7))
+                .font(.system(size: 26, weight: .light))
+                .foregroundStyle(Palette.goldHairline)
             Text(emptyFilterTitle)
                 .font(.system(size: emptyFilterFontSize))
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(Palette.mutedWarm)
         }
         .padding(.top, 80)
     }

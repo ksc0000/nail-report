@@ -376,10 +376,12 @@ struct CollectionView: View {
                         NailThumbnail(
                             image: texture,
                             nailShape: record.shape,
+                            params: record.plateParams,
                             size: chipSize,
                             shadowColor: .black.opacity(0.12),
                             shadowRadius: 8,
-                            shadowY: 4
+                            shadowY: 4,
+                            worn: record.wornSince != nil
                         )
                     } else {
                         NailSilhouette(nailShape: record.shape)
@@ -390,13 +392,6 @@ struct CollectionView: View {
                                     .foregroundStyle(Palette.mutedWarm)
                             }
                             .frame(width: chipSize.width, height: chipSize.height)
-                    }
-                }
-                .overlay {
-                    if record.wornSince != nil {
-                        Ellipse()
-                            .stroke(Palette.goldHairline, lineWidth: 1.2)
-                            .padding(-7)
                     }
                 }
                 .shadow(

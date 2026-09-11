@@ -10,6 +10,9 @@ struct PhotoCropView: View {
     @Binding var nailShape: NailShape
     /// Camera captures are a single close-up nail — skip 5-finger detection.
     var forceSingle: Bool = false
+    /// Starting zoom for `forceSingle` sources that were pre-cropped with a
+    /// margin: 1.3 shows exactly what the camera guide framed.
+    var initialZoom: CGFloat = 1
     let onConfirm: (UIImage) -> Void
     var onConfirmSet: (([UIImage]) -> Void)?
     let onCancel: () -> Void
@@ -325,6 +328,9 @@ struct PhotoCropView: View {
         .environment(\.colorScheme, .dark)
         .task {
             if forceSingle {
+                let z = min(maxZoom, max(1, initialZoom))
+                zoom = z
+                zoomAnchor = z
                 previewTexture = bakeCurrent()
                 return
             }
