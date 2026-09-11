@@ -12,7 +12,10 @@ struct AddNailView: View {
 
     @State private var pickerItem: PhotosPickerItem?
     @State private var originalImage: UIImage?
-    @State private var isCropping = false
+    /// What the crop cover is positioning. Item-driven so the cover always
+    /// has its image; a Bool flag evaluated the cover before the image
+    /// landed and left it blank.
+    @State private var cropSource: CropSource?
     @State private var showCamera = false
     @State private var isCleaning = false
     @State private var isAIProcessing = false
@@ -38,6 +41,7 @@ struct AddNailView: View {
     @State private var finish: NailFinish = .gloss
     @State private var cameraSingle = false
     @State private var showRetouch = false
+    @State private var showTune = false
     @State private var showDetails = false
     @State private var title = ""
     @State private var salon = ""
@@ -65,230 +69,45 @@ struct AddNailView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Palette.ink0.ignoresSafeArea()
+                Palette.paper.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    ZStack {
-                        StageBackground()
-                        NailSceneView(
-                            appearance: previewAppearance,
-                            shape: shape,
-                            mode: isSetCapture ? .set : .single,
-                            plateParams: plateParams,
-                            setAppearances: previewSetAppearances
-                        )
-                        StageForeground(theme: .glass)
-                    }
-                    .frame(height: 290)
-                    .clipped()
-                    .overlay(alignment: .bottom) {
-                        if !hasTexture {
-                            Text("写真を選ぶと、この爪にデザインが映ります")
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.55))
-                        }
-                    }
-                    .overlay {
-                        if isCleaning {
-                            HStack(spacing: 8) {
-                                ProgressView().tint(.white)
-                                Text("仕上げ処理中…")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(.white.opacity(0.85))
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(Capsule().fill(Color.black.opacity(0.6)))
-                        }
-                    }
+                    stage
 
                     ScrollView {
-                        VStack(spacing: 18) {
-                            VStack(spacing: 10) {
-                                PhotosPicker(selection: $pickerItem, matching: .images) {
-                                    actionRow(
-                                        icon: "photo.on.rectangle.angled",
-                                        title: hasTexture ? "写真を変更" : "写真を選ぶ"
-                                    )
-                                }
-                                if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                                    Button { showCamera = true } label: {
-                                        actionRow(icon: "camera", title: "カメラで撮る")
-                                    }
-                                }
-                                if originalImage != nil {
-                                    Button { isCropping = true } label: {
-                                        actionRow(
-                                            icon: "arrow.up.and.down.and.arrow.left.and.right",
-                                            title: "位置を調整"
-                                        )
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 24)
-
-                            if isSetCapture {
-                                Text("\(displayTextures.count) 本ぶんのデザインを取り込みました（セット表示）")
-                                    .font(.caption)
-                                    .foregroundStyle(Palette.gold.opacity(0.75))
-                            }
-
-                            VStack(alignment: .leading, spacing: 12) {
-                                SectionHeader(title: "形（シェイプ）")
-                                HStack(spacing: 8) {
-                                    ForEach(NailShape.allCases) { candidate in
-                                        shapeChip(candidate)
-                                    }
-                                }
-                                .padding(.horizontal, 24)
-                            }
-
-                            VStack(alignment: .leading, spacing: 12) {
-                                SectionHeader(title: "チップ調整")
-                                VStack(spacing: 6) {
-                                    GoldSlider(label: "長さ", value: $plateParams.length)
-                                    GoldSlider(label: "幅", value: $plateParams.width)
-                                    GoldSlider(label: "カーブ 横", value: $plateParams.curveH)
-                                    GoldSlider(label: "カーブ 縦", value: $plateParams.curveV)
-                                    GoldSlider(label: "厚み", value: $plateParams.thickness)
-                                    GoldSlider(label: "角の丸み", value: $plateParams.corner)
-                                }
-                                .padding(.horizontal, 24)
-                            }
-
+                        VStack(spacing: 22) {
                             if hasTexture {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    SectionHeader(title: "仕上げ")
-                                    ScrollView(.horizontal, showsIndicators: false) {
-                                        HStack(spacing: 8) {
-                                            ForEach(NailFinish.allCases) { candidate in
-                                                finishChip(candidate)
-                                            }
-                                        }
-                                        .padding(.horizontal, 24)
-                                    }
-                                }
+                                capturedControls
+                            } else {
+                                sourceChoices
                             }
-
-                            if hasTexture {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Button {
-                                        withAnimation(.easeInOut(duration: 0.2)) { showRetouch.toggle() }
-                                    } label: {
-                                        HStack(spacing: 6) {
-                                            Image(systemName: showRetouch ? "chevron.up" : "slider.horizontal.3")
-                                                .font(.system(size: 11, weight: .semibold))
-                                            Text(showRetouch ? "写真の微調整を閉じる" : "写真を微調整（明るさ・鮮やかさ等）")
-                                                .font(.system(size: 12.5, weight: .medium))
-                                            Spacer()
-                                        }
-                                        .foregroundStyle(.white.opacity(0.55))
-                                        .padding(.horizontal, 28)
-                                    }
-                                    if showRetouch {
-                                        retouchSection
-                                    }
-                                }
-
-                                if AICleanup.isConfigured {
-                                    VStack(spacing: 6) {
-                                        Button(action: runAICleanup) {
-                                            HStack(spacing: 8) {
-                                                if isAIProcessing {
-                                                    ProgressView().tint(Palette.goldBright)
-                                                    Text(aiProgress)
-                                                } else {
-                                                    Image(systemName: aiApplied ? "checkmark.seal.fill" : "sparkles")
-                                                    Text(aiApplied ? "AIクリーンアップ済み" : "AIクリーンアップ（クラウド）")
-                                                }
-                                            }
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 12)
-                                            .background(
-                                                Capsule()
-                                                    .fill(Color.white.opacity(0.06))
-                                                    .overlay(Capsule().stroke(Palette.gold.opacity(0.5), lineWidth: 1))
-                                            )
-                                            .foregroundStyle(Palette.goldBright)
-                                        }
-                                        .disabled(isAIProcessing || aiApplied)
-                                        if let aiError {
-                                            Text(aiError)
-                                                .font(.system(size: 12))
-                                                .foregroundStyle(Color(red: 1, green: 0.6, blue: 0.65))
-                                        }
-                                        Text("背景・肌をAIで完全除去し、ディテールを強化します")
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.white.opacity(0.45))
-                                    }
-                                    .padding(.horizontal, 24)
-                                }
-                            }
-
-                            VStack(spacing: 10) {
-                                StoryField(prompt: "タイトル（例: 深海ネイル）", text: $title)
-                                Button {
-                                    withAnimation(.easeInOut(duration: 0.22)) { showDetails.toggle() }
-                                } label: {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: showDetails ? "chevron.up" : "plus")
-                                            .font(.system(size: 11, weight: .semibold))
-                                        Text(showDetails ? "詳細を閉じる" : "詳細を追加（タグ・サロン・価格・メモ）")
-                                            .font(.system(size: 12.5, weight: .medium))
-                                        Spacer()
-                                    }
-                                    .foregroundStyle(Palette.gold.opacity(0.85))
-                                    .padding(.horizontal, 4)
-                                    .padding(.vertical, 2)
-                                }
-                                if showDetails {
-                                    StoryField(prompt: "タグ（カンマ区切り。例: ピンク, マグネット）", text: $tagsText)
-                                    StoryField(prompt: "サロン名（任意）", text: $salon)
-                                    StoryField(prompt: "価格（任意・円）", text: $priceText)
-                                        .keyboardType(.numberPad)
-                                    StoryField(prompt: "メモ（任意）", text: $memo, axis: .vertical)
-                                }
-                            }
-                            .padding(.horizontal, 24)
-
-                            Button(action: save) {
-                                HStack(spacing: 6) {
-                                    Text("コレクションに加える")
-                                    Image(systemName: "sparkles")
-                                }
-                                .font(.system(size: 15, weight: .semibold))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(
-                                    Capsule().fill(
-                                        hasTexture
-                                            ? AnyShapeStyle(Palette.goldGradient)
-                                            : AnyShapeStyle(Color.white.opacity(0.15))
-                                    )
-                                )
-                                .foregroundStyle(hasTexture ? Palette.ink0 : .white.opacity(0.5))
-                            }
-                            .disabled(!hasTexture)
-                            .padding(.horizontal, 24)
-                            .padding(.top, 4)
                         }
-                        .padding(.vertical, 16)
+                        .padding(.top, 18)
+                        .padding(.bottom, hasTexture ? 96 : 24)
                     }
                     .scrollDismissesKeyboard(.interactively)
+                }
+
+                if hasTexture {
+                    VStack {
+                        Spacer()
+                        saveBar
+                    }
                 }
             }
             .navigationTitle("ネイルを記録")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarColorScheme(.light, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("閉じる") { dismiss() }
-                        .foregroundStyle(.white.opacity(0.8))
+                        .foregroundStyle(Palette.inkWarm)
                 }
             }
         }
-        .preferredColorScheme(.dark)
+        .tint(Palette.inkWarm)
+        .environment(\.stageIsLight, true)
+        .environment(\.colorScheme, .light)
         .onChange(of: pickerItem) { _, newItem in
             guard let newItem else { return }
             Task {
@@ -296,7 +115,7 @@ struct AddNailView: View {
                    let image = UIImage(data: data) {
                     cameraSingle = false
                     originalImage = image
-                    isCropping = true
+                    cropSource = CropSource(image: image, single: false)
                 }
             }
         }
@@ -310,8 +129,9 @@ struct AddNailView: View {
                 bakedTextures = [tex]
                 displayTextures = [tex]
             } else if UserDefaults.standard.string(forKey: "debugPhoto") == "1", originalImage == nil {
-                originalImage = NailStyle.samples[3].texture
-                isCropping = true
+                let sample = NailStyle.samples[3].texture
+                originalImage = sample
+                cropSource = CropSource(image: sample, single: false)
             }
         }
         .fullScreenCover(isPresented: $showCamera) {
@@ -320,29 +140,27 @@ struct AddNailView: View {
                     showCamera = false
                     cameraSingle = true
                     originalImage = image
-                    isCropping = true
+                    cropSource = CropSource(image: image, single: true)
                 },
                 onCancel: { showCamera = false }
             )
             .ignoresSafeArea()
         }
-        .fullScreenCover(isPresented: $isCropping) {
-            if let originalImage {
-                PhotoCropView(
-                    image: originalImage,
-                    nailShape: $shape,
-                    forceSingle: cameraSingle,
-                    onConfirm: { baked in
-                        isCropping = false
-                        cleanupAndSet([baked])
-                    },
-                    onConfirmSet: { bakedList in
-                        isCropping = false
-                        cleanupAndSet(bakedList)
-                    },
-                    onCancel: { isCropping = false }
-                )
-            }
+        .fullScreenCover(item: $cropSource) { source in
+            PhotoCropView(
+                image: source.image,
+                nailShape: $shape,
+                forceSingle: source.single,
+                onConfirm: { baked in
+                    cropSource = nil
+                    cleanupAndSet([baked])
+                },
+                onConfirmSet: { bakedList in
+                    cropSource = nil
+                    cleanupAndSet(bakedList)
+                },
+                onCancel: { cropSource = nil }
+            )
         }
     }
 
@@ -468,54 +286,295 @@ struct AddNailView: View {
         return UIImage(cgImage: cgImage)
     }
 
-    // MARK: - Rows & chips
+    // MARK: - Stage & sections
 
-    /// Full-width list row: gold icon, title, chevron — the mockup's tappable
-    /// list style for 写真を選ぶ / 位置を調整.
-    private func actionRow(icon: String, title: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 15))
-                .foregroundStyle(Palette.gold)
-                .frame(width: 24)
-            Text(title)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.white)
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.35))
+    /// Paper stage: before a photo, a hairline outline shows where the nail
+    /// will appear; after, the live 3D preview with a soft contact shadow.
+    private var stage: some View {
+        ZStack {
+            StageBackground(theme: .paper)
+            if hasTexture {
+                Ellipse()
+                    .fill(Palette.inkWarm.opacity(0.12))
+                    .frame(width: 120, height: 26)
+                    .blur(radius: 10)
+                    .offset(y: 100)
+                NailSceneView(
+                    appearance: previewAppearance,
+                    shape: shape,
+                    mode: isSetCapture ? .set : .single,
+                    plateParams: plateParams,
+                    setAppearances: previewSetAppearances,
+                    theme: .paper
+                )
+            } else {
+                VStack(spacing: 16) {
+                    NailSilhouette(nailShape: shape)
+                        .stroke(Palette.goldHairline, lineWidth: 1.2)
+                        .frame(width: 56, height: 84)
+                    Text("写真を選ぶと、ここにあなたのネイルが現れます")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Palette.mutedWarm)
+                }
+            }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 15)
+        .frame(height: hasTexture ? 300 : 230)
+        .clipped()
+        .overlay {
+            if isCleaning {
+                HStack(spacing: 8) {
+                    ProgressView().tint(Palette.paper)
+                    Text("仕上げ処理中…")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Palette.paper)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Capsule().fill(Palette.inkWarm.opacity(0.92)))
+            }
+        }
+    }
+
+    /// Empty state: the only decision is where the photo comes from.
+    private var sourceChoices: some View {
+        VStack(spacing: 10) {
+            PhotosPicker(selection: $pickerItem, matching: .images) {
+                actionRow(icon: "photo.on.rectangle.angled", title: "写真を選ぶ", detail: "サロン帰りの1枚から")
+            }
+            if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                Button { showCamera = true } label: {
+                    actionRow(icon: "camera", title: "カメラで撮る", detail: "真上から近づいて")
+                }
+            }
+        }
+        .padding(.horizontal, 24)
+    }
+
+    /// After the photo: the two picks that matter (shape, finish) stay open;
+    /// fine tuning, retouch, cloud cleanup and story details fold away.
+    private var capturedControls: some View {
+        VStack(spacing: 22) {
+            HStack(spacing: 8) {
+                PhotosPicker(selection: $pickerItem, matching: .images) {
+                    pillLabel("写真を変更", icon: "photo")
+                }
+                if let originalImage {
+                    Button { cropSource = CropSource(image: originalImage, single: cameraSingle) } label: {
+                        pillLabel("位置を調整", icon: "arrow.up.and.down.and.arrow.left.and.right")
+                    }
+                }
+                if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                    Button { showCamera = true } label: {
+                        pillLabel("撮り直す", icon: "camera")
+                    }
+                }
+            }
+            .padding(.horizontal, 24)
+
+            if isSetCapture {
+                Text("\(displayTextures.count) 本ぶんのデザインを取り込みました（セット表示）")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Palette.mutedWarm)
+            }
+
+            StoryField(prompt: "タイトル（例: 深海ネイル）", text: $title)
+                .padding(.horizontal, 24)
+
+            section("形（シェイプ）") {
+                HStack(spacing: 8) {
+                    ForEach(NailShape.allCases) { candidate in
+                        shapeChip(candidate)
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
+
+            section("仕上げ") {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(NailFinish.allCases) { candidate in
+                            StagePill(label: candidate.label, isOn: finish == candidate) {
+                                finish = candidate
+                                UISelectionFeedbackGenerator().selectionChanged()
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                }
+            }
+
+            disclosure("チップの形を細かく調整", isOn: $showTune) {
+                VStack(spacing: 6) {
+                    GoldSlider(label: "長さ", value: $plateParams.length)
+                    GoldSlider(label: "幅", value: $plateParams.width)
+                    GoldSlider(label: "カーブ 横", value: $plateParams.curveH)
+                    GoldSlider(label: "カーブ 縦", value: $plateParams.curveV)
+                    GoldSlider(label: "厚み", value: $plateParams.thickness)
+                    GoldSlider(label: "角の丸み", value: $plateParams.corner)
+                }
+                .padding(.horizontal, 24)
+            }
+
+            disclosure("写真を微調整（明るさ・鮮やかさ等）", isOn: $showRetouch) {
+                retouchSection
+            }
+
+            if AICleanup.isConfigured {
+                aiCleanupRow
+            }
+
+            disclosure("詳細を追加（タグ・サロン・価格・メモ）", isOn: $showDetails) {
+                VStack(spacing: 10) {
+                    StoryField(prompt: "タグ（カンマ区切り。例: ピンク, マグネット）", text: $tagsText)
+                    StoryField(prompt: "サロン名（任意）", text: $salon)
+                    StoryField(prompt: "価格（任意・円）", text: $priceText)
+                        .keyboardType(.numberPad)
+                    StoryField(prompt: "メモ（任意）", text: $memo, axis: .vertical)
+                }
+                .padding(.horizontal, 24)
+            }
+        }
+    }
+
+    private var aiCleanupRow: some View {
+        VStack(spacing: 6) {
+            Button(action: runAICleanup) {
+                HStack(spacing: 8) {
+                    if isAIProcessing {
+                        ProgressView().tint(Palette.inkWarm)
+                        Text(aiProgress)
+                    } else {
+                        Image(systemName: aiApplied ? "checkmark.circle" : "wand.and.stars")
+                        Text(aiApplied ? "AIクリーンアップ済み" : "AIクリーンアップ")
+                    }
+                }
+                .font(.system(size: 13.5, weight: .medium))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Capsule().stroke(Palette.inkWarm.opacity(aiApplied ? 0.2 : 0.4), lineWidth: 1))
+                .foregroundStyle(aiApplied ? Palette.mutedWarm : Palette.inkWarm)
+            }
+            .disabled(isAIProcessing || aiApplied)
+            if let aiError {
+                Text(aiError)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color(red: 0.72, green: 0.27, blue: 0.27))
+                    .multilineTextAlignment(.center)
+            }
+            Text("背景と肌を取り除き、ディテールを整えます（クラウド処理）")
+                .font(.system(size: 11))
+                .foregroundStyle(Palette.mutedWarm)
+        }
+        .padding(.horizontal, 24)
+    }
+
+    /// Always within reach once there is something to save.
+    private var saveBar: some View {
+        Button(action: save) {
+            Text("コレクションに加える")
+                .font(.system(size: 15, weight: .medium))
+                .kerning(1)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Capsule().fill(Palette.inkWarm))
+                .foregroundStyle(Palette.paper)
+        }
+        .disabled(isCleaning)
+        .padding(.horizontal, 24)
+        .padding(.top, 14)
+        .padding(.bottom, 10)
         .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color.white.opacity(0.06))
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Palette.gold.opacity(0.12), lineWidth: 1))
+            // Solid paper under the button, a short fade above it, so the
+            // scrolled content dissolves instead of peeking through.
+            Palette.paper
+                .overlay(alignment: .top) {
+                    LinearGradient(colors: [Palette.paper.opacity(0), Palette.paper], startPoint: .top, endPoint: .bottom)
+                        .frame(height: 28)
+                        .offset(y: -28)
+                }
+                .ignoresSafeArea()
         )
     }
 
-    /// A finish option chip; gold when selected.
-    private func finishChip(_ candidate: NailFinish) -> some View {
-        let isOn = finish == candidate
-        return Button {
-            finish = candidate
-            UISelectionFeedbackGenerator().selectionChanged()
-        } label: {
-            Text(candidate.label)
-                .font(.system(size: 13, weight: isOn ? .semibold : .regular))
-                .padding(.horizontal, 15)
-                .padding(.vertical, 9)
-                .background(
-                    Capsule().fill(
-                        isOn ? AnyShapeStyle(Palette.goldGradient) : AnyShapeStyle(Color.white.opacity(0.08))
-                    )
-                )
-                .foregroundStyle(isOn ? Palette.ink0 : .white.opacity(0.75))
+    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(title: title)
+            content()
         }
     }
 
-    /// A nail-silhouette shape option; gold outline + glow when selected.
+    private func disclosure<Content: View>(
+        _ title: String,
+        isOn: Binding<Bool>,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { isOn.wrappedValue.toggle() }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: isOn.wrappedValue ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text(title)
+                        .font(.system(size: 12.5, weight: .medium))
+                    Spacer()
+                }
+                .foregroundStyle(Palette.mutedWarm)
+                .padding(.horizontal, 28)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if isOn.wrappedValue {
+                content()
+            }
+        }
+    }
+
+    // MARK: - Rows & chips
+
+    /// Full-width choice row on paper: ink icon, title, a quiet detail line,
+    /// hairline border.
+    private func actionRow(icon: String, title: String, detail: String) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(Palette.inkWarm)
+                .frame(width: 26)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Palette.inkWarm)
+                Text(detail)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Palette.mutedWarm)
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Palette.mutedWarm)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Palette.inkWarm.opacity(0.2), lineWidth: 1)
+        )
+        .contentShape(Rectangle())
+    }
+
+    private func pillLabel(_ title: String, icon: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon).font(.system(size: 12))
+            Text(title).font(.system(size: 12.5, weight: .medium))
+        }
+        .foregroundStyle(Palette.inkWarm)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 8)
+        .background(Capsule().stroke(Palette.inkWarm.opacity(0.35), lineWidth: 1))
+        .contentShape(Capsule())
+    }
+
+    /// A nail-silhouette shape option; ink when selected, hairline otherwise.
     private func shapeChip(_ candidate: NailShape) -> some View {
         let isOn = shape == candidate
         return Button {
@@ -523,23 +582,24 @@ struct AddNailView: View {
         } label: {
             VStack(spacing: 6) {
                 NailSilhouette(nailShape: candidate)
-                    .fill(isOn ? AnyShapeStyle(Palette.goldGradient) : AnyShapeStyle(Color.white.opacity(0.16)))
+                    .fill(isOn ? Palette.inkWarm : Palette.inkWarm.opacity(0.08))
                     .frame(width: 26, height: 42)
                     .overlay(
                         NailSilhouette(nailShape: candidate)
-                            .stroke(isOn ? Palette.goldBright : .white.opacity(0.25), lineWidth: 1)
+                            .stroke(isOn ? Palette.goldHairline : Palette.inkWarm.opacity(0.25), lineWidth: 1)
                     )
                 Text(candidate.label)
                     .font(.system(size: 10.5, weight: isOn ? .semibold : .regular))
-                    .foregroundStyle(isOn ? Palette.goldBright : .white.opacity(0.6))
+                    .foregroundStyle(isOn ? Palette.inkWarm : Palette.mutedWarm)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isOn ? Palette.gold.opacity(0.1) : Color.white.opacity(0.04))
+                    .fill(isOn ? Palette.inkWarm.opacity(0.06) : Color.clear)
             )
         }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Save
@@ -571,4 +631,10 @@ struct AddNailView: View {
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
     }
+}
+
+private struct CropSource: Identifiable {
+    let id = UUID()
+    let image: UIImage
+    let single: Bool
 }

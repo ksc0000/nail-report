@@ -105,14 +105,14 @@ struct PhotoCropView: View {
                             Circle()
                                 .strokeBorder(
                                     nail.id == currentTarget?.id
-                                        ? Palette.goldBright
+                                        ? Palette.goldHairline
                                         : .white.opacity(0.9),
-                                    lineWidth: nail.id == currentTarget?.id ? 3 : 1.5
+                                    lineWidth: nail.id == currentTarget?.id ? 2.5 : 1.5
                                 )
                                 .frame(width: 26, height: 26)
                             Circle()
-                                .fill(Palette.gold.opacity(0.9))
-                                .frame(width: 10, height: 10)
+                                .fill(.white.opacity(0.9))
+                                .frame(width: 8, height: 8)
                         }
                         .shadow(color: .black.opacity(0.6), radius: 4)
                     }
@@ -184,7 +184,8 @@ struct PhotoCropView: View {
                                         finish: .gloss
                                     ),
                                     shape: nailShape,
-                                    mode: .single
+                                    mode: .single,
+                                    theme: .paper // no decor drifting through the preview
                                 )
                                 .frame(width: 96, height: 150)
                                 .allowsHitTesting(false)
@@ -240,10 +241,12 @@ struct PhotoCropView: View {
                                         Capsule().fill(
                                             isDuplicatePose || allCollected
                                                 ? Color.white.opacity(0.22)
-                                                : Palette.gold
+                                                : Color.white
                                         )
                                     )
-                                    .foregroundStyle(.white.opacity(isDuplicatePose ? 0.45 : 1))
+                                    .foregroundStyle(
+                                        isDuplicatePose || allCollected ? .white.opacity(0.45) : Palette.inkWarm
+                                    )
                             }
                             .disabled(isDuplicatePose)
                         }
@@ -255,8 +258,8 @@ struct PhotoCropView: View {
                                     .font(.system(size: 14, weight: .semibold))
                                     .padding(.horizontal, 20)
                                     .padding(.vertical, 12)
-                                    .background(Capsule().fill(Palette.goldGradient))
-                                    .foregroundStyle(.white)
+                                    .background(Capsule().fill(.white))
+                                    .foregroundStyle(Palette.inkWarm)
                             }
                         } else if !collected.isEmpty {
                             Button {
@@ -273,11 +276,11 @@ struct PhotoCropView: View {
                                     .background(
                                         Capsule().fill(
                                             allCollected
-                                                ? Palette.gold
+                                                ? Color.white
                                                 : Color.white.opacity(0.22)
                                         )
                                     )
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(allCollected ? Palette.inkWarm : .white)
                             }
                         }
                     }
@@ -316,7 +319,10 @@ struct PhotoCropView: View {
                 )
             )
         }
-        .preferredColorScheme(.dark)
+        // Environment-only dark scheme: a `preferredColorScheme(.dark)` here
+        // conflicts with the light preference of the presenting sheet and
+        // left this cover blank white.
+        .environment(\.colorScheme, .dark)
         .task {
             if forceSingle {
                 previewTexture = bakeCurrent()
