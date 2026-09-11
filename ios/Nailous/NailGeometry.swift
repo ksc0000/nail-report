@@ -52,6 +52,14 @@ enum NailGeometry {
 
     /// Plate proportions per shape: round is short & wide, almond/coffin run
     /// long — matching how the styles differ on real tips.
+    /// Width ÷ height of the plate a shape is modelled on — the aspect the
+    /// crop window, camera guide and thumbnails all draw with, so a captured
+    /// design lands on the plate without being squeezed.
+    static func plateAspect(for shape: NailShape) -> CGFloat {
+        let size = plateSize(for: shape)
+        return CGFloat(size.width / size.height)
+    }
+
     static func plateSize(for shape: NailShape) -> (width: Float, height: Float) {
         switch shape {
         case .squoval: return (1.32, 2.25)

@@ -151,8 +151,9 @@ struct NailCameraView: View {
     private func guideRect(in size: CGSize) -> CGRect {
         switch mode {
         case .single:
-            let width = size.width * 0.5
-            let height = width * 1.5
+            // Same proportions as the crop window for this shape.
+            let height = size.width * 0.75
+            let width = height * NailGeometry.plateAspect(for: nailShape)
             return CGRect(x: (size.width - width) / 2, y: size.height * 0.46 - height / 2, width: width, height: height)
         case .hand:
             let width = size.width * 0.78

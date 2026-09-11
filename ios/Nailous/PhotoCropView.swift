@@ -31,7 +31,12 @@ struct PhotoCropView: View {
     @State private var lastAddedSignature = ""
     @State private var suggestsRetake = false
 
-    private let window = CGSize(width: 216, height: 324) // 2:3, matches texture
+    /// The crop window takes the chosen shape's real proportions (an almond
+    /// window is slimmer than a square one); the baked texture shares that
+    /// aspect so the design maps onto the 3D plate without distortion.
+    private var window: CGSize {
+        CGSize(width: (324 * NailGeometry.plateAspect(for: nailShape)).rounded(), height: 324)
+    }
     private let maxZoom: CGFloat = 16
 
     private var currentTarget: DetectedNail? {
@@ -436,9 +441,10 @@ struct PhotoCropView: View {
 
     /// Renders the window region of the positioned (zoomed, rotated) photo
     /// into the texture size, applying the same transform chain as the view.
-    /// 1024×1536 keeps fine detail (glitter, art) crisp on the full-screen nail.
+    /// 1536 tall (width follows the shape's aspect) keeps fine detail
+    /// (glitter, art) crisp on the full-screen nail.
     private func bakeTexture(zoom: CGFloat, rotation: CGFloat, offset: CGSize) -> UIImage {
-        let target = CGSize(width: 1024, height: 1536)
+        let target = CGSize(width: (1536 * NailGeometry.plateAspect(for: nailShape)).rounded(), height: 1536)
         let k = window.width / target.width // window pts per target px
         let scale = fillScale * zoom
         let format = UIGraphicsImageRendererFormat()
