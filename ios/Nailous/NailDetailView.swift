@@ -24,7 +24,8 @@ struct NailDetailView: View {
     @State private var mode: StageMode = .single
     @State private var layout: SetLayout = .arc
     @State private var motion: AutoMotion = .off
-    @State private var theme: StageTheme = .glass
+    @State private var theme: StageTheme = .paper
+    @AppStorage("detailHintSeen") private var hintSeen = false
     @State private var stampSource: Int?
     @State private var stageController = StageController()
     @State private var stampImage: UIImage?
@@ -60,6 +61,13 @@ struct NailDetailView: View {
         record.map { $0.texture == nil } ?? false
     }
 
+    private var isLight: Bool { theme.isLight }
+    private var ink: Color { isLight ? Palette.inkWarm : .white }
+    private var muted: Color { isLight ? Palette.mutedWarm : .white.opacity(0.5) }
+    private var sheetBackground: Color {
+        isLight ? Palette.paper : Color(red: 0.09, green: 0.06, blue: 0.1).opacity(0.97)
+    }
+
     /// The hero appearance with the live-edited finish applied.
     private var liveAppearance: NailAppearance {
         NailAppearance(id: appearance.id, texture: appearance.texture, finish: finish)
@@ -81,6 +89,64 @@ struct NailDetailView: View {
         ) {
             toggleWearing()
         }
+    }
+
+    /// Everything that used to sit on the screen as its own control lives
+    /// here, so the stage is only the nail, its name, and how long it's worn.
+    private var moreMenu: some View {
+        Menu {
+            if let record {
+                Button {
+                    record.isFavorite.toggle()
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                } label: {
+                    Label(record.isFavorite ? "お気に入りを解除" : "お気に入りに追加",
+                          systemImage: record.isFavorite ? "heart.fill" : "heart")
+                }
+                Button { showEditSheet = true } label: {
+                    Label("記録を編集", systemImage: "pencil")
+                }
+            }
+            if !photoUnavailable {
+                Button { showTuneSheet = true } label: {
+                    Label("形を調整", systemImage: "slider.horizontal.3")
+                }
+                Button { showStageSheet = true } label: {
+                    Label("ステージ演出", systemImage: "sparkles")
+                }
+            }
+            if record?.originalPhoto != nil {
+                Button { showOriginalPhoto = true } label: {
+                    Label("元の写真を見る", systemImage: "photo")
+                }
+            }
+            if record != nil {
+                Divider()
+                Button(role: .destructive) { confirmingDelete = true } label: {
+                    Label("この記録を削除", systemImage: "trash")
+                }
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(ink)
+                .frame(width: 36, height: 36)
+                .overlay(Circle().stroke(ink.opacity(isLight ? 1 : 0.6), lineWidth: 1))
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("その他")
+    }
+
+    /// One line of the story worth seeing without opening anything: where
+    /// and how much. Tags and memo wait in the edit sheet.
+    private var storyLine: String? {
+        guard let record else { return nil }
+        var parts: [String] = []
+        if !record.salon.isEmpty { parts.append(record.salon) }
+        if let price = record.priceYen { parts.append("¥\(price.formatted())") }
+        return parts.isEmpty ? nil : parts.joined(separator: " ・ ")
     }
 
     private func toggleWearing() {
@@ -141,19 +207,21 @@ struct NailDetailView: View {
                 }
             }
 
-            SectionHeader(title: "装飾")
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(StageDecor.allCases) { candidate in
-                        StagePill(label: candidate.label, isOn: decorRaw == candidate.rawValue) {
-                            decorRaw = candidate.rawValue
+            if !theme.isLight {
+                SectionHeader(title: "装飾")
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(StageDecor.allCases) { candidate in
+                            StagePill(label: candidate.label, isOn: decorRaw == candidate.rawValue) {
+                                decorRaw = candidate.rawValue
+                            }
+                        }
+                        StagePill(label: liquidOn ? "水面 オン" : "水面 オフ", isOn: liquidOn) {
+                            liquidOn.toggle()
                         }
                     }
-                    StagePill(label: liquidOn ? "水面 オン" : "水面 オフ", isOn: liquidOn) {
-                        liquidOn.toggle()
-                    }
+                    .padding(.horizontal, 24)
                 }
-                .padding(.horizontal, 24)
             }
             Spacer(minLength: 0)
         }
@@ -198,7 +266,7 @@ struct NailDetailView: View {
             if record != nil {
                 Text("変更はこの記録にそのまま保存されます")
                     .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.45))
+                    .foregroundStyle(muted)
                     .frame(maxWidth: .infinity)
             }
             Spacer(minLength: 0)
@@ -226,7 +294,7 @@ struct NailDetailView: View {
 
             Text("変更はこの記録にそのまま保存されます")
                 .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.45))
+                .foregroundStyle(muted)
                 .frame(maxWidth: .infinity)
             Spacer(minLength: 0)
         }
@@ -262,21 +330,34 @@ struct NailDetailView: View {
         } label: {
             VStack(spacing: 6) {
                 NailSilhouette(nailShape: candidate)
-                    .fill(isOn ? AnyShapeStyle(Palette.goldGradient) : AnyShapeStyle(Color.white.opacity(0.16)))
+                    .fill(
+                        isOn
+                            ? (isLight ? AnyShapeStyle(Palette.inkWarm) : AnyShapeStyle(Palette.goldGradient))
+                            : AnyShapeStyle(isLight ? Palette.inkWarm.opacity(0.08) : Color.white.opacity(0.16))
+                    )
                     .frame(width: 22, height: 36)
                     .overlay(
                         NailSilhouette(nailShape: candidate)
-                            .stroke(isOn ? Palette.goldBright : .white.opacity(0.25), lineWidth: 1)
+                            .stroke(
+                                isOn
+                                    ? (isLight ? Palette.goldHairline : Palette.goldBright)
+                                    : (isLight ? Palette.inkWarm.opacity(0.25) : .white.opacity(0.25)),
+                                lineWidth: 1
+                            )
                     )
                 Text(candidate.label)
                     .font(.system(size: 10, weight: isOn ? .semibold : .regular))
-                    .foregroundStyle(isOn ? Palette.goldBright : .white.opacity(0.6))
+                    .foregroundStyle(isOn ? (isLight ? Palette.inkWarm : Palette.goldBright) : muted)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isOn ? Palette.gold.opacity(0.1) : Color.white.opacity(0.04))
+                    .fill(
+                        isOn
+                            ? (isLight ? Palette.inkWarm.opacity(0.06) : Palette.gold.opacity(0.1))
+                            : (isLight ? Color.clear : Color.white.opacity(0.04))
+                    )
             )
         }
     }
@@ -312,11 +393,16 @@ struct NailDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(isOn ? Palette.goldBright : .white.opacity(0.15), lineWidth: isOn ? 2 : 1)
+                        .stroke(
+                            isOn
+                                ? (isLight ? Palette.inkWarm : Palette.goldBright)
+                                : (isLight ? Palette.inkWarm.opacity(0.2) : .white.opacity(0.15)),
+                            lineWidth: isOn ? 2 : 1
+                        )
                 )
                 Text(candidate.label)
                     .font(.system(size: 10.5, weight: isOn ? .semibold : .regular))
-                    .foregroundStyle(isOn ? Palette.goldBright : .white.opacity(0.6))
+                    .foregroundStyle(isOn ? (isLight ? Palette.inkWarm : Palette.goldBright) : muted)
             }
         }
     }
@@ -336,21 +422,24 @@ struct NailDetailView: View {
             StageBackground(theme: theme, stir: stir)
 
             VStack(spacing: 0) {
-                VStack(spacing: 4) {
-                    Text("NAILOUS")
-                        .font(.system(size: 12, weight: .semibold))
-                        .kerning(4)
-                        .foregroundStyle(.white.opacity(0.5))
+                VStack(spacing: 5) {
                     Text(record?.title ?? title)
-                        .font(.system(size: 23, weight: .medium, design: .serif))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 22, weight: .regular, design: .serif))
+                        .foregroundStyle(ink)
                     if let subtitle {
                         Text(subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.5))
+                            .font(.system(size: 12))
+                            .kerning(1)
+                            .foregroundStyle(muted)
+                    }
+                    if let storyLine {
+                        Text(storyLine)
+                            .font(.system(size: 12))
+                            .foregroundStyle(muted)
                     }
                 }
-                .padding(.top, 6)
+                .padding(.top, 10)
+                .padding(.horizontal, 32)
 
                 if photoUnavailable {
                     ContentUnavailableView("写真を読み込めません", systemImage: "photo.badge.exclamationmark",
@@ -364,6 +453,9 @@ struct NailDetailView: View {
                         plateParams: plateParams,
                         onPanStir: { point in
                             stir = StirEvent(point: point, time: Date())
+                            if !hintSeen {
+                                withAnimation(.easeOut(duration: 0.6)) { hintSeen = true }
+                            }
                         },
                         setAppearances: liveSetAppearances,
                         layout: layout,
@@ -396,20 +488,27 @@ struct NailDetailView: View {
                         controller: stageController
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background {
+                        // Paper stage: a soft contact shadow grounds the nail
+                        // where there is no velvet or glass to sit in.
+                        if isLight {
+                            Ellipse()
+                                .fill(Palette.inkWarm.opacity(0.13))
+                                .frame(width: 150, height: 34)
+                                .blur(radius: 12)
+                                .offset(y: 165)
+                        }
+                    }
                     .offset(y: (showTuneSheet || showStageSheet) ? -132 : 0)
                     .animation(.easeInOut(duration: 0.3), value: showTuneSheet || showStageSheet)
                     .overlay(alignment: .bottom) {
                         if showCopiedToast {
                             Label("コピーしました — 他のアプリでそのまま貼り付けできます", systemImage: "checkmark.circle.fill")
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Palette.paper)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 9)
-                                .background(
-                                    Capsule()
-                                        .fill(Color.black.opacity(0.72))
-                                        .overlay(Capsule().stroke(Palette.gold.opacity(0.55), lineWidth: 1))
-                                )
+                                .background(Capsule().fill(Palette.inkWarm.opacity(0.94)))
                                 .padding(.bottom, 8)
                                 .transition(.opacity.combined(with: .move(edge: .bottom)))
                         }
@@ -419,144 +518,44 @@ struct NailDetailView: View {
                             HStack(spacing: 10) {
                                 Text("コピーしました：爪をタップで適用・他アプリでペースト可")
                                     .font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Palette.paper)
                                 Button("解除") { stampSource = nil }
                                     .font(.system(size: 12.5, weight: .semibold))
-                                    .foregroundStyle(Palette.goldBright)
+                                    .foregroundStyle(Palette.goldHairline)
                             }
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(Color.black.opacity(0.72))
-                                    .overlay(Capsule().stroke(Palette.gold.opacity(0.55), lineWidth: 1))
-                            )
+                            .background(Capsule().fill(Palette.inkWarm.opacity(0.94)))
                             .padding(.top, 6)
                         }
                     }
 
-                    Text(mode == .set ? "ドラッグで回転・爪を長押しでコピー" : "ドラッグで回転・長押しでコピー")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.45))
-                        .padding(.bottom, 12)
-
-                }
-
-                if let record, !record.tags.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 6) {
-                            ForEach(record.tags, id: \.self) { tag in
-                                Text("#\(tag)")
-                                    .font(.system(size: 11.5, weight: .medium))
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 5)
-                                    .background(Capsule().fill(Palette.gold.opacity(0.16)))
-                                    .foregroundStyle(Palette.goldBright.opacity(0.9))
-                            }
-                        }
-                        .padding(.horizontal, 24)
+                    // Shown until the first spin, then never again.
+                    if !hintSeen {
+                        Text(mode == .set ? "ドラッグで回転 ・ 爪を長押しでコピー" : "ドラッグで回転 ・ 長押しでコピー")
+                            .font(.system(size: 11))
+                            .kerning(1)
+                            .foregroundStyle(muted)
+                            .padding(.bottom, 12)
+                            .transition(.opacity)
                     }
-                    .padding(.bottom, 10)
                 }
 
-                if let record, !record.salon.isEmpty || record.priceYen != nil || !record.memo.isEmpty {
-                    VStack(spacing: 6) {
-                        HStack(spacing: 8) {
-                            if !record.salon.isEmpty {
-                                Label(record.salon, systemImage: "scissors")
-                            }
-                            if let price = record.priceYen {
-                                Label("¥\(price.formatted())", systemImage: "yensign.circle")
-                            }
-                        }
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(.white.opacity(0.65))
-
-                        if !record.memo.isEmpty {
-                            Text(record.memo)
-                                .font(.system(size: 12.5))
-                                .foregroundStyle(.white.opacity(0.55))
-                                .multilineTextAlignment(.center)
-                                .lineLimit(4)
-                                .padding(.horizontal, 32)
-                        }
-                    }
-                    .padding(.bottom, 14)
-                }
-
-                if let original = record?.originalPhoto {
-                    Button { showOriginalPhoto = true } label: {
-                        HStack(spacing: 8) {
-                            Image(uiImage: original)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 34, height: 34)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Palette.gold.opacity(0.45), lineWidth: 1)
-                                )
-                            Text("元の写真を見る")
-                                .font(.system(size: 12.5, weight: .medium))
-                                .foregroundStyle(.white.opacity(0.75))
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
-                        .background(Capsule().fill(Color.white.opacity(0.06)))
-                    }
-                    .padding(.bottom, 12)
-                }
-
-                HStack(spacing: 8) {
+                HStack(spacing: 12) {
                     if record != nil {
                         wearPill
                     }
-                    if !photoUnavailable {
-                        StagePill(label: "ステージ", isOn: showStageSheet) {
-                            showStageSheet = true
-                        }
-                        StagePill(label: "調整", isOn: showTuneSheet) {
-                            showTuneSheet = true
-                        }
+                    moreMenu
                 }
-                }
-                .padding(.bottom, record == nil ? 28 : 16)
-
-                if record != nil {
-                    Button(role: .destructive) {
-                        confirmingDelete = true
-                    } label: {
-                        Text("この記録を削除")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.red.opacity(0.85))
-                    }
-                    .padding(.bottom, 24)
-                }
+                .padding(.bottom, 22)
             }
 
             StageForeground(theme: theme)
         }
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbarColorScheme(isLight ? .light : .dark, for: .navigationBar)
+        .tint(ink)
+        .environment(\.stageIsLight, isLight)
         .toolbar {
-            if let record {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        record.isFavorite.toggle()
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    } label: {
-                        Image(systemName: record.isFavorite ? "heart.fill" : "heart")
-                            .foregroundStyle(record.isFavorite ? Palette.goldBright : .white)
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showEditSheet = true
-                    } label: {
-                        Image(systemName: "pencil")
-                            .foregroundStyle(.white)
-                    }
-                }
-            }
             if !photoUnavailable {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
@@ -566,8 +565,8 @@ struct NailDetailView: View {
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         }
                     } label: {
-                        Label("スタンプ", systemImage: "square.and.arrow.up")
-                            .foregroundStyle(.white)
+                        Label("共有", systemImage: "square.and.arrow.up")
+                            .foregroundStyle(ink)
                     }
                 }
             }
@@ -582,24 +581,27 @@ struct NailDetailView: View {
                 .presentationDetents([.height(400), .height(560)])
                 .presentationBackgroundInteraction(.enabled(upThrough: .height(560)))
                 .presentationDragIndicator(.visible)
-                .presentationBackground(Color(red: 0.09, green: 0.06, blue: 0.1).opacity(0.97))
-                .preferredColorScheme(.dark)
+                .presentationBackground(sheetBackground)
+                .preferredColorScheme(isLight ? .light : .dark)
+                .environment(\.stageIsLight, isLight)
         }
         .sheet(isPresented: $showTuneSheet) {
             ScrollView { tuneSheet }
                 .presentationDetents([.height(400), .height(600)])
                 .presentationBackgroundInteraction(.enabled(upThrough: .height(600)))
                 .presentationDragIndicator(.visible)
-                .presentationBackground(Color(red: 0.09, green: 0.06, blue: 0.1).opacity(0.97))
-                .preferredColorScheme(.dark)
+                .presentationBackground(sheetBackground)
+                .preferredColorScheme(isLight ? .light : .dark)
+                .environment(\.stageIsLight, isLight)
         }
         .sheet(isPresented: $showEditSheet) {
             ScrollView { editSheet }
                 .presentationDetents([.height(460), .height(640)])
                 .presentationBackgroundInteraction(.enabled(upThrough: .height(640)))
                 .presentationDragIndicator(.visible)
-                .presentationBackground(Color(red: 0.09, green: 0.06, blue: 0.1).opacity(0.97))
-                .preferredColorScheme(.dark)
+                .presentationBackground(sheetBackground)
+                .preferredColorScheme(isLight ? .light : .dark)
+                .environment(\.stageIsLight, isLight)
         }
         .sheet(isPresented: $showStampSheet) {
             if let stampImage {
@@ -642,7 +644,7 @@ struct NailDetailView: View {
                 .presentationDetents([.height(620), .large])
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(isLight ? .light : .dark)
         .confirmationDialog("この記録を削除しますか？", isPresented: $confirmingDelete, titleVisibility: .visible) {
             Button("削除する", role: .destructive) {
                 if let record {
@@ -761,6 +763,7 @@ struct StagePill: View {
     let isOn: Bool
     var fontSize: CGFloat = 12.5
     let action: () -> Void
+    @Environment(\.stageIsLight) private var isLight
 
     var body: some View {
         Button(action: action) {
@@ -770,13 +773,31 @@ struct StagePill: View {
                 .fixedSize()
                 .padding(.horizontal, 13)
                 .padding(.vertical, 7)
-                .background(
-                    Capsule().fill(
-                        isOn ? AnyShapeStyle(Palette.goldGradient) : AnyShapeStyle(Color.white.opacity(0.08))
-                    )
-                )
-                .foregroundStyle(isOn ? Palette.ink0 : .white.opacity(0.75))
+                .background(pillBackground)
+                .foregroundStyle(pillForeground)
         }
+    }
+
+    // Dark stage: champagne gold when on. Paper stage: ink when on, a thin
+    // ink outline when off — the same vocabulary as the home header.
+    private var pillBackground: some View {
+        Capsule()
+            .fill(
+                isOn
+                    ? (isLight ? AnyShapeStyle(Palette.inkWarm) : AnyShapeStyle(Palette.goldGradient))
+                    : (isLight ? AnyShapeStyle(Color.clear) : AnyShapeStyle(Color.white.opacity(0.08)))
+            )
+            .overlay(
+                Capsule().stroke(
+                    isLight && !isOn ? Palette.inkWarm.opacity(0.35) : Color.clear,
+                    lineWidth: 1
+                )
+            )
+    }
+
+    private var pillForeground: Color {
+        if isLight { return isOn ? Palette.paper : Palette.inkWarm }
+        return isOn ? Palette.ink0 : .white.opacity(0.75)
     }
 }
 

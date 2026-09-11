@@ -85,8 +85,22 @@ struct DisplayTitle: View {
     }
 }
 
-/// Gold small-caps section label with an optional trailing action.
+/// True inside a light (paper) stage: shared controls swap the gold-on-dark
+/// styling for ink-on-paper.
+private struct StageIsLightKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var stageIsLight: Bool {
+        get { self[StageIsLightKey.self] }
+        set { self[StageIsLightKey.self] = newValue }
+    }
+}
+
+/// Small-caps section label with an optional trailing action.
 struct SectionHeader: View {
+    @Environment(\.stageIsLight) private var isLight
     let title: String
     var trailing: String?
     var action: (() -> Void)?
@@ -94,9 +108,9 @@ struct SectionHeader: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 12, weight: isLight ? .regular : .semibold, design: isLight ? .serif : .default))
                 .kerning(2)
-                .foregroundStyle(Palette.gold.opacity(0.8))
+                .foregroundStyle(isLight ? Palette.mutedWarm : Palette.gold.opacity(0.8))
             Spacer()
             if let trailing, let action {
                 Button(action: action) {
@@ -104,7 +118,7 @@ struct SectionHeader: View {
                         Text(trailing).font(.system(size: 12))
                         Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold))
                     }
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(isLight ? Palette.mutedWarm : .white.opacity(0.5))
                 }
             }
         }
@@ -151,7 +165,9 @@ struct StageForeground: View {
 
     var body: some View {
         Group {
-            if let overlay = theme.foregroundImage {
+            if theme.isLight {
+                EmptyView()
+            } else if let overlay = theme.foregroundImage {
                 Image(uiImage: overlay)
                     .resizable()
                     .ignoresSafeArea()
@@ -202,20 +218,24 @@ struct StoryField: View {
     let prompt: String
     @Binding var text: String
     var axis: Axis = .horizontal
+    @Environment(\.stageIsLight) private var isLight
 
     var body: some View {
         TextField(
             "",
             text: $text,
-            prompt: Text(prompt).foregroundStyle(.white.opacity(0.35)),
+            prompt: Text(prompt).foregroundStyle(isLight ? Palette.mutedWarm.opacity(0.7) : .white.opacity(0.35)),
             axis: axis
         )
         .lineLimit(axis == .vertical ? 3...5 : 1...1)
         .textFieldStyle(.plain)
-        .foregroundStyle(.white)
+        .foregroundStyle(isLight ? Palette.inkWarm : .white)
         .padding(.horizontal, 16)
         .padding(.vertical, 11)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.08)))
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isLight ? Palette.inkWarm.opacity(0.05) : Color.white.opacity(0.08))
+        )
     }
 }
 

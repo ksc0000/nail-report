@@ -9,6 +9,7 @@ struct GoldSlider: View {
     /// Called continuously while sliding (already throttled by SwiftUI's
     /// gesture cadence) and once on release.
     var onEditingChanged: ((Bool) -> Void)? = nil
+    @Environment(\.stageIsLight) private var isLight
 
     private var isBipolar: Bool { range.lowerBound < 0 && range.upperBound > 0 }
 
@@ -20,7 +21,7 @@ struct GoldSlider: View {
         HStack(spacing: 12) {
             Text(label)
                 .font(.system(size: 12))
-                .foregroundStyle(.white.opacity(0.65))
+                .foregroundStyle(isLight ? Palette.mutedWarm : .white.opacity(0.65))
                 .frame(width: 74, alignment: .leading)
 
             GeometryReader { geo in
@@ -30,29 +31,29 @@ struct GoldSlider: View {
 
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color.white.opacity(0.1))
+                        .fill(isLight ? Palette.inkWarm.opacity(0.1) : Color.white.opacity(0.1))
                         .frame(height: 4)
 
                     // gold fill: centre→value for bipolar, leading→value otherwise
                     if isBipolar {
                         Capsule()
-                            .fill(Palette.goldGradient)
+                            .fill(isLight ? AnyShapeStyle(Palette.goldHairline) : AnyShapeStyle(Palette.goldGradient))
                             .frame(width: max(2, abs(valueX - zeroX)), height: 4)
                             .offset(x: min(zeroX, valueX))
                         Rectangle()
-                            .fill(Color.white.opacity(0.35))
+                            .fill(isLight ? Palette.inkWarm.opacity(0.3) : Color.white.opacity(0.35))
                             .frame(width: 1, height: 10)
                             .offset(x: zeroX - 0.5)
                     } else {
                         Capsule()
-                            .fill(Palette.goldGradient)
+                            .fill(isLight ? AnyShapeStyle(Palette.goldHairline) : AnyShapeStyle(Palette.goldGradient))
                             .frame(width: max(2, valueX), height: 4)
                     }
 
                     Circle()
-                        .fill(Palette.goldBright)
+                        .fill(isLight ? Palette.inkWarm : Palette.goldBright)
                         .frame(width: 16, height: 16)
-                        .shadow(color: Palette.gold.opacity(0.7), radius: 5)
+                        .shadow(color: isLight ? .black.opacity(0.15) : Palette.gold.opacity(0.7), radius: isLight ? 3 : 5)
                         .offset(x: valueX - 8)
                 }
                 .frame(height: 28)

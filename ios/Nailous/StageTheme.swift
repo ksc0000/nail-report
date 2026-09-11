@@ -7,6 +7,9 @@ import UIKit
 /// fallback), the lighting-environment map the clear coat reflects, and an
 /// optional particle system.
 enum StageTheme: String, CaseIterable, Identifiable {
+    /// The quiet default: the nail alone on warm paper, no frame, no decor.
+    /// The dark themes below are stage effects the user opts into.
+    case paper
     case glass
     case night
     case deepsea
@@ -14,8 +17,12 @@ enum StageTheme: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Light stage: chrome, sheets and copy switch to the ink-on-paper palette.
+    var isLight: Bool { self == .paper }
+
     var label: String {
         switch self {
+        case .paper: return "ペーパー"
         case .glass: return "ガラス"
         case .night: return "星空"
         case .deepsea: return "深海"
@@ -36,6 +43,8 @@ enum StageTheme: String, CaseIterable, Identifiable {
 
     var gradientColors: [Color] {
         switch self {
+        case .paper:
+            return [Palette.paper, Color(red: 0.958, green: 0.943, blue: 0.918)]
         case .glass:
             return [Color(red: 0.16, green: 0.09, blue: 0.15), Color(red: 0.04, green: 0.02, blue: 0.05)]
         case .night:
@@ -98,6 +107,14 @@ enum StageEnvironment {
         let size = CGSize(width: 256, height: 128)
         let (baseWhite, boxColors): (CGFloat, [UIColor]) = {
             switch theme {
+            case .paper:
+                // A bright, warm room: the clear coat reflects soft daylight
+                // rather than a spotlight, so gloss reads as sheen, not glare.
+                return (0.62, [
+                    UIColor(red: 1, green: 0.98, blue: 0.94, alpha: 1),
+                    UIColor(red: 0.98, green: 0.94, blue: 0.88, alpha: 1),
+                    UIColor(red: 0.82, green: 0.76, blue: 0.68, alpha: 1),
+                ])
             case .glass:
                 return (0.05, [.white, UIColor(white: 0.85, alpha: 1), UIColor(white: 0.5, alpha: 1)])
             case .night:
@@ -188,6 +205,8 @@ enum StageEnvironment {
     }
 
     static func particles(for theme: StageTheme, decor: StageDecor) -> SCNParticleSystem? {
+        // Paper never carries decor; it is the point of that stage.
+        if theme.isLight { return nil }
         switch decor {
         case .off:
             return nil
@@ -269,6 +288,8 @@ enum StageEnvironment {
         system.particleLifeSpanVariation = 2
 
         switch theme {
+        case .paper:
+            return nil
         case .glass:
             system.birthRate = 2.5
             system.particleSize = 0.05
