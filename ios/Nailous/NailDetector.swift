@@ -80,38 +80,96 @@ enum NailDetector {
             var merged: [DetectedNail] = []
             var ambiguousJoints = 0
             var handCount = 0
-            for (orientation, unmap) in attempts {
-                let (found, ambiguous, hands) = runHandPose(
-                    cgImage: normalized,
-                    orientation: orientation,
-                    unmap: unmap,
-                    displaySize: displaySize
-                )
-                ambiguousJoints += ambiguous
-                handCount = max(handCount, hands)
-                // Dedup against nails accumulated from *earlier* orientation
-                // attempts only (the same physical finger re-detected on a
-                // different pass). Candidates within `found` itself are each
-                // a distinct named joint (at most 5 fingers x 2 hands), so
-                // comparing them against each other as they're appended
-                // wrongly dropped adjacent fingers, or a second hand's
-                // fingers near the first hand, as "duplicates" of one
-                // another purely from being close together in the photo.
-                let priorAttempts = merged
-                for nail in found {
-                    let isDuplicate = priorAttempts.contains { existing in
-                        let d = hypot(existing.center.x - nail.center.x, existing.center.y - nail.center.y)
-                        return d < max(existing.cropHeight, nail.cropHeight) * 0.6
+
+            // Runs all four orientation attempts against `image` restricted to
+            // `regionOfInterest` (full frame by default), merging any newly
+            // found nails into `merged` (deduped against nails already
+            // present before this call), and returns how many were added.
+            func runPasses(on image: CGImage, regionOfInterest: CGRect = CGRect(x: 0, y: 0, width: 1, height: 1)) -> Int {
+                let before = merged.count
+                for (orientation, unmap) in attempts {
+                    let (found, ambiguous, hands) = runHandPose(
+                        cgImage: image,
+                        orientation: orientation,
+                        unmap: unmap,
+                        displaySize: displaySize,
+                        regionOfInterest: regionOfInterest
+                    )
+                    ambiguousJoints += ambiguous
+                    handCount = max(handCount, hands)
+                    // Dedup against nails accumulated from *earlier* orientation
+                    // attempts only (the same physical finger re-detected on a
+                    // different pass). Candidates within `found` itself are each
+                    // a distinct named joint (at most 5 fingers x 2 hands), so
+                    // comparing them against each other as they're appended
+                    // wrongly dropped adjacent fingers, or a second hand's
+                    // fingers near the first hand, as "duplicates" of one
+                    // another purely from being close together in the photo.
+                    let priorAttempts = merged
+                    for nail in found {
+                        let isDuplicate = priorAttempts.contains { existing in
+                            let d = hypot(existing.center.x - nail.center.x, existing.center.y - nail.center.y)
+                            return d < max(existing.cropHeight, nail.cropHeight) * 0.6
+                        }
+                        if !isDuplicate { merged.append(nail) }
                     }
-                    if !isDuplicate { merged.append(nail) }
+                    // maximumHandCount is 2, so up to 10 nails (two full hands) can
+                    // legitimately be found; breaking at 5 stopped scanning further
+                    // orientations as soon as one hand was captured, so a second
+                    // hand held at a different angle in the same photo was never
+                    // looked for.
+                    if merged.count >= 10 { break }
                 }
-                // maximumHandCount is 2, so up to 10 nails (two full hands) can
-                // legitimately be found; breaking at 5 stopped scanning further
-                // orientations as soon as one hand was captured, so a second
-                // hand held at a different angle in the same photo was never
-                // looked for.
-                if merged.count >= 10 { break }
+                return merged.count - before
             }
+
+            _ = runPasses(on: normalized)
+
+            // #386: maximumHandCount is 2, but two overlapping/interlocked
+            // hands can still resolve as a single Vision "hand" (its pose
+            // model fits one skeleton across joints that actually belong to
+            // both physical hands) — full-frame occlusion of the found
+            // joints' own bounding box doesn't help there, since those
+            // joints are already spread across both hands. Instead, restrict
+            // Vision's search to each half of the frame in turn (with
+            // generous overlap so a hand isn't cut in half) via
+            // `regionOfInterest` — a smaller, single-hand-sized frame is
+            // more likely to resolve as its own clean hand than the full
+            // two-hand frame is.
+            //
+            // Gated on the same nails-per-hand ratio `assessQuality` uses for
+            // the retake hint (#366), not just `handCount < 2`: a cleanly
+            // detected single-hand photo also has `handCount == 1`, and
+            // re-running a half-crop search there just re-finds the same
+            // hand at slightly shifted joint positions that don't dedupe
+            // against the original — turning one correct hand into a phantom
+            // second one. Only photos that already look under-detected (few
+            // nails per hand found so far) are worth the extra search.
+            let nailsPerHandSoFar = handCount > 0 ? Double(merged.count) / Double(handCount) : nil
+            if handCount < 2, merged.count < 10, (nailsPerHandSoFar ?? .greatestFiniteMagnitude) < 4.5 {
+                let quadrants: [CGRect] = [
+                    CGRect(x: 0, y: 0, width: 0.62, height: 1), // left 62% (Vision ROI: bottom-left origin, x unaffected by the flip)
+                    CGRect(x: 0.38, y: 0, width: 0.62, height: 1), // right 62%
+                    CGRect(x: 0, y: 0.38, width: 1, height: 0.62), // top 62% (high y = top in Vision's bottom-left space)
+                    CGRect(x: 0, y: 0, width: 1, height: 0.62), // bottom 62%
+                    // Two hands photographed interlocked along a diagonal
+                    // (fingers meeting corner-to-corner rather than a clean
+                    // left/right or top/bottom split) can still be cut apart
+                    // by a corner crop even when no half-crop above isolates
+                    // either hand cleanly.
+                    CGRect(x: 0, y: 0.38, width: 0.62, height: 0.62), // top-left
+                    CGRect(x: 0.38, y: 0.38, width: 0.62, height: 0.62), // top-right
+                    CGRect(x: 0, y: 0, width: 0.62, height: 0.62), // bottom-left
+                    CGRect(x: 0.38, y: 0, width: 0.62, height: 0.62), // bottom-right
+                ]
+                let before = merged.count
+                for roi in quadrants {
+                    if merged.count >= 10 { break }
+                    _ = runPasses(on: normalized, regionOfInterest: roi)
+                }
+                if merged.count > before { handCount = min(2, handCount + 1) }
+            }
+
             return (merged, assessQuality(nails: merged, ambiguousJoints: ambiguousJoints, handCount: handCount))
         }.value
     }
@@ -166,10 +224,12 @@ enum NailDetector {
         cgImage: CGImage,
         orientation: CGImagePropertyOrientation,
         unmap: (CGPoint) -> CGPoint,
-        displaySize: CGSize
+        displaySize: CGSize,
+        regionOfInterest: CGRect = CGRect(x: 0, y: 0, width: 1, height: 1)
     ) -> (nails: [DetectedNail], ambiguousJoints: Int, handCount: Int) {
         let request = VNDetectHumanHandPoseRequest()
         request.maximumHandCount = 2
+        request.regionOfInterest = regionOfInterest
         let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation, options: [:])
         do {
             try handler.perform([request])
