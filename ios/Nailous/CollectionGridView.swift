@@ -18,6 +18,7 @@ struct CollectionGridView: View {
     @ScaledMetric(relativeTo: .caption) private var cardTitleFontSize = 12.0
     @ScaledMetric(relativeTo: .caption2) private var cardDateFontSize = 10.0
     @ScaledMetric(relativeTo: .subheadline) private var emptyFilterFontSize = 14.0
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private let columns = [GridItem(.adaptive(minimum: 104), spacing: 16)]
 
@@ -77,55 +78,78 @@ struct CollectionGridView: View {
         .preferredColorScheme(.light)
     }
 
-    private var filterBar: some View {
-        // The sort button lives in its own fixed column, outside the
-        // horizontal scroller, so no chip can ever end up underneath it
-        // regardless of scroll position (see #380, #384).
-        HStack(spacing: 4) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    StagePill(label: "すべて", isOn: activeTag == nil && !favoritesOnly, fontSize: pillFontSize) {
-                        activeTag = nil
-                        favoritesOnly = false
-                    }
-                    StagePill(label: "♡ お気に入り", isOn: favoritesOnly, fontSize: pillFontSize) {
-                        favoritesOnly.toggle()
-                    }
-                    ForEach(allTags, id: \.self) { tag in
-                        StagePill(label: "#\(tag)", isOn: activeTag == tag, fontSize: pillFontSize) {
-                            activeTag = (activeTag == tag) ? nil : tag
-                        }
-                    }
-                }
-                .padding(.leading, 20)
-                .padding(.trailing, 4)
+    @ViewBuilder private var filterPills: some View {
+        StagePill(label: "すべて", isOn: activeTag == nil && !favoritesOnly, fontSize: pillFontSize) {
+            activeTag = nil
+            favoritesOnly = false
+        }
+        StagePill(label: "♡ お気に入り", isOn: favoritesOnly, fontSize: pillFontSize) {
+            favoritesOnly.toggle()
+        }
+        ForEach(allTags, id: \.self) { tag in
+            StagePill(label: "#\(tag)", isOn: activeTag == tag, fontSize: pillFontSize) {
+                activeTag = (activeTag == tag) ? nil : tag
             }
-            .mask(
-                LinearGradient(
-                    stops: [
-                        .init(color: .black, location: 0),
-                        .init(color: .black, location: 0.92),
-                        .init(color: .clear, location: 1),
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
+        }
+    }
 
-            Menu {
-                Picker("並べ替え", selection: $sortOrder) {
-                    ForEach(CollectionSortOrder.allCases) { order in
-                        Text(order.title).tag(order)
+    private var sortButton: some View {
+        Menu {
+            Picker("並べ替え", selection: $sortOrder) {
+                ForEach(CollectionSortOrder.allCases) { order in
+                    Text(order.title).tag(order)
+                }
+            }
+        } label: {
+            Image(systemName: "arrow.up.arrow.down")
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(Palette.inkWarm)
+                .frame(width: 38, height: 34)
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Palette.inkWarm.opacity(0.35), lineWidth: 1))
+        }
+    }
+
+    private var filterBar: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                // At accessibility sizes a single scrolling row can't fit even
+                // one chip's full label, so every chip wraps into as many rows
+                // as it takes instead — no fade mask, no hidden chips (#387).
+                VStack(alignment: .trailing, spacing: 10) {
+                    sortButton
+                    FlowLayout(spacing: 8) {
+                        filterPills
                     }
                 }
-            } label: {
-                Image(systemName: "arrow.up.arrow.down")
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundStyle(Palette.inkWarm)
-                    .frame(width: 38, height: 34)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Palette.inkWarm.opacity(0.35), lineWidth: 1))
+                .padding(.horizontal, 20)
+            } else {
+                // The sort button lives in its own fixed column, outside the
+                // horizontal scroller, so no chip can ever end up underneath it
+                // regardless of scroll position (see #380, #384).
+                HStack(spacing: 4) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            filterPills
+                        }
+                        .padding(.leading, 20)
+                        .padding(.trailing, 4)
+                    }
+                    .mask(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .black, location: 0),
+                                .init(color: .black, location: 0.92),
+                                .init(color: .clear, location: 1),
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+
+                    sortButton
+                        .padding(.trailing, 20)
+                }
             }
-            .padding(.trailing, 20)
         }
     }
 
