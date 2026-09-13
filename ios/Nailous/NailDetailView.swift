@@ -26,7 +26,6 @@ struct NailDetailView: View {
     @State private var layout: SetLayout = .arc
     @State private var motion: AutoMotion = .off
     @State private var theme: StageTheme = .paper
-    @AppStorage("detailHintSeen") private var hintSeen = false
     @State private var stampSource: Int?
     @State private var stageController = StageController()
     @State private var stampImage: UIImage?
@@ -499,9 +498,6 @@ struct NailDetailView: View {
                         plateParams: plateParams,
                         onPanStir: { point in
                             stir = StirEvent(point: point, time: Date())
-                            if !hintSeen {
-                                withAnimation(.easeOut(duration: 0.6)) { hintSeen = true }
-                            }
                         },
                         setAppearances: liveSetAppearances,
                         layout: layout,
@@ -576,17 +572,16 @@ struct NailDetailView: View {
                         }
                     }
 
-                    // Shown until the first spin, then never again.
-                    if !hintSeen {
-                        Text(mode == .set
-                             ? "ドラッグで回転 ・ ダブルタップで正面へ ・ 爪を長押しでコピー"
-                             : "ドラッグで回転 ・ ダブルタップで正面へ ・ 長押しでコピー")
-                            .font(.system(size: 11))
-                            .kerning(1)
-                            .foregroundStyle(muted)
-                            .padding(.bottom, 12)
-                            .transition(.opacity)
-                    }
+                    // Always present, in small type: the owner asked for a
+                    // standing guide, not a one-time tip (it used to vanish
+                    // after the first spin, so nobody saw the double-tap).
+                    Text(mode == .set
+                         ? "ドラッグで回転 ・ ダブルタップで正面へ ・ 爪を長押しでコピー"
+                         : "ドラッグで回転 ・ ダブルタップで正面へ ・ 長押しでコピー")
+                        .font(.system(size: 10.5))
+                        .kerning(0.8)
+                        .foregroundStyle(muted.opacity(0.85))
+                        .padding(.bottom, 12)
                 }
 
                 HStack(spacing: 12) {

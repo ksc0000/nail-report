@@ -67,12 +67,13 @@ enum NailGeometry {
 
     static func plateSize(for shape: NailShape) -> (width: Float, height: Float) {
         switch shape {
-        case .squoval: return (1.32, 2.25)
-        case .square: return (1.32, 2.2)
-        case .round: return (1.48, 1.8)
-        case .oval: return (1.3, 2.4)
-        case .almond: return (1.22, 2.6)
-        case .coffin: return (1.22, 2.65)
+        // Base widths trimmed ~11% (owner: default nails read too wide).
+        case .squoval: return (1.18, 2.25)
+        case .square: return (1.18, 2.2)
+        case .round: return (1.32, 1.8)
+        case .oval: return (1.16, 2.4)
+        case .almond: return (1.09, 2.6)
+        case .coffin: return (1.09, 2.65)
         }
     }
 
