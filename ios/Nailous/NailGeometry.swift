@@ -1,22 +1,27 @@
 import SceneKit
 
 /// Nail plate shapes supported by the procedural mesh.
+/// The salon chart order: round → oval → point → square → square-off →
+/// ballerina. Raw values are storage keys (older records keep working);
+/// labels follow the chart the owner uses.
 enum NailShape: String, CaseIterable, Identifiable {
-    case squoval
     case round
     case oval
-    case almond
-    case coffin
+    case almond   // ポイント
+    case square
+    case squoval  // スクエアオフ
+    case coffin   // バレリーナ
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
-        case .squoval: return "スクエア"
         case .round: return "ラウンド"
         case .oval: return "オーバル"
-        case .almond: return "アーモンド"
-        case .coffin: return "コフィン"
+        case .almond: return "ポイント"
+        case .square: return "スクエア"
+        case .squoval: return "スクエアオフ"
+        case .coffin: return "バレリーナ"
         }
     }
 }
@@ -63,6 +68,7 @@ enum NailGeometry {
     static func plateSize(for shape: NailShape) -> (width: Float, height: Float) {
         switch shape {
         case .squoval: return (1.32, 2.25)
+        case .square: return (1.32, 2.2)
         case .round: return (1.48, 1.8)
         case .oval: return (1.3, 2.4)
         case .almond: return (1.22, 2.6)
@@ -90,12 +96,20 @@ enum NailGeometry {
         let cornerMul = 1 + 0.75 * corner
 
         switch shape {
+        case .square:
+            // Dead-parallel sides, flat free edge, corners only just softened.
+            let tipCap = min(0.2, max(0.01, 0.03 * cornerMul))
+            let floor = max(0.5, 0.86 - 0.2 * corner)
+            let tipRound: Float = t > 1 - tipCap
+                ? floor + (1 - floor) * sqrt(max(0, 1 - pow((t - (1 - tipCap)) / tipCap, 2)))
+                : 1
+            return baseRound * baseTaper * tipRound
         case .squoval:
-            // Parallel sides, flat free edge with softly rounded corners
-            // (photo ref: short square gel nails).
-            let body = 1 - 0.04 * smoothstep(0.5, 1, t)
-            let tipCap = min(0.4, max(0.015, 0.07 * cornerMul))
-            let floor = max(0.2, 0.62 - 0.3 * corner) // sharper corner = higher floor (squarer)
+            // Square-off: narrows a touch toward the tip and the whole free
+            // edge is softly rounded (owner's reference chart).
+            let body = 1 - 0.09 * smoothstep(0.3, 1, t)
+            let tipCap = min(0.4, max(0.03, 0.13 * cornerMul))
+            let floor = max(0.2, 0.5 - 0.25 * corner) // sharper corner = higher floor (squarer)
             let tipRound: Float = t > 1 - tipCap
                 ? floor + (1 - floor) * sqrt(max(0, 1 - pow((t - (1 - tipCap)) / tipCap, 2)))
                 : 1

@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
@@ -40,6 +41,15 @@ struct NailDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingDelete = false
 
+    // Re-scan: replace this record's design from a new photo or the camera,
+    // keeping title, tags, tuning and the wear timer.
+    @State private var rescanPickerShown = false
+    @State private var rescanPickerItem: PhotosPickerItem?
+    @State private var rescanCameraShown = false
+    @State private var rescanSource: RescanSource?
+    @State private var rescanTexture: UIImage?
+    @State private var isRescanning = false
+
     init(appearance: NailAppearance, title: String, subtitle: String?, record: NailRecord? = nil) {
         self.appearance = appearance
         self.title = title
@@ -68,9 +78,13 @@ struct NailDetailView: View {
         isLight ? Palette.paper : Color(red: 0.09, green: 0.06, blue: 0.1).opacity(0.97)
     }
 
-    /// The hero appearance with the live-edited finish applied.
+    /// The hero appearance with the live-edited finish applied (and the
+    /// re-scanned texture once one has been taken this visit).
     private var liveAppearance: NailAppearance {
-        NailAppearance(id: appearance.id, texture: appearance.texture, finish: finish)
+        if let rescanTexture {
+            return NailAppearance(id: "rescan-\(rescanTexture.hashValue)", texture: rescanTexture, finish: finish)
+        }
+        return NailAppearance(id: appearance.id, texture: appearance.texture, finish: finish)
     }
 
     /// Set-mode appearances rebuilt with the live finish (nil for single).
@@ -121,6 +135,13 @@ struct NailDetailView: View {
                 }
             }
             if record != nil {
+                Divider()
+                Button { rescanPickerShown = true } label: {
+                    Label("写真から再スキャン", systemImage: "photo.on.rectangle.angled")
+                }
+                Button { rescanCameraShown = true } label: {
+                    Label("カメラで再スキャン", systemImage: "camera")
+                }
                 Divider()
                 Button(role: .destructive) { confirmingDelete = true } label: {
                     Label("この記録を削除", systemImage: "trash")
@@ -303,6 +324,31 @@ struct NailDetailView: View {
         .onChange(of: editSalon) { persistStory() }
         .onChange(of: editPriceText) { persistStory() }
         .onChange(of: editMemo) { persistStory() }
+    }
+
+    /// Same on-device cleanup as a fresh capture, then the record's design
+    /// (and its keepsake original) are replaced in place.
+    private func applyRescan(_ textures: [UIImage], original: UIImage) {
+        guard let record else { return }
+        isRescanning = true
+        Task.detached(priority: .userInitiated) {
+            let cleaned = textures.map { NailCleanup.process($0) }
+            let jpegs = cleaned.compactMap { $0.jpegData(compressionQuality: 0.85) }
+            let archival = AddNailView.archivalJPEG(original)
+            await MainActor.run {
+                if let first = jpegs.first {
+                    record.photoData = first
+                    record.fingerPhotoData = jpegs.count > 1 ? jpegs : []
+                    record.originalPhotoData = archival
+                    record.shapeRaw = shape.rawValue
+                    try? modelContext.save()
+                    rescanTexture = cleaned.first
+                    mode = jpegs.count > 1 ? .set : .single
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                }
+                isRescanning = false
+            }
+        }
     }
 
     private func persistStory() {
@@ -532,7 +578,9 @@ struct NailDetailView: View {
 
                     // Shown until the first spin, then never again.
                     if !hintSeen {
-                        Text(mode == .set ? "ドラッグで回転 ・ 爪を長押しでコピー" : "ドラッグで回転 ・ 長押しでコピー")
+                        Text(mode == .set
+                             ? "ドラッグで回転 ・ ダブルタップで正面へ ・ 爪を長押しでコピー"
+                             : "ドラッグで回転 ・ ダブルタップで正面へ ・ 長押しでコピー")
                             .font(.system(size: 11))
                             .kerning(1)
                             .foregroundStyle(muted)
@@ -569,6 +617,62 @@ struct NailDetailView: View {
                             .foregroundStyle(ink)
                     }
                 }
+            }
+        }
+        .photosPicker(isPresented: $rescanPickerShown, selection: $rescanPickerItem, matching: .images)
+        .onChange(of: rescanPickerItem) { _, item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    rescanSource = RescanSource(image: image, single: false, initialZoom: 1)
+                }
+                rescanPickerItem = nil
+            }
+        }
+        .fullScreenCover(isPresented: $rescanCameraShown) {
+            NailCameraView(
+                nailShape: $shape,
+                onCapture: { image, captureMode in
+                    rescanCameraShown = false
+                    rescanSource = RescanSource(
+                        image: image,
+                        single: captureMode == .single,
+                        initialZoom: captureMode == .single ? NailCameraView.singleMargin : 1
+                    )
+                },
+                onCancel: { rescanCameraShown = false }
+            )
+            .ignoresSafeArea()
+        }
+        .fullScreenCover(item: $rescanSource) { source in
+            PhotoCropView(
+                image: source.image,
+                nailShape: $shape,
+                forceSingle: source.single,
+                initialZoom: source.initialZoom,
+                onConfirm: { baked in
+                    rescanSource = nil
+                    applyRescan([baked], original: source.image)
+                },
+                onConfirmSet: { bakedList in
+                    rescanSource = nil
+                    applyRescan(bakedList, original: source.image)
+                },
+                onCancel: { rescanSource = nil }
+            )
+        }
+        .overlay {
+            if isRescanning {
+                HStack(spacing: 8) {
+                    ProgressView().tint(isLight ? Palette.paper : .white)
+                    Text("仕上げ処理中…")
+                        .font(.system(size: 13))
+                        .foregroundStyle(isLight ? Palette.paper : .white)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Capsule().fill(isLight ? Palette.inkWarm.opacity(0.92) : Color.black.opacity(0.7)))
             }
         }
         .sheet(isPresented: $showOriginalPhoto) {
@@ -664,6 +768,9 @@ struct NailDetailView: View {
             // -editMemo/-editTags) opens the edit sheet and applies the given
             // values headlessly, so the edit→persist flow can be verified in
             // the simulator without a touch driver.
+            if UserDefaults.standard.string(forKey: "debugRescan") == "1" {
+                rescanSource = RescanSource(image: NailStyle.samples[0].texture, single: false, initialZoom: 1)
+            }
             if UserDefaults.standard.string(forKey: "openEdit") == "1" {
                 if let v = UserDefaults.standard.string(forKey: "editTitle") { editTitle = v }
                 if let v = UserDefaults.standard.string(forKey: "editSalon") { editSalon = v }
@@ -865,4 +972,11 @@ struct OriginalPhotoView: View {
         }
         .preferredColorScheme(.dark)
     }
+}
+
+private struct RescanSource: Identifiable {
+    let id = UUID()
+    let image: UIImage
+    let single: Bool
+    let initialZoom: CGFloat
 }

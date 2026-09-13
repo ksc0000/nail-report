@@ -241,7 +241,7 @@ struct AddNailView: View {
     /// Downscales the picked photo to a size worth keeping for reference —
     /// big enough to show a nail artist, small enough that a long collection
     /// stays light (long edge 1600pt, JPEG 0.8 ≈ a few hundred KB).
-    private static func archivalJPEG(_ image: UIImage) -> Data? {
+    static func archivalJPEG(_ image: UIImage) -> Data? {
         let maxEdge: CGFloat = 1600
         let scale = min(1, maxEdge / max(image.size.width, image.size.height))
         guard scale < 1 else { return image.jpegData(compressionQuality: 0.8) }
@@ -387,12 +387,12 @@ struct AddNailView: View {
                 .padding(.horizontal, 24)
 
             section("形（シェイプ）") {
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     ForEach(NailShape.allCases) { candidate in
                         shapeChip(candidate)
                     }
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 20)
             }
 
             section("仕上げ") {
@@ -595,7 +595,9 @@ struct AddNailView: View {
                             .stroke(isOn ? Palette.goldHairline : Palette.inkWarm.opacity(0.25), lineWidth: 1)
                     )
                 Text(candidate.label)
-                    .font(.system(size: 10.5, weight: isOn ? .semibold : .regular))
+                    .font(.system(size: 10, weight: isOn ? .semibold : .regular))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                     .foregroundStyle(isOn ? Palette.inkWarm : Palette.mutedWarm)
             }
             .frame(maxWidth: .infinity)

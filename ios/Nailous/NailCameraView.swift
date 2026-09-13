@@ -90,12 +90,15 @@ struct NailCameraView: View {
                     }
 
                     if mode == .single {
-                        HStack(spacing: 6) {
-                            ForEach(NailShape.allCases) { candidate in
-                                pill(candidate.label, isOn: nailShape == candidate, small: true) {
-                                    nailShape = candidate
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 6) {
+                                ForEach(NailShape.allCases) { candidate in
+                                    pill(candidate.label, isOn: nailShape == candidate, small: true) {
+                                        nailShape = candidate
+                                    }
                                 }
                             }
+                            .padding(.horizontal, 16)
                         }
                     }
 

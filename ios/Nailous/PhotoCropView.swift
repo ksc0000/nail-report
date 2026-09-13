@@ -153,6 +153,7 @@ struct PhotoCropView: View {
                             .padding(.top, 6)
                     }
 
+                    ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
                         ForEach(NailShape.allCases) { candidate in
                             Button {
@@ -176,6 +177,8 @@ struct PhotoCropView: View {
                                     )
                             }
                         }
+                    }
+                    .padding(.horizontal, 16)
                     }
                     .padding(.top, 8)
 
