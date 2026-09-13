@@ -2,11 +2,12 @@ import AVFoundation
 import SwiftUI
 import UIKit
 
-/// What the camera was asked to frame: one nail up close, or the whole hand
-/// for fingertip detection afterwards.
+/// What the camera was asked to frame: one nail up close, the whole hand for
+/// fingertip detection, or a guided 4-angle 立体スキャン.
 enum CaptureMode: String, CaseIterable, Identifiable {
     case single
     case hand
+    case scan
 
     var id: String { rawValue }
 
@@ -14,6 +15,7 @@ enum CaptureMode: String, CaseIterable, Identifiable {
         switch self {
         case .single: return "1本"
         case .hand: return "手全体"
+        case .scan: return "立体スキャン"
         }
     }
 
@@ -21,8 +23,35 @@ enum CaptureMode: String, CaseIterable, Identifiable {
         switch self {
         case .single: return "枠に爪を合わせて、真上から近づいて"
         case .hand: return "手の甲を上にして、指を伸ばして枠に"
+        case .scan: return "4方向から撮って、立体的に記録"
         }
     }
+}
+
+/// One step of a 立体スキャン, in capture order. Only `.top` is required; the
+/// rest feed curve/thickness estimation later (Phase 2) and can be skipped.
+enum AngleStep: Int, CaseIterable {
+    case top, side, otherSide, catHand
+
+    var label: String {
+        switch self {
+        case .top: return "上"
+        case .side: return "横"
+        case .otherSide: return "逆の横"
+        case .catHand: return "猫の手"
+        }
+    }
+
+    var hint: String {
+        switch self {
+        case .top: return "真上から、爪の表面全体を枠に"
+        case .side: return "横から、縦のアーチが見えるように"
+        case .otherSide: return "反対の横から、同じアングルで"
+        case .catHand: return "指を軽く握って、先端のラインが見えるように"
+        }
+    }
+
+    var isSkippable: Bool { self != .top }
 }
 
 /// In-app camera whose guide is the crop: the nail-shaped window on screen
@@ -32,14 +61,23 @@ enum CaptureMode: String, CaseIterable, Identifiable {
 struct NailCameraView: View {
     @Binding var nailShape: NailShape
     let onCapture: (UIImage, CaptureMode) -> Void
+    /// Called once a 立体スキャン finishes (top captured, the rest optional):
+    /// the top photo (routed through the usual single-nail crop) and all 4
+    /// slots in `AngleStep` order (nil where skipped).
+    var onCaptureScan: ((UIImage, [UIImage?]) -> Void)? = nil
     let onCancel: () -> Void
 
     @StateObject private var camera = CameraController()
     @State private var mode: CaptureMode = .single
     @State private var isCapturing = false
+    @State private var scanStep: AngleStep = .top
+    @State private var scanPhotos: [UIImage?] = Array(repeating: nil, count: AngleStep.allCases.count)
 
     /// Margin around the single-nail guide kept in the crop (30% each axis).
     static let singleMargin: CGFloat = 1.3
+    /// Margin around the side/otherSide/catHand guides — these are reference
+    /// photos, not crop sources, so less slack is needed.
+    static let angleMargin: CGFloat = 1.1
 
     var body: some View {
         GeometryReader { proxy in
@@ -75,7 +113,7 @@ struct NailCameraView: View {
                     .allowsHitTesting(false)
 
                 VStack(spacing: 10) {
-                    Text(mode.hint)
+                    Text(hintText)
                         .font(.system(size: 13))
                         .foregroundStyle(.white.opacity(0.85))
                         .padding(.horizontal, 14)
@@ -89,7 +127,23 @@ struct NailCameraView: View {
                         }
                     }
 
-                    if mode == .single {
+                    if mode == .scan {
+                        HStack(spacing: 10) {
+                            ForEach(AngleStep.allCases, id: \.rawValue) { step in
+                                Button { scanStep = step } label: {
+                                    Circle()
+                                        .fill(scanPhotos[step.rawValue] != nil ? .white : Color.white.opacity(0.25))
+                                        .frame(width: step == scanStep ? 10 : 7, height: step == scanStep ? 10 : 7)
+                                        .overlay(
+                                            Circle().stroke(.white.opacity(step == scanStep ? 0.9 : 0), lineWidth: 2)
+                                                .frame(width: 16, height: 16)
+                                        )
+                                }
+                            }
+                        }
+                    }
+
+                    if mode == .single || (mode == .scan && scanStep == .top) {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 6) {
                                 ForEach(NailShape.allCases) { candidate in
@@ -126,8 +180,24 @@ struct NailCameraView: View {
                         .opacity(camera.isAvailable ? 1 : 0.3)
                         .accessibilityLabel("撮影")
                         Spacer()
-                        // Balances the cancel button so the shutter stays centred.
-                        Color.clear.frame(width: 96, height: 1)
+                        if mode == .scan {
+                            VStack(spacing: 8) {
+                                if scanStep.isSkippable {
+                                    Button("スキップ", action: skipScanStep)
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundStyle(.white.opacity(0.75))
+                                }
+                                if scanPhotos[AngleStep.top.rawValue] != nil {
+                                    Button("完了", action: finishScan)
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(.white)
+                                }
+                            }
+                            .frame(width: 96)
+                        } else {
+                            // Balances the cancel button so the shutter stays centred.
+                            Color.clear.frame(width: 96, height: 1)
+                        }
                     }
                     .padding(.horizontal, 24)
                     .padding(.bottom, windowSafeInsets.bottom + 14)
@@ -137,6 +207,11 @@ struct NailCameraView: View {
         .environment(\.colorScheme, .dark)
         .onAppear { camera.start() }
         .onDisappear { camera.stop() }
+        .onChange(of: mode) { _, new in
+            guard new != .scan else { return }
+            scanStep = .top
+            scanPhotos = Array(repeating: nil, count: AngleStep.allCases.count)
+        }
     }
 
     /// The cover ignores the safe area so the preview fills the screen; the
@@ -146,19 +221,36 @@ struct NailCameraView: View {
         return scene?.keyWindow?.safeAreaInsets ?? .zero
     }
 
+    private var hintText: String {
+        mode == .scan ? "ステップ \(scanStep.rawValue + 1)/4 ・ \(scanStep.hint)" : mode.hint
+    }
+
     // MARK: - Guide
 
-    /// Single: a 2:3 nail window (same ratio as the crop window), a little
-    /// above centre so the hand below it stays visible. Hand: a tall rounded
-    /// field for the whole hand.
-    private func guideRect(in size: CGSize) -> CGRect {
+    /// What shape the frame takes: the nail silhouette (single nail, and the
+    /// top step of a scan) or a generic rounded field (whole hand, and the
+    /// other scan steps — these are reference photos, not crop sources).
+    private enum GuideKind { case nail, frame }
+
+    private var guideKind: GuideKind {
         switch mode {
-        case .single:
+        case .single: return .nail
+        case .hand: return .frame
+        case .scan: return scanStep == .top ? .nail : .frame
+        }
+    }
+
+    /// Nail: a 2:3 window (same ratio as the crop window), a little above
+    /// centre so the hand below it stays visible. Frame: a tall rounded field
+    /// for the whole hand or a loosely-framed angle shot.
+    private func guideRect(in size: CGSize) -> CGRect {
+        switch guideKind {
+        case .nail:
             // Same proportions as the crop window for this shape.
             let height = size.width * 0.75
             let width = height * NailGeometry.plateAspect(for: nailShape)
             return CGRect(x: (size.width - width) / 2, y: size.height * 0.46 - height / 2, width: width, height: height)
-        case .hand:
+        case .frame:
             let width = size.width * 0.78
             let height = size.height * 0.56
             return CGRect(x: (size.width - width) / 2, y: size.height * 0.47 - height / 2, width: width, height: height)
@@ -167,12 +259,12 @@ struct NailCameraView: View {
 
     @ViewBuilder
     private func guideShape(in rect: CGRect) -> some View {
-        switch mode {
-        case .single:
+        switch guideKind {
+        case .nail:
             NailSilhouette(nailShape: nailShape)
                 .frame(width: rect.width, height: rect.height)
                 .position(x: rect.midX, y: rect.midY)
-        case .hand:
+        case .frame:
             RoundedRectangle(cornerRadius: 28)
                 .frame(width: rect.width, height: rect.height)
                 .position(x: rect.midX, y: rect.midY)
@@ -181,13 +273,13 @@ struct NailCameraView: View {
 
     @ViewBuilder
     private func guideStroke(in rect: CGRect) -> some View {
-        switch mode {
-        case .single:
+        switch guideKind {
+        case .nail:
             NailSilhouette(nailShape: nailShape)
                 .stroke(.white.opacity(0.9), style: StrokeStyle(lineWidth: 1.5, dash: [7, 5]))
                 .frame(width: rect.width, height: rect.height)
                 .position(x: rect.midX, y: rect.midY)
-        case .hand:
+        case .frame:
             RoundedRectangle(cornerRadius: 28)
                 .stroke(.white.opacity(0.9), style: StrokeStyle(lineWidth: 1.5, dash: [7, 5]))
                 .frame(width: rect.width, height: rect.height)
@@ -227,8 +319,38 @@ struct NailCameraView: View {
                     margin: Self.singleMargin
                 )
                 onCapture(upright.cropped(to: rect) ?? upright, .single)
+            case .scan:
+                let margin = scanStep == .top ? Self.singleMargin : Self.angleMargin
+                let rect = CaptureGeometry.imageRect(
+                    forGuide: guide,
+                    previewSize: previewSize,
+                    imageSize: upright.size,
+                    margin: margin
+                )
+                scanPhotos[scanStep.rawValue] = upright.cropped(to: rect) ?? upright
+                advanceScanStep()
             }
         }
+    }
+
+    // MARK: - Scan steps
+
+    private func advanceScanStep() {
+        if let next = AngleStep(rawValue: scanStep.rawValue + 1) {
+            scanStep = next
+        } else {
+            finishScan()
+        }
+    }
+
+    private func skipScanStep() {
+        UISelectionFeedbackGenerator().selectionChanged()
+        advanceScanStep()
+    }
+
+    private func finishScan() {
+        guard let top = scanPhotos[AngleStep.top.rawValue] else { return }
+        onCaptureScan?(top, scanPhotos)
     }
 }
 

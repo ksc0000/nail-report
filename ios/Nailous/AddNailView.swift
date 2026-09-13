@@ -28,6 +28,10 @@ struct AddNailView: View {
     @State private var bakedTextures: [UIImage] = []
     /// Retouched copies actually shown and saved.
     @State private var displayTextures: [UIImage] = []
+    /// Reference photos from a 立体スキャン capture, in `AngleStep` order
+    /// (nil where skipped); cleared whenever the top photo changes outside
+    /// of a scan, so a stale scan can't get attached to an unrelated photo.
+    @State private var scanAnglePhotos: [UIImage?] = Array(repeating: nil, count: AngleStep.allCases.count)
 
     @State private var smoothStep: Float = 2
     @State private var brightnessStep: Float = 0
@@ -115,6 +119,7 @@ struct AddNailView: View {
                    let image = UIImage(data: data) {
                     cameraSingle = false
                     originalImage = image
+                    scanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
                     cropSource = CropSource(image: image, single: false)
                 }
             }
@@ -141,11 +146,19 @@ struct AddNailView: View {
                     showCamera = false
                     cameraSingle = mode == .single
                     originalImage = image
+                    scanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
                     cropSource = CropSource(
                         image: image,
                         single: mode == .single,
                         initialZoom: mode == .single ? NailCameraView.singleMargin : 1
                     )
+                },
+                onCaptureScan: { top, photos in
+                    showCamera = false
+                    cameraSingle = true
+                    originalImage = top
+                    scanAnglePhotos = photos
+                    cropSource = CropSource(image: top, single: true, initialZoom: NailCameraView.singleMargin)
                 },
                 onCancel: { showCamera = false }
             )
@@ -252,6 +265,14 @@ struct AddNailView: View {
             image.draw(in: CGRect(origin: .zero, size: size))
         }
         return resized.jpegData(compressionQuality: 0.8)
+    }
+
+    /// `NailRecord.anglePhotoData` from a 立体スキャン's 4 slots (nil →
+    /// skipped, stored as empty `Data` to keep the slot's position). Returns
+    /// `[]` when nothing was scanned, so untouched records stay untouched.
+    static func archivalAngleData(_ photos: [UIImage?]) -> [Data] {
+        guard photos.contains(where: { $0 != nil }) else { return [] }
+        return photos.map { $0.flatMap(archivalJPEG) ?? Data() }
     }
 
     private static let ciContext = CIContext()
@@ -633,6 +654,7 @@ struct AddNailView: View {
                 .filter { !$0.isEmpty },
             fingerPhotoData: fingerData,
             originalPhotoData: originalImage.flatMap(Self.archivalJPEG),
+            anglePhotoData: Self.archivalAngleData(scanAnglePhotos),
             plateParams: plateParams
         )
         modelContext.insert(record)

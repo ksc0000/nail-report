@@ -48,6 +48,8 @@ struct NailDetailView: View {
     @State private var rescanSource: RescanSource?
     @State private var rescanTexture: UIImage?
     @State private var isRescanning = false
+    @State private var rescanAnglePhotos: [UIImage?] = Array(repeating: nil, count: AngleStep.allCases.count)
+    @State private var viewingAnglePhoto: ViewingPhoto?
 
     init(appearance: NailAppearance, title: String, subtitle: String?, record: NailRecord? = nil) {
         self.appearance = appearance
@@ -167,6 +169,40 @@ struct NailDetailView: View {
         if !record.salon.isEmpty { parts.append(record.salon) }
         if let price = record.priceYen { parts.append("¥\(price.formatted())") }
         return parts.isEmpty ? nil : parts.joined(separator: " ・ ")
+    }
+
+    /// This record's 立体スキャン reference photos, if any were captured.
+    private var anglePhotos: [(step: AngleStep, image: UIImage)] {
+        record?.anglePhotos ?? []
+    }
+
+    /// Thumbnails for each captured angle, tappable into the same full-size
+    /// viewer as the original photo.
+    private var anglePhotosStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(anglePhotos, id: \.step.rawValue) { entry in
+                    Button { viewingAnglePhoto = ViewingPhoto(image: entry.image, label: entry.step.label) } label: {
+                        VStack(spacing: 4) {
+                            Image(uiImage: entry.image)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 52, height: 52)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(ink.opacity(isLight ? 0.2 : 0.3), lineWidth: 1)
+                                )
+                            Text(entry.step.label)
+                                .font(.system(size: 10))
+                                .foregroundStyle(muted)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 24)
+        }
     }
 
     private func toggleWearing() {
@@ -330,15 +366,18 @@ struct NailDetailView: View {
     private func applyRescan(_ textures: [UIImage], original: UIImage) {
         guard let record else { return }
         isRescanning = true
+        let anglePhotos = rescanAnglePhotos
         Task.detached(priority: .userInitiated) {
             let cleaned = textures.map { NailCleanup.process($0) }
             let jpegs = cleaned.compactMap { $0.jpegData(compressionQuality: 0.85) }
             let archival = AddNailView.archivalJPEG(original)
+            let angleData = AddNailView.archivalAngleData(anglePhotos)
             await MainActor.run {
                 if let first = jpegs.first {
                     record.photoData = first
                     record.fingerPhotoData = jpegs.count > 1 ? jpegs : []
                     record.originalPhotoData = archival
+                    record.anglePhotoData = angleData
                     record.shapeRaw = shape.rawValue
                     try? modelContext.save()
                     rescanTexture = cleaned.first
@@ -346,6 +385,7 @@ struct NailDetailView: View {
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
                 }
                 isRescanning = false
+                rescanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
             }
         }
     }
@@ -581,7 +621,12 @@ struct NailDetailView: View {
                         .font(.system(size: 10.5))
                         .kerning(0.8)
                         .foregroundStyle(muted.opacity(0.85))
-                        .padding(.bottom, 12)
+                        .padding(.bottom, anglePhotos.isEmpty ? 12 : 8)
+
+                    if !anglePhotos.isEmpty {
+                        anglePhotosStrip
+                            .padding(.bottom, 12)
+                    }
                 }
 
                 HStack(spacing: 12) {
@@ -620,6 +665,7 @@ struct NailDetailView: View {
             Task {
                 if let data = try? await item.loadTransferable(type: Data.self),
                    let image = UIImage(data: data) {
+                    rescanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
                     rescanSource = RescanSource(image: image, single: false, initialZoom: 1)
                 }
                 rescanPickerItem = nil
@@ -630,11 +676,17 @@ struct NailDetailView: View {
                 nailShape: $shape,
                 onCapture: { image, captureMode in
                     rescanCameraShown = false
+                    rescanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
                     rescanSource = RescanSource(
                         image: image,
                         single: captureMode == .single,
                         initialZoom: captureMode == .single ? NailCameraView.singleMargin : 1
                     )
+                },
+                onCaptureScan: { top, photos in
+                    rescanCameraShown = false
+                    rescanAnglePhotos = photos
+                    rescanSource = RescanSource(image: top, single: true, initialZoom: NailCameraView.singleMargin)
                 },
                 onCancel: { rescanCameraShown = false }
             )
@@ -674,6 +726,9 @@ struct NailDetailView: View {
             if let original = record?.originalPhoto {
                 OriginalPhotoView(image: original, title: title)
             }
+        }
+        .sheet(item: $viewingAnglePhoto) { photo in
+            OriginalPhotoView(image: photo.image, title: "\(title)・\(photo.label)")
         }
         .sheet(isPresented: $showStageSheet) {
             ScrollView { stageSheet }
@@ -967,6 +1022,13 @@ struct OriginalPhotoView: View {
         }
         .preferredColorScheme(.dark)
     }
+}
+
+/// A tapped 角度別の写真 thumbnail, opened in the full-size viewer.
+private struct ViewingPhoto: Identifiable {
+    let id = UUID()
+    let image: UIImage
+    let label: String
 }
 
 private struct RescanSource: Identifiable {

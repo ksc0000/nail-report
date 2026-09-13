@@ -15,6 +15,7 @@ struct DeletedNailSnapshot {
     let tags: [String]
     let fingerPhotoData: [Data]
     let originalPhotoData: Data?
+    let anglePhotoData: [Data]
     let wornSince: Date?
     let isFavorite: Bool
     let lengthAdj: Float
@@ -94,6 +95,10 @@ final class NailRecord {
     /// Per-finger textures (left→right in the source photo) when a whole hand
     /// was captured at once. Empty for single-nail records.
     var fingerPhotoData: [Data] = []
+    /// Reference photos from a 立体スキャン capture, in `AngleStep` order
+    /// (top/side/otherSide/catHand); empty `Data` for a skipped step. Empty
+    /// array for records not captured via 立体スキャン.
+    var anglePhotoData: [Data] = []
     /// Set when this design is on the user's actual nails right now; at most
     /// one record wears it at a time.
     var wornSince: Date?
@@ -118,6 +123,7 @@ final class NailRecord {
         tags: [String] = [],
         fingerPhotoData: [Data] = [],
         originalPhotoData: Data? = nil,
+        anglePhotoData: [Data] = [],
         plateParams: NailPlateParams = .default
     ) {
         self.id = UUID()
@@ -132,6 +138,7 @@ final class NailRecord {
         self.tags = tags
         self.fingerPhotoData = fingerPhotoData
         self.originalPhotoData = originalPhotoData
+        self.anglePhotoData = anglePhotoData
         self.lengthAdj = plateParams.length
         self.widthAdj = plateParams.width
         self.curveHAdj = plateParams.curveH
@@ -153,6 +160,7 @@ final class NailRecord {
         tags = snapshot.tags
         fingerPhotoData = snapshot.fingerPhotoData
         originalPhotoData = snapshot.originalPhotoData
+        anglePhotoData = snapshot.anglePhotoData
         wornSince = snapshot.wornSince
         isFavorite = snapshot.isFavorite
         lengthAdj = snapshot.lengthAdj
@@ -169,7 +177,8 @@ final class NailRecord {
             finishRaw: finishRaw, photoData: photoData, salon: salon,
             priceYen: priceYen, memo: memo, tags: tags,
             fingerPhotoData: fingerPhotoData,
-            originalPhotoData: originalPhotoData, wornSince: wornSince,
+            originalPhotoData: originalPhotoData, anglePhotoData: anglePhotoData,
+            wornSince: wornSince,
             isFavorite: isFavorite, lengthAdj: lengthAdj, widthAdj: widthAdj,
             curveHAdj: curveHAdj, curveVAdj: curveVAdj,
             thicknessAdj: thicknessAdj, cornerAdj: cornerAdj
@@ -218,6 +227,16 @@ final class NailRecord {
             }
         }
         return list.count > 1 ? list : nil
+    }
+
+    /// Captured 立体スキャン reference photos, paired with which angle each
+    /// one is; empty unless this record was scanned.
+    var anglePhotos: [(step: AngleStep, image: UIImage)] {
+        anglePhotoData.enumerated().compactMap { index, data in
+            guard !data.isEmpty, let step = AngleStep(rawValue: index),
+                  let image = UIImage(data: data) else { return nil }
+            return (step, image)
+        }
     }
 }
 
