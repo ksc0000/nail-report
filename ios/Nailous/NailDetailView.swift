@@ -821,6 +821,9 @@ struct NailDetailView: View {
             if UserDefaults.standard.string(forKey: "debugRescan") == "1" {
                 rescanSource = RescanSource(image: NailStyle.samples[0].texture, single: false, initialZoom: 1)
             }
+            if UserDefaults.standard.string(forKey: "debugAngleView") == "1", let entry = anglePhotos.first {
+                viewingAnglePhoto = ViewingPhoto(image: entry.image, label: entry.step.label)
+            }
             if UserDefaults.standard.string(forKey: "openEdit") == "1" {
                 if let v = UserDefaults.standard.string(forKey: "editTitle") { editTitle = v }
                 if let v = UserDefaults.standard.string(forKey: "editSalon") { editSalon = v }

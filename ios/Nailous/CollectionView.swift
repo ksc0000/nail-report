@@ -569,6 +569,13 @@ struct CollectionView: View {
             record.isFavorite = fav
             record.createdAt = Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date()) ?? Date()
             if index == 0 { record.wornSince = Calendar.current.date(byAdding: .day, value: -2, to: Date()) }
+            // `-seedAngles 1` (with `-seedDemo 1`) attaches 立体スキャン reference
+            // photos to the first demo record — skips catHand — so the 角度別の
+            // 写真 strip can be checked headlessly (#388).
+            if index == 0, UserDefaults.standard.string(forKey: "seedAngles") == "1" {
+                let angleImages: [UIImage?] = [style.texture, NailStyle.samples[1].texture, NailStyle.samples[2].texture, nil]
+                record.anglePhotoData = angleImages.map { $0?.jpegData(compressionQuality: 0.85) ?? Data() }
+            }
             modelContext.insert(record)
         }
     }
