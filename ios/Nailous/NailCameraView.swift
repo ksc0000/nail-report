@@ -68,7 +68,13 @@ struct NailCameraView: View {
     let onCancel: () -> Void
 
     @StateObject private var camera = CameraController()
-    @State private var mode: CaptureMode = .single
+    // `-debugCameraMode <rawValue>` (with `-debugCamera 1`) starts on a given
+    // mode, so e.g. 立体スキャン's step dots can be screenshotted headlessly —
+    // the simulator has no camera to drive there by tapping the mode pill.
+    @State private var mode: CaptureMode = {
+        let raw = UserDefaults.standard.string(forKey: "debugCameraMode") ?? ""
+        return CaptureMode(rawValue: raw) ?? .single
+    }()
     @State private var isCapturing = false
     @State private var scanStep: AngleStep = .top
     @State private var scanPhotos: [UIImage?] = Array(repeating: nil, count: AngleStep.allCases.count)

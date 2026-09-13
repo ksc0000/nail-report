@@ -138,6 +138,13 @@ struct AddNailView: View {
                 originalImage = sample
                 cropSource = CropSource(image: sample, single: false)
             }
+            // `-debugCamera 1` opens the in-app camera directly, so its guide
+            // overlay (mode pills, 立体スキャン step dots, hints) can be
+            // screenshotted headlessly — the simulator has no camera hardware
+            // to drive an actual capture.
+            if UserDefaults.standard.string(forKey: "debugCamera") == "1" {
+                showCamera = true
+            }
         }
         .fullScreenCover(isPresented: $showCamera) {
             NailCameraView(
