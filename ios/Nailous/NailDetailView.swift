@@ -48,6 +48,10 @@ struct NailDetailView: View {
     @State private var rescanSource: RescanSource?
     @State private var rescanTexture: UIImage?
     @State private var isRescanning = false
+    @State private var autoFields: Set<AutoScanEstimator.Field> = []
+    @State private var estimatedShape: NailShape = .squoval
+    @State private var estimatedParams = NailPlateParams()
+    @State private var isEstimating = false
     @State private var rescanAnglePhotos: [UIImage?] = Array(repeating: nil, count: AngleStep.allCases.count)
     @State private var viewingAnglePhoto: ViewingPhoto?
 
@@ -66,6 +70,50 @@ struct NailDetailView: View {
         _editMemo = State(initialValue: record?.memo ?? "")
         // A whole-hand capture opens as the five-piece set by default.
         _mode = State(initialValue: (record?.setAppearances?.count ?? 0) > 1 ? .set : .single)
+        // Untouched 立体スキャン estimates keep their badge across visits.
+        _autoFields = State(initialValue: AutoScanEstimator.decode(record?.autoEstimatedRaw ?? ""))
+        _estimatedShape = State(initialValue: record?.shape ?? .squoval)
+        _estimatedParams = State(initialValue: record?.plateParams ?? .default)
+    }
+
+    /// Fields whose value still equals the estimate (moved = user's now).
+    private var liveAutoFields: Set<AutoScanEstimator.Field> {
+        autoFields.filter { field in
+            switch field {
+            case .shape: return shape == estimatedShape
+            case .length: return plateParams.length == estimatedParams.length
+            case .width: return plateParams.width == estimatedParams.width
+            case .curveH: return plateParams.curveH == estimatedParams.curveH
+            case .curveV: return plateParams.curveV == estimatedParams.curveV
+            case .thickness: return plateParams.thickness == estimatedParams.thickness
+            case .corner: return plateParams.corner == estimatedParams.corner
+            }
+        }
+    }
+
+    private func badge(_ field: AutoScanEstimator.Field) -> String? {
+        liveAutoFields.contains(field) ? "推定" : nil
+    }
+
+    /// Re-run the estimator on this record's angle photos (… menu), e.g.
+    /// after the estimator improves or a re-scan added angles.
+    private func estimateFromAnglePhotos() {
+        guard let record, !record.anglePhotoData.isEmpty else { return }
+        isEstimating = true
+        let photos = AutoScanEstimator.slots(from: record.anglePhotoData)
+        Task.detached(priority: .userInitiated) {
+            let result = AutoScanEstimator.estimate(from: photos)
+            await MainActor.run {
+                result.apply(to: &shape, params: &plateParams)
+                estimatedShape = shape
+                estimatedParams = plateParams
+                autoFields = result.fields
+                persistTuning()
+                isEstimating = false
+                UINotificationFeedbackGenerator().notificationOccurred(result.fields.isEmpty ? .warning : .success)
+                if !result.fields.isEmpty { showTuneSheet = true }
+            }
+        }
     }
 
     private var photoUnavailable: Bool {
@@ -134,6 +182,12 @@ struct NailDetailView: View {
                 Button { showOriginalPhoto = true } label: {
                     Label("元の写真を見る", systemImage: "photo")
                 }
+            }
+            if !(record?.anglePhotoData.isEmpty ?? true) {
+                Button { estimateFromAnglePhotos() } label: {
+                    Label("角度写真から形を推定", systemImage: "wand.and.stars")
+                }
+                .disabled(isEstimating)
             }
             if record != nil {
                 Divider()
@@ -298,14 +352,20 @@ struct NailDetailView: View {
 
             SectionHeader(title: "チップ調整")
             VStack(spacing: 6) {
-                GoldSlider(label: "長さ", value: $plateParams.length)
-                GoldSlider(label: "幅", value: $plateParams.width)
-                GoldSlider(label: "カーブ 横", value: $plateParams.curveH)
-                GoldSlider(label: "カーブ 縦", value: $plateParams.curveV)
-                GoldSlider(label: "厚み", value: $plateParams.thickness)
-                GoldSlider(label: "角の丸み", value: $plateParams.corner)
+                GoldSlider(label: "長さ", value: $plateParams.length, badge: badge(.length))
+                GoldSlider(label: "幅", value: $plateParams.width, badge: badge(.width))
+                GoldSlider(label: "カーブ 横", value: $plateParams.curveH, badge: badge(.curveH))
+                GoldSlider(label: "カーブ 縦", value: $plateParams.curveV, badge: badge(.curveV))
+                GoldSlider(label: "厚み", value: $plateParams.thickness, badge: badge(.thickness))
+                GoldSlider(label: "角の丸み", value: $plateParams.corner, badge: badge(.corner))
             }
             .padding(.horizontal, 24)
+            if !liveAutoFields.isEmpty {
+                Text("「推定」は角度写真から求めた値です。動かすと手動の値になります")
+                    .font(.system(size: 11))
+                    .foregroundStyle(muted)
+                    .padding(.horizontal, 28)
+            }
 
             SectionHeader(title: "仕上げ")
             ScrollView(.horizontal, showsIndicators: false) {
@@ -386,6 +446,8 @@ struct NailDetailView: View {
                 }
                 isRescanning = false
                 rescanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
+                // A re-scan with angles refreshes the estimate too.
+                if !angleData.isEmpty { estimateFromAnglePhotos() }
             }
         }
     }
@@ -432,6 +494,8 @@ struct NailDetailView: View {
                     )
                 Text(candidate.label)
                     .font(.system(size: 10, weight: isOn ? .semibold : .regular))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                     .foregroundStyle(isOn ? (isLight ? Palette.inkWarm : Palette.goldBright) : muted)
             }
             .frame(maxWidth: .infinity)
@@ -457,6 +521,7 @@ struct NailDetailView: View {
         record.curveVAdj = plateParams.curveV
         record.thicknessAdj = plateParams.thickness
         record.cornerAdj = plateParams.corner
+        record.autoEstimatedRaw = AutoScanEstimator.encode(liveAutoFields)
     }
 
     /// Theme picker as a little backdrop swatch with a label — matches the

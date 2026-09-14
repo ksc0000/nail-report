@@ -99,6 +99,10 @@ final class NailRecord {
     /// (top/side/otherSide/catHand); empty `Data` for a skipped step. Empty
     /// array for records not captured via 立体スキャン.
     var anglePhotoData: [Data] = []
+    /// Comma-joined `AutoScanEstimator.Field` raw values whose current tuning
+    /// still is the untouched 立体スキャン estimate (#389); a field leaves the
+    /// list the moment the user overrides it.
+    var autoEstimatedRaw: String = ""
     /// Set when this design is on the user's actual nails right now; at most
     /// one record wears it at a time.
     var wornSince: Date?

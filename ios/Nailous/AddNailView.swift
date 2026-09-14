@@ -32,6 +32,12 @@ struct AddNailView: View {
     /// (nil where skipped); cleared whenever the top photo changes outside
     /// of a scan, so a stale scan can't get attached to an unrelated photo.
     @State private var scanAnglePhotos: [UIImage?] = Array(repeating: nil, count: AngleStep.allCases.count)
+    /// Fields the 立体スキャン estimator filled in (#389). A field drops out as
+    /// soon as its value differs from the estimate, i.e. the user took over.
+    @State private var autoFields: Set<AutoScanEstimator.Field> = []
+    @State private var estimatedShape: NailShape = .squoval
+    @State private var estimatedParams = NailPlateParams()
+    @State private var isEstimating = false
 
     @State private var smoothStep: Float = 2
     @State private var brightnessStep: Float = 0
@@ -133,6 +139,30 @@ struct AddNailView: View {
                 let tex = NailStyle.samples[2].texture
                 bakedTextures = [tex]
                 displayTextures = [tex]
+            } else if let set = UserDefaults.standard.string(forKey: "debugScanSet"), displayTextures.isEmpty {
+                // `-debugScanSet 1` feeds the bundled synthetic angle set to the
+                // estimator exactly as a 立体スキャン would, no camera needed.
+                // The synthetic sets are not bundled (`angles` is excluded in
+                // project.yml); `-debugScanDir <abs path>` points at them on the
+                // host, which the simulator can read directly.
+                let dir = UserDefaults.standard.string(forKey: "debugScanDir") ?? ""
+                let photos = AngleStep.allCases.map { step -> UIImage? in
+                    let suffix: String
+                    switch step {
+                    case .top: suffix = "top"
+                    case .side: suffix = "side"
+                    case .otherSide: suffix = "otherside"
+                    case .catHand: suffix = "catpaw"
+                    }
+                    let name = "set\(set)_\(suffix)"
+                    if !dir.isEmpty, let image = UIImage(contentsOfFile: "\(dir)/\(name).png") { return image }
+                    return UIImage(named: name)
+                }
+                let tex = photos[0] ?? NailStyle.samples[2].texture
+                bakedTextures = [tex]
+                displayTextures = [tex]
+                scanAnglePhotos = photos
+                runAutoEstimate(photos)
             } else if UserDefaults.standard.string(forKey: "debugPhoto") == "1", originalImage == nil {
                 let sample = NailStyle.samples[3].texture
                 originalImage = sample
@@ -165,6 +195,7 @@ struct AddNailView: View {
                     cameraSingle = true
                     originalImage = top
                     scanAnglePhotos = photos
+                    runAutoEstimate(photos)
                     cropSource = CropSource(image: top, single: true, initialZoom: NailCameraView.singleMargin)
                 },
                 onCancel: { showCamera = false }
@@ -421,6 +452,9 @@ struct AddNailView: View {
                     }
                 }
                 .padding(.horizontal, 20)
+                if liveAutoFields.contains(.shape) {
+                    estimateNote("形は角度写真から推定しました。違えば選び直せます")
+                }
             }
 
             section("仕上げ") {
@@ -437,16 +471,19 @@ struct AddNailView: View {
                 }
             }
 
-            disclosure("チップの形を細かく調整", isOn: $showTune) {
+            disclosure(tuneTitle, isOn: $showTune) {
                 VStack(spacing: 6) {
-                    GoldSlider(label: "長さ", value: $plateParams.length)
-                    GoldSlider(label: "幅", value: $plateParams.width)
-                    GoldSlider(label: "カーブ 横", value: $plateParams.curveH)
-                    GoldSlider(label: "カーブ 縦", value: $plateParams.curveV)
-                    GoldSlider(label: "厚み", value: $plateParams.thickness)
-                    GoldSlider(label: "角の丸み", value: $plateParams.corner)
+                    GoldSlider(label: "長さ", value: $plateParams.length, badge: badge(.length))
+                    GoldSlider(label: "幅", value: $plateParams.width, badge: badge(.width))
+                    GoldSlider(label: "カーブ 横", value: $plateParams.curveH, badge: badge(.curveH))
+                    GoldSlider(label: "カーブ 縦", value: $plateParams.curveV, badge: badge(.curveV))
+                    GoldSlider(label: "厚み", value: $plateParams.thickness, badge: badge(.thickness))
+                    GoldSlider(label: "角の丸み", value: $plateParams.corner, badge: badge(.corner))
                 }
                 .padding(.horizontal, 24)
+                if !liveAutoFields.isEmpty {
+                    estimateNote("「推定」は角度写真から求めた値です。動かすと手動の値になります")
+                }
             }
 
             disclosure("写真を微調整（明るさ・鮮やかさ等）", isOn: $showRetouch) {
@@ -466,6 +503,59 @@ struct AddNailView: View {
                     StoryField(prompt: "メモ（任意）", text: $memo, axis: .vertical)
                 }
                 .padding(.horizontal, 24)
+            }
+        }
+    }
+
+    // MARK: - 立体スキャン auto-estimate (#389)
+
+    /// Fields whose value still equals the estimate; anything the user moved
+    /// is no longer "estimated", without needing per-slider change handlers.
+    private var liveAutoFields: Set<AutoScanEstimator.Field> {
+        autoFields.filter { field in
+            switch field {
+            case .shape: return shape == estimatedShape
+            case .length: return plateParams.length == estimatedParams.length
+            case .width: return plateParams.width == estimatedParams.width
+            case .curveH: return plateParams.curveH == estimatedParams.curveH
+            case .curveV: return plateParams.curveV == estimatedParams.curveV
+            case .thickness: return plateParams.thickness == estimatedParams.thickness
+            case .corner: return plateParams.corner == estimatedParams.corner
+            }
+        }
+    }
+
+    private func badge(_ field: AutoScanEstimator.Field) -> String? {
+        liveAutoFields.contains(field) ? "推定" : nil
+    }
+
+    private var tuneTitle: String {
+        let count = liveAutoFields.subtracting([.shape]).count
+        if isEstimating { return "チップの形を細かく調整（角度写真から推定中…）" }
+        return count > 0 ? "チップの形を細かく調整（\(count)項目を推定）" : "チップの形を細かく調整"
+    }
+
+    private func estimateNote(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11))
+            .foregroundStyle(Palette.mutedWarm)
+            .padding(.horizontal, 28)
+    }
+
+    /// Vision + least-squares fit off the main thread; the sliders open with
+    /// the guesses badged so the user sees what came from the photos.
+    private func runAutoEstimate(_ photos: [UIImage?]) {
+        guard photos.contains(where: { $0 != nil }) else { return }
+        isEstimating = true
+        Task.detached(priority: .userInitiated) {
+            let result = AutoScanEstimator.estimate(from: photos)
+            await MainActor.run {
+                result.apply(to: &shape, params: &plateParams)
+                estimatedShape = shape
+                estimatedParams = plateParams
+                autoFields = result.fields
+                isEstimating = false
+                if !result.fields.subtracting([.shape]).isEmpty { showTune = true }
             }
         }
     }
@@ -664,6 +754,7 @@ struct AddNailView: View {
             anglePhotoData: Self.archivalAngleData(scanAnglePhotos),
             plateParams: plateParams
         )
+        record.autoEstimatedRaw = AutoScanEstimator.encode(liveAutoFields)
         modelContext.insert(record)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()

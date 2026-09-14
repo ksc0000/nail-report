@@ -60,14 +60,13 @@ enum NailAngleMeasurer {
         let request = VNGenerateForegroundInstanceMaskRequest()
         let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
         try? handler.perform([request])
-        guard let observation = request.results?.first,
-              let maskBuffer = try? observation.generateScaledMaskForImage(
-                  forInstances: observation.allInstances,
-                  from: handler
-              )
-        else { return nil }
-
-        let maskCI = CIImage(cvPixelBuffer: maskBuffer)
+        var maskBuffer: CVPixelBuffer?
+        if let observation = request.results?.first {
+            maskBuffer = try? observation.generateScaledMaskForImage(
+                forInstances: observation.allInstances,
+                from: handler
+            )
+        }
         let imageCI = CIImage(cgImage: cgImage)
         let context = CIContext()
         // Fit the analysis grid to the source photo's own aspect ratio — a
@@ -81,11 +80,27 @@ enum NailAngleMeasurer {
         let gridWidth = max(1, Int((sourceAspect >= 1 ? longSide : longSide * sourceAspect).rounded()))
         let gridHeight = max(1, Int((sourceAspect >= 1 ? longSide / sourceAspect : longSide).rounded()))
 
-        guard let maskCG = context.createCGImage(maskCI, from: maskCI.extent, format: .L8, colorSpace: CGColorSpaceCreateDeviceGray()),
-              let colorCG = context.createCGImage(imageCI, from: imageCI.extent),
-              let maskPixels = grayscalePixels(of: maskCG, width: gridWidth, height: gridHeight),
+        guard let colorCG = context.createCGImage(imageCI, from: imageCI.extent),
               let colorPixels = rgbaPixels(of: colorCG, width: gridWidth, height: gridHeight)
         else { return nil }
+
+        let maskPixels: [UInt8]
+        if let maskBuffer,
+           let maskCG = context.createCGImage(CIImage(cvPixelBuffer: maskBuffer), from: CIImage(cvPixelBuffer: maskBuffer).extent, format: .L8, colorSpace: CGColorSpaceCreateDeviceGray()),
+           let pixels = grayscalePixels(of: maskCG, width: gridWidth, height: gridHeight) {
+            maskPixels = pixels
+        } else {
+            #if targetEnvironment(simulator)
+            // The simulator cannot run the foreground-mask model (like hand
+            // pose, #360). Fall back to "differs from the border colour" so
+            // the capture → estimate → badge wiring stays verifiable there.
+            // Never used on a device: a failed segmentation must stay a
+            // failed estimate, not a bad one.
+            maskPixels = borderDifferenceMask(colorPixels, width: gridWidth, height: gridHeight)
+            #else
+            return nil
+            #endif
+        }
 
         let pixelCount = gridWidth * gridHeight
         var isNail = [Bool](repeating: false, count: pixelCount)
@@ -103,6 +118,26 @@ enum NailAngleMeasurer {
         guard coverage > 0.03, coverage < 0.85 else { return nil }
         return result
     }
+
+    #if targetEnvironment(simulator)
+    /// Foreground = pixels far from the mean colour of the image border.
+    private static func borderDifferenceMask(_ rgba: [UInt8], width: Int, height: Int) -> [UInt8] {
+        var sum = (r: 0, g: 0, b: 0), count = 0
+        for y in 0..<height {
+            for x in 0..<width where x == 0 || y == 0 || x == width - 1 || y == height - 1 {
+                let i = (y * width + x) * 4
+                sum.r += Int(rgba[i]); sum.g += Int(rgba[i + 1]); sum.b += Int(rgba[i + 2]); count += 1
+            }
+        }
+        guard count > 0 else { return [UInt8](repeating: 0, count: width * height) }
+        let mean = (r: sum.r / count, g: sum.g / count, b: sum.b / count)
+        return (0..<(width * height)).map { p in
+            let i = p * 4
+            let d = abs(Int(rgba[i]) - mean.r) + abs(Int(rgba[i + 1]) - mean.g) + abs(Int(rgba[i + 2]) - mean.b)
+            return d > 60 ? 255 : 0
+        }
+    }
+    #endif
 
     /// BT.601 skin-chroma window, mirroring `NailCleanup.skinSuppressed`'s
     /// per-pixel test (duplicated in miniature rather than shared, since

@@ -6,7 +6,7 @@ import UIKit
 /// segmentation, low fit confidence) just leaves those fields untouched —
 /// the roadmap's "推定失敗時にユーザー体験が壊れない（手動値のまま）".
 enum AutoScanEstimator {
-    enum Field: Hashable {
+    enum Field: String, Hashable, CaseIterable {
         case shape, corner, length, width, curveV, thickness, curveH
     }
 
@@ -14,6 +14,36 @@ enum AutoScanEstimator {
         var shape: NailShape?
         var params = NailPlateParams()
         var fields: Set<Field> = []
+
+        /// Writes only the estimated fields onto the caller's state; untouched
+        /// fields keep whatever the user (or the shape default) had.
+        func apply(to shape: inout NailShape, params: inout NailPlateParams) {
+            if fields.contains(.shape), let estimated = self.shape { shape = estimated }
+            if fields.contains(.corner) { params.corner = self.params.corner }
+            if fields.contains(.length) { params.length = self.params.length }
+            if fields.contains(.width) { params.width = self.params.width }
+            if fields.contains(.curveV) { params.curveV = self.params.curveV }
+            if fields.contains(.thickness) { params.thickness = self.params.thickness }
+            if fields.contains(.curveH) { params.curveH = self.params.curveH }
+        }
+    }
+
+    /// `NailRecord.anglePhotoData` → the 4-slot image array `estimate` takes.
+    static func slots(from angleData: [Data]) -> [UIImage?] {
+        var photos: [UIImage?] = Array(repeating: nil, count: AngleStep.allCases.count)
+        for (index, data) in angleData.enumerated() where index < photos.count && !data.isEmpty {
+            photos[index] = UIImage(data: data)
+        }
+        return photos
+    }
+
+    /// Persistence helpers for the "推定" badges (`NailRecord.autoEstimatedRaw`).
+    static func encode(_ fields: Set<Field>) -> String {
+        fields.map(\.rawValue).sorted().joined(separator: ",")
+    }
+
+    static func decode(_ raw: String) -> Set<Field> {
+        Set(raw.split(separator: ",").compactMap { Field(rawValue: String($0)) })
     }
 
     /// `photos` is `NailRecord.anglePhotoData`-shaped: 4 slots in

@@ -6,6 +6,10 @@ struct GoldSlider: View {
     let label: String
     @Binding var value: Float
     var range: ClosedRange<Float> = -1...1
+    /// Non-nil shows a small pill after the label — used for the 立体スキャン
+    /// Phase 2 auto-estimate badge (#389): cleared by the caller the moment
+    /// the user drags this slider, so it only ever marks an untouched guess.
+    var badge: String? = nil
     /// Called continuously while sliding (already throttled by SwiftUI's
     /// gesture cadence) and once on release.
     var onEditingChanged: ((Bool) -> Void)? = nil
@@ -18,11 +22,29 @@ struct GoldSlider: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             Text(label)
                 .font(.system(size: 12))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 .foregroundStyle(isLight ? Palette.mutedWarm : .white.opacity(0.65))
-                .frame(width: 74, alignment: .leading)
+                .frame(width: 66, alignment: .leading)
+
+            // Reserved on every row so badged and plain sliders share one
+            // track width instead of the label wrapping when a badge shows.
+            Group {
+                if let badge {
+                    Text(badge)
+                        .font(.system(size: 9, weight: .medium))
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Palette.goldHairline.opacity(0.18), in: Capsule())
+                        .foregroundStyle(Palette.goldHairline)
+                } else {
+                    Color.clear
+                }
+            }
+            .frame(width: 30, height: 16, alignment: .leading)
 
             GeometryReader { geo in
                 let width = geo.size.width
