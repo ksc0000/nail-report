@@ -76,6 +76,8 @@ struct NailCameraView: View {
         return CaptureMode(rawValue: raw) ?? .single
     }()
     @State private var isCapturing = false
+    @State private var zoomFactor: CGFloat = 1
+    @State private var zoomAnchor: CGFloat = 1
     @State private var scanStep: AngleStep = .top
     @State private var scanPhotos: [UIImage?] = Array(repeating: nil, count: AngleStep.allCases.count)
 
@@ -126,6 +128,24 @@ struct NailCameraView: View {
                         .padding(.vertical, 8)
                         .background(Capsule().fill(Color.black.opacity(0.45)))
                         .padding(.top, windowSafeInsets.top + 10)
+
+                    if let focusHint {
+                        Text(focusHint)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.white.opacity(0.75))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Capsule().fill(Color.black.opacity(0.4)))
+                    }
+                    if zoomFactor > 1.05 {
+                        Text(String(format: "%.1fx", zoomFactor))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 4)
+                            .background(Capsule().fill(Color.black.opacity(0.45)))
+                    }
 
                     HStack(spacing: 6) {
                         ForEach(CaptureMode.allCases) { candidate in
@@ -211,6 +231,13 @@ struct NailCameraView: View {
             }
         }
         .environment(\.colorScheme, .dark)
+        .gesture(
+            MagnificationGesture()
+                .onChanged { value in
+                    zoomFactor = camera.setZoom(zoomAnchor * value)
+                }
+                .onEnded { _ in zoomAnchor = zoomFactor }
+        )
         .onAppear { camera.start() }
         .onDisappear { camera.stop() }
         .onChange(of: mode) { _, new in
@@ -229,6 +256,12 @@ struct NailCameraView: View {
 
     private var hintText: String {
         mode == .scan ? "ステップ \(scanStep.rawValue + 1)/4 ・ \(scanStep.hint)" : mode.hint
+    }
+
+    /// Second line under the hint for the close-up guides.
+    private var focusHint: String? {
+        guard guideKind == .nail else { return nil }
+        return "ピントが合う距離まで近づいて。枠より小さくてもOK、ピンチで拡大できます"
     }
 
     // MARK: - Guide
@@ -252,8 +285,10 @@ struct NailCameraView: View {
     private func guideRect(in size: CGSize) -> CGRect {
         switch guideKind {
         case .nail:
-            // Same proportions as the crop window for this shape.
-            let height = size.width * 0.75
+            // Same proportions as the crop window for this shape. Kept small:
+            // filling a big outline meant pushing the lens past its closest
+            // focus. Pinch zoom closes the rest of the gap.
+            let height = size.width * 0.4
             let width = height * NailGeometry.plateAspect(for: nailShape)
             return CGRect(x: (size.width - width) / 2, y: size.height * 0.46 - height / 2, width: width, height: height)
         case .frame:
@@ -399,6 +434,7 @@ final class CameraController: NSObject, ObservableObject {
     private let queue = DispatchQueue(label: "nailous.camera")
     private var configured = false
     private var completion: ((UIImage?) -> Void)?
+    private var device: AVCaptureDevice?
 
     func start() {
         Task {
@@ -428,18 +464,43 @@ final class CameraController: NSObject, ObservableObject {
     private func configureIfNeeded() {
         guard !configured else { return }
         configured = true
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
+        // A virtual multi-camera device lets the system switch to the
+        // ultra-wide for close focus (automatic macro on phones that have
+        // it), which a bare wide-angle device never does; nails are shot
+        // from a few centimetres away.
+        let preferred: [AVCaptureDevice.DeviceType] = [.builtInTripleCamera, .builtInDualWideCamera, .builtInDualCamera, .builtInWideAngleCamera]
+        let discovery = AVCaptureDevice.DiscoverySession(deviceTypes: preferred, mediaType: .video, position: .back)
+        guard let device = preferred.lazy.compactMap({ type in discovery.devices.first { $0.deviceType == type } }).first,
               let input = try? AVCaptureDeviceInput(device: device) else {
             unavailableReason = "この端末ではカメラを使えません"
             return
         }
+        self.device = device
         session.beginConfiguration()
         session.sessionPreset = .photo
         if session.canAddInput(input) { session.addInput(input) }
         if session.canAddOutput(output) { session.addOutput(output) }
         session.commitConfiguration()
         output.maxPhotoQualityPrioritization = .quality
+        // Full sensor resolution: a nail that fills a fifth of the frame
+        // still has enough pixels for the 1536-tall texture.
+        if let largest = device.activeFormat.supportedMaxPhotoDimensions.last {
+            output.maxPhotoDimensions = largest
+        }
         isAvailable = true
+    }
+
+    /// Clamps to the device's range and applies it; returns what was set so
+    /// the gesture state stays in sync.
+    @discardableResult
+    func setZoom(_ factor: CGFloat) -> CGFloat {
+        guard let device else { return 1 }
+        let clamped = min(max(factor, 1), min(device.activeFormat.videoMaxZoomFactor, 6))
+        if (try? device.lockForConfiguration()) != nil {
+            device.videoZoomFactor = clamped
+            device.unlockForConfiguration()
+        }
+        return clamped
     }
 
     func capture(_ completion: @escaping (UIImage?) -> Void) {
@@ -447,6 +508,7 @@ final class CameraController: NSObject, ObservableObject {
         self.completion = completion
         let settings = AVCapturePhotoSettings()
         settings.photoQualityPrioritization = .quality
+        settings.maxPhotoDimensions = output.maxPhotoDimensions
         if let connection = output.connection(with: .video), connection.isVideoRotationAngleSupported(90) {
             connection.videoRotationAngle = 90
         }
