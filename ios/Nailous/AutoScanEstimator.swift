@@ -28,6 +28,39 @@ enum AutoScanEstimator {
         }
     }
 
+    struct HandResult {
+        /// One entry per finger texture (thumb→pinky); nil where the fit
+        /// wasn't confident.
+        var fingerShapes: [NailShape?] = []
+        var result = Result()
+    }
+
+    /// Hand capture: each finger's cropped top texture gives that finger's
+    /// shape; the side / curled references give the curves shared by the
+    /// hand. The record's overall shape is the most common finger shape.
+    static func estimateHand(fingers: [UIImage], angles: [UIImage?]) -> HandResult {
+        var hand = HandResult()
+        hand.fingerShapes = fingers.map { image in
+            guard let cg = image.cgImage,
+                  let mask = NailAngleMeasurer.mask(for: cg),
+                  let (profile, aspect) = NailAngleMeasurer.topWidthProfile(mask: mask),
+                  let estimate = NailShapeEstimator.estimateTop(widthProfile: profile, aspectRatio: aspect)
+            else { return nil }
+            return estimate.shape
+        }
+        var references = angles
+        if references.indices.contains(AngleStep.top.rawValue) {
+            references[AngleStep.top.rawValue] = nil // the hand's top shot is not a single-nail view
+        }
+        hand.result = estimate(from: references)
+        let counts = Dictionary(grouping: hand.fingerShapes.compactMap { $0 }, by: { $0 }).mapValues(\.count)
+        if let best = counts.max(by: { $0.value < $1.value || ($0.value == $1.value && $0.key.rawValue > $1.key.rawValue) })?.key {
+            hand.result.shape = best
+            hand.result.fields.insert(.shape)
+        }
+        return hand
+    }
+
     /// `NailRecord.anglePhotoData` → the 4-slot image array `estimate` takes.
     static func slots(from angleData: [Data]) -> [UIImage?] {
         var photos: [UIImage?] = Array(repeating: nil, count: AngleStep.allCases.count)

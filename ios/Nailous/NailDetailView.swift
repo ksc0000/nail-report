@@ -53,6 +53,7 @@ struct NailDetailView: View {
     @State private var estimatedParams = NailPlateParams()
     @State private var isEstimating = false
     @State private var rescanAnglePhotos: [UIImage?] = Array(repeating: nil, count: AngleStep.allCases.count)
+    @State private var rescanHand: Hand = Hand.remembered
     @State private var viewingAnglePhoto: ViewingPhoto?
 
     init(appearance: NailAppearance, title: String, subtitle: String?, record: NailRecord? = nil) {
@@ -423,7 +424,7 @@ struct NailDetailView: View {
 
     /// Same on-device cleanup as a fresh capture, then the record's design
     /// (and its keepsake original) are replaced in place.
-    private func applyRescan(_ textures: [UIImage], original: UIImage) {
+    private func applyRescan(_ textures: [UIImage], original: UIImage, hand: Hand?) {
         guard let record else { return }
         isRescanning = true
         let anglePhotos = rescanAnglePhotos
@@ -438,6 +439,8 @@ struct NailDetailView: View {
                     record.fingerPhotoData = jpegs.count > 1 ? jpegs : []
                     record.originalPhotoData = archival
                     record.anglePhotoData = angleData
+                    record.hand = jpegs.count > 1 ? hand : nil
+                    record.fingerShapes = nil
                     record.shapeRaw = shape.rawValue
                     try? modelContext.save()
                     rescanTexture = cleaned.first
@@ -576,6 +579,12 @@ struct NailDetailView: View {
                     Text(record?.title ?? title)
                         .font(.system(size: 22, weight: .regular, design: .serif))
                         .foregroundStyle(ink)
+                    if let handLabel = record?.hand?.label, (record?.fingerPhotoData.count ?? 0) > 1 {
+                        Text("\(handLabel) ・ \(record?.fingerPhotoData.count ?? 0)本")
+                            .font(.system(size: 11))
+                            .kerning(1)
+                            .foregroundStyle(muted)
+                    }
                     if let subtitle {
                         Text(subtitle)
                             .font(.system(size: 12))
@@ -605,6 +614,8 @@ struct NailDetailView: View {
                             stir = StirEvent(point: point, time: Date())
                         },
                         setAppearances: liveSetAppearances,
+                        setShapes: record?.fingerShapes,
+                        mirrored: record?.hand == .left,
                         layout: layout,
                         motion: motion,
                         theme: theme,
@@ -739,19 +750,16 @@ struct NailDetailView: View {
         .fullScreenCover(isPresented: $rescanCameraShown) {
             NailCameraView(
                 nailShape: $shape,
-                onCapture: { image, captureMode in
+                onCapture: { image, _ in
                     rescanCameraShown = false
                     rescanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
-                    rescanSource = RescanSource(
-                        image: image,
-                        single: captureMode == .single,
-                        initialZoom: captureMode == .single ? NailCameraView.singleMargin : 1
-                    )
+                    rescanSource = RescanSource(image: image, single: true, initialZoom: NailCameraView.singleMargin)
                 },
-                onCaptureScan: { top, photos in
+                onCaptureHand: { top, slots, capturedHand in
                     rescanCameraShown = false
-                    rescanAnglePhotos = photos
-                    rescanSource = RescanSource(image: top, single: true, initialZoom: NailCameraView.singleMargin)
+                    rescanAnglePhotos = slots
+                    rescanHand = capturedHand
+                    rescanSource = RescanSource(image: top, single: false, initialZoom: 1)
                 },
                 onCancel: { rescanCameraShown = false }
             )
@@ -763,13 +771,15 @@ struct NailDetailView: View {
                 nailShape: $shape,
                 forceSingle: source.single,
                 initialZoom: source.initialZoom,
+                hand: $rescanHand,
                 onConfirm: { baked in
                     rescanSource = nil
-                    applyRescan([baked], original: source.image)
+                    applyRescan([baked], original: source.image, hand: nil)
                 },
                 onConfirmSet: { bakedList in
                     rescanSource = nil
-                    applyRescan(bakedList, original: source.image)
+                    let ordered = rescanHand.thumbIsOnPhotoLeft ? bakedList : Array(bakedList.reversed())
+                    applyRescan(ordered, original: source.image, hand: rescanHand)
                 },
                 onCancel: { rescanSource = nil }
             )

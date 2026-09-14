@@ -13,6 +13,9 @@ struct PhotoCropView: View {
     /// Starting zoom for `forceSingle` sources that were pre-cropped with a
     /// margin: 1.3 shows exactly what the camera guide framed.
     var initialZoom: CGFloat = 1
+    /// Which hand a guided (multi-nail) crop belongs to; shown as pills so a
+    /// library photo can say 右手/左手 like a camera capture does.
+    var hand: Binding<Hand>? = nil
     let onConfirm: (UIImage) -> Void
     var onConfirmSet: (([UIImage]) -> Void)?
     let onCancel: () -> Void
@@ -154,6 +157,33 @@ struct PhotoCropView: View {
                     }
 
                     ScrollView(.horizontal, showsIndicators: false) {
+                    if guidedMode, let hand {
+                        HStack(spacing: 6) {
+                            ForEach(Hand.allCases) { candidate in
+                                Button {
+                                    hand.wrappedValue = candidate
+                                    candidate.remember()
+                                } label: {
+                                    Text(candidate.label)
+                                        .font(.system(size: 11.5, weight: .medium))
+                                        .padding(.horizontal, 11)
+                                        .padding(.vertical, 6)
+                                        .background(
+                                            Capsule().fill(
+                                                hand.wrappedValue == candidate
+                                                    ? Color.white.opacity(0.92)
+                                                    : Color.black.opacity(0.45)
+                                            )
+                                        )
+                                        .foregroundStyle(
+                                            hand.wrappedValue == candidate ? Palette.inkWarm : .white.opacity(0.8)
+                                        )
+                                }
+                            }
+                        }
+                        .padding(.top, 8)
+                    }
+
                     HStack(spacing: 6) {
                         ForEach(NailShape.allCases) { candidate in
                             Button {

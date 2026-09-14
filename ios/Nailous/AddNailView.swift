@@ -32,6 +32,12 @@ struct AddNailView: View {
     /// (nil where skipped); cleared whenever the top photo changes outside
     /// of a scan, so a stale scan can't get attached to an unrelated photo.
     @State private var scanAnglePhotos: [UIImage?] = Array(repeating: nil, count: AngleStep.allCases.count)
+    /// Which hand a five-nail capture is; nil for a single nail.
+    @State private var hand: Hand?
+    /// Hand chosen on the crop screen for library photos.
+    @State private var pickedHand: Hand = Hand.remembered
+    /// Per-finger shapes (thumb→pinky) once a hand capture was estimated.
+    @State private var fingerShapes: [NailShape]?
     /// Fields the 立体スキャン estimator filled in (#389). A field drops out as
     /// soon as its value differs from the estimate, i.e. the user took over.
     @State private var autoFields: Set<AutoScanEstimator.Field> = []
@@ -179,24 +185,22 @@ struct AddNailView: View {
         .fullScreenCover(isPresented: $showCamera) {
             NailCameraView(
                 nailShape: $shape,
-                onCapture: { image, mode in
-                    showCamera = false
-                    cameraSingle = mode == .single
-                    originalImage = image
-                    scanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
-                    cropSource = CropSource(
-                        image: image,
-                        single: mode == .single,
-                        initialZoom: mode == .single ? NailCameraView.singleMargin : 1
-                    )
-                },
-                onCaptureScan: { top, photos in
+                onCapture: { image, _ in
                     showCamera = false
                     cameraSingle = true
+                    hand = nil
+                    originalImage = image
+                    scanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
+                    cropSource = CropSource(image: image, single: true, initialZoom: NailCameraView.singleMargin)
+                },
+                onCaptureHand: { top, slots, capturedHand in
+                    showCamera = false
+                    cameraSingle = false
+                    hand = capturedHand
+                    pickedHand = capturedHand
                     originalImage = top
-                    scanAnglePhotos = photos
-                    runAutoEstimate(photos)
-                    cropSource = CropSource(image: top, single: true, initialZoom: NailCameraView.singleMargin)
+                    scanAnglePhotos = slots
+                    cropSource = CropSource(image: top, single: false)
                 },
                 onCancel: { showCamera = false }
             )
@@ -208,13 +212,22 @@ struct AddNailView: View {
                 nailShape: $shape,
                 forceSingle: source.single,
                 initialZoom: source.initialZoom,
+                hand: $pickedHand,
                 onConfirm: { baked in
                     cropSource = nil
+                    hand = nil
+                    fingerShapes = nil
                     cleanupAndSet([baked])
                 },
                 onConfirmSet: { bakedList in
                     cropSource = nil
-                    cleanupAndSet(bakedList)
+                    // Textures are stored thumb→pinky; a left hand photographed
+                    // from above has its thumb on the right, so flip.
+                    let chosen = hand ?? pickedHand
+                    hand = chosen
+                    let ordered = chosen.thumbIsOnPhotoLeft ? bakedList : Array(bakedList.reversed())
+                    cleanupAndSet(ordered)
+                    runHandEstimate(fingers: ordered, angles: scanAnglePhotos)
                 },
                 onCancel: { cropSource = nil }
             )
@@ -370,6 +383,8 @@ struct AddNailView: View {
                     mode: isSetCapture ? .set : .single,
                     plateParams: plateParams,
                     setAppearances: previewSetAppearances,
+                    setShapes: isSetCapture ? fingerShapes : nil,
+                    mirrored: hand == .left,
                     theme: .paper
                 )
             } else {
@@ -408,7 +423,7 @@ struct AddNailView: View {
             }
             if UIImagePickerController.isSourceTypeAvailable(.camera) {
                 Button { showCamera = true } label: {
-                    actionRow(icon: "camera", title: "カメラで撮る", detail: "1本のアップ、または手全体")
+                    actionRow(icon: "camera", title: "カメラで撮る", detail: "片手の5本、または1本だけ")
                 }
             }
         }
@@ -437,9 +452,16 @@ struct AddNailView: View {
             .padding(.horizontal, 24)
 
             if isSetCapture {
-                Text("\(displayTextures.count) 本ぶんのデザインを取り込みました（セット表示）")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Palette.mutedWarm)
+                HStack(spacing: 8) {
+                    ForEach(Hand.allCases) { candidate in
+                        StagePill(label: candidate.label, isOn: hand == candidate) {
+                            switchHand(to: candidate)
+                        }
+                    }
+                    Text("\(displayTextures.count)本")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Palette.mutedWarm)
+                }
             }
 
             StoryField(prompt: "タイトル（例: 深海ネイル）", text: $title)
@@ -540,6 +562,40 @@ struct AddNailView: View {
             .font(.system(size: 11))
             .foregroundStyle(Palette.mutedWarm)
             .padding(.horizontal, 28)
+    }
+
+    /// Hand capture: per-finger shapes from the cropped textures, curves
+    /// from the side / curled references.
+    private func runHandEstimate(fingers: [UIImage], angles: [UIImage?]) {
+        guard fingers.count > 1 else { return }
+        isEstimating = true
+        Task.detached(priority: .userInitiated) {
+            let estimate = AutoScanEstimator.estimateHand(fingers: fingers, angles: angles)
+            await MainActor.run {
+                estimate.result.apply(to: &shape, params: &plateParams)
+                if estimate.fingerShapes.contains(where: { $0 != nil }) {
+                    fingerShapes = estimate.fingerShapes.map { $0 ?? shape }
+                } else {
+                    fingerShapes = nil
+                }
+                estimatedShape = shape
+                estimatedParams = plateParams
+                autoFields = estimate.result.fields
+                isEstimating = false
+                if !estimate.result.fields.subtracting([.shape]).isEmpty { showTune = true }
+            }
+        }
+    }
+
+    /// Changing the hand after capture flips the finger order (thumb stays
+    /// the thumb) and remembers the choice.
+    private func switchHand(to newHand: Hand) {
+        guard hand != newHand else { return }
+        hand = newHand
+        newHand.remember()
+        bakedTextures.reverse()
+        displayTextures.reverse()
+        fingerShapes?.reverse()
     }
 
     /// Vision + least-squares fit off the main thread; the sliders open with
@@ -755,6 +811,10 @@ struct AddNailView: View {
             plateParams: plateParams
         )
         record.autoEstimatedRaw = AutoScanEstimator.encode(liveAutoFields)
+        if isSetCapture {
+            record.hand = hand
+            record.fingerShapes = fingerShapes
+        }
         modelContext.insert(record)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()

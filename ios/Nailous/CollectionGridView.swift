@@ -181,16 +181,30 @@ struct CollectionGridView: View {
                     onSelect(record)
                 } label: {
                     VStack(spacing: 7) {
-                        NailThumbnail(
-                            image: texture,
-                            nailShape: record.shape,
-                            params: record.plateParams,
-                            size: CGSize(width: 96, height: 132),
-                            shadowColor: .black.opacity(0.12),
-                            shadowRadius: 8,
-                            shadowY: 4,
-                            worn: record.wornSince != nil
-                        )
+                        Group {
+                            if let set = record.setAppearances, set.count > 1 {
+                                HandChipBundle(
+                                    textures: set.map(\.texture),
+                                    shapes: record.fingerShapes ?? Array(repeating: record.shape, count: set.count),
+                                    params: record.plateParams,
+                                    hand: record.hand,
+                                    chipHeight: 36, // ≈ 92pt wide, inside the 96pt cell
+                                    worn: record.wornSince != nil
+                                )
+                                .frame(width: 96, height: 132)
+                            } else {
+                                NailThumbnail(
+                                    image: texture,
+                                    nailShape: record.shape,
+                                    params: record.plateParams,
+                                    size: CGSize(width: 96, height: 132),
+                                    shadowColor: .black.opacity(0.12),
+                                    shadowRadius: 8,
+                                    shadowY: 4,
+                                    worn: record.wornSince != nil
+                                )
+                            }
+                        }
                         .overlay(alignment: .topTrailing) {
                             if record.isFavorite {
                                 Image(systemName: "heart.fill")

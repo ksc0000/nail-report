@@ -2,89 +2,96 @@ import AVFoundation
 import SwiftUI
 import UIKit
 
-/// What the camera was asked to frame: one nail up close, the whole hand for
-/// fingertip detection, or a guided 4-angle 立体スキャン.
+/// What the camera was asked to frame: one hand (the default — five nails
+/// from above, then optional side / curled shots for curve estimation) or a
+/// single nail up close.
 enum CaptureMode: String, CaseIterable, Identifiable {
-    case single
     case hand
-    case scan
+    case single
 
     var id: String { rawValue }
 
     var label: String {
         switch self {
-        case .single: return "1本"
-        case .hand: return "手全体"
-        case .scan: return "立体スキャン"
-        }
-    }
-
-    var hint: String {
-        switch self {
-        case .single: return "枠に爪を合わせて、真上から近づいて"
-        case .hand: return "手の甲を上にして、指を伸ばして枠に"
-        case .scan: return "4方向から撮って、立体的に記録"
+        case .hand: return "片手"
+        case .single: return "1本だけ"
         }
     }
 }
 
-/// One step of a 立体スキャン, in capture order. Only `.top` is required; the
-/// rest feed curve/thickness estimation later (Phase 2) and can be skipped.
+/// Storage slots for a hand's reference photos (`NailRecord.anglePhotoData`
+/// order). `otherSide` is a legacy slot from the per-nail 4-angle scan and
+/// is no longer captured.
 enum AngleStep: Int, CaseIterable {
     case top, side, otherSide, catHand
 
     var label: String {
         switch self {
-        case .top: return "上"
+        case .top: return "手の甲"
         case .side: return "横"
         case .otherSide: return "逆の横"
         case .catHand: return "猫の手"
         }
     }
+}
+
+/// The three shots of a hand capture, in order. Only the top shot is
+/// required; side and curled feed curve estimation and can be skipped.
+enum HandStep: Int, CaseIterable, Identifiable {
+    case top, side, catHand
+
+    var id: Int { rawValue }
+
+    var slot: AngleStep {
+        switch self {
+        case .top: return .top
+        case .side: return .side
+        case .catHand: return .catHand
+        }
+    }
 
     var hint: String {
         switch self {
-        case .top: return "真上から、爪の表面全体を枠に"
-        case .side: return "横から、縦のアーチが見えるように"
-        case .otherSide: return "反対の横から、同じアングルで"
-        case .catHand: return "指を軽く握って、先端のラインが見えるように"
+        case .top: return "手の甲を上に、指を伸ばして5本を枠に"
+        case .side: return "手を横に倒して、爪の横顔が並ぶように"
+        case .catHand: return "指を軽く握って、5本の先端が見えるように"
         }
     }
 
     var isSkippable: Bool { self != .top }
 }
 
-/// In-app camera whose guide is the crop: the nail-shaped window on screen
-/// is exactly the region handed to the crop step (plus a margin to nudge),
-/// so what you framed is what you get. Whole-hand mode hands the full photo
-/// to fingertip detection instead.
+/// In-app camera. Hand mode: the top shot goes to fingertip detection (five
+/// nails), the optional side and curled shots are kept as references for
+/// curve estimation. Single mode: the nail-shaped guide is the crop — what
+/// you framed (plus a margin to nudge) is what reaches the crop step.
 struct NailCameraView: View {
     @Binding var nailShape: NailShape
+    /// Single-nail capture (already cropped to the guide).
     let onCapture: (UIImage, CaptureMode) -> Void
-    /// Called once a 立体スキャン finishes (top captured, the rest optional):
-    /// the top photo (routed through the usual single-nail crop) and all 4
-    /// slots in `AngleStep` order (nil where skipped).
-    var onCaptureScan: ((UIImage, [UIImage?]) -> Void)? = nil
+    /// Hand capture: the top photo (full frame, for detection), all storage
+    /// slots in `AngleStep` order (nil where skipped), and which hand.
+    var onCaptureHand: ((UIImage, [UIImage?], Hand) -> Void)? = nil
     let onCancel: () -> Void
 
     @StateObject private var camera = CameraController()
     // `-debugCameraMode <rawValue>` (with `-debugCamera 1`) starts on a given
-    // mode, so e.g. 立体スキャン's step dots can be screenshotted headlessly —
-    // the simulator has no camera to drive there by tapping the mode pill.
+    // mode so the overlay can be screenshotted headlessly.
     @State private var mode: CaptureMode = {
         let raw = UserDefaults.standard.string(forKey: "debugCameraMode") ?? ""
-        return CaptureMode(rawValue: raw) ?? .single
+        return CaptureMode(rawValue: raw) ?? .hand
     }()
+    @State private var hand: Hand = Hand.remembered
     @State private var isCapturing = false
     @State private var zoomFactor: CGFloat = 1
     @State private var zoomAnchor: CGFloat = 1
-    @State private var scanStep: AngleStep = .top
-    @State private var scanPhotos: [UIImage?] = Array(repeating: nil, count: AngleStep.allCases.count)
+    @State private var step: HandStep = .top
+    @State private var slots: [UIImage?] = Array(repeating: nil, count: AngleStep.allCases.count)
 
     /// Margin around the single-nail guide kept in the crop (30% each axis).
     static let singleMargin: CGFloat = 1.3
-    /// Margin around the side/otherSide/catHand guides — these are reference
-    /// photos, not crop sources, so less slack is needed.
+    /// Margin around the side / curled guides — reference photos, not crop
+    /// sources, so less slack is needed.
     static let angleMargin: CGFloat = 1.1
 
     var body: some View {
@@ -124,6 +131,7 @@ struct NailCameraView: View {
                     Text(hintText)
                         .font(.system(size: 13))
                         .foregroundStyle(.white.opacity(0.85))
+                        .multilineTextAlignment(.center)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .background(Capsule().fill(Color.black.opacity(0.45)))
@@ -153,23 +161,17 @@ struct NailCameraView: View {
                         }
                     }
 
-                    if mode == .scan {
-                        HStack(spacing: 10) {
-                            ForEach(AngleStep.allCases, id: \.rawValue) { step in
-                                Button { scanStep = step } label: {
-                                    Circle()
-                                        .fill(scanPhotos[step.rawValue] != nil ? .white : Color.white.opacity(0.25))
-                                        .frame(width: step == scanStep ? 10 : 7, height: step == scanStep ? 10 : 7)
-                                        .overlay(
-                                            Circle().stroke(.white.opacity(step == scanStep ? 0.9 : 0), lineWidth: 2)
-                                                .frame(width: 16, height: 16)
-                                        )
+                    if mode == .hand {
+                        HStack(spacing: 6) {
+                            ForEach(Hand.allCases) { candidate in
+                                pill(candidate.label, isOn: hand == candidate, small: true) {
+                                    hand = candidate
+                                    candidate.remember()
                                 }
                             }
                         }
-                    }
-
-                    if mode == .single || (mode == .scan && scanStep == .top) {
+                        stepDots
+                    } else {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 6) {
                                 ForEach(NailShape.allCases) { candidate in
@@ -206,15 +208,15 @@ struct NailCameraView: View {
                         .opacity(camera.isAvailable ? 1 : 0.3)
                         .accessibilityLabel("撮影")
                         Spacer()
-                        if mode == .scan {
+                        if mode == .hand {
                             VStack(spacing: 8) {
-                                if scanStep.isSkippable {
-                                    Button("スキップ", action: skipScanStep)
+                                if step.isSkippable {
+                                    Button("スキップ", action: skipStep)
                                         .font(.system(size: 13, weight: .medium))
                                         .foregroundStyle(.white.opacity(0.75))
                                 }
-                                if scanPhotos[AngleStep.top.rawValue] != nil {
-                                    Button("完了", action: finishScan)
+                                if slots[AngleStep.top.rawValue] != nil {
+                                    Button("完了", action: finishHand)
                                         .font(.system(size: 13, weight: .semibold))
                                         .foregroundStyle(.white)
                                 }
@@ -240,11 +242,33 @@ struct NailCameraView: View {
         )
         .onAppear { camera.start() }
         .onDisappear { camera.stop() }
-        .onChange(of: mode) { _, new in
-            guard new != .scan else { return }
-            scanStep = .top
-            scanPhotos = Array(repeating: nil, count: AngleStep.allCases.count)
+        .onChange(of: mode) { _, _ in
+            step = .top
+            slots = Array(repeating: nil, count: AngleStep.allCases.count)
         }
+    }
+
+    /// The three shots as dots: filled once taken, ringed while current.
+    private var stepDots: some View {
+        HStack(spacing: 14) {
+            ForEach(HandStep.allCases) { candidate in
+                Button { step = candidate } label: {
+                    VStack(spacing: 4) {
+                        Circle()
+                            .fill(slots[candidate.slot.rawValue] != nil ? .white : Color.white.opacity(0.25))
+                            .frame(width: 8, height: 8)
+                            .overlay(
+                                Circle().stroke(.white.opacity(candidate == step ? 0.9 : 0), lineWidth: 1.5)
+                                    .frame(width: 16, height: 16)
+                            )
+                        Text(candidate.slot.label)
+                            .font(.system(size: 10))
+                            .foregroundStyle(.white.opacity(candidate == step ? 0.9 : 0.5))
+                    }
+                }
+            }
+        }
+        .padding(.top, 2)
     }
 
     /// The cover ignores the safe area so the preview fills the screen; the
@@ -255,10 +279,13 @@ struct NailCameraView: View {
     }
 
     private var hintText: String {
-        mode == .scan ? "ステップ \(scanStep.rawValue + 1)/4 ・ \(scanStep.hint)" : mode.hint
+        switch mode {
+        case .hand: return "\(step.rawValue + 1)/3 ・ \(step.hint)"
+        case .single: return "枠に爪を合わせて、真上から近づいて"
+        }
     }
 
-    /// Second line under the hint for the close-up guides.
+    /// Second line under the hint for the close-up guide.
     private var focusHint: String? {
         guard guideKind == .nail else { return nil }
         return "ピントが合う距離まで近づいて。枠より小さくてもOK、ピンチで拡大できます"
@@ -266,22 +293,14 @@ struct NailCameraView: View {
 
     // MARK: - Guide
 
-    /// What shape the frame takes: the nail silhouette (single nail, and the
-    /// top step of a scan) or a generic rounded field (whole hand, and the
-    /// other scan steps — these are reference photos, not crop sources).
+    /// The nail silhouette for a single nail; a rounded field for the hand
+    /// shots (the top shot is detected, the rest are references).
     private enum GuideKind { case nail, frame }
 
     private var guideKind: GuideKind {
-        switch mode {
-        case .single: return .nail
-        case .hand: return .frame
-        case .scan: return scanStep == .top ? .nail : .frame
-        }
+        mode == .single ? .nail : .frame
     }
 
-    /// Nail: a 2:3 window (same ratio as the crop window), a little above
-    /// centre so the hand below it stays visible. Frame: a tall rounded field
-    /// for the whole hand or a loosely-framed angle shot.
     private func guideRect(in size: CGSize) -> CGRect {
         switch guideKind {
         case .nail:
@@ -292,9 +311,10 @@ struct NailCameraView: View {
             let width = height * NailGeometry.plateAspect(for: nailShape)
             return CGRect(x: (size.width - width) / 2, y: size.height * 0.46 - height / 2, width: width, height: height)
         case .frame:
+            // Below the hand / step controls, above the shutter.
             let width = size.width * 0.78
-            let height = size.height * 0.56
-            return CGRect(x: (size.width - width) / 2, y: size.height * 0.47 - height / 2, width: width, height: height)
+            let height = size.height * 0.46
+            return CGRect(x: (size.width - width) / 2, y: size.height * 0.54 - height / 2, width: width, height: height)
         }
     }
 
@@ -350,8 +370,6 @@ struct NailCameraView: View {
             guard let image else { return }
             let upright = image.uprightCopy()
             switch mode {
-            case .hand:
-                onCapture(upright, .hand)
             case .single:
                 let rect = CaptureGeometry.imageRect(
                     forGuide: guide,
@@ -360,38 +378,43 @@ struct NailCameraView: View {
                     margin: Self.singleMargin
                 )
                 onCapture(upright.cropped(to: rect) ?? upright, .single)
-            case .scan:
-                let margin = scanStep == .top ? Self.singleMargin : Self.angleMargin
-                let rect = CaptureGeometry.imageRect(
-                    forGuide: guide,
-                    previewSize: previewSize,
-                    imageSize: upright.size,
-                    margin: margin
-                )
-                scanPhotos[scanStep.rawValue] = upright.cropped(to: rect) ?? upright
-                advanceScanStep()
+            case .hand:
+                if step == .top {
+                    // Full frame: fingertip detection wants the whole hand.
+                    slots[AngleStep.top.rawValue] = upright
+                } else {
+                    let rect = CaptureGeometry.imageRect(
+                        forGuide: guide,
+                        previewSize: previewSize,
+                        imageSize: upright.size,
+                        margin: Self.angleMargin
+                    )
+                    slots[step.slot.rawValue] = upright.cropped(to: rect) ?? upright
+                }
+                advanceStep()
             }
         }
     }
 
-    // MARK: - Scan steps
+    // MARK: - Hand steps
 
-    private func advanceScanStep() {
-        if let next = AngleStep(rawValue: scanStep.rawValue + 1) {
-            scanStep = next
+    private func advanceStep() {
+        if let next = HandStep(rawValue: step.rawValue + 1) {
+            step = next
         } else {
-            finishScan()
+            finishHand()
         }
     }
 
-    private func skipScanStep() {
+    private func skipStep() {
         UISelectionFeedbackGenerator().selectionChanged()
-        advanceScanStep()
+        advanceStep()
     }
 
-    private func finishScan() {
-        guard let top = scanPhotos[AngleStep.top.rawValue] else { return }
-        onCaptureScan?(top, scanPhotos)
+    private func finishHand() {
+        guard let top = slots[AngleStep.top.rawValue] else { return }
+        hand.remember()
+        onCaptureHand?(top, slots, hand)
     }
 }
 

@@ -27,6 +27,54 @@ struct NailSilhouette: Shape {
     }
 }
 
+/// A hand's five nails as one compact bundle, thumb→pinky laid out the way
+/// the hand looks from above (thumb on the left for a right hand). Small
+/// stagger in height hints at the finger lengths.
+struct HandChipBundle: View {
+    let textures: [UIImage]
+    let shapes: [NailShape]
+    var params: NailPlateParams = .default
+    var hand: Hand?
+    /// Height of the middle (tallest) chip; the bundle is about 2.4× as wide.
+    var chipHeight: CGFloat = 44
+    var shadowColor: Color = .black.opacity(0.12)
+    var worn: Bool = false
+
+    private var order: [Int] {
+        let anatomical = Array(textures.indices)
+        return (hand?.thumbIsOnPhotoLeft ?? true) ? anatomical : anatomical.reversed()
+    }
+
+    /// Thumb→pinky relative heights of a resting hand.
+    private static let lengthScale: [CGFloat] = [0.78, 0.94, 1, 0.94, 0.8]
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: -chipHeight * 0.06) {
+            ForEach(order, id: \.self) { index in
+                let scale = Self.lengthScale.indices.contains(index) ? Self.lengthScale[index] : 1
+                let height = chipHeight * scale
+                NailThumbnail(
+                    image: textures[index],
+                    nailShape: shapes.indices.contains(index) ? shapes[index] : (shapes.first ?? .squoval),
+                    params: params,
+                    size: CGSize(width: height * 0.62, height: height),
+                    shadowColor: shadowColor,
+                    shadowRadius: 5,
+                    shadowY: 3
+                )
+                .padding(.bottom, (chipHeight - height) * 0.35)
+            }
+        }
+        .overlay {
+            if worn {
+                RoundedRectangle(cornerRadius: chipHeight)
+                    .stroke(Palette.goldHairline, lineWidth: 1.2)
+                    .padding(-max(6, chipHeight * 0.16))
+            }
+        }
+    }
+}
+
 /// Photo thumbnail clipped to the nail silhouette, with a soft gloss streak so
 /// shelf items still read as gel nails.
 struct NailThumbnail: View {

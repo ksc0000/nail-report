@@ -16,6 +16,8 @@ struct DeletedNailSnapshot {
     let fingerPhotoData: [Data]
     let originalPhotoData: Data?
     let anglePhotoData: [Data]
+    let handRaw: String
+    let fingerShapesRaw: [String]
     let wornSince: Date?
     let isFavorite: Bool
     let lengthAdj: Float
@@ -99,6 +101,12 @@ final class NailRecord {
     /// (top/side/otherSide/catHand); empty `Data` for a skipped step. Empty
     /// array for records not captured via 立体スキャン.
     var anglePhotoData: [Data] = []
+    /// Which hand a five-nail record is (`Hand.rawValue`); empty for single
+    /// nails and for sets captured before hands were tracked.
+    var handRaw: String = ""
+    /// Per-finger shapes, thumb→pinky, when they differ; empty means every
+    /// finger uses `shape`.
+    var fingerShapesRaw: [String] = []
     /// Comma-joined `AutoScanEstimator.Field` raw values whose current tuning
     /// still is the untouched 立体スキャン estimate (#389); a field leaves the
     /// list the moment the user overrides it.
@@ -163,6 +171,8 @@ final class NailRecord {
         memo = snapshot.memo
         tags = snapshot.tags
         fingerPhotoData = snapshot.fingerPhotoData
+        handRaw = snapshot.handRaw
+        fingerShapesRaw = snapshot.fingerShapesRaw
         originalPhotoData = snapshot.originalPhotoData
         anglePhotoData = snapshot.anglePhotoData
         wornSince = snapshot.wornSince
@@ -182,6 +192,7 @@ final class NailRecord {
             priceYen: priceYen, memo: memo, tags: tags,
             fingerPhotoData: fingerPhotoData,
             originalPhotoData: originalPhotoData, anglePhotoData: anglePhotoData,
+            handRaw: handRaw, fingerShapesRaw: fingerShapesRaw,
             wornSince: wornSince,
             isFavorite: isFavorite, lengthAdj: lengthAdj, widthAdj: widthAdj,
             curveHAdj: curveHAdj, curveVAdj: curveVAdj,
@@ -219,6 +230,21 @@ final class NailRecord {
         texture.map {
             NailAppearance(id: "\(id.uuidString)-\(photoData.hashValue)", texture: $0, finish: finish)
         }
+    }
+
+    var hand: Hand? {
+        get { Hand(rawValue: handRaw) }
+        set { handRaw = newValue?.rawValue ?? "" }
+    }
+
+    /// Per-finger shapes (thumb→pinky) when the record carries a matching
+    /// list; otherwise nil and every finger uses `shape`.
+    var fingerShapes: [NailShape]? {
+        get {
+            let list = fingerShapesRaw.compactMap(NailShape.init(rawValue:))
+            return list.count == fingerPhotoData.count && list.count > 1 ? list : nil
+        }
+        set { fingerShapesRaw = newValue?.map(\.rawValue) ?? [] }
     }
 
     /// Appearances for the five-piece set view; nil unless this record holds
