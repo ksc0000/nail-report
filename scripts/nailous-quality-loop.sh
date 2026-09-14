@@ -75,6 +75,16 @@ caffeinate -i -w $$ &
   AGENT_RC=$?
   kill $WATCHDOG_PID 2>/dev/null
   echo "agent exit: $AGENT_RC"
+  # A run that dies mid-edit (max turns, watchdog, crash) leaves an
+  # uncommitted tree, and every later run then skips forever. The tree was
+  # clean when this run started, so anything dirty now is this run's
+  # leftover: park it in a stash for a human to inspect and let the next
+  # run start clean.
+  if [ -n "$(git status --porcelain)" ]; then
+    echo "LEFTOVER: agent left uncommitted changes; stashing so later runs can proceed"
+    git status --short
+    git stash push -u -m "loop-leftover $(date '+%Y-%m-%d %H:%M')" >/dev/null 2>&1 || true
+  fi
 
   echo "===== $(date '+%Y-%m-%d %H:%M:%S') run end (exit $?) ====="
 } >> "$LOG" 2>&1
