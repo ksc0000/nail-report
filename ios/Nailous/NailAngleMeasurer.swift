@@ -45,8 +45,12 @@ enum NailAngleMeasurer {
     }
 
     /// Fixed analysis grid so the per-pixel work stays cheap regardless of
-    /// the source photo's resolution.
-    private static let analysisSize = 96
+    /// the source photo's resolution. Subtle bows (side/cat's-paw curvature)
+    /// are only a few percent of the frame, so this needs to be large enough
+    /// that downsampling doesn't quantize them away (96 was too coarse —
+    /// distinct curveV targets collapsed onto the same measured row in
+    /// testing against the #389 synthetic bench).
+    private static let analysisSize = 256
 
     /// nil when Vision's subject-mask request is unavailable, fails, or
     /// produces a mask too small/large to trust (mirrors the coverage guard
@@ -65,26 +69,37 @@ enum NailAngleMeasurer {
 
         let maskCI = CIImage(cvPixelBuffer: maskBuffer)
         let imageCI = CIImage(cgImage: cgImage)
-        let side = analysisSize
         let context = CIContext()
+        // Fit the analysis grid to the source photo's own aspect ratio — a
+        // fixed square grid would squash a portrait crop's y-axis more than
+        // its x-axis, silently inflating every length-ratio measurement
+        // below (archRatio, sagitta/chord, ...) by that distortion factor.
+        let extent = imageCI.extent
+        guard extent.width > 0, extent.height > 0 else { return nil }
+        let longSide = Float(analysisSize)
+        let sourceAspect = Float(extent.width / extent.height)
+        let gridWidth = max(1, Int((sourceAspect >= 1 ? longSide : longSide * sourceAspect).rounded()))
+        let gridHeight = max(1, Int((sourceAspect >= 1 ? longSide / sourceAspect : longSide).rounded()))
+
         guard let maskCG = context.createCGImage(maskCI, from: maskCI.extent, format: .L8, colorSpace: CGColorSpaceCreateDeviceGray()),
               let colorCG = context.createCGImage(imageCI, from: imageCI.extent),
-              let maskPixels = grayscalePixels(of: maskCG, side: side),
-              let colorPixels = rgbaPixels(of: colorCG, side: side)
+              let maskPixels = grayscalePixels(of: maskCG, width: gridWidth, height: gridHeight),
+              let colorPixels = rgbaPixels(of: colorCG, width: gridWidth, height: gridHeight)
         else { return nil }
 
-        var isNail = [Bool](repeating: false, count: side * side)
-        for i in 0..<(side * side) {
+        let pixelCount = gridWidth * gridHeight
+        var isNail = [Bool](repeating: false, count: pixelCount)
+        for i in 0..<pixelCount {
             guard maskPixels[i] > 128 else { continue }
             let r = colorPixels[i * 4]
             let g = colorPixels[i * 4 + 1]
             let b = colorPixels[i * 4 + 2]
             isNail[i] = !isSkinChroma(r: r, g: g, b: b)
         }
-        let result = Mask(width: side, height: side, isNail: isNail)
+        let result = Mask(width: gridWidth, height: gridHeight, isNail: isNail)
         // A mask that grabs almost nothing (bad segmentation) or almost
         // everything (background wasn't separated) isn't trustworthy.
-        let coverage = Float(result.pixelCount) / Float(side * side)
+        let coverage = Float(result.pixelCount) / Float(pixelCount)
         guard coverage > 0.03, coverage < 0.85 else { return nil }
         return result
     }
@@ -99,23 +114,23 @@ enum NailAngleMeasurer {
         return cb > 77 && cb < 127 && cr > 133 && cr < 177
     }
 
-    private static func grayscalePixels(of cgImage: CGImage, side: Int) -> [UInt8]? {
-        var buffer = [UInt8](repeating: 0, count: side * side)
+    private static func grayscalePixels(of cgImage: CGImage, width: Int, height: Int) -> [UInt8]? {
+        var buffer = [UInt8](repeating: 0, count: width * height)
         guard let context = CGContext(
-            data: &buffer, width: side, height: side, bitsPerComponent: 8, bytesPerRow: side,
+            data: &buffer, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width,
             space: CGColorSpaceCreateDeviceGray(), bitmapInfo: 0
         ) else { return nil }
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: side, height: side))
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
         return buffer
     }
 
-    private static func rgbaPixels(of cgImage: CGImage, side: Int) -> [UInt8]? {
-        var buffer = [UInt8](repeating: 0, count: side * side * 4)
+    private static func rgbaPixels(of cgImage: CGImage, width: Int, height: Int) -> [UInt8]? {
+        var buffer = [UInt8](repeating: 0, count: width * height * 4)
         guard let context = CGContext(
-            data: &buffer, width: side, height: side, bitsPerComponent: 8, bytesPerRow: side * 4,
+            data: &buffer, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
             space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else { return nil }
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: side, height: side))
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
         return buffer
     }
 }

@@ -1,0 +1,70 @@
+{
+  "cases": [
+    {
+      "id": "set1_round",
+      "shape": "round",
+      "corner": 0.0,
+      "curveV": 0.8,
+      "curveH": 0.8,
+      "top": "set1_top.png",
+      "side": "set1_side.png",
+      "otherSide": "set1_otherside.png",
+      "catHand": "set1_catpaw.png"
+    },
+    {
+      "id": "set2_oval",
+      "shape": "oval",
+      "corner": 0.0,
+      "curveV": 0.4,
+      "curveH": -0.6,
+      "top": "set2_top.png",
+      "side": "set2_side.png",
+      "otherSide": "set2_otherside.png",
+      "catHand": "set2_catpaw.png"
+    },
+    {
+      "id": "set3_almond",
+      "shape": "almond",
+      "corner": 0.0,
+      "curveV": 0.0,
+      "curveH": 0.2,
+      "top": "set3_top.png",
+      "side": "set3_side.png",
+      "otherSide": "set3_otherside.png",
+      "catHand": "set3_catpaw.png"
+    },
+    {
+      "id": "set4_square",
+      "shape": "square",
+      "corner": 0.0,
+      "curveV": 0.3,
+      "curveH": -0.9,
+      "top": "set4_top.png",
+      "side": "set4_side.png",
+      "otherSide": "set4_otherside.png",
+      "catHand": "set4_catpaw.png"
+    },
+    {
+      "id": "set5_squoval",
+      "shape": "squoval",
+      "corner": 0.0,
+      "curveV": 0.6,
+      "curveH": 0.5,
+      "top": "set5_top.png",
+      "side": "set5_side.png",
+      "otherSide": "set5_otherside.png",
+      "catHand": "set5_catpaw.png"
+    },
+    {
+      "id": "set6_coffin",
+      "shape": "coffin",
+      "corner": 0.0,
+      "curveV": 0.9,
+      "curveH": 0.0,
+      "top": "set6_top.png",
+      "side": "set6_side.png",
+      "otherSide": "set6_otherside.png",
+      "catHand": "set6_catpaw.png"
+    }
+  ]
+}

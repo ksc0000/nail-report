@@ -44,10 +44,13 @@ enum AutoScanEstimator {
             let agrees = sideMeasurements.count < 2 || abs(sideMeasurements[0].archRatio - sideMeasurements[1].archRatio) < 0.08
             let archRatio = sideMeasurements.map(\.archRatio).reduce(0, +) / Float(sideMeasurements.count)
             let thicknessRatio = sideMeasurements.map(\.thicknessRatio).reduce(0, +) / Float(sideMeasurements.count)
-            if agrees, let estimate = NailShapeEstimator.estimateSide(archRatio: archRatio, thicknessRatio: thicknessRatio) {
-                result.params.curveV = estimate.curveV
-                result.params.thickness = estimate.thickness
-                result.fields.formUnion([.curveV, .thickness])
+            if agrees, let curveV = NailShapeEstimator.estimateCurveV(archRatio: archRatio) {
+                result.params.curveV = curveV.value
+                result.fields.insert(.curveV)
+            }
+            if agrees, let thickness = NailShapeEstimator.estimateThickness(thicknessRatio: thicknessRatio) {
+                result.params.thickness = thickness.value
+                result.fields.insert(.thickness)
             }
         }
 

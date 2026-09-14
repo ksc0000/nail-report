@@ -20,9 +20,8 @@ enum NailShapeEstimator {
         let confidence: Float
     }
 
-    struct SideEstimate {
-        let curveV: Float
-        let thickness: Float
+    struct FieldEstimate {
+        let value: Float
         let confidence: Float
     }
 
@@ -83,23 +82,39 @@ enum NailShapeEstimator {
     /// divided by the mask's length — the side-view stand-in for
     /// `NailGeometry`'s lengthwise arch (`arch = 0.14 * curveV` at the
     /// midpoint, in the same plate units as its ~2.2-unit mean plate
-    /// height). `thicknessRatio`: the free-edge band width divided by that
-    /// same length, standing in for `thickness = 0.055 + 0.05 * thickness`.
-    /// Both ratios are scale-invariant so they transfer from photo pixels
-    /// without a physical size reference.
-    static func estimateSide(archRatio: Float, thicknessRatio: Float) -> SideEstimate? {
-        guard archRatio.isFinite, thicknessRatio.isFinite else { return nil }
+    /// height). Scale-invariant, so it transfers from photo pixels without
+    /// a physical size reference. Gated independently of `estimateThickness`
+    /// — the two angles' fields shouldn't veto each other.
+    ///
+    /// `archRatio` is a magnitude (`NailAngleMeasurer` takes its absolute
+    /// value, since a 2D side silhouette can't reliably tell a convex arch
+    /// from a concave one without assuming which mask edge faces the
+    /// camera — see that file), so this never returns a negative curveV: a
+    /// stylistically flattened/concave nail won't be auto-detected and just
+    /// keeps its manual value, which is the safe failure mode here.
+    static func estimateCurveV(archRatio: Float) -> FieldEstimate? {
+        guard archRatio.isFinite else { return nil }
         let meanPlateHeight: Float = 2.2
         let archSensitivity: Float = 0.14 / meanPlateHeight
-        let rawCurveV = archRatio / archSensitivity
-
-        let thicknessBaseline: Float = 0.055 / meanPlateHeight
-        let thicknessSensitivity: Float = 0.05 / meanPlateHeight
-        let rawThickness = (thicknessRatio - thicknessBaseline) / thicknessSensitivity
-
-        let confidence = confidenceFromOverrun([rawCurveV, rawThickness])
+        let raw = archRatio / archSensitivity
+        let confidence = confidenceFromOverrun([raw])
         guard confidence >= 0.5 else { return nil }
-        return SideEstimate(curveV: clamp(rawCurveV), thickness: clamp(rawThickness), confidence: confidence)
+        return FieldEstimate(value: clamp(raw), confidence: confidence)
+    }
+
+    /// `thicknessRatio`: the free-edge band width divided by the mask's
+    /// length, standing in for `NailGeometry`'s
+    /// `thickness = 0.055 + 0.05 * thickness` (same ~2.2-unit mean plate
+    /// height normalization as `estimateCurveV`).
+    static func estimateThickness(thicknessRatio: Float) -> FieldEstimate? {
+        guard thicknessRatio.isFinite else { return nil }
+        let meanPlateHeight: Float = 2.2
+        let baseline: Float = 0.055 / meanPlateHeight
+        let sensitivity: Float = 0.05 / meanPlateHeight
+        let raw = (thicknessRatio - baseline) / sensitivity
+        let confidence = confidenceFromOverrun([raw])
+        guard confidence >= 0.5 else { return nil }
+        return FieldEstimate(value: clamp(raw), confidence: confidence)
     }
 
     /// `sagittaOverChord`: how much the mask's width bulges at its widest
@@ -107,10 +122,21 @@ enum NailShapeEstimator {
     /// cat's-paw stand-in for the C-curve cross-section (`NailGeometry`'s
     /// `bulge` term, which is never zero even at curveH=0 since the plate
     /// always has some base convexity — hence the nonzero baseline below).
+    ///
+    /// baseline/sensitivity were originally derived analytically from
+    /// `NailGeometry`'s bulge formula, then refit (linear regression, kept
+    /// in sync with `generate_assets.py`'s CATPAW_BASELINE/SENSITIVITY)
+    /// against `ios/BenchmarkAssets/angles`: the analytic version
+    /// systematically overshot the measured sagitta/chord (this
+    /// near/far-window measurement isn't the same quantity as the mesh's
+    /// exact bulge, so the two constants were always going to need a fudge
+    /// factor). Both the fit and the tolerance it's checked against are on
+    /// synthetic renders, not real photos — real-photo recalibration is
+    /// follow-up work.
     static func estimateCatPaw(sagittaOverChord: Float) -> CatPawEstimate? {
         guard sagittaOverChord.isFinite else { return nil }
-        let baseline: Float = 0.145
-        let sensitivity: Float = 0.85 * baseline
+        let baseline: Float = 0.0655
+        let sensitivity: Float = 0.0574
         let raw = (sagittaOverChord - baseline) / sensitivity
         let confidence = confidenceFromOverrun([raw])
         guard confidence >= 0.5 else { return nil }
