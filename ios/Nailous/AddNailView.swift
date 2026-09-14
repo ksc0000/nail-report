@@ -67,6 +67,7 @@ struct AddNailView: View {
 
     private var hasTexture: Bool { !displayTextures.isEmpty }
     private var isSetCapture: Bool { displayTextures.count > 1 }
+    private var isProcessing: Bool { isCleaning || isEstimating || isAIProcessing }
 
     private var previewAppearance: NailAppearance {
         if let first = displayTextures.first {
@@ -100,6 +101,7 @@ struct AddNailView: View {
                         }
                         .padding(.top, 18)
                         .padding(.bottom, hasTexture ? 96 : 24)
+                        .disabled(isProcessing)
                     }
                     .scrollDismissesKeyboard(.interactively)
                 }
@@ -223,7 +225,7 @@ struct AddNailView: View {
                     cropSource = nil
                     // Textures are stored thumb→pinky; a left hand photographed
                     // from above has its thumb on the right, so flip.
-                    let chosen = hand ?? pickedHand
+                    let chosen = pickedHand
                     hand = chosen
                     let ordered = chosen.thumbIsOnPhotoLeft ? bakedList : Array(bakedList.reversed())
                     cleanupAndSet(ordered)
@@ -266,6 +268,8 @@ struct AddNailView: View {
     /// On-device cleanup (subject mask → skin feathering → highlight taming)
     /// runs once per committed texture, off the main thread.
     private func cleanupAndSet(_ textures: [UIImage]) {
+        autoFields = []
+        fingerShapes = nil
         aiApplied = false
         aiError = nil
         isCleaning = true
@@ -659,7 +663,7 @@ struct AddNailView: View {
                 .background(Capsule().fill(Palette.inkWarm))
                 .foregroundStyle(Palette.paper)
         }
-        .disabled(isCleaning)
+        .disabled(isProcessing)
         .padding(.horizontal, 24)
         .padding(.top, 14)
         .padding(.bottom, 10)
@@ -787,6 +791,7 @@ struct AddNailView: View {
     // MARK: - Save
 
     private func save() {
+        guard !isProcessing else { return }
         guard let primary = displayTextures.first,
               let jpeg = primary.jpegData(compressionQuality: 0.85) else { return }
         let fingerData = isSetCapture

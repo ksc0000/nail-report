@@ -18,6 +18,7 @@ struct DeletedNailSnapshot {
     let anglePhotoData: [Data]
     let handRaw: String
     let fingerShapesRaw: [String]
+    let autoEstimatedRaw: String
     let wornSince: Date?
     let isFavorite: Bool
     let lengthAdj: Float
@@ -173,6 +174,7 @@ final class NailRecord {
         fingerPhotoData = snapshot.fingerPhotoData
         handRaw = snapshot.handRaw
         fingerShapesRaw = snapshot.fingerShapesRaw
+        autoEstimatedRaw = snapshot.autoEstimatedRaw
         originalPhotoData = snapshot.originalPhotoData
         anglePhotoData = snapshot.anglePhotoData
         wornSince = snapshot.wornSince
@@ -193,6 +195,7 @@ final class NailRecord {
             fingerPhotoData: fingerPhotoData,
             originalPhotoData: originalPhotoData, anglePhotoData: anglePhotoData,
             handRaw: handRaw, fingerShapesRaw: fingerShapesRaw,
+            autoEstimatedRaw: autoEstimatedRaw,
             wornSince: wornSince,
             isFavorite: isFavorite, lengthAdj: lengthAdj, widthAdj: widthAdj,
             curveHAdj: curveHAdj, curveVAdj: curveVAdj,

@@ -402,7 +402,7 @@ struct NailSceneView: UIViewRepresentable {
                 let spec = fingerSpecs[index % fingerSpecs.count]
                 // Slot along the arc: thumb leftmost for a right hand, rightmost
                 // for a left hand (finger sizes stay with their finger).
-                let fi = mirrored ? Float(2 - index) : Float(index) - 2
+                let fi = Float(index) - 2
                 let appearance = appearances[index % appearances.count]
                 let tipShape: NailShape = {
                     guard let shapes, !shapes.isEmpty else { return shape }
@@ -453,6 +453,11 @@ struct NailSceneView: UIViewRepresentable {
                     node.position = SCNVector3(slot.x, slot.y, slot.z)
                     node.eulerAngles.z = slot.r
                     node.eulerAngles.y = fi * 0.1
+                }
+                if mirrored {
+                    node.position.x = -node.position.x
+                    node.eulerAngles.y = -node.eulerAngles.y
+                    node.eulerAngles.z = -node.eulerAngles.z
                 }
                 group.addChildNode(node)
             }

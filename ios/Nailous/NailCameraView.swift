@@ -230,6 +230,7 @@ struct NailCameraView: View {
                     .padding(.horizontal, 24)
                     .padding(.bottom, windowSafeInsets.bottom + 14)
                 }
+                .disabled(isCapturing)
             }
         }
         .environment(\.colorScheme, .dark)
@@ -407,11 +408,14 @@ struct NailCameraView: View {
     }
 
     private func skipStep() {
+        guard !isCapturing, step.isSkippable else { return }
+        slots[step.slot.rawValue] = nil
         UISelectionFeedbackGenerator().selectionChanged()
         advanceStep()
     }
 
     private func finishHand() {
+        // Completion after the last shot happens inside the capture callback.
         guard let top = slots[AngleStep.top.rawValue] else { return }
         hand.remember()
         onCaptureHand?(top, slots, hand)
@@ -523,7 +527,7 @@ final class CameraController: NSObject, ObservableObject {
             device.videoZoomFactor = clamped
             device.unlockForConfiguration()
         }
-        return clamped
+        return device.videoZoomFactor
     }
 
     func capture(_ completion: @escaping (UIImage?) -> Void) {
