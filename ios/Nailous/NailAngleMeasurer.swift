@@ -1,0 +1,210 @@
+import CoreGraphics
+import CoreImage
+import Foundation
+import Vision
+
+/// Extracts the small numeric summaries `NailShapeEstimator` needs from a
+/// 立体スキャン angle photo: a binary "is this pixel the nail plate" mask,
+/// built from Vision's foreground-subject mask combined with a skin-chroma
+/// exclusion (mirrors `NailCleanup`'s skin window; kept standalone here,
+/// without a UIKit dependency, so this file also compiles into the macOS
+/// host bench tool alongside `NailDetector.swift`).
+enum NailAngleMeasurer {
+    struct Mask {
+        let width: Int
+        let height: Int
+        let isNail: [Bool] // row-major
+
+        func rowSpan(_ y: Int) -> (minX: Int, maxX: Int)? {
+            guard y >= 0, y < height else { return nil }
+            var minX = -1
+            var maxX = -1
+            let base = y * width
+            for x in 0..<width where isNail[base + x] {
+                if minX == -1 { minX = x }
+                maxX = x
+            }
+            return minX == -1 ? nil : (minX, maxX)
+        }
+
+        struct BoundingBox { let minX, minY, maxX, maxY: Int }
+
+        var boundingBox: BoundingBox? {
+            var minX = width, minY = height, maxX = -1, maxY = -1
+            for y in 0..<height {
+                guard let span = rowSpan(y) else { continue }
+                minX = min(minX, span.minX)
+                maxX = max(maxX, span.maxX)
+                minY = min(minY, y)
+                maxY = max(maxY, y)
+            }
+            return maxX >= 0 ? BoundingBox(minX: minX, minY: minY, maxX: maxX, maxY: maxY) : nil
+        }
+
+        var pixelCount: Int { isNail.reduce(0) { $0 + ($1 ? 1 : 0) } }
+    }
+
+    /// Fixed analysis grid so the per-pixel work stays cheap regardless of
+    /// the source photo's resolution.
+    private static let analysisSize = 96
+
+    /// nil when Vision's subject-mask request is unavailable, fails, or
+    /// produces a mask too small/large to trust (mirrors the coverage guard
+    /// in `NailCleanup.subjectMasked`).
+    static func mask(for cgImage: CGImage) -> Mask? {
+        guard #available(iOS 17.0, macOS 14.0, *) else { return nil }
+        let request = VNGenerateForegroundInstanceMaskRequest()
+        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        try? handler.perform([request])
+        guard let observation = request.results?.first,
+              let maskBuffer = try? observation.generateScaledMaskForImage(
+                  forInstances: observation.allInstances,
+                  from: handler
+              )
+        else { return nil }
+
+        let maskCI = CIImage(cvPixelBuffer: maskBuffer)
+        let imageCI = CIImage(cgImage: cgImage)
+        let side = analysisSize
+        let context = CIContext()
+        guard let maskCG = context.createCGImage(maskCI, from: maskCI.extent, format: .L8, colorSpace: CGColorSpaceCreateDeviceGray()),
+              let colorCG = context.createCGImage(imageCI, from: imageCI.extent),
+              let maskPixels = grayscalePixels(of: maskCG, side: side),
+              let colorPixels = rgbaPixels(of: colorCG, side: side)
+        else { return nil }
+
+        var isNail = [Bool](repeating: false, count: side * side)
+        for i in 0..<(side * side) {
+            guard maskPixels[i] > 128 else { continue }
+            let r = colorPixels[i * 4]
+            let g = colorPixels[i * 4 + 1]
+            let b = colorPixels[i * 4 + 2]
+            isNail[i] = !isSkinChroma(r: r, g: g, b: b)
+        }
+        let result = Mask(width: side, height: side, isNail: isNail)
+        // A mask that grabs almost nothing (bad segmentation) or almost
+        // everything (background wasn't separated) isn't trustworthy.
+        let coverage = Float(result.pixelCount) / Float(side * side)
+        guard coverage > 0.03, coverage < 0.85 else { return nil }
+        return result
+    }
+
+    /// BT.601 skin-chroma window, mirroring `NailCleanup.skinSuppressed`'s
+    /// per-pixel test (duplicated in miniature rather than shared, since
+    /// that file is UIKit-only and this one needs to run on macOS too).
+    private static func isSkinChroma(r: UInt8, g: UInt8, b: UInt8) -> Bool {
+        let rf = Float(r), gf = Float(g), bf = Float(b)
+        let cb = 128 - 0.168736 * rf - 0.331264 * gf + 0.5 * bf
+        let cr = 128 + 0.5 * rf - 0.418688 * gf - 0.081312 * bf
+        return cb > 77 && cb < 127 && cr > 133 && cr < 177
+    }
+
+    private static func grayscalePixels(of cgImage: CGImage, side: Int) -> [UInt8]? {
+        var buffer = [UInt8](repeating: 0, count: side * side)
+        guard let context = CGContext(
+            data: &buffer, width: side, height: side, bitsPerComponent: 8, bytesPerRow: side,
+            space: CGColorSpaceCreateDeviceGray(), bitmapInfo: 0
+        ) else { return nil }
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: side, height: side))
+        return buffer
+    }
+
+    private static func rgbaPixels(of cgImage: CGImage, side: Int) -> [UInt8]? {
+        var buffer = [UInt8](repeating: 0, count: side * side * 4)
+        guard let context = CGContext(
+            data: &buffer, width: side, height: side, bitsPerComponent: 8, bytesPerRow: side * 4,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: side, height: side))
+        return buffer
+    }
+}
+
+extension NailAngleMeasurer {
+    /// Width profile w(t) for the top-view shape fit: mask width per row
+    /// within its bounding box, resampled to `samples` steps and normalized
+    /// to its own peak. Also returns the box's width/height aspect for the
+    /// length/width estimate. Which end (t=0) is the cuticle isn't resolved
+    /// here — `NailShapeEstimator.estimateTop` tries both directions.
+    static func topWidthProfile(mask: Mask, samples: Int = 24) -> (profile: [Float], aspect: Float)? {
+        guard let box = mask.boundingBox else { return nil }
+        let h = box.maxY - box.minY
+        let w = box.maxX - box.minX
+        guard h > 4, w > 2, samples > 1 else { return nil }
+
+        var widths: [Float] = []
+        widths.reserveCapacity(samples)
+        for i in 0..<samples {
+            let y = min(box.maxY, box.minY + Int(Float(i) / Float(samples - 1) * Float(h)))
+            widths.append(mask.rowSpan(y).map { Float($0.maxX - $0.minX + 1) } ?? 0)
+        }
+        let peak = widths.max() ?? 0
+        guard peak > 0 else { return nil }
+        let aspect = Float(w + 1) / Float(h + 1)
+        return (widths.map { $0 / peak }, aspect)
+    }
+
+    /// Side-view arch/thickness ratios. `archRatio`: sagitta of the mask's
+    /// centerline (the midpoint between each row's left/right edge) at its
+    /// midpoint, relative to a straight line between the mask's two ends —
+    /// mirror-symmetric, so it doesn't depend on which side of the frame the
+    /// finger is on (`side` vs `otherSide` are captured from opposite
+    /// lateral directions). `thicknessRatio`: the mask's average width near
+    /// its free-edge end, divided by its length.
+    static func sideArchAndThickness(mask: Mask) -> (archRatio: Float, thicknessRatio: Float)? {
+        guard let box = mask.boundingBox else { return nil }
+        let length = Float(box.maxY - box.minY + 1)
+        guard length > 8 else { return nil }
+
+        var centerline: [(y: Int, x: Float)] = []
+        for y in box.minY...box.maxY {
+            if let span = mask.rowSpan(y) {
+                centerline.append((y, Float(span.minX + span.maxX) / 2))
+            }
+        }
+        guard centerline.count > 6, let start = centerline.first, let end = centerline.last else { return nil }
+        let mid = centerline[centerline.count / 2]
+        let yRange = Float(end.y - start.y)
+        let t = yRange > 0 ? Float(mid.y - start.y) / yRange : 0
+        let baseline = start.x + (end.x - start.x) * t
+        let archRatio = abs(mid.x - baseline) / length
+
+        let tipRows = max(1, Int(length * 0.08))
+        var tipWidths: [Float] = []
+        for y in max(box.minY, box.maxY - tipRows)...box.maxY {
+            if let span = mask.rowSpan(y) { tipWidths.append(Float(span.maxX - span.minX + 1)) }
+        }
+        guard !tipWidths.isEmpty else { return nil }
+        let thicknessRatio = (tipWidths.reduce(0, +) / Float(tipWidths.count)) / length
+        return (archRatio, thicknessRatio)
+    }
+
+    /// Cat's-paw sagitta/chord: how much the mask's width bulges at its
+    /// widest row versus a straight taper between its neighbours a short
+    /// distance away, relative to that width. Width-based (not left/right
+    /// position based), so it's robust to the frame being mirrored.
+    static func catPawSagittaOverChord(mask: Mask) -> Float? {
+        guard let box = mask.boundingBox else { return nil }
+        let height = box.maxY - box.minY
+        guard height > 8 else { return nil }
+        let step = max(2, height / 12)
+
+        var bestRow = -1
+        var bestWidth = -1
+        for y in box.minY...box.maxY {
+            guard let span = mask.rowSpan(y) else { continue }
+            let width = span.maxX - span.minX
+            if width > bestWidth { bestWidth = width; bestRow = y }
+        }
+        guard bestRow >= 0, bestWidth > 4,
+              let nearSpan = mask.rowSpan(max(box.minY, bestRow - step)),
+              let farSpan = mask.rowSpan(min(box.maxY, bestRow + step))
+        else { return nil }
+
+        let nearWidth = Float(nearSpan.maxX - nearSpan.minX)
+        let farWidth = Float(farSpan.maxX - farSpan.minX)
+        let expected = (nearWidth + farWidth) / 2
+        let sagitta = (Float(bestWidth) - expected) / 2
+        return sagitta / Float(bestWidth)
+    }
+}
