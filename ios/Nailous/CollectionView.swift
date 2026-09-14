@@ -372,7 +372,17 @@ struct CollectionView: View {
         } label: {
             VStack(spacing: 12) {
                 Group {
-                    if let texture {
+                    if let set = record.setAppearances, set.count > 1 {
+                        HandChipBundle(
+                            textures: set.map(\.texture),
+                            shapes: record.fingerShapes ?? Array(repeating: record.shape, count: set.count),
+                            params: record.plateParams,
+                            hand: record.hand,
+                            chipHeight: 40, // bundle ≈ 100pt wide; fits beside two chips
+                            worn: record.wornSince != nil
+                        )
+                        .frame(height: chipSize.height, alignment: .bottom)
+                    } else if let texture {
                         NailThumbnail(
                             image: texture,
                             nailShape: record.shape,
@@ -577,6 +587,21 @@ struct CollectionView: View {
                 record.anglePhotoData = angleImages.map { $0?.jpegData(compressionQuality: 0.85) ?? Data() }
             }
             modelContext.insert(record)
+        }
+        // One five-nail record (thumb→pinky) for the bundle chip; `-seedHand
+        // left` flips it so the mirrored stage and bundle can be checked.
+        let seedHand = Hand(rawValue: UserDefaults.standard.string(forKey: "seedHand") ?? "") ?? .right
+        let fingers = [NailStyle.samples[0], NailStyle.samples[1], NailStyle.samples[2], NailStyle.samples[3], NailStyle.samples[0]]
+        let fingerJPEGs = fingers.compactMap { $0.texture.jpegData(compressionQuality: 0.85) }
+        if let first = fingerJPEGs.first, fingerJPEGs.count == 5 {
+            let handRecord = NailRecord(
+                title: "\(seedHand.label)のセット", shape: .oval, finish: .gloss, photoData: first,
+                tags: ["セット"], fingerPhotoData: fingerJPEGs
+            )
+            handRecord.hand = seedHand
+            handRecord.fingerShapes = [.oval, .oval, .almond, .oval, .round]
+            handRecord.createdAt = Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date()
+            modelContext.insert(handRecord)
         }
     }
 }
