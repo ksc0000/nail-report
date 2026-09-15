@@ -12,6 +12,8 @@ struct NailDetailView: View {
     var record: NailRecord?
 
     @State private var shape: NailShape
+    @State private var fingerShapes: [NailShape]?
+    @State private var selectedFingerIndex: Int?
     @State private var plateParams: NailPlateParams
     @State private var finish: NailFinish
     @State private var editTitle: String
@@ -62,6 +64,7 @@ struct NailDetailView: View {
         self.subtitle = subtitle
         self.record = record
         _shape = State(initialValue: record?.shape ?? .squoval)
+        _fingerShapes = State(initialValue: record?.fingerShapes)
         _plateParams = State(initialValue: record?.plateParams ?? .default)
         _finish = State(initialValue: record?.finish ?? appearance.finish)
         _editTitle = State(initialValue: record?.title ?? title)
@@ -338,12 +341,33 @@ struct NailDetailView: View {
         }
     }
 
+    private static let fingerNames = ["親指", "人差し指", "中指", "薬指", "小指"]
+
+    /// Whether this record holds a five-nail set whose fingers can be
+    /// reshaped individually (a single-nail record only ever has `shape`).
+    private var isMultiFinger: Bool { (record?.setAppearances?.count ?? 0) > 1 }
+
     /// Reshape a jewel after the fact: shape chips + tip-tuning sliders, live
     /// on the stage behind the sheet, written straight back to the record.
     private var tuneSheet: some View {
         VStack(alignment: .leading, spacing: 14) {
             SectionHeader(title: "形（シェイプ）")
                 .padding(.top, 18)
+            if isMultiFinger {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        StagePill(label: "すべての指に適用", isOn: selectedFingerIndex == nil) {
+                            selectedFingerIndex = nil
+                        }
+                        ForEach(0..<Self.fingerNames.count, id: \.self) { index in
+                            StagePill(label: Self.fingerNames[index], isOn: selectedFingerIndex == index) {
+                                selectedFingerIndex = index
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                }
+            }
             HStack(spacing: 8) {
                 ForEach(NailShape.allCases) { candidate in
                     tuneShapeChip(candidate)
@@ -389,6 +413,7 @@ struct NailDetailView: View {
             Spacer(minLength: 0)
         }
         .onChange(of: shape) { persistTuning() }
+        .onChange(of: fingerShapes) { persistTuning() }
         .onChange(of: plateParams) { persistTuning() }
         .onChange(of: finish) { persistTuning() }
     }
@@ -441,6 +466,8 @@ struct NailDetailView: View {
                     record.anglePhotoData = angleData
                     record.hand = jpegs.count > 1 ? hand : nil
                     record.fingerShapes = nil
+                    fingerShapes = nil
+                    selectedFingerIndex = nil
                     record.shapeRaw = shape.rawValue
                     try? modelContext.save()
                     rescanTexture = cleaned.first
@@ -473,10 +500,33 @@ struct NailDetailView: View {
         try? modelContext.save()
     }
 
-    private func tuneShapeChip(_ candidate: NailShape) -> some View {
-        let isOn = shape == candidate
-        return Button {
+    /// The shape shown as "selected" for the finger tab currently active in
+    /// the tune sheet — a specific finger's shape, or the whole-record shape
+    /// when "すべての指に適用" is active.
+    private var activeChipShape: NailShape {
+        guard let selectedFingerIndex, let fingerShapes, fingerShapes.indices.contains(selectedFingerIndex) else {
+            return shape
+        }
+        return fingerShapes[selectedFingerIndex]
+    }
+
+    private func selectShape(_ candidate: NailShape) {
+        if let selectedFingerIndex {
+            var updated = fingerShapes ?? Array(repeating: shape, count: record?.fingerPhotoData.count ?? Self.fingerNames.count)
+            guard updated.indices.contains(selectedFingerIndex) else { return }
+            updated[selectedFingerIndex] = candidate
+            fingerShapes = updated
+        } else {
             shape = candidate
+            // "すべての指に適用": collapse any per-finger differences back to one shape.
+            if isMultiFinger { fingerShapes = nil }
+        }
+    }
+
+    private func tuneShapeChip(_ candidate: NailShape) -> some View {
+        let isOn = activeChipShape == candidate
+        return Button {
+            selectShape(candidate)
         } label: {
             VStack(spacing: 6) {
                 NailSilhouette(nailShape: candidate)
@@ -517,6 +567,7 @@ struct NailDetailView: View {
     private func persistTuning() {
         guard let record else { return }
         record.shapeRaw = shape.rawValue
+        record.fingerShapes = fingerShapes
         record.finishRaw = finish.rawValue
         record.lengthAdj = plateParams.length
         record.widthAdj = plateParams.width
@@ -614,7 +665,7 @@ struct NailDetailView: View {
                             stir = StirEvent(point: point, time: Date())
                         },
                         setAppearances: liveSetAppearances,
-                        setShapes: record?.fingerShapes,
+                        setShapes: fingerShapes,
                         mirrored: record?.hand == .left,
                         layout: layout,
                         motion: motion,
