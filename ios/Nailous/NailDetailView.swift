@@ -354,19 +354,21 @@ struct NailDetailView: View {
             SectionHeader(title: "形（シェイプ）")
                 .padding(.top, 18)
             if isMultiFinger {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        StagePill(label: "すべての指に適用", isOn: selectedFingerIndex == nil) {
-                            selectedFingerIndex = nil
-                        }
-                        ForEach(0..<Self.fingerNames.count, id: \.self) { index in
-                            StagePill(label: Self.fingerNames[index], isOn: selectedFingerIndex == index) {
-                                selectedFingerIndex = index
-                            }
+                // All 6 pills (whole-record + 5 fingers) wrap into rows instead
+                // of scrolling horizontally, so every finger — including the
+                // pinky, which used to sit just past the visible edge — is
+                // always on screen and its selected state always visible (#395).
+                FlowLayout(spacing: 8) {
+                    StagePill(label: "すべての指に適用", isOn: selectedFingerIndex == nil) {
+                        selectedFingerIndex = nil
+                    }
+                    ForEach(0..<Self.fingerNames.count, id: \.self) { index in
+                        StagePill(label: Self.fingerNames[index], isOn: selectedFingerIndex == index) {
+                            selectedFingerIndex = index
                         }
                     }
-                    .padding(.horizontal, 24)
                 }
+                .padding(.horizontal, 24)
             }
             HStack(spacing: 8) {
                 ForEach(NailShape.allCases) { candidate in
