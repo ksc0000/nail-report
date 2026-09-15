@@ -959,6 +959,18 @@ struct NailDetailView: View {
                 persistStory()
                 showEditSheet = true
             }
+            // `-openTune 1` (+ optional -tuneFinger 0-4, -tuneShape <rawValue>)
+            // opens the tune sheet and picks a finger + shape headlessly, so
+            // per-finger tuning (#393) can be verified without a touch driver.
+            if UserDefaults.standard.string(forKey: "openTune") == "1" {
+                if let v = UserDefaults.standard.string(forKey: "tuneFinger"), let idx = Int(v) {
+                    selectedFingerIndex = idx
+                }
+                if let v = UserDefaults.standard.string(forKey: "tuneShape"), let candidate = NailShape(rawValue: v) {
+                    selectShape(candidate)
+                }
+                showTuneSheet = true
+            }
         }
     }
 }

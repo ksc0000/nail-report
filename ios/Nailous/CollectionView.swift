@@ -171,6 +171,14 @@ struct CollectionView: View {
                 try? await Task.sleep(for: .seconds(0.4))
                 selected = first
             }
+            // `-openHand 1` opens the first five-nail hand record (rather than
+            // whichever record is newest) so per-finger tuning (#393) can be
+            // verified headlessly without depending on seed ordering.
+            if UserDefaults.standard.string(forKey: "openHand") == "1",
+               let handRecord = records.first(where: { $0.hand != nil }) {
+                try? await Task.sleep(for: .seconds(0.4))
+                selected = handRecord
+            }
         }
     }
 
