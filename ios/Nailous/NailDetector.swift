@@ -81,13 +81,18 @@ enum NailDetector {
             var ambiguousJoints = 0
             var handCount = 0
 
-            // Runs all four orientation attempts against `image` restricted to
-            // `regionOfInterest` (full frame by default), merging any newly
-            // found nails into `merged` (deduped against nails already
-            // present before this call), and returns how many were added.
-            func runPasses(on image: CGImage, regionOfInterest: CGRect = CGRect(x: 0, y: 0, width: 1, height: 1)) -> Int {
+            // Runs `passAttempts` (all four cardinal orientations by default)
+            // against `image` restricted to `regionOfInterest` (full frame by
+            // default), merging any newly found nails into `merged` (deduped
+            // against nails already present before this call), and returns
+            // how many were added.
+            func runPasses(
+                on image: CGImage,
+                regionOfInterest: CGRect = CGRect(x: 0, y: 0, width: 1, height: 1),
+                passAttempts: [(CGImagePropertyOrientation, (CGPoint) -> CGPoint)] = attempts
+            ) -> Int {
                 let before = merged.count
-                for (orientation, unmap) in attempts {
+                for (orientation, unmap) in passAttempts {
                     let (found, ambiguous, hands) = runHandPose(
                         cgImage: image,
                         orientation: orientation,
@@ -166,6 +171,37 @@ enum NailDetector {
                 for roi in quadrants {
                     if merged.count >= 10 { break }
                     _ = runPasses(on: normalized, regionOfInterest: roi)
+                }
+                if merged.count > before { handCount = min(2, handCount + 1) }
+            }
+
+            // #396: even after the quadrant re-search, some photos still come
+            // up short — Vision's hand-pose model only ever resolves one
+            // fused skeleton across both hands, at *every* cardinal
+            // orientation and *every* quadrant crop tried above, because the
+            // hands themselves are held at a diagonal angle the four
+            // cardinal orientations don't align with. Debugging
+            // real_beige_bothhands.jpg (a full 15°-step sweep) found far
+            // richer joint confidence at off-axis angles (e.g. ~300°/315°)
+            // than at any of 0/90/180/270 — so as a last resort, physically
+            // re-render the frame at several diagonal angles via CoreImage
+            // and retry. This is the most expensive fallback (each angle is
+            // a full re-render + Vision pass), so it stays behind the same
+            // under-detected gate as the quadrant stage above, re-evaluated
+            // against its outcome.
+            // Unlike the quadrant stage's gate, this doesn't also check
+            // `handCount < 2`: the quadrant stage above already bumps
+            // `handCount` to 2 as soon as it finds anything extra, so gating
+            // on it here would make this stage unreachable right after a
+            // quadrant pass helped even a little. `nailsPerHand` alone is
+            // still an accurate under-detected signal either way.
+            let nailsPerHandAfterQuadrants = handCount > 0 ? Double(merged.count) / Double(handCount) : nil
+            if merged.count < 10, (nailsPerHandAfterQuadrants ?? .greatestFiniteMagnitude) < 4.5 {
+                let before = merged.count
+                for degrees in [300.0, 315.0, 60.0, 240.0, 330.0, 30.0, 210.0, 150.0] {
+                    if merged.count >= 10 { break }
+                    guard let rotated = rotatedForDetection(normalized, degrees: degrees) else { continue }
+                    _ = runPasses(on: rotated, passAttempts: [(.up, rotationUnmap(degrees: degrees))])
                 }
                 if merged.count > before { handCount = min(2, handCount + 1) }
             }
@@ -362,6 +398,44 @@ enum NailDetector {
         let context = CIContext()
         guard let normalized = context.createCGImage(scaled, from: scaled.extent) else { return nil }
         return (normalized, displaySize)
+    }
+
+    /// Rotates `image` in-plane by `degrees` about its center, keeping the
+    /// same canvas extent (corners rotated outside the original frame are
+    /// simply not sampled; content rotated in from beyond the original
+    /// corners is transparent). Used by the #396 diagonal fallback: Vision's
+    /// hand-pose model can be far more confident about a hand's joints at an
+    /// off-axis angle than at any of the four cardinal orientations, when the
+    /// hand itself is held at a diagonal in the photo.
+    static func rotatedForDetection(_ image: CGImage, degrees: CGFloat) -> CGImage? {
+        let radians = degrees * .pi / 180
+        let ciImage = CIImage(cgImage: image)
+        let extent = ciImage.extent
+        let center = CGPoint(x: extent.midX, y: extent.midY)
+        let transform = CGAffineTransform(translationX: center.x, y: center.y)
+            .rotated(by: radians)
+            .translatedBy(x: -center.x, y: -center.y)
+        let rotated = ciImage.transformed(by: transform)
+        let context = CIContext()
+        return context.createCGImage(rotated, from: extent)
+    }
+
+    /// Inverse of the rotation `rotatedForDetection(_:degrees:)` applies,
+    /// expressed on the normalized (0-1) point space Vision reports joints
+    /// in: maps a point found in the rotated image back to its position in
+    /// the original, unrotated frame.
+    static func rotationUnmap(degrees: CGFloat) -> (CGPoint) -> CGPoint {
+        let radians = -degrees * .pi / 180
+        let cosTheta = cos(radians)
+        let sinTheta = sin(radians)
+        return { point in
+            let dx = point.x - 0.5
+            let dy = point.y - 0.5
+            return CGPoint(
+                x: 0.5 + dx * cosTheta - dy * sinTheta,
+                y: 0.5 + dx * sinTheta + dy * cosTheta
+            )
+        }
     }
 
     /// Gates verbose `BENCH_DIAG` logging used by both the in-app
