@@ -668,6 +668,7 @@ struct NailDetailView: View {
                         },
                         setAppearances: liveSetAppearances,
                         setShapes: fingerShapes,
+                        highlightedTipIndex: showTuneSheet ? selectedFingerIndex : nil,
                         mirrored: record?.hand == .left,
                         layout: layout,
                         motion: motion,

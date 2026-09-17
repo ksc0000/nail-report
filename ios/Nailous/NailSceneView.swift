@@ -105,6 +105,9 @@ struct NailSceneView: UIViewRepresentable {
     var setAppearances: [NailAppearance]? = nil
     /// Per-nail shapes for the set (falls back to `shape`).
     var setShapes: [NailShape]? = nil
+    /// Which set tip (thumb…pinky, 0-4) to halo, e.g. while its shape is being
+    /// tuned in a sheet. `nil` shows no halo (all fingers, or single mode).
+    var highlightedTipIndex: Int? = nil
     /// Left hand: thumb on the right, as the hand looks from above.
     var mirrored: Bool = false
     var layout: SetLayout = .arc
@@ -194,6 +197,7 @@ struct NailSceneView: UIViewRepresentable {
 
         context.coordinator.spinNode = spinNode
         context.coordinator.rebuildPlate(appearance: appearance, setAppearances: setAppearances, setShapes: setShapes, shape: shape, params: plateParams, mode: mode, layout: layout, mirrored: mirrored, arrivalID: arrivalID)
+        context.coordinator.updateHighlight(highlightedTipIndex)
         context.coordinator.updateMotion(motion, stageMode: mode)
 
         let pan = UIPanGestureRecognizer(
@@ -241,6 +245,7 @@ struct NailSceneView: UIViewRepresentable {
 
     func updateUIView(_ uiView: SCNView, context: Context) {
         context.coordinator.rebuildPlate(appearance: appearance, setAppearances: setAppearances, setShapes: setShapes, shape: shape, params: plateParams, mode: mode, layout: layout, mirrored: mirrored, arrivalID: arrivalID)
+        context.coordinator.updateHighlight(highlightedTipIndex)
         context.coordinator.updateMotion(motion, stageMode: mode)
         context.coordinator.applyAtmosphere(theme: theme, decor: decor)
         context.coordinator.onTipLongPress = onTipLongPress
@@ -272,6 +277,18 @@ struct NailSceneView: UIViewRepresentable {
 
         func setParticlesHidden(_ hidden: Bool) {
             particleNode?.isHidden = hidden
+        }
+
+        /// Shows a gold halo behind the given set tip (thumb…pinky, 0-4) so a
+        /// picker selection reads on the stage itself, not just its pill.
+        /// `nil` clears every halo (single mode, or "all fingers").
+        func updateHighlight(_ index: Int?) {
+            guard let contentNode else { return }
+            for child in contentNode.childNodes {
+                guard let name = child.name, name.hasPrefix("tip-") else { continue }
+                let tipIndex = Int(name.dropFirst("tip-".count))
+                child.childNode(withName: "\(name)-halo", recursively: false)?.isHidden = tipIndex != index
+            }
         }
 
         /// Hides every named tip except one (nil shows all) for per-nail stamps.
@@ -410,6 +427,7 @@ struct NailSceneView: UIViewRepresentable {
                 }()
                 let node = SCNNode(geometry: makePlate(appearance: appearance, shape: tipShape, params: params))
                 node.name = "tip-\(index)"
+                node.addChildNode(makeHaloNode(name: "tip-\(index)-halo"))
                 node.scale = SCNVector3(spec.w, spec.l, spec.w)
                 switch layout {
                 case .arc:
@@ -510,6 +528,24 @@ struct NailSceneView: UIViewRepresentable {
 
         static func makeMaterial(appearance: NailAppearance) -> SCNMaterial {
             NailFinishMaterial.material(for: appearance)
+        }
+
+        /// A soft gold glow plane sized to sit just behind any plate shape,
+        /// hidden until `updateHighlight` picks its tip.
+        static func makeHaloNode(name: String) -> SCNNode {
+            let material = SCNMaterial()
+            material.diffuse.contents = HighlightGlow.image
+            material.lightingModel = .constant
+            material.isDoubleSided = true
+            material.writesToDepthBuffer = false
+            material.blendMode = .add
+            let plane = SCNPlane(width: 1.9, height: 3.1)
+            plane.materials = [material]
+            let node = SCNNode(geometry: plane)
+            node.name = name
+            node.position = SCNVector3(0, 0, -0.32)
+            node.isHidden = true
+            return node
         }
 
         private var lastAxis = SCNVector3(0, 1, 0)
@@ -647,6 +683,35 @@ struct NailSceneView: UIViewRepresentable {
             if currentMotion == .turntable { startTurntable() }
         }
     }
+}
+
+/// A radial champagne-gold glow, laid flat behind a set tip to mark it as
+/// selected (finger picker in the tune sheet, #398).
+private enum HighlightGlow {
+    static let image: UIImage = {
+        let size = CGSize(width: 256, height: 256)
+        return UIGraphicsImageRenderer(size: size).image { ctx in
+            let colors = [
+                UIColor(red: 0.94, green: 0.86, blue: 0.64, alpha: 0.6).cgColor,
+                UIColor(red: 0.83, green: 0.68, blue: 0.38, alpha: 0.28).cgColor,
+                UIColor(red: 0.83, green: 0.68, blue: 0.38, alpha: 0).cgColor,
+            ] as CFArray
+            guard let gradient = CGGradient(
+                colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                colors: colors,
+                locations: [0, 0.55, 1]
+            ) else { return }
+            let center = CGPoint(x: size.width / 2, y: size.height / 2)
+            ctx.cgContext.drawRadialGradient(
+                gradient,
+                startCenter: center,
+                startRadius: 0,
+                endCenter: center,
+                endRadius: size.width / 2,
+                options: []
+            )
+        }
+    }()
 }
 
 /// A generated "studio softbox" environment map: dark room, bright strip lights.
