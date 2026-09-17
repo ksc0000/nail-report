@@ -89,11 +89,13 @@ enum NailDetector {
             func runPasses(
                 on image: CGImage,
                 regionOfInterest: CGRect = CGRect(x: 0, y: 0, width: 1, height: 1),
-                passAttempts: [(CGImagePropertyOrientation, (CGPoint) -> CGPoint)] = attempts
+                passAttempts: [(CGImagePropertyOrientation, (CGPoint) -> CGPoint)] = attempts,
+                dedupRadiusFloor: CGFloat = 0,
+                minCropHeight: CGFloat = 0
             ) -> Int {
                 let before = merged.count
                 for (orientation, unmap) in passAttempts {
-                    let (found, ambiguous, hands) = runHandPose(
+                    let (foundRaw, ambiguous, hands) = runHandPose(
                         cgImage: image,
                         orientation: orientation,
                         unmap: unmap,
@@ -102,6 +104,11 @@ enum NailDetector {
                     )
                     ambiguousJoints += ambiguous
                     handCount = max(handCount, hands)
+                    // A short tip→DIP segment (small `cropHeight`) alongside
+                    // otherwise-passing confidence is what a degenerate read
+                    // looks like on the tightest, most rotated crops — see
+                    // the #397 stage below, the only caller that sets this.
+                    let found = foundRaw.filter { $0.cropHeight >= minCropHeight }
                     // Dedup against nails accumulated from *earlier* orientation
                     // attempts only (the same physical finger re-detected on a
                     // different pass). Candidates within `found` itself are each
@@ -114,7 +121,7 @@ enum NailDetector {
                     for nail in found {
                         let isDuplicate = priorAttempts.contains { existing in
                             let d = hypot(existing.center.x - nail.center.x, existing.center.y - nail.center.y)
-                            return d < max(existing.cropHeight, nail.cropHeight) * 0.6
+                            return d < max(existing.cropHeight, nail.cropHeight, dedupRadiusFloor) * 0.6
                         }
                         if !isDuplicate { merged.append(nail) }
                     }
@@ -204,6 +211,63 @@ enum NailDetector {
                     _ = runPasses(on: rotated, passAttempts: [(.up, rotationUnmap(degrees: degrees))])
                 }
                 if merged.count > before { handCount = min(2, handCount + 1) }
+            }
+
+            // #397: even the diagonal full-frame fallback above still misses
+            // fingers on the hardest fused-skeleton photos — Vision's single
+            // resolved "hand" at any given angle only ever reports one
+            // plausible joint per finger name, and a diagonal angle that
+            // reads one physical hand's fingers well can still be exactly
+            // the angle that reads the other hand's fingers worst. Cropping
+            // to a quadrant of the frame *and* rotating to a diagonal angle
+            // (neither alone, from the stages above) narrows the search to
+            // roughly one hand's worth of content at the angle it's actually
+            // held at, which measured stronger per-finger confidence in
+            // diagnosis than either transform applied on its own. This is
+            // the most expensive fallback yet (rotation render x crop x
+            // Vision pass), so it only runs when still under-detected after
+            // every cheaper stage has had its turn.
+            //
+            // This stage's tighter crops make Vision noisier, not just more
+            // sensitive: on real_beige_bothhands.jpg it turned one real
+            // fingertip into four separate low-confidence candidates a few
+            // pixels apart, each with an anomalously short tip→DIP segment
+            // (~20-40pt vs 58-133pt for every other nail in the same
+            // photo, all from a single low-quality observation — the
+            // existing "distinct named joints" reasoning above doesn't
+            // apply when every joint in that observation is this
+            // degenerate). `minCropHeight` rejects candidates that short
+            // outright, and `dedupRadiusFloor` gives this stage alone a
+            // minimum dedup radius that isn't hostage to a noisy
+            // candidate's own undersized `cropHeight`, so any of that
+            // cluster which slips past the floor still collapses with its
+            // neighbors instead of counting as several fingers.
+            let nailsPerHandAfterDiagonal = handCount > 0 ? Double(merged.count) / Double(handCount) : nil
+            if merged.count < 10, (nailsPerHandAfterDiagonal ?? .greatestFiniteMagnitude) < 4.5 {
+                let quadrants: [CGRect] = [
+                    CGRect(x: 0, y: 0, width: 0.55, height: 1),
+                    CGRect(x: 0.45, y: 0, width: 0.55, height: 1),
+                    CGRect(x: 0, y: 0.5, width: 1, height: 0.5),
+                    CGRect(x: 0, y: 0, width: 1, height: 0.5),
+                    CGRect(x: 0, y: 0.4, width: 0.6, height: 0.6),
+                    CGRect(x: 0.4, y: 0.4, width: 0.6, height: 0.6),
+                    CGRect(x: 0, y: 0, width: 0.6, height: 0.6),
+                    CGRect(x: 0.4, y: 0, width: 0.6, height: 0.6),
+                ]
+                for degrees in [300.0, 315.0, 60.0, 240.0, 330.0, 30.0, 210.0, 150.0] {
+                    if merged.count >= 10 { break }
+                    guard let rotated = rotatedForDetection(normalized, degrees: degrees) else { continue }
+                    for roi in quadrants {
+                        if merged.count >= 10 { break }
+                        _ = runPasses(
+                            on: rotated,
+                            regionOfInterest: roi,
+                            passAttempts: [(.up, rotationUnmap(degrees: degrees))],
+                            dedupRadiusFloor: 60,
+                            minCropHeight: 45
+                        )
+                    }
+                }
             }
 
             return (merged, assessQuality(nails: merged, ambiguousJoints: ambiguousJoints, handCount: handCount))
