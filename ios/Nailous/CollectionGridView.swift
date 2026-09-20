@@ -175,57 +175,67 @@ struct CollectionGridView: View {
     }
 
     private func card(_ record: NailRecord) -> some View {
-        Group {
-            if let texture = record.texture {
-                Button {
-                    onSelect(record)
-                } label: {
-                    VStack(spacing: 7) {
-                        Group {
-                            if let set = record.setAppearances, set.count > 1 {
-                                HandChipBundle(
-                                    textures: set.map(\.texture),
-                                    shapes: record.fingerShapes ?? Array(repeating: record.shape, count: set.count),
-                                    params: record.plateParams,
-                                    hand: record.hand,
-                                    chipHeight: 36, // ≈ 92pt wide, inside the 96pt cell
-                                    worn: record.wornSince != nil
-                                )
-                                .frame(width: 96, height: 132)
-                            } else {
-                                NailThumbnail(
-                                    image: texture,
-                                    nailShape: record.shape,
-                                    params: record.plateParams,
-                                    size: CGSize(width: 96, height: 132),
-                                    shadowColor: .black.opacity(0.12),
-                                    shadowRadius: 8,
-                                    shadowY: 4,
-                                    worn: record.wornSince != nil
-                                )
+        let texture = record.texture
+        return Button {
+            onSelect(record)
+        } label: {
+            VStack(spacing: 7) {
+                Group {
+                    if let set = record.setAppearances, set.count > 1 {
+                        HandChipBundle(
+                            textures: set.map(\.texture),
+                            shapes: record.fingerShapes ?? Array(repeating: record.shape, count: set.count),
+                            params: record.plateParams,
+                            hand: record.hand,
+                            chipHeight: 36, // ≈ 92pt wide, inside the 96pt cell
+                            worn: record.wornSince != nil
+                        )
+                        .frame(width: 96, height: 132)
+                    } else if let texture {
+                        NailThumbnail(
+                            image: texture,
+                            nailShape: record.shape,
+                            params: record.plateParams,
+                            size: CGSize(width: 96, height: 132),
+                            shadowColor: .black.opacity(0.12),
+                            shadowRadius: 8,
+                            shadowY: 4,
+                            worn: record.wornSince != nil
+                        )
+                    } else {
+                        NailSilhouette(nailShape: record.shape)
+                            .fill(Palette.mutedWarm.opacity(0.12))
+                            .overlay {
+                                Image(systemName: "photo.badge.exclamationmark")
+                                    .font(.system(size: 17))
+                                    .foregroundStyle(Palette.mutedWarm)
                             }
-                        }
-                        .overlay(alignment: .topTrailing) {
-                            if record.isFavorite {
-                                Image(systemName: "heart.fill")
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(Palette.goldHairline)
-                                    .offset(x: 2, y: -2)
-                            }
-                        }
-                        Text(record.title)
-                            .font(.system(size: cardTitleFontSize))
-                            .lineLimit(1)
-                            .foregroundStyle(Palette.inkWarm)
-                        Text(record.createdAt.formatted(.dateTime.year().month(.abbreviated)))
-                            .font(.system(size: cardDateFontSize))
-                            .kerning(0.5)
-                            .lineLimit(1)
-                            .foregroundStyle(Palette.mutedWarm)
+                            .frame(width: 96, height: 132)
                     }
                 }
+                .overlay(alignment: .topTrailing) {
+                    if record.isFavorite {
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Palette.goldHairline)
+                            .offset(x: 2, y: -2)
+                    }
+                }
+                Text(record.title)
+                    .font(.system(size: cardTitleFontSize))
+                    .lineLimit(1)
+                    .foregroundStyle(Palette.inkWarm)
+                Text(record.createdAt.formatted(.dateTime.year().month(.abbreviated)))
+                    .font(.system(size: cardDateFontSize))
+                    .kerning(0.5)
+                    .lineLimit(1)
+                    .foregroundStyle(Palette.mutedWarm)
             }
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(record.title)、\(record.createdAt.formatted(.dateTime.year().month().day()))")
+        .accessibilityValue(texture == nil ? "写真を読み込めません" : "")
+        .accessibilityHint("ネイルの詳細を開きます")
     }
 
     private var emptyFilter: some View {
