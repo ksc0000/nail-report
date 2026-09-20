@@ -135,7 +135,9 @@ enum NailDetector {
                 return merged.count - before
             }
 
+            if diagnosticsEnabled { print("BENCH_DIAG === stage: base cardinal pass ===") }
             _ = runPasses(on: normalized)
+            if diagnosticsEnabled { print("BENCH_DIAG === after base pass: merged=\(merged.count) handCount=\(handCount) ===") }
 
             // #386: maximumHandCount is 2, but two overlapping/interlocked
             // hands can still resolve as a single Vision "hand" (its pose
@@ -159,6 +161,7 @@ enum NailDetector {
             // nails per hand found so far) are worth the extra search.
             let nailsPerHandSoFar = handCount > 0 ? Double(merged.count) / Double(handCount) : nil
             if handCount < 2, merged.count < 10, (nailsPerHandSoFar ?? .greatestFiniteMagnitude) < 4.5 {
+                if diagnosticsEnabled { print("BENCH_DIAG === stage: #386 half/quadrant crop ===") }
                 let quadrants: [CGRect] = [
                     CGRect(x: 0, y: 0, width: 0.62, height: 1), // left 62% (Vision ROI: bottom-left origin, x unaffected by the flip)
                     CGRect(x: 0.38, y: 0, width: 0.62, height: 1), // right 62%
@@ -181,6 +184,7 @@ enum NailDetector {
                 }
                 if merged.count > before { handCount = min(2, handCount + 1) }
             }
+            if diagnosticsEnabled { print("BENCH_DIAG === after #386 stage: merged=\(merged.count) handCount=\(handCount) ===") }
 
             // #396: even after the quadrant re-search, some photos still come
             // up short — Vision's hand-pose model only ever resolves one
@@ -202,16 +206,31 @@ enum NailDetector {
             // on it here would make this stage unreachable right after a
             // quadrant pass helped even a little. `nailsPerHand` alone is
             // still an accurate under-detected signal either way.
+            //
+            // #400: this full-frame diagonal render is just as prone to the
+            // degenerate short-segment reads the #397 stage below guards
+            // against with `minCropHeight` — diagnosed on
+            // real_beige_bothhands.jpg, a 300° pass produced a `little`
+            // candidate with an 9pt tip→DIP segment (vs 58-133pt for every
+            // other nail in the photo) that had no nearby same-pass
+            // candidate to collide with (dedup only compares against
+            // *earlier* passes), so it merged in as a phantom 9th nail while
+            // a real 10th finger went unfound. Applying the same 45pt floor
+            // here rejects it before it can occupy a slot a later, more
+            // targeted stage (#397) could fill with a real detection.
             let nailsPerHandAfterQuadrants = handCount > 0 ? Double(merged.count) / Double(handCount) : nil
             if merged.count < 10, (nailsPerHandAfterQuadrants ?? .greatestFiniteMagnitude) < 4.5 {
+                if diagnosticsEnabled { print("BENCH_DIAG === stage: #396 diagonal full-frame ===") }
                 let before = merged.count
                 for degrees in [300.0, 315.0, 60.0, 240.0, 330.0, 30.0, 210.0, 150.0] {
                     if merged.count >= 10 { break }
                     guard let rotated = rotatedForDetection(normalized, degrees: degrees) else { continue }
-                    _ = runPasses(on: rotated, passAttempts: [(.up, rotationUnmap(degrees: degrees))])
+                    if diagnosticsEnabled { print("BENCH_DIAG  -- degrees=\(degrees) --") }
+                    _ = runPasses(on: rotated, passAttempts: [(.up, rotationUnmap(degrees: degrees))], minCropHeight: 45)
                 }
                 if merged.count > before { handCount = min(2, handCount + 1) }
             }
+            if diagnosticsEnabled { print("BENCH_DIAG === after #396 stage: merged=\(merged.count) handCount=\(handCount) ===") }
 
             // #397: even the diagonal full-frame fallback above still misses
             // fingers on the hardest fused-skeleton photos — Vision's single
@@ -244,6 +263,7 @@ enum NailDetector {
             // neighbors instead of counting as several fingers.
             let nailsPerHandAfterDiagonal = handCount > 0 ? Double(merged.count) / Double(handCount) : nil
             if merged.count < 10, (nailsPerHandAfterDiagonal ?? .greatestFiniteMagnitude) < 4.5 {
+                if diagnosticsEnabled { print("BENCH_DIAG === stage: #397 quadrant+rotation ===") }
                 let quadrants: [CGRect] = [
                     CGRect(x: 0, y: 0, width: 0.55, height: 1),
                     CGRect(x: 0.45, y: 0, width: 0.55, height: 1),
@@ -259,6 +279,7 @@ enum NailDetector {
                     guard let rotated = rotatedForDetection(normalized, degrees: degrees) else { continue }
                     for roi in quadrants {
                         if merged.count >= 10 { break }
+                        if diagnosticsEnabled { print("BENCH_DIAG  -- degrees=\(degrees) roi=\(roi) --") }
                         _ = runPasses(
                             on: rotated,
                             regionOfInterest: roi,
@@ -267,6 +288,12 @@ enum NailDetector {
                             minCropHeight: 45
                         )
                     }
+                }
+            }
+            if diagnosticsEnabled {
+                print("BENCH_DIAG === final: merged=\(merged.count) handCount=\(handCount) ===")
+                for nail in merged {
+                    print("BENCH_DIAG   final nail center=(\(Int(nail.center.x)),\(Int(nail.center.y))) cropHeight=\(Int(nail.cropHeight)) curl=\(nail.curlDegrees.map { String(format: "%.1f", $0) } ?? "nil")")
                 }
             }
 
@@ -358,22 +385,29 @@ enum NailDetector {
         // The optional 4th element is the PIP joint used to measure how
         // curled the finger is (#366) — omitted for the thumb, which has no
         // PIP joint and whose curl behaves differently anatomically anyway.
-        let jointPairs: [(VNHumanHandPoseObservation.JointName, VNHumanHandPoseObservation.JointName, CGFloat, VNHumanHandPoseObservation.JointName?)] = [
-            (.thumbTip, .thumbIP, 0.32, nil),
-            (.indexTip, .indexDIP, 0.34, .indexPIP),
-            (.middleTip, .middleDIP, 0.34, .middlePIP),
-            (.ringTip, .ringDIP, 0.34, .ringPIP),
-            (.littleTip, .littleDIP, 0.22, .littlePIP),
+        let jointPairs: [(String, VNHumanHandPoseObservation.JointName, VNHumanHandPoseObservation.JointName, CGFloat, VNHumanHandPoseObservation.JointName?)] = [
+            ("thumb", .thumbTip, .thumbIP, 0.32, nil),
+            ("index", .indexTip, .indexDIP, 0.34, .indexPIP),
+            ("middle", .middleTip, .middleDIP, 0.34, .middlePIP),
+            ("ring", .ringTip, .ringDIP, 0.34, .ringPIP),
+            ("little", .littleTip, .littleDIP, 0.22, .littlePIP),
         ]
 
         var nails: [DetectedNail] = []
         var ambiguousJoints = 0
-        for observation in observations {
-            var candidates: [(nail: DetectedNail, confidence: Float)] = []
-            for (tipName, dipName, tipFraction, pipName) in jointPairs {
+        for (obsIndex, observation) in observations.enumerated() {
+            var candidates: [(name: String, nail: DetectedNail, confidence: Float)] = []
+            for (fingerName, tipName, dipName, tipFraction, pipName) in jointPairs {
                 guard let tip = try? observation.recognizedPoint(tipName), tip.confidence > 0.15,
                       let dip = try? observation.recognizedPoint(dipName), dip.confidence > 0.1
-                else { continue }
+                else {
+                    if diagnosticsEnabled {
+                        let tipConf = (try? observation.recognizedPoint(tipName))?.confidence ?? -1
+                        let dipConf = (try? observation.recognizedPoint(dipName))?.confidence ?? -1
+                        print("BENCH_DIAG   orientation \(orientation.rawValue) obs\(obsIndex) \(fingerName): below confidence threshold (tip=\(tipConf) dip=\(dipConf))")
+                    }
+                    continue
+                }
                 // Vision: normalized, bottom-left origin → display space (top-left origin)
                 let tipNorm = unmap(CGPoint(x: tip.location.x, y: tip.location.y))
                 let dipNorm = unmap(CGPoint(x: dip.location.x, y: dip.location.y))
@@ -404,7 +438,11 @@ enum NailDetector {
                     let cosTheta = (ux * vx + uy * vy) / (pipSegment * segment)
                     return CGFloat(acos(max(-1, min(1, cosTheta)))) * 180 / .pi
                 }
+                if diagnosticsEnabled {
+                    print("BENCH_DIAG   orientation \(orientation.rawValue) obs\(obsIndex) \(fingerName): conf=\(tip.confidence + dip.confidence) center=(\(Int(nailCenter.x)),\(Int(nailCenter.y))) segment=\(Int(segment)) curl=\(curlDegrees.map { String(format: "%.1f", $0) } ?? "nil")")
+                }
                 candidates.append((
+                    fingerName,
                     DetectedNail(center: nailCenter, cropHeight: segment * 1.2, axisAngle: axisAngle, curlDegrees: curlDegrees),
                     tip.confidence + dip.confidence
                 ))
@@ -430,17 +468,23 @@ enum NailDetector {
             // hands) are never compared here — two hands' fingers
             // legitimately land near each other without being duplicates of
             // one another.
-            var kept: [(nail: DetectedNail, confidence: Float)] = []
-            for (nail, confidence) in candidates.sorted(by: { $0.confidence > $1.confidence }) {
-                let isDuplicate = kept.contains { existing in
+            var kept: [(name: String, nail: DetectedNail, confidence: Float)] = []
+            for (name, nail, confidence) in candidates.sorted(by: { $0.confidence > $1.confidence }) {
+                let collidesWith = kept.first { existing in
                     let d = hypot(existing.nail.center.x - nail.center.x, existing.nail.center.y - nail.center.y)
                     return d < max(existing.nail.cropHeight, nail.cropHeight) * 0.45
                         && confidence < existing.confidence * 0.8
                 }
-                if !isDuplicate { kept.append((nail, confidence)) }
+                if let collidesWith, diagnosticsEnabled {
+                    print("BENCH_DIAG   orientation \(orientation.rawValue) obs\(obsIndex) \(name): dropped as ambiguous dup of \(collidesWith.name)")
+                }
+                if collidesWith == nil { kept.append((name, nail, confidence)) }
             }
             ambiguousJoints += candidates.count - kept.count
             nails.append(contentsOf: kept.map(\.nail))
+        }
+        if diagnosticsEnabled {
+            print("BENCH_DIAG   orientation \(orientation.rawValue) roi=\(regionOfInterest) -> nails=\(nails.count)")
         }
         return (nails, ambiguousJoints, observations.count)
     }
