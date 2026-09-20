@@ -54,6 +54,10 @@ struct NailDetailView: View {
     @State private var estimatedShape: NailShape = .squoval
     @State private var estimatedParams = NailPlateParams()
     @State private var isEstimating = false
+    /// Bumped whenever a photo/rescan replaces what the estimator was fed, so
+    /// a `Task` from a superseded photo can't land its result on the current
+    /// one (#401).
+    @State private var estimateGeneration = 0
     @State private var rescanAnglePhotos: [UIImage?] = Array(repeating: nil, count: AngleStep.allCases.count)
     @State private var rescanHand: Hand = Hand.remembered
     @State private var viewingAnglePhoto: ViewingPhoto?
@@ -104,10 +108,15 @@ struct NailDetailView: View {
     private func estimateFromAnglePhotos() {
         guard let record, !record.anglePhotoData.isEmpty else { return }
         isEstimating = true
+        estimateGeneration += 1
+        let generation = estimateGeneration
         let photos = AutoScanEstimator.slots(from: record.anglePhotoData)
         Task.detached(priority: .userInitiated) {
             let result = AutoScanEstimator.estimate(from: photos)
             await MainActor.run {
+                // A rescan (or another estimate) may have superseded this
+                // task while it was running; a stale result must not land.
+                guard generation == estimateGeneration else { return }
                 result.apply(to: &shape, params: &plateParams)
                 estimatedShape = shape
                 estimatedParams = plateParams
@@ -454,6 +463,10 @@ struct NailDetailView: View {
     private func applyRescan(_ textures: [UIImage], original: UIImage, hand: Hand?) {
         guard let record else { return }
         isRescanning = true
+        // Invalidates any in-flight estimate task (e.g. from the "…" menu)
+        // fed from the photo this rescan is replacing (#401).
+        estimateGeneration += 1
+        isEstimating = false
         let anglePhotos = rescanAnglePhotos
         Task.detached(priority: .userInitiated) {
             let cleaned = textures.map { NailCleanup.process($0) }
@@ -470,7 +483,17 @@ struct NailDetailView: View {
                     record.fingerShapes = nil
                     fingerShapes = nil
                     selectedFingerIndex = nil
-                    record.shapeRaw = shape.rawValue
+                    if angleData.isEmpty {
+                        // No angle photos to estimate from: the old scan's
+                        // "推定" badge no longer describes this photo. Only
+                        // the estimate bookkeeping is cleared — shape/params
+                        // themselves are left as the user (or prior scan)
+                        // set them, so nothing gets silently reset.
+                        autoFields = []
+                        estimatedShape = shape
+                        estimatedParams = plateParams
+                    }
+                    persistTuning()
                     try? modelContext.save()
                     rescanTexture = cleaned.first
                     mode = jpegs.count > 1 ? .set : .single
@@ -795,6 +818,8 @@ struct NailDetailView: View {
             Task {
                 if let data = try? await item.loadTransferable(type: Data.self),
                    let image = UIImage(data: data) {
+                    estimateGeneration += 1
+                    isEstimating = false
                     rescanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
                     rescanSource = RescanSource(image: image, single: false, initialZoom: 1)
                 }
@@ -806,11 +831,15 @@ struct NailDetailView: View {
                 nailShape: $shape,
                 onCapture: { image, _ in
                     rescanCameraShown = false
+                    estimateGeneration += 1
+                    isEstimating = false
                     rescanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
                     rescanSource = RescanSource(image: image, single: true, initialZoom: NailCameraView.singleMargin)
                 },
                 onCaptureHand: { top, slots, capturedHand in
                     rescanCameraShown = false
+                    estimateGeneration += 1
+                    isEstimating = false
                     rescanAnglePhotos = slots
                     rescanHand = capturedHand
                     rescanSource = RescanSource(image: top, single: false, initialZoom: 1)

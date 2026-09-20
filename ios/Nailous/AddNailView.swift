@@ -44,6 +44,10 @@ struct AddNailView: View {
     @State private var estimatedShape: NailShape = .squoval
     @State private var estimatedParams = NailPlateParams()
     @State private var isEstimating = false
+    /// Bumped whenever the source photo is replaced, so an estimate `Task`
+    /// started against a superseded photo can't land its result once a new
+    /// one has taken over (#401).
+    @State private var estimateGeneration = 0
 
     @State private var smoothStep: Float = 2
     @State private var brightnessStep: Float = 0
@@ -131,6 +135,8 @@ struct AddNailView: View {
             Task {
                 if let data = try? await newItem.loadTransferable(type: Data.self),
                    let image = UIImage(data: data) {
+                    estimateGeneration += 1
+                    isEstimating = false
                     cameraSingle = false
                     originalImage = image
                     scanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
@@ -189,6 +195,8 @@ struct AddNailView: View {
                 nailShape: $shape,
                 onCapture: { image, _ in
                     showCamera = false
+                    estimateGeneration += 1
+                    isEstimating = false
                     cameraSingle = true
                     hand = nil
                     originalImage = image
@@ -197,6 +205,8 @@ struct AddNailView: View {
                 },
                 onCaptureHand: { top, slots, capturedHand in
                     showCamera = false
+                    estimateGeneration += 1
+                    isEstimating = false
                     cameraSingle = false
                     hand = capturedHand
                     pickedHand = capturedHand
@@ -573,9 +583,14 @@ struct AddNailView: View {
     private func runHandEstimate(fingers: [UIImage], angles: [UIImage?]) {
         guard fingers.count > 1 else { return }
         isEstimating = true
+        estimateGeneration += 1
+        let generation = estimateGeneration
         Task.detached(priority: .userInitiated) {
             let estimate = AutoScanEstimator.estimateHand(fingers: fingers, angles: angles)
             await MainActor.run {
+                // The photo may have been replaced while this ran; a stale
+                // result must not land on whatever photo is current now.
+                guard generation == estimateGeneration else { return }
                 estimate.result.apply(to: &shape, params: &plateParams)
                 if estimate.fingerShapes.contains(where: { $0 != nil }) {
                     fingerShapes = estimate.fingerShapes.map { $0 ?? shape }
@@ -607,9 +622,12 @@ struct AddNailView: View {
     private func runAutoEstimate(_ photos: [UIImage?]) {
         guard photos.contains(where: { $0 != nil }) else { return }
         isEstimating = true
+        estimateGeneration += 1
+        let generation = estimateGeneration
         Task.detached(priority: .userInitiated) {
             let result = AutoScanEstimator.estimate(from: photos)
             await MainActor.run {
+                guard generation == estimateGeneration else { return }
                 result.apply(to: &shape, params: &plateParams)
                 estimatedShape = shape
                 estimatedParams = plateParams
