@@ -250,6 +250,10 @@ final class NailRecord {
         set { fingerShapesRaw = newValue?.map(\.rawValue) ?? [] }
     }
 
+    /// How many individual nails this record represents: 1 for a single-nail
+    /// record, or the finger count for a hand-first set capture (#399).
+    var nailCount: Int { max(1, fingerPhotoData.count) }
+
     /// Appearances for the five-piece set view; nil unless this record holds
     /// multiple finger textures.
     var setAppearances: [NailAppearance]? {

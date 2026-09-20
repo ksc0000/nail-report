@@ -48,8 +48,9 @@ enum RecapCardRenderer {
 
             let thisYear = Calendar.current.component(.year, from: Date())
             let monthLabel = year == thisYear ? "\(month)月" : "\(year)年\(month)月"
+            let nailCount = ordered.reduce(0) { $0 + $1.nailCount }
             CardRenderer.draw(
-                "\(monthLabel)　・　\(ordered.count)本", at: 0.90, in: size,
+                "\(monthLabel)　・　\(nailCount)本", at: 0.90, in: size,
                 font: CardRenderer.serif(26, weight: .medium),
                 color: UIColor(Palette.inkWarm), kern: 3
             )
