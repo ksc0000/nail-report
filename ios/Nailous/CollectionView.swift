@@ -197,7 +197,7 @@ struct CollectionView: View {
                     .kerning(5)
                     .foregroundStyle(Palette.mutedWarm)
                 if !records.isEmpty {
-                    Text("\(String(thisYear)) ・ \(records.count)本")
+                    Text("累計 \(records.count)本")
                         .font(.system(size: captionFontSize, weight: .light))
                         .kerning(2)
                         .foregroundStyle(Palette.mutedWarm)
