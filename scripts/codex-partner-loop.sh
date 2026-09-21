@@ -28,14 +28,24 @@ caffeinate -i -w $$ &
   if ! gh auth token >/dev/null 2>&1; then
     echo "SKIP: gh has no stored token"; exit 0
   fi
-  if [ -n "$(git status --porcelain)" ]; then
-    echo "SKIP: working tree dirty — leaving it alone"; exit 0
+
+  # エージェントは $REPO 本体ではなく専用worktreeだけで作業する（#402）。
+  # 人間が $REPO 本体で同時に編集していても、終了処理がその変更を巻き込む
+  # ことはない。Claudeループと共有するworktree/ブランチ（相互排他は既存の
+  # ロックファイルで維持。モードBの相棒コミットレビューはこの共有ブランチの
+  # 線形履歴に依存しているため、あえて分けていない）。詳細は
+  # scripts/ai-loop/worktree-lib.sh 参照。
+  source "$REPO/scripts/ai-loop/worktree-lib.sh"
+  WORKTREE_DIR="/tmp/nailous-loop-worktree"
+  WORKTREE_BRANCH="nailous-loop-work"
+  if ! prepare_agent_worktree "$REPO" "$WORKTREE_DIR" "$WORKTREE_BRANCH"; then
+    echo "SKIP: could not prepare dedicated worktree"; exit 0
   fi
 
   codex exec \
     --sandbox danger-full-access \
-    --cd "$REPO" \
-    "$(cat scripts/codex-partner-prompt.md)" \
+    --cd "$WORKTREE_DIR" \
+    "$(cat "$REPO/scripts/codex-partner-prompt.md")" \
     2>&1 &
   AGENT_PID=$!
   ( sleep 5400; if kill -0 $AGENT_PID 2>/dev/null; then
@@ -47,15 +57,15 @@ caffeinate -i -w $$ &
   AGENT_RC=$?
   kill $WATCHDOG_PID 2>/dev/null
   echo "agent exit: $AGENT_RC"
-  # A run that dies mid-edit (max turns, watchdog, crash) leaves an
-  # uncommitted tree, and every later run then skips forever. The tree was
-  # clean when this run started, so anything dirty now is this run's
-  # leftover: park it in a stash for a human to inspect and let the next
-  # run start clean.
-  if [ -n "$(git status --porcelain)" ]; then
-    echo "LEFTOVER: agent left uncommitted changes; stashing so later runs can proceed"
-    git status --short
-    git stash push -u -m "codex-leftover $(date '+%Y-%m-%d %H:%M')" >/dev/null 2>&1 || true
+  # A run that dies mid-edit (max turns, watchdog, crash) leaves the
+  # dedicated worktree dirty, and every later run then skips forever. The
+  # worktree was clean when this run started (prepare_agent_worktree already
+  # parked any prior leftover), so anything dirty now is this run's own
+  # leftover: park it in that worktree's own stash and let the next run
+  # start clean. $REPO's own working tree was never touched, so any human
+  # edits made there during this run are untouched.
+  if [ -n "$(git -C "$WORKTREE_DIR" status --porcelain)" ]; then
+    park_worktree_leftover "$WORKTREE_DIR" "codex-loop"
   fi
 
   echo "===== $(date '+%Y-%m-%d %H:%M:%S') codex run end (exit $?) ====="

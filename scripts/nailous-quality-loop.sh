@@ -37,15 +37,23 @@ caffeinate -i -w $$ &
   if ! xcrun simctl list devices | grep -q "iPhone 17 Pro"; then
     echo "SKIP: simulator 'iPhone 17 Pro' not found"; exit 0
   fi
-  # 人間の未コミット作業があれば触らない（プロンプト側と二重ガード）
-  if [ -n "$(git status --porcelain)" ]; then
-    echo "SKIP: working tree dirty — leaving it alone"; exit 0
+
+  # エージェントは $REPO 本体ではなく専用worktreeだけで作業する（#402）。
+  # 人間が $REPO 本体で同時に編集していても、終了処理がその変更を巻き込む
+  # ことはない。Codexループと共有するworktree/ブランチ（相互排他は既存の
+  # ロックファイルで維持）。詳細は scripts/ai-loop/worktree-lib.sh 参照。
+  source "$REPO/scripts/ai-loop/worktree-lib.sh"
+  WORKTREE_DIR="/tmp/nailous-loop-worktree"
+  WORKTREE_BRANCH="nailous-loop-work"
+  if ! prepare_agent_worktree "$REPO" "$WORKTREE_DIR" "$WORKTREE_BRANCH"; then
+    echo "SKIP: could not prepare dedicated worktree"; exit 0
   fi
+
   # Issueが尽きたら監査モード: 実測に基づき新しい品質Issueを起票する。
   # 通信断で gh が失敗した場合も出力は空になるため、終了コードで
   # 「本当に0件」と「取得できなかった」を必ず区別する（誤って監査モードに
   # 入ると、実際には残っているIssueを放置して重複起票しかねない）。
-  PROMPT_FILE="scripts/quality-loop-prompt.md"
+  PROMPT_FILE="$REPO/scripts/quality-loop-prompt.md"
   if ! BACKLOG=$(gh issue list --label nailous-auto --state open --limit 1 2>/dev/null); then
     echo "SKIP: could not query issues (network?)"; exit 0
   fi
@@ -56,9 +64,11 @@ caffeinate -i -w $$ &
       echo "DONE: backlog empty, audit already ran recently"; exit 0
     fi
     touch "$STAMP"
-    PROMPT_FILE="scripts/quality-audit-prompt.md"
+    PROMPT_FILE="$REPO/scripts/quality-audit-prompt.md"
     echo "MODE: audit (backlog empty)"
   fi
+
+  cd "$WORKTREE_DIR" || { echo "SKIP: could not cd into worktree $WORKTREE_DIR"; exit 0; }
 
   claude -p "$(cat "$PROMPT_FILE")" \
     --model sonnet \
@@ -75,15 +85,15 @@ caffeinate -i -w $$ &
   AGENT_RC=$?
   kill $WATCHDOG_PID 2>/dev/null
   echo "agent exit: $AGENT_RC"
-  # A run that dies mid-edit (max turns, watchdog, crash) leaves an
-  # uncommitted tree, and every later run then skips forever. The tree was
-  # clean when this run started, so anything dirty now is this run's
-  # leftover: park it in a stash for a human to inspect and let the next
-  # run start clean.
-  if [ -n "$(git status --porcelain)" ]; then
-    echo "LEFTOVER: agent left uncommitted changes; stashing so later runs can proceed"
-    git status --short
-    git stash push -u -m "loop-leftover $(date '+%Y-%m-%d %H:%M')" >/dev/null 2>&1 || true
+  # A run that dies mid-edit (max turns, watchdog, crash) leaves the
+  # dedicated worktree dirty, and every later run then skips forever. The
+  # worktree was clean when this run started (prepare_agent_worktree already
+  # parked any prior leftover), so anything dirty now is this run's own
+  # leftover: park it in that worktree's own stash and let the next run
+  # start clean. $REPO's own working tree was never touched, so any human
+  # edits made there during this run are untouched.
+  if [ -n "$(git -C "$WORKTREE_DIR" status --porcelain)" ]; then
+    park_worktree_leftover "$WORKTREE_DIR" "claude-loop"
   fi
 
   echo "===== $(date '+%Y-%m-%d %H:%M:%S') run end (exit $?) ====="
