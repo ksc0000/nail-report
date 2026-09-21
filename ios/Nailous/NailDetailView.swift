@@ -815,13 +815,21 @@ struct NailDetailView: View {
         .photosPicker(isPresented: $rescanPickerShown, selection: $rescanPickerItem, matching: .images)
         .onChange(of: rescanPickerItem) { _, item in
             guard let item else { return }
+            // Bump before the load starts (not after it finishes, #403): any
+            // in-flight estimate for the outgoing photo must fail its guard
+            // for the whole load, not just once this one lands.
+            estimateGeneration += 1
+            isEstimating = false
+            let generation = estimateGeneration
             Task {
                 if let data = try? await item.loadTransferable(type: Data.self),
                    let image = UIImage(data: data) {
-                    estimateGeneration += 1
-                    isEstimating = false
-                    rescanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
-                    rescanSource = RescanSource(image: image, single: false, initialZoom: 1)
+                    // A newer selection may have landed while this one was
+                    // still loading; only the latest may take the screen.
+                    if generation == estimateGeneration {
+                        rescanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
+                        rescanSource = RescanSource(image: image, single: false, initialZoom: 1)
+                    }
                 }
                 rescanPickerItem = nil
             }

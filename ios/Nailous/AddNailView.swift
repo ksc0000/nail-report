@@ -132,11 +132,18 @@ struct AddNailView: View {
         .environment(\.colorScheme, .light)
         .onChange(of: pickerItem) { _, newItem in
             guard let newItem else { return }
+            // Bump before the load starts (not after it finishes, #403): any
+            // in-flight estimate for the outgoing photo must fail its guard
+            // for the whole load, not just once this one lands.
+            estimateGeneration += 1
+            isEstimating = false
+            let generation = estimateGeneration
             Task {
                 if let data = try? await newItem.loadTransferable(type: Data.self),
                    let image = UIImage(data: data) {
-                    estimateGeneration += 1
-                    isEstimating = false
+                    // A newer selection may have landed while this one was
+                    // still loading; only the latest may take the screen.
+                    guard generation == estimateGeneration else { return }
                     cameraSingle = false
                     originalImage = image
                     scanAnglePhotos = Array(repeating: nil, count: AngleStep.allCases.count)
