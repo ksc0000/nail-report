@@ -366,6 +366,105 @@ socket 推定器は `regionType: "centerOnly"` を**拒否**する。
 
 ---
 
+### 7.3 iOS 実装リポジトリの探索結果（2026-10-06）— **特定できなかった**
+
+U1〜U5 を実コードで確認するため、iOS 実装の所在を探索した。**見つからなかった。**
+
+#### 探索したこと
+
+| # | 探索 | 結果 |
+|---:|---|---|
+| 1 | `ksc0000/nail-report` の**全ブランチ**（80 本）を列挙 | iOS コードを含むブランチは**無い**。すべて Web / docs |
+| 2 | アカウントのリポジトリ一覧（`list_repos`、27 件） | Nailous に対応する iOS リポジトリは**無い** |
+| 3 | コード検索 `NailAngleMeasurer` | ヒット 1 件 —— **本リポジトリの私の設計ドキュメントのみ** |
+| 4 | コード検索 `AutoScanEstimator` / `NailShapeEstimator` / `NailPlateParams` | **0 件** |
+| 5 | コード検索 `PhotoCropView` / `NailDetector` / `BenchmarkAssets`（Swift） | **0 件** |
+| 6 | コード検索 `VNDetectHumanHandPoseRequest` / `VNGenerateForegroundInstanceMaskRequest`（`user:ksc0000`） | **0 件** |
+| 7 | コード検索 `Nailous NailRecord fingerPhotoData` | **0 件** |
+| 8 | `user:ksc0000 filename:project.pbxproj` | **2 件のみ** —— `WanHeat` と `club-forge`。どちらも Nailous ではない |
+
+#### 「見つからない」が意味を持つことの確認（検索範囲の較正）
+
+私有リポジトリが検索対象外なだけ、という可能性を潰した。
+
+- `user:ksc0000 language:swift` → **56 件**。すべて **private リポジトリ `ksc0000/WanHeat`** から
+- `repo:ksc0000/nallie …` → **147 件**（private）
+
+→ **private リポジトリは検索・インデックス対象に入っている。** したがって Nailous の Swift ソースが
+0 件なのは「見えていない」からではなく、**このアカウントの GitHub 上に存在しない**ためと判断できる。
+
+#### 紛らわしい候補の除外
+
+| リポジトリ | 実体 | 判定 |
+|---|---|---|
+| `ksc0000/nallie`（private, 最終 push 2026-04-16） | **TypeScript / React + Supabase + Three.js** のネイルカスタマイズアプリ（`src/features/nail-customize/`、`src/features/three-d/types/nail-input.ts`、`supabase/migrations/…_nail_designs.sql`） | **別プロジェクト。** Swift ではなく、Nailous ではない |
+| `ksc0000/nallie_p`（public, 2026-04-06） | 同系統 | 同上 |
+| `ksc0000/WanHeat` | 犬の散歩・天気アプリ（Swift） | 無関係 |
+| `ksc0000/club-forge` | ClubForge（Swift） | 無関係 |
+
+#### 結論
+
+**Nailous の iOS 実装はオーナーのローカル環境にのみ存在する。**
+`add_repo` で追加できる候補が無いため、**U1〜U5 は本セッションでは検証できない。**
+推測で埋めることはせず、unknown のままとする。
+
+### 7.4 U1〜U5 を解消するために必要なもの
+
+いずれか 1 つで足りる。
+
+1. **Nailous を private リポジトリに push し、このセッションに追加する**（最も確実。以後の確認もすべて可能になる）
+2. オーナーがローカルで下記を確認して回答する
+3. 該当ファイルの内容をセッションに貼る
+
+#### オーナーがローカルで実行できる確認コマンド
+
+```bash
+# U1: chirality を読んでいるか
+grep -rn "chirality\|VNChirality" ios/
+
+# U2: 記録の handedness がどこで決まるか
+grep -rn "handedness\|isRight\|\.right\|seedHand" ios/Nailous/ | grep -vi "alignment\|trailing"
+
+# U3: NailAngleMeasurer の公開 API（マスク／輪郭を外に出すか）
+grep -n "func \|struct \|class \|return " ios/Nailous/NailAngleMeasurer.swift | head -60
+
+# U4: ランドマークと爪マスクが同一画像に掛かるか（呼び出し元）
+grep -rn "NailAngleMeasurer\|AutoScanEstimator" ios/ --include=*.swift
+grep -rn "runHandPose\|VNDetectHumanHandPose" ios/ --include=*.swift
+
+# U5: マスクが爪床/自由端の手がかりを保持しているか
+#     肌マスクを別に保持しているか、爪マスクと同時に取り出せるか
+grep -n "skin\|chroma\|cb\|cr\|foreground\|instanceMask\|CVPixelBuffer\|mask("      ios/Nailous/NailAngleMeasurer.swift
+
+# 利用可能な fixture
+ls ios/BenchmarkAssets/ ios/BenchmarkAssets/angles/ 2>/dev/null
+```
+
+#### U5 について特に見たいもの
+
+「原理的にできそう」で止めないために、**実データで**次を確認したい。
+
+| 確認項目 | 見たいもの |
+|---|---|
+| マスクの保持形態 | `mask()` が**二値ビットマップ／輪郭を返す**のか、幅プロファイル等の**スカラーに畳んで捨てている**のか |
+| 肌マスクの可用性 | 爪マスクを作る際の**肌色 chroma 判定の結果を別に取り出せる**か（取り出せれば「爪∩肌隣接 = 爪床側」「爪∩背景隣接 = 自由端側」の判定に使える） |
+| cuticle 側の保持 | マスクの近位端が**キューティクルで切れている**のか、指の皮膚まで含んでいるのか |
+| lateral edges | 側壁（爪の左右）が**マスクの境界として出ている**か、肌に埋もれて途切れるか |
+| free edge 側 | 自由端が**背景と接しているか**（接していれば分離の手がかりになる）。ベンチ実写での見え方 |
+
+`ios/BenchmarkAssets/angles/` の実写 1 セットでマスクを可視化できれば、上記はすべて目視で判定できる。
+
+### 7.5 この状態で進められること / 進められないこと
+
+| | |
+|---|---|
+| **進められない** | U5 を根拠にした「既存マスクから爪床を切り出す」実装。**U5 が unknown のまま作ると、分離できない前提で作り直しになる** |
+| **進められない** | BenchTool の `--dump-observation`（U3 でマスクを外に出せるかが未確定） |
+| **進められる** | 手動アノテーション前提の経路（ScanObservation パーサ、アノテーションのマージ）。**マスクの有無に依存しない** |
+| **進められる** | 2D→3D lift（Layer B）の実装。入力は landmarks と爪床四隅であり、それがマスク由来か手動かに依存しない |
+
+---
+
 ## 8. BenchTool に求める最小変更
 
 | # | 変更 | 必須 |
