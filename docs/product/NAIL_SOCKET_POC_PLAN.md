@@ -518,6 +518,46 @@ VITE_ENABLE_NAIL3D=true npm run dev   # → /nail3d-calibration
 
 ---
 
+## 6-C. 入力契約と gap analysis — 2026-10-06
+
+> 詳細: [SCAN_OBSERVATION_CONTRACT.md](./SCAN_OBSERVATION_CONTRACT.md)（仕様のみ・実装なし）
+
+本計画 §1.3 の [1]（BenchTool からの JSON ダンプ）を仕様化し、既存パイプラインとの差分を洗った。
+**本計画の前提が 2 点変わる。**
+
+### 変更 1: 現状の検出出力では socket を推定できない
+
+既存の出力は爪の観測ではなく、**tip–DIP ベクトルの 0.32 補間による中心点とクロップ箱**（#356 /
+`PhotoCropView.runHandPose`）。爪床の境界を含まない。前景マスクは #386 で「改善候補・未着手」と
+明記されており、セグメンテーションも `JEWELRY_BOX_REFRESH.md` の方針として採っていない。
+
+**そのまま PoC を回すと意味のない「合格」が出る。** 骨格から作った点は爪が変わっても動かないため
+**M6 は自動的に通り**、測っているのは socket の安定性ではなく**ランドマークの安定性**になる。
+#356 が指摘するとおり 0.32 は固定係数で爪床の真の位置から系統的にずれるため、
+**安定しているが間違っている**状態を「合格」と読んでしまう。
+
+→ 対策: 契約で `source: "skeletonInterpolation"` を別物として記録させ、
+socket 推定器は `regionType: "centerOnly"` と「自由端を分離できない `fullNail`」を**拒否**する。
+
+### 変更 2: 2D→3D lift は独立した層として必要
+
+`VNDetectHumanHandPoseRequest` は**2D 座標と confidence のみ**で深度を返さない。
+Stage 1 の推定器は 3D 入力を前提にしていた（合成ハンドが 3D を与えていた）ため、
+**実写では lift が必ず間に入る**。推定を A（観測・2D）/ B（lift・3D）/ C（正規化 socket）に
+分離し、Layer A だけを保存して lift を差し替え可能にする。
+
+### ブロッカー判定
+
+| | 項目 | 対応 |
+|---|---|---|
+| **ブロッカー** | 爪床の近位端・左右端・自由端境界 | **手動アノテーションで回避可能。** 1 指 × 18 枚 = 72 点 |
+| 非ブロッカー | handedness / confidence / intrinsics | 代替・既定値・`missing` 明記で進む |
+
+**PoC は BenchTool の大改修を待たずに開始できる。** BenchTool に求めるのはランドマークと
+メタデータのダンプだけで、爪床は人手で与えてマージする（本リポジトリ側で実装可能）。
+
+---
+
 ## 7. 参照
 
 | | |
