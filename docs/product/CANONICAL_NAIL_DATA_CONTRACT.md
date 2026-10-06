@@ -345,12 +345,27 @@ CND は `NailItem` のサブコレクションに置くため、**`NailItem` の
 実行:
 
 ```bash
-node --experimental-strip-types --test tests/nail3dContract.test.ts
+npm run test        # 契約テストを含む（G9 承認済み・2026-10-06 適用）
 ```
 
-> **未了（G9）:** `npm run test` はテストファイルを明示列挙しているため、本テストは
-> まだ `npm run test` に含まれていない。`package.json` の `test` スクリプトへの
-> 1 行追加が必要（`package.json` の変更は Human Gate G9）。
+> **⚠ 未了（G10）— 契約回帰はまだ CI でガードされていない。**
+> `.github/workflows/ci.yml` は **CSS guard と `npm run build` のみ**を実行しており、
+> `npm run test` も `npm run lint` も呼んでいない。したがって `package.json` への
+> 組み込み（G9 適用済み）だけでは CI ゲートにならず、契約を壊す変更が CI を通過しうる。
+>
+> 必要な変更（`.github/workflows` の変更は Human Gate **G10**）:
+>
+> ```yaml
+>       - name: Lint
+>         run: npm run lint
+>
+>       - name: Test
+>         run: npm run test
+> ```
+>
+> CI は `windows-latest` / Node 22 で動作する。`--experimental-strip-types` は
+> Node 22.6 以降で利用可能なため、`node-version: 22`（22.x 最新に解決）であれば動作する。
+> この 2 ステップが入るまで、契約回帰の検知はローカル実行に依存する。
 
 検証済みの性質:
 
