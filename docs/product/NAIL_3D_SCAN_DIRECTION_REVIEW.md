@@ -14,7 +14,7 @@
 | 問い | 結論 |
 |---|---|
 | 1. 方向性の妥当性 | **妥当。** ただし「爪 socket（爪床の座標系）を Hand Base 側に固定する」という設計の核が Issue に未記載。ここが成否を決める |
-| 2. 現行設計との矛盾 | **10 件検出。** うち #A（プラットフォーム分裂）と #H（Phase 8 の目的が逆）は G1 判断が必要なブロッカー |
+| 2. 現行設計との矛盾 | **10 件検出。** うち #A（プラットフォーム分裂）と #H（Phase 8 の目的が逆）は G1 判断が必要なブロッカー<br>→ #A は [NAIL_3D_PLATFORM_ARCHITECTURE.md](./NAIL_3D_PLATFORM_ARCHITECTURE.md) で比較・推奨案を提示済み |
 | 3. 現実的な技術構成 | MediaPipe Hand Landmarker + **パラメトリック幾何 + テクスチャ投影** + R3F。NeRF / Gaussian Splatting はデフォルト経路から除外し、オプトイン隔離 |
 | 4. 最小 PoC | **「同じ指の socket に、別の日の爪を差し替えて見比べる」**（PoC-3）が本命。手全体・10 本・両手は PoC 範囲外 |
 | 5. Issue 対応 | 既存 7 件に修正提案、新規 14 件を提案。最優先は「プラットフォーム決定」と「Phase 8 再定義」 |
@@ -536,6 +536,7 @@ Storage
 
 | ドキュメント / Issue | 関連 |
 |---|---|
+| [NAIL_3D_PLATFORM_ARCHITECTURE.md](./NAIL_3D_PLATFORM_ARCHITECTURE.md) | 本書 #A（プラットフォーム分裂）への回答。責務分離の比較と推奨案、Product Principle |
 | [ROADMAP.md](./ROADMAP.md) | Phase 8 / 9、G16 / G17 の定義元 |
 | [PRODUCT_SPEC.md](./PRODUCT_SPEC.md) | Product Vision、NailItem 将来フィールド |
 | [3D_LIBRARY_EVALUATION.md](./3D_LIBRARY_EVALUATION.md) | R3F vs model-viewer（結論維持・理由更新） |
