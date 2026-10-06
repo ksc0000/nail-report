@@ -14,6 +14,58 @@
 
 ---
 
+## 0-0. 現在地と次の主目標（2026-10-06）
+
+> **次の技術的主目標: #405 — stable Nail Socket PoC（iOS）**
+
+### 完了（PR #413 / CI green）
+
+| Issue | 内容 | 状態 |
+|---:|---|---|
+| #408 | CI に lint / test を追加（G10） | **完了** |
+| #410 | 3D 機能のモジュール構成方針（G12） | **完了** |
+| #411 | R3F 導入・最小 3D 表示（G8 / G9） | **完了** |
+| #412 | CND から NailSet をレンダリング（最小） | **完了** |
+| （N1） | Canonical Nail Data 契約 v1 + fixtures + 検証 | **完了** |
+
+PR: https://github.com/ksc0000/nail-report/pull/413（マージは human 判断 / G14）
+
+### CI 実測（windows-latest / PR #413）
+
+| ステップ | 結果 |
+|---|---|
+| Checkout / Setup Node.js（`node-version: 22`） | success |
+| Install dependencies（`npm ci`） | success |
+| Run CSS guard（pwsh） | success |
+| **Build**（`tsc -b && vite build`） | success |
+| **Lint**（`eslint .`） | success |
+| **Test**（`npm run test`） | success — node 側 **71 pass / 0 fail / 0 skipped**、vitest 側 9 pass |
+
+`node --experimental-strip-types --test` は **Windows ランナーで問題なく動作した**。同フラグは Node 22.6 以降でのみ利用可能なため、`node-version: 22` が 22.6 以降に解決されていることが実行結果から確認できる。
+
+### いま可能になったこと
+
+- 契約（CND v1）が固まり、**iOS 側は実装のみを持てばよい**状態
+- fixtures 17 件と降格検証 53 ケース（契約 27 / ジオメトリ 26）が CI でガードされる
+- `/nail3d-preview` で **CND → NailGeometry / NailTexture → R3F** が実際に描画できる
+- #405 の出力が出たら、同じ `<Nail3DView>` に本物の `NailSet` / `HandProfile` と `resolveTextureUrl` を渡すだけで差し替わる
+
+### 意図的に作り込まないもの（#405 の結果が出るまで）
+
+| | 理由 |
+|---|---|
+| #406 の時系列比較 UI | socket が安定しなければ比較体験そのものが成立しない |
+| #407 の 360°共有 | 同上。加えて画像を含む共有の G6 判断が未了 |
+| Firestore / Storage レイアウトと Rules（G3 / G4 / G6） | PoC は Firestore 書き込みを必要としない |
+| HandProfile 生成・CND 書き込み（iOS） | #405 は socket 1 個で足りる |
+
+### 未解決（本線とは別）
+
+- `Agent PR Review Router`（`.github/workflows/agent-pr-review-router.yml`）が **401 Bad credentials** で失敗する。`secrets.GH_AW_AGENT_TOKEN` が失効しており、空でないため `|| github.token` のフォールバックが働かない。前回成功は 2026-06-29 で、本 PR とは無関係の潜在不具合。対処はシークレットの削除（G7）またはワークフロー修正（G10）
+- `commands/check-css-guard.ps1` の対象が `src/App.css` のみで feature 配下の CSS がガードされない（既知の負債）
+
+---
+
 ## 0-A. 実施記録（2026-10-06 適用済み）
 
 本書の再編案は **実適用済み**。
