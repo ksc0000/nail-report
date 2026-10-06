@@ -1,5 +1,15 @@
 # Firestore 3D Schema Design
 
+> **2026-10-06 — 本書の一部は [CANONICAL_NAIL_DATA_CONTRACT.md](./CANONICAL_NAIL_DATA_CONTRACT.md) に置き換えられた。**
+> 製品方向が「プリセット試着」から「実物のネイル復元」へ変わり、GLB を永続データの正にしない方針が G1 承認された。
+> 齟齬がある場合は Canonical Nail Data 契約を優先する。本書は経緯の記録として残す。
+>
+> 主な変更点:
+> - 3D データは `NailItem` 本体ではなく **サブコレクション `nailItems/{itemId}/nail3d/current`** に置く（3D 状態の分離）
+> - `modelId` / `modelUrl` / `materialPreset` は **非採用**（GLB は Canonical ではなく派生 asset）
+> - **ユーザー所有の private 3D データ**（HandProfile / NailSet / NailTexture）という第 3 のアセットカテゴリを追加
+> - 未知の `contractVersion` は **L0（写真のみ）へフォールバック**する
+
 This document records a future Firestore schema direction for Phase 8 3D Preview and Phase 9 AR/Modeling work. It is a design document only. The commercial MVP schema remains unchanged.
 
 ## Current Constraint
@@ -9,11 +19,23 @@ The current `NailItem` schema is focused on photo archive use cases:
 - title
 - tags
 - memo
-- imageUrl
+- imageUrl / thumbnailUrl
 - imageSource
 - createdAt / updatedAt
 
-Do not add 3D fields before Phase 8 is explicitly approved. Firestore schema changes are a human gate.
+**Correction (2026-10-06):** the following optional fields are **already implemented** in
+`src/lib/firestoreModel.ts` — earlier revisions of this document incorrectly listed them as absent:
+
+- `shape`, `mainColor`, `texture`, `decorationParts`
+- `salonName`, `price`, `appointmentDate`
+
+`imageUrl` is a **required** field, so the photo is structurally the record itself. The
+`buildOptionalNailItemFields` helper omits `undefined` fields on write, which means the
+optional-additive pattern is already established and tested.
+
+Do not add 3D fields to `NailItem` itself. Under the Canonical Nail Data contract, 3D data lives in a
+subcollection, so **no `NailItem` schema change is required** for the personal-reconstruction direction.
+Firestore schema changes remain a human gate (G3).
 
 ## Design Goals
 

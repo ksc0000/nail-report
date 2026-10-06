@@ -24,7 +24,7 @@ import {
   validateNailTitle,
 } from './lib/nailTags'
 import { fileToGenerativePart, urlToGenerativePart, generateNailTagsFromImage } from './lib/aiUtils'
-import { isAiTagSuggestionEnabled } from './lib/featureFlags'
+import { isAiTagSuggestionEnabled, isNail3DEnabled } from './lib/featureFlags'
 import { isFirebaseConfigComplete, missingFirebaseEnvKeys } from './lib/firebaseConfigStatus'
 import ErrorBanner from './components/ErrorBanner'
 import FloatingNailChip from './components/FloatingNailChip'
@@ -32,6 +32,7 @@ const PrivacyPolicyPage = lazy(() => import('./components/PrivacyPolicyPage'))
 const TermsOfServicePage = lazy(() => import('./components/TermsOfServicePage'))
 const NailImageDetailViewer = lazy(() => import('./components/NailImageDetailViewer'))
 const NailComparisonPanel = lazy(() => import('./components/NailComparisonPanel'))
+const Nail3DPreview = lazy(() => import('./features/nail3d/Nail3DPreview'))
 import './App.css'
 
 const DISPLAY_MODES = ['Glass', 'Snow Globe', 'Velvet', 'Showcase'] as const
@@ -324,6 +325,8 @@ function App() {
   const isPublicSharePage = sharePathId !== null
   const isPrivacyPage = pathname === '/privacy'
   const isTermsPage = pathname === '/terms'
+  // 3D レンダリング確認用。VITE_ENABLE_NAIL3D=true のときだけ到達でき、通常フローには影響しない。
+  const isNail3DPreviewPage = isNail3DEnabled && pathname === '/nail3d-preview'
   const [user, setUser] = useState<User | null | undefined>(
     isFirebaseConfigComplete ? undefined : null
   )
@@ -1121,6 +1124,14 @@ function App() {
           <TermsOfServicePage />
         </Suspense>
       </section>
+    )
+  }
+
+  if (isNail3DPreviewPage) {
+    return (
+      <Suspense fallback={null}>
+        <Nail3DPreview />
+      </Suspense>
     )
   }
 

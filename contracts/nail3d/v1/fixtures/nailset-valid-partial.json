@@ -1,0 +1,90 @@
+{
+  "contractVersion": 1,
+  "reconstructionVersion": 1,
+  "handedness": "right",
+  "handProfileRef": "users/u1/handProfiles/right",
+  "completeness": "partial",
+  "quality": {
+    "overall": 0.87
+  },
+  "nails": [
+    {
+      "socketRef": "thumb",
+      "geometry": {
+        "shape": "almond",
+        "curveV": 0.42,
+        "curveH": 0.31,
+        "length": 0.018,
+        "thickness": 0.0006,
+        "confidence": 0.9
+      },
+      "texture": {
+        "textureRef": "users/u1/nailItems/item1/nail3d/tex_thumb.webp",
+        "uvTransform": [
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "heightMapRef": "users/u1/nailItems/item1/nail3d/height_thumb.webp"
+      }
+    },
+    {
+      "socketRef": "index",
+      "geometry": {
+        "shape": "round",
+        "curveV": 0.45,
+        "curveH": 0.33,
+        "length": 0.0169,
+        "thickness": 0.0006,
+        "confidence": 0.86
+      },
+      "texture": {
+        "textureRef": "users/u1/nailItems/item1/nail3d/tex_index.webp",
+        "uvTransform": [
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "heightMapRef": "users/u1/nailItems/item1/nail3d/height_index.webp"
+      }
+    },
+    {
+      "socketRef": "middle",
+      "geometry": {
+        "shape": "almond",
+        "curveV": 0.48,
+        "curveH": 0.35,
+        "length": 0.0158,
+        "thickness": 0.0006,
+        "confidence": 0.82
+      },
+      "texture": {
+        "textureRef": "users/u1/nailItems/item1/nail3d/tex_middle.webp",
+        "uvTransform": [
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1
+        ],
+        "heightMapRef": "users/u1/nailItems/item1/nail3d/height_middle.webp"
+      }
+    }
+  ]
+}

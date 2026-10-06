@@ -43,6 +43,19 @@ Reactのコンポーネントツリーの中でThree.jsの強力なレンダリ�
 
 **推奨: React Three Fiber (R3F) の採用**
 
+> **2026-10-06 更新 — 結論は維持、理由を差し替え。**
+> 製品方向が「プリセットのネイルチップを試着する」から「実物の自分のネイルを復元して振り返る」へ変わったため
+> （[NAIL_3D_PLATFORM_ARCHITECTURE.md](./NAIL_3D_PLATFORM_ARCHITECTURE.md)）、R3F を推奨する根拠も次のとおり更新する。
+>
+> | | 旧理由（プリセット前提） | 新理由（実物復元前提） |
+> |---|---|---|
+> | R3F が必要な理由 | プリセットの色・テクスチャを動的変更 | **Canonical Nail Data からのランタイム合成**（HandProfile ＋ NailSet）、テクスチャ投影、光沢・ラメのカスタムシェーダ |
+>
+> `<model-viewer>` は「完成した 1 つの GLB を表示する」ツールであり、**2 つの独立した Canonical オブジェクトを
+> 実行時に合成する**用途に向かない。また GLB を永続データの正にしない方針
+> （[CANONICAL_NAIL_DATA_CONTRACT.md](./CANONICAL_NAIL_DATA_CONTRACT.md)）のもとでは、
+> MVP で GLB を生成しないため `<model-viewer>` の前提そのものが成立しない。
+
 ### 理由
 Nailousの将来のロードマップ（Phase 9）において、「カラーやテクスチャの動的なカスタマイズ」および「高度なモデリング（ストーンやラメの配置）」がスコープに含まれています。
 `<model-viewer>` を採用した場合、初期の「3Dプレビュー（Phase 8）」は素早く実装できますが、Phase 9 に入った時点で技術的な壁にぶつかり、結局 Three.js (R3F) で作り直すリスクが高いです。
@@ -50,6 +63,10 @@ Nailousの将来のロードマップ（Phase 9）において、「カラーや
 そのため、Phase 8の段階から **React Three Fiber** を導入し、GLBモデルのロードとカメラコントロールの基礎を構築することを推奨します。
 
 ### 次のステップ (Phase 8 実装)
-1. `three`, `@react-three/fiber`, `@react-three/drei` の依存関係追加
-2. テスト用ネイルチップGLBモデルの作成/取得
-3. `<Canvas>` と `useGLTF` を用いたプレビューコンポーネントの実装
+
+> **2026-10-06 更新。** 下記 2・3 は GLB プリセット前提のため、実物復元経路では次のように読み替える。
+
+1. `three`, `@react-three/fiber`, `@react-three/drei` の依存関係追加（G8 / G9）
+2. ~~テスト用ネイルチップGLBモデルの作成/取得~~ → **Canonical Nail Data の JSON fixtures を用意**（GLB は MVP では生成しない）
+3. ~~`<Canvas>` と `useGLTF` を用いたプレビューコンポーネントの実装~~ → **`<Canvas>` ＋ procedural geometry で CND からランタイム構築**（`useGLTF` は使わない）
+4. 未知 `contractVersion` を L0 にフォールバックさせる契約パーサの実装（INV-3）

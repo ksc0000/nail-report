@@ -1,0 +1,121 @@
+{
+  "contractVersion": 1,
+  "reconstructionVersion": 1,
+  "handedness": "right",
+  "boneLengths": [
+    0.03,
+    0.032,
+    0.034,
+    0.036,
+    0.038,
+    0.04,
+    0.042,
+    0.044,
+    0.046,
+    0.048,
+    0.05,
+    0.052,
+    0.054,
+    0.056,
+    0.058,
+    0.06,
+    0.062,
+    0.064,
+    0.066,
+    0.068
+  ],
+  "fingerRadii": [
+    0.0095,
+    0.0085,
+    0.0088,
+    0.008,
+    0.0068
+  ],
+  "canonicalPose": {
+    "wristOrigin": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "palmNormal": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "palmTangent": [
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "nailSockets": [
+    {
+      "finger": "thumb",
+      "origin": [
+        -0.02,
+        0.0,
+        0.08
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "tangent": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bedWidth": 0.0135,
+      "bedLength": 0.015,
+      "confidence": 0.93
+    },
+    {
+      "finger": "index",
+      "origin": [
+        -0.01,
+        0.0,
+        0.084
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "tangent": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bedWidth": 0.0127,
+      "bedLength": 0.0141,
+      "confidence": 0.9
+    },
+    {
+      "finger": "middle",
+      "origin": [
+        0.0,
+        0.0,
+        0.088
+      ],
+      "normal": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "tangent": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bedWidth": 0.0119,
+      "bedLength": 0.0132,
+      "confidence": 0.87
+    }
+  ],
+  "source": {
+    "deviceClass": "iPhone",
+    "capturedAt": "2026-10-06T09:00:00Z",
+    "sampleCount": 3
+  }
+}

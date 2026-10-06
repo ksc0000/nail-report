@@ -313,36 +313,70 @@
 
 ---
 
-## Phase 8: 3D Preview / Modeling Foundation
+## Phase 8: Personal Nail Capture & Replay
 
-**Goal:** ネイルチップの 3D プレビュー基盤を構築し、形状・カラー・テクスチャをインタラクティブに確認できるようにする
+> **2026-10-06 再定義（G1 承認済み）。** 旧 Phase 8 は「プリセットのネイルチップを試着する 3D プレビュー」だったが、
+> 製品方向が **実物の自分のネイルを復元して振り返る**へ変わったため目的を差し替えた。
+> 旧構想（プリセット試着）は実施しない。
 
-> **人間判断が必要:** 3D ライブラリ選定・3D アセット戦略・Firebase Storage との関係整理
+**Goal:** 実物のネイルをスキャンして Canonical Nail Data として残し、過去のネイルを 3D で振り返り、360°で共有できるようにする
+
+**責務分離（G1 承認済み / 案 A-1）:**
+
+| プラットフォーム | 責務 |
+|---|---|
+| iOS（ネイティブ・App Store 配布を許容） | Capture / Detection / Reconstruction |
+| 共通契約 | HandProfile + NailSocket + NailGeometry + NailTexture + NailSet |
+| Web / R3F | Archive / Compare / Share / Rendering |
+
+**不変条件:**
+
+- 写真記録は常に成立し、2.5D / 3D は追加レイヤー（L0 のみで製品は完結する）
+- 3D 状態は `NailItem` 本体から分離する（失敗を記録本体に書き戻さない）
+- 未知の `contractVersion` は L0（写真のみ）へ安全にフォールバックする
+
+**正となるドキュメント:** [CANONICAL_NAIL_DATA_CONTRACT.md](./CANONICAL_NAIL_DATA_CONTRACT.md) /
+[NAIL_3D_PLATFORM_ARCHITECTURE.md](./NAIL_3D_PLATFORM_ARCHITECTURE.md) /
+[NAIL_3D_ISSUE_REORG_PLAN.md](./NAIL_3D_ISSUE_REORG_PLAN.md)
+
+> **人間判断が必要:** 3D ライブラリ追加（G8 / G9）・Firestore / Storage レイアウトと Rules（G3 / G4 / G6）・
+> 手形状モデルのプライバシー区分（G6）・カメラ同意フロー（G17）
 
 ### Example Issues
 
-- [ ] 技術スパイク: `model-viewer`（Web Components）vs Three.js / React Three Fiber の評価
-- [ ] 静的 GLB ネイルチップモデルの用意と Firebase Storage への格納方針の決定
-- [ ] 3D プレビュー画面の実装（形状・カラー・テクスチャのプリセット選択）
-- [ ] NailItem への将来フィールド追加検討（`shape` / `color` / `texture` / `modelUrl` / `materialPreset`）
-- [x] Firestore スキーマ拡張設計（マイグレーション戦略）（[FIRESTORE_3D_SCHEMA_DESIGN.md](./FIRESTORE_3D_SCHEMA_DESIGN.md)）
-- [x] 3D アセットのライセンス・サイズ・配信戦略の確定（[3D_ASSET_DELIVERY_STRATEGY.md](./3D_ASSET_DELIVERY_STRATEGY.md)）
+- [x] 技術スパイク: `model-viewer` vs React Three Fiber の評価（[3D_LIBRARY_EVALUATION.md](./3D_LIBRARY_EVALUATION.md) — R3F 採用）
+- [x] 方向性レビュー（[NAIL_3D_SCAN_DIRECTION_REVIEW.md](./NAIL_3D_SCAN_DIRECTION_REVIEW.md)）
+- [x] プラットフォーム構成の比較と推奨（[NAIL_3D_PLATFORM_ARCHITECTURE.md](./NAIL_3D_PLATFORM_ARCHITECTURE.md) — 案 A-1 採用）
+- [x] Canonical Nail Data 契約 v1 設計（[CANONICAL_NAIL_DATA_CONTRACT.md](./CANONICAL_NAIL_DATA_CONTRACT.md)）
+- [ ] Canonical Nail Data の JSON fixtures と契約パーサ（未知バージョン → L0 フォールバック）
+- [ ] ScanSession（iOS → CND 受け渡し）仕様の確定
+- [ ] Firestore / Storage レイアウトと Rules 設計（private CND / 共有スコープ複製）
+- [ ] R3F 導入と `src/features/nail3d/` 分離
+- [ ] NailSet レンダラー（socket 合成）と時系列差し替え比較
+- [ ] 360°共有ページ（未ログイン閲覧・共有停止連動）
+- ~~静的 GLB ネイルチップモデルの用意~~（非採用: GLB は派生 asset。MVP では生成しない）
+- ~~プリセット選択 UI~~（非採用: 実物復元が目的）
+- ~~`modelUrl` / `materialPreset` の NailItem 追加~~（非採用: CND はサブコレクションに置く）
 
 ### Human Gates
 
-- G8: 3D ライブラリ追加（`package.json` 変更）— 人間の承認が必須
-- G16: 3D アセット追加（GLB / GLTF / テクスチャファイル）— ライセンス・サイズ確認
-- G3: Firestore スキーマ拡張（NailItem フィールド追加）
-- G1: 3D 機能のスコープ・優先度決定
+- G1: 3D 機能のスコープ・優先度決定 — **承認済み（2026-10-06）**。ネイティブ iOS + App Store 配布を許容
+- G8 / G9: 3D ライブラリ追加（`three` / `@react-three/fiber` / `@react-three/drei`）— 人間の承認が必須
+- G3: Firestore レイアウト（`nailItems/{id}/nail3d/*` 等のサブコレクション追加）
+- G4 / G6: `storage.rules` への `nail3d/` / `publicAssets/` パス追加
+- G6: 手形状モデルのプライバシー区分・共有時の扱い
+- G17: カメラ / 動画スキャンのユーザー同意フロー
+- G16: （実物復元経路では**非該当**。ユーザー自身のスキャンデータはプロダクトアセットではない）
 
 ### Done Criteria
 
-- [ ] 技術スパイクの結果が `docs/` にまとめられている
-- [ ] 静的 GLB プレビューが少なくとも 1 形状で動作する
-- [ ] プリセット（形状 / カラー / テクスチャ）が UI で選択できる
-- [ ] 3D プレビューが既存の NailItem CRUD を壊していない
+- [ ] Canonical Nail Data 契約 v1 が確定し、JSON fixtures が Web 側テストで検証されている
+- [ ] 未知の `contractVersion` が L0 にフォールバックすることがテストされている（INV-3）
+- [ ] 実物 1 本の爪で NailGeometry + NailTexture が生成でき、モバイルで回転・拡大できる
+- [ ] 同一 socket に別日の NailSet を差し替えて比較できる
+- [ ] 3D が無い記録・3D を無効化した状態で既存の NailItem CRUD / 共有が完全に動作する（INV-1 / INV-2）
 - [ ] `npm run build` が成功している
-- [ ] 人間が 3D ライブラリ追加を承認している（G8）
+- [ ] 人間が 3D ライブラリ追加を承認している（G8 / G9）
 
 ---
 
