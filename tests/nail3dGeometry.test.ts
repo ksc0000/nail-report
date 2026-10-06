@@ -10,6 +10,8 @@ import type { NailGeometry, NailShape, NailSocket } from '../src/lib/nail3dContr
 import {
   DEFAULT_SEGMENTS_U,
   DEFAULT_SEGMENTS_V,
+  boundsOfPlacedNails,
+  buildFlatLayout,
   buildNailMesh,
   buildPlacedNails,
   socketMatrix,
@@ -315,4 +317,90 @@ test('two NailSets on the same socket produce identical placement (swap comparis
   // Both start at the cuticle in the same place; only the free edge differs.
   assert.equal(january.positions[1], february.positions[1])
   assert.ok(extent(february, 1).max > extent(january, 1).max)
+})
+
+// ---------------------------------------------------------------------------
+// L1 (2.5D) layout — no HandProfile
+// ---------------------------------------------------------------------------
+
+test('buildFlatLayout places nails side by side in finger order without a HandProfile', () => {
+  const plan = planNail3DRender({ nailSet: fixture('nailset-valid-full') })
+  assert.equal(plan.level, 'L1')
+  if (plan.level !== 'L1') return
+
+  const placed = buildFlatLayout(plan.nails)
+  assert.deepEqual(
+    placed.map(p => p.finger),
+    ['thumb', 'index', 'middle', 'ring', 'pinky'],
+  )
+  for (const nail of placed) assertMeshIsSane(nail.mesh, `flat:${nail.finger}`)
+
+  // Origins march along +x in order and do not overlap.
+  const xs = placed.map(p => p.matrix[12])
+  for (let i = 1; i < xs.length; i += 1) {
+    assert.ok(xs[i] > xs[i - 1], 'nails are not laid out left to right')
+  }
+  assert.ok(Math.abs(xs[0] + xs[xs.length - 1]) < 1e-12, 'layout is not centred on x')
+})
+
+test('buildFlatLayout makes no anatomical claim: every nail shares one orientation', () => {
+  const plan = planNail3DRender({ nailSet: fixture('nailset-valid-partial') })
+  if (plan.level !== 'L1') throw new Error('expected L1')
+
+  const placed = buildFlatLayout(plan.nails)
+  assert.equal(placed.length, 3)
+  for (const nail of placed) {
+    // Identity rotation: the 2.5D view is a flat presentation, not a pose.
+    assert.deepEqual(nail.matrix.slice(0, 3), [1, 0, 0])
+    assert.deepEqual(nail.matrix.slice(4, 7), [0, 1, 0])
+    assert.deepEqual(nail.matrix.slice(8, 11), [0, 0, 1])
+  }
+})
+
+// ---------------------------------------------------------------------------
+// Camera framing
+// ---------------------------------------------------------------------------
+
+test('boundsOfPlacedNails returns null for an empty set rather than framing nothing', () => {
+  assert.equal(boundsOfPlacedNails([]), null)
+})
+
+test('bounds enclose every placed nail and look along the nail normal', () => {
+  const plan = planNail3DRender({
+    nailSet: fixture('nailset-valid-full'),
+    handProfile: fixture('handprofile-valid-right'),
+  })
+  if (plan.level !== 'L2') throw new Error('expected L2')
+
+  const placed = buildPlacedNails(plan.nails, plan.handProfile)
+  const bounds = boundsOfPlacedNails(placed)
+  assert.ok(bounds)
+
+  for (let axis = 0; axis < 3; axis += 1) {
+    assert.ok(bounds.min[axis] <= bounds.center[axis])
+    assert.ok(bounds.max[axis] >= bounds.center[axis])
+  }
+  assert.ok(bounds.radius > 0)
+
+  // The fixture's sockets face +y, so the camera must look from +y, not +z.
+  assert.ok(Math.abs(bounds.viewDirection[1] - 1) < 1e-9, 'view direction ignores the nail normal')
+  assert.ok(Math.abs(norm(bounds.viewDirection) - 1) < 1e-9)
+  assert.ok(Math.abs(norm(bounds.upDirection) - 1) < 1e-9)
+  assert.ok(
+    Math.abs(dot(bounds.viewDirection, bounds.upDirection)) < 1e-9,
+    'up is not perpendicular to the view direction',
+  )
+})
+
+test('bounds grow with the nails they contain', () => {
+  const one = buildFlatLayout(
+    (planNail3DRender({ nailSet: fixture('nailset-valid-partial') }) as { nails: never[] }).nails,
+  )
+  const all = buildFlatLayout(
+    (planNail3DRender({ nailSet: fixture('nailset-valid-full') }) as { nails: never[] }).nails,
+  )
+  const small = boundsOfPlacedNails(one)
+  const large = boundsOfPlacedNails(all)
+  assert.ok(small && large)
+  assert.ok(large.radius > small.radius, 'five nails should not fit the bounds of three')
 })

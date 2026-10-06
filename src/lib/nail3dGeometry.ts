@@ -261,6 +261,54 @@ export interface PlacedNail {
 
 const fingerOrder = (finger: Finger): number => FINGERS.indexOf(finger)
 
+/** Nail bed width assumed by the 2.5D layout, in metres. */
+export const FLAT_LAYOUT_BED_WIDTH = 0.012
+
+export interface FlatLayoutOptions extends BuildNailMeshOptions {
+  bedWidth?: number
+  spacing?: number
+}
+
+/**
+ * L1 (2.5D) placement: lays the nails side by side on a plane.
+ *
+ * Used when there is no usable HandProfile. It makes no anatomical claim —
+ * the nails are shown in finger order at a nominal size so the user can still
+ * look at them, which is the point of the 2.5D level.
+ */
+export const buildFlatLayout = (
+  nails: readonly NailEntry[],
+  options: FlatLayoutOptions = {},
+): PlacedNail[] => {
+  const bedWidth = options.bedWidth ?? FLAT_LAYOUT_BED_WIDTH
+  const spacing = options.spacing ?? bedWidth * 1.4
+  const ordered = [...nails].sort((a, b) => fingerOrder(a.socketRef) - fingerOrder(b.socketRef))
+
+  const placed: PlacedNail[] = []
+  ordered.forEach((nail, index) => {
+    const socket: NailSocket = {
+      finger: nail.socketRef,
+      origin: [(index - (ordered.length - 1) / 2) * spacing, 0, 0],
+      normal: [0, 0, 1],
+      tangent: [0, 1, 0],
+      bedWidth,
+      bedLength: bedWidth,
+      confidence: 0,
+    }
+    const matrix = socketMatrix(socket)
+    const mesh = buildNailMesh(nail.geometry, socket, options)
+    if (!matrix || !mesh) return
+    placed.push({
+      finger: nail.socketRef,
+      mesh,
+      matrix,
+      textureRef: nail.texture.textureRef,
+      ...(nail.texture.heightMapRef !== undefined ? { heightMapRef: nail.texture.heightMapRef } : {}),
+    })
+  })
+  return placed
+}
+
 /**
  * Turns the nails of an L2 plan into placed, renderable meshes.
  *
@@ -295,4 +343,90 @@ export const buildPlacedNails = (
   }
 
   return placed.sort((a, b) => fingerOrder(a.finger) - fingerOrder(b.finger))
+}
+
+// ---------------------------------------------------------------------------
+// Framing
+// ---------------------------------------------------------------------------
+
+export interface PlacedBounds {
+  min: [number, number, number]
+  max: [number, number, number]
+  center: [number, number, number]
+  /** Radius of the bounding sphere around `center`. */
+  radius: number
+  /** Average nail-surface normal: the direction to look at the nails from. */
+  viewDirection: [number, number, number]
+  /** Average finger axis: which way is "up" when looking along viewDirection. */
+  upDirection: [number, number, number]
+}
+
+const applyMatrix = (m: readonly number[], x: number, y: number, z: number): [number, number, number] => [
+  m[0] * x + m[4] * y + m[8] * z + m[12],
+  m[1] * x + m[5] * y + m[9] * z + m[13],
+  m[2] * x + m[6] * y + m[10] * z + m[14],
+]
+
+/**
+ * World-space bounds of placed nails.
+ *
+ * The camera is framed from this rather than from fixed numbers, so an
+ * arbitrary HandProfile — including whatever #405 produces from a real scan —
+ * is in frame without retuning the view.
+ *
+ * Returns null for an empty set, which the caller should treat as "nothing to
+ * show" rather than framing an empty scene.
+ */
+export const boundsOfPlacedNails = (placed: readonly PlacedNail[]): PlacedBounds | null => {
+  const min: [number, number, number] = [Infinity, Infinity, Infinity]
+  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity]
+  let seen = false
+
+  for (const nail of placed) {
+    const { positions } = nail.mesh
+    for (let i = 0; i < positions.length; i += 3) {
+      const world = applyMatrix(nail.matrix, positions[i], positions[i + 1], positions[i + 2])
+      for (let axis = 0; axis < 3; axis += 1) {
+        if (world[axis] < min[axis]) min[axis] = world[axis]
+        if (world[axis] > max[axis]) max[axis] = world[axis]
+      }
+      seen = true
+    }
+  }
+  if (!seen) return null
+
+  const center: [number, number, number] = [
+    (min[0] + max[0]) / 2,
+    (min[1] + max[1]) / 2,
+    (min[2] + max[2]) / 2,
+  ]
+  const radius = Math.max(
+    Math.hypot(max[0] - center[0], max[1] - center[1], max[2] - center[2]),
+    1e-6,
+  )
+
+  // Look at the nails along their own surface normal rather than a fixed
+  // world axis: a scan can orient a hand any way it likes.
+  const normalSum: [number, number, number] = [0, 0, 0]
+  const tangentSum: [number, number, number] = [0, 0, 0]
+  for (const nail of placed) {
+    normalSum[0] += nail.matrix[8]
+    normalSum[1] += nail.matrix[9]
+    normalSum[2] += nail.matrix[10]
+    tangentSum[0] += nail.matrix[4]
+    tangentSum[1] += nail.matrix[5]
+    tangentSum[2] += nail.matrix[6]
+  }
+  const viewDirection = length3(normalSum) > 1e-9 ? normalize3(normalSum) : ([0, 0, 1] as [number, number, number])
+  const upCandidate = length3(tangentSum) > 1e-9 ? normalize3(tangentSum) : ([0, 1, 0] as [number, number, number])
+  // Keep `up` perpendicular to the view direction so the camera basis is valid.
+  const projection = dot3(upCandidate, viewDirection)
+  const orthogonalUp: [number, number, number] = [
+    upCandidate[0] - projection * viewDirection[0],
+    upCandidate[1] - projection * viewDirection[1],
+    upCandidate[2] - projection * viewDirection[2],
+  ]
+  const upDirection = length3(orthogonalUp) > 1e-9 ? normalize3(orthogonalUp) : ([0, 1, 0] as [number, number, number])
+
+  return { min, max, center, radius, viewDirection, upDirection }
 }

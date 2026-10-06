@@ -144,6 +144,55 @@ $diff = git --no-pager diff -- $cssPath
 - [x] `App.tsx` 接続点 → NailItem 詳細の 1 箇所のみ
 - [x] Suspense fallback → 既存の「読み込み中...」を使わない。L0 では境界ごと出さない
 
+## 4-A. 実装状況（2026-10-06 / #411・#412）
+
+| ファイル | 内容 | three 依存 |
+|---|---|:---:|
+| `src/lib/nail3dContract.ts` | 契約パーサ・`planNail3DRender()` | なし |
+| `src/lib/nail3dGeometry.ts` | socket 行列・爪メッシュ生成・L1 平置き・カメラ用バウンズ | なし |
+| `src/features/nail3d/Nail3DView.tsx` | R3F レンダラー（CND → `<bufferGeometry>`） | あり |
+| `src/features/nail3d/Nail3DPreview.tsx` | fixtures 確認ページ（`/nail3d-preview`） | あり |
+| `src/features/nail3d/nail3d.css` | スタイル | — |
+
+### 依存（G8 / G9 承認済み 2026-10-06）
+
+`three` ^0.186 / `@react-three/fiber` ^9.8（いずれも MIT）。
+`drei` は採用せず、OrbitControls は `three/examples/jsm` から取り込む。
+**`@types/three`（devDependency / MIT）が追加で必要**だった — `three` は型定義を同梱しておらず、
+これなしでは `tsc -b` が通らない。
+
+### バンドル実測
+
+| | 変更前 | 変更後 |
+|---|---:|---:|
+| 初期チャンク | 622.56 kB | **622.90 kB**（+0.34 kB） |
+| 3D チャンク（lazy） | — | 956.99 kB / gzip 253.10 kB |
+
+初期バンドルはほぼ不変で dynamic import が効いている。3D チャンクは three 本体が支配的で、
+`import * as THREE` を named import に変えてもサイズは変わらなかった（three の依存グラフが理由）。
+フラグ既定 OFF かつ lazy のため、通常利用では読み込まれない。
+
+### カメラのフレーミング
+
+固定カメラをやめ、`boundsOfPlacedNails()` が返すバウンディングスフィアと
+**平均法線 / 平均指軸**からカメラ位置・注視点・up を決める。
+スキャンが手をどの向きで出力しても（#405 の実データを含め）、再調整なしで画角に収まる。
+
+### 目視確認（`/nail3d-preview`）
+
+`?fixture=<id>&profile=0|1` でケースを指定できる。確認済み:
+
+| ケース | 結果 |
+|---|---|
+| full + HandProfile | L2。5 本が socket に配置 |
+| partial + HandProfile | L2。3 本のみ |
+| full + HandProfile なし | L1。平置き 5 本 |
+| heightMap なし + HandProfile なし | **L0。3D 領域が出ない** |
+| 未知 contractVersion | **L0。3D 領域が出ない** |
+| malformed | **L0。3D 領域が出ない** |
+
+---
+
 ## 5. follow-up 候補（未起票）
 
 - `commands/check-css-guard.ps1` の対象を `src/**/*.css` に広げる（`commands/` 変更の承認が必要）
