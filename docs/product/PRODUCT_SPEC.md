@@ -64,6 +64,18 @@ Nailous は、ネイル写真・メモ・タグをかんたんに残し、あと
 ## Future Vision: 3D Preview / Modeling / AR Try-on
 
 > このセクションは将来フェーズ（Phase 8〜9）の構想です。現在は実装されていません。
+>
+> **2026-10-06 更新 — 方向転換。** 下記「3D Preview（Phase 8）」はプリセットのネイルチップを試着する構想だが、
+> 製品方向は **実物の自分のネイルを復元して振り返る**（Personal Hand Base + Replaceable Nail Set）に変更された。
+> ネイティブ iOS + App Store 配布を伴う責務分離（iOS = Capture / Detection / Reconstruction、
+> Web/R3F = Archive / Compare / Share / Rendering）が G1 承認済み。
+> 現行の正は以下:
+> [CANONICAL_NAIL_DATA_CONTRACT.md](./CANONICAL_NAIL_DATA_CONTRACT.md) /
+> [NAIL_3D_PLATFORM_ARCHITECTURE.md](./NAIL_3D_PLATFORM_ARCHITECTURE.md) /
+> [NAIL_3D_SCAN_DIRECTION_REVIEW.md](./NAIL_3D_SCAN_DIRECTION_REVIEW.md)
+>
+> 不変条件: **写真記録は常に成立し、2.5D / 3D は追加レイヤー** / **3D 状態は `NailItem` 本体から分離** /
+> **未知の `contractVersion` は L0（写真のみ）へフォールバック**。
 
 ### 3D Preview（Phase 8）
 
@@ -102,16 +114,26 @@ Nailous は、ネイル写真・メモ・タグをかんたんに残し、あと
 
 > 現在の Firestore スキーマへの追加候補です。追加時は Human Gate G3（スキーマ変更）が必要です。
 
-| フィールド | 型 | 説明 | 追加フェーズ |
+| フィールド | 型 | 説明 | 状態 |
 |---|---|---|---|
-| `shape` | `string` | ネイル形状プリセット（round / square / almond / coffin / stiletto） | Phase 8 |
-| `color` | `string` | カラーコード（例: `#AA3BFF`）または カラー名 | Phase 8 |
-| `texture` | `string` | テクスチャプリセット（matte / gloss / glitter / chrome） | Phase 8 |
-| `modelUrl` | `string` | Firebase Storage 上の GLB モデル URL | Phase 8 |
-| `materialPreset` | `string` | マテリアルプリセット識別子 | Phase 8 |
-| `decorationParts` | `string[]` | デコレーションパーツ識別子の配列 | Phase 9 |
+| `shape` | `string` | ネイル形状（round / square / almond / coffin / stiletto） | **実装済み** |
+| `mainColor` | `string` | カラーコードまたはカラー名 | **実装済み**（旧案の `color` から改名） |
+| `texture` | `string` | テクスチャ（matte / gloss / glitter / chrome） | **実装済み** |
+| `decorationParts` | `string[]` | デコレーションパーツ識別子の配列 | **実装済み** |
+| `modelId` | `string` | プリセット GLB 参照 | **非採用** |
+| `modelUrl` | `string` | GLB モデル URL | **非採用** |
+| `materialPreset` | `string` | マテリアルプリセット識別子 | **非採用** |
 
-> **注意:** これらのフィールドは現在の `NailItemInput` / `NailItemDoc` 型に含まれていません。追加する際は `src/lib/firestore.ts` の型定義変更・Firestore マイグレーション戦略・UI 実装を合わせて計画してください。
+> **2026-10-06 修正:** `shape` / `mainColor` / `texture` / `decorationParts` は
+> `src/lib/firestoreModel.ts` に **optional フィールドとして既に実装済み**（従来「未実装」と記載していたのは誤り）。
+>
+> `modelId` / `modelUrl` / `materialPreset` は **非採用**。GLB を永続データの正にしない方針
+> （[CANONICAL_NAIL_DATA_CONTRACT.md](./CANONICAL_NAIL_DATA_CONTRACT.md)）により、
+> 3D データは `NailItem` 本体ではなくサブコレクション `nailItems/{itemId}/nail3d/current` に置く。
+> したがって **実物復元のための `NailItem` スキーマ変更は不要**。
+>
+> なお `NailItem.shape`（ユーザーが選ぶ分類・検索用）と `NailGeometry.shape`（スキャン推定・描画用）は
+> 別物として併存させる。
 
 ---
 

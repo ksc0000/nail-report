@@ -1,5 +1,20 @@
 # 3D Asset Delivery Strategy
 
+> **2026-10-06 — 適用範囲の限定。** 本書は **プロダクト所有の静的プリセットアセット**の配信戦略である。
+> 実物のネイルを復元する経路（Personal Hand Base + Replaceable Nail Set）には適用されない。
+> そちらでは **Canonical Nail Data が正であり、GLB は派生 asset（レンダリングキャッシュ）** として扱う。
+> → [CANONICAL_NAIL_DATA_CONTRACT.md](./CANONICAL_NAIL_DATA_CONTRACT.md)
+>
+> 実物復元経路での差異:
+>
+> | | 本書（プリセット） | 実物復元（CND） |
+> |---|---|---|
+> | 正となるデータ | GLB ファイル | **Canonical Nail Data（JSON ＋ NailTexture 画像）** |
+> | GLB の位置づけ | 配信する成果物 | **派生・キャッシュ・削除可。MVP では生成しない** |
+> | 所有者 | プロダクト（公開・静的） | **ユーザー（private）** ← 本書に存在しなかった第 3 のカテゴリ |
+> | ライセンス審査 | 必要（G16） | 不要（ユーザー自身のデータ。G3 / G6 の対象） |
+> | バックアップ対象 | ― | **Canonical のみ。派生 asset は含めない** |
+
 This document records the planned delivery strategy for future 3D nail assets in Phase 8 and Phase 9. It is a design document only. No 3D assets, Firebase rules changes, or runtime dependencies are introduced by this document.
 
 ## Goals
@@ -72,6 +87,19 @@ Do not commit or upload third-party 3D assets until license and size checks are 
 ## Firebase And Access Model
 
 The expected product behavior is that base 3D assets are public, static product assets, while user nail photos remain private owner-scoped data unless explicitly shared.
+
+**Third category (added 2026-10-06): user-owned private 3D data.** `HandProfile`, `NailSet`, and
+`NailTexture` are produced from the user's own scan. They are neither public product assets nor photos:
+
+- Stored under `users/{uid}/...`, owner-only, never public by default.
+- A share publishes a **copy** scoped to the share (`publicAssets/{shareId}/...`), so revoking a share
+  never touches the originals.
+- Public read on the share-scoped copy is gated by Cross-service Rules (`firestore.get` against
+  `publicShares/{shareId}.isEnabled`) so that revoking a share also revokes asset access.
+- Do **not** use `getDownloadURL()` token URLs for shared assets — token URLs bypass Security Rules,
+  so revocation would not take effect.
+- Hand shape is close to an identifying characteristic, so the personal hand model is **not** shared by
+  default; a generic hand is substituted unless the user opts in (pending G6).
 
 Implementation rules:
 

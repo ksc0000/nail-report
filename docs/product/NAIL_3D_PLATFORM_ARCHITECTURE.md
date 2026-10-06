@@ -4,6 +4,13 @@
 > 前提: [NAIL_3D_SCAN_DIRECTION_REVIEW.md](./NAIL_3D_SCAN_DIRECTION_REVIEW.md) の方向性（Personal Hand Base + Replaceable Nail Set）は承認済み
 > 作成日: 2026-10-06
 > 目的: オーナー提案の責務分離（iOS = Capture / Scan Engine、共通データ = HandProfile + NailSocket + NailSet + 3D Asset、Web/R3F = Archive / Compare / Share）を第一候補として検証し、代替案と比較して推奨構成を出す。
+>
+> **2026-10-06 — 本書の推奨（案 A-1）はオーナー承認済み（G1）。** ネイティブ iOS + App Store 配布を許容。
+> 責務は iOS = Capture / Detection / Reconstruction、共通契約 = HandProfile + NailSocket + NailGeometry +
+> NailTexture + NailSet、Web/R3F = Archive / Compare / Share / Rendering。
+> **GLB は永続データの正にせず、Canonical Nail Data を正とし GLB 等は派生 asset として扱う。**
+> 契約の詳細は [CANONICAL_NAIL_DATA_CONTRACT.md](./CANONICAL_NAIL_DATA_CONTRACT.md)、
+> Issue 再編は [NAIL_3D_ISSUE_REORG_PLAN.md](./NAIL_3D_ISSUE_REORG_PLAN.md)。
 
 ---
 
@@ -390,14 +397,19 @@ src/App.tsx                   … lazy mount（数行）
 
 ---
 
-## 6. 未決の Human 判断（G1 / 要オーナー回答）
+## 6. Human 判断の状況
 
-| # | 判断事項 | 影響 |
+| # | 判断事項 | 状態 |
 |---|---|---|
-| 1 | **iOS 配布（App Store）を受け入れるか** | 受け入れないなら案 B へ切り替え。`IOS_RELEASE_PATH_DECISION.md` の部分見直し |
-| 2 | 復元処理を iOS に置く（A-1）ことの確認 | 契約の形が決まる。A-2 はプライバシー原則違反のため非推奨 |
-| 3 | 契約の正をこのリポジトリに置く運用の合意 | iOS が CI 範囲外である以上、ドリフト対策として必須 |
-| 4 | 共有時に personal hand を既定で含めないこと（5.1） | G6 と併せて判断 |
+| 1 | iOS 配布（App Store）を受け入れるか | **承認済み（G1, 2026-10-06）** |
+| 2 | 復元処理を iOS に置く（A-1） | **承認済み** |
+| 3 | 契約の正をこのリポジトリに置く運用 | **承認済み** → [CANONICAL_NAIL_DATA_CONTRACT.md](./CANONICAL_NAIL_DATA_CONTRACT.md) |
+| 4 | GLB を永続データの正にしない（CND を正とする） | **承認済み**（本書 3.3 で案 D 向けに想定していた以上の制約。MVP では GLB を生成しない） |
+| 5 | 共有時に personal hand を既定で含めないこと（5.1） | **未決（G6）** → 再編案 N15 |
+| 6 | 画像を含む共有をするか（現状 `publicShares` は imageUrl を除外） | **未決（G6）** → #407 の依存 |
+
+`IOS_RELEASE_PATH_DECISION.md` の PWA-first 方針は、**Nail Scan / 3D 生成に限りネイティブ iOS を併用する**
+形で部分的に見直された。写真記録（L0）は引き続き Web / PWA で完全に成立する。
 
 ---
 

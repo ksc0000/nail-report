@@ -536,7 +536,9 @@ Storage
 
 | ドキュメント / Issue | 関連 |
 |---|---|
-| [NAIL_3D_PLATFORM_ARCHITECTURE.md](./NAIL_3D_PLATFORM_ARCHITECTURE.md) | 本書 #A（プラットフォーム分裂）への回答。責務分離の比較と推奨案、Product Principle |
+| [CANONICAL_NAIL_DATA_CONTRACT.md](./CANONICAL_NAIL_DATA_CONTRACT.md) | **契約の正。** Canonical/Derived の二分、不変条件 INV-1〜3 |
+| [NAIL_3D_PLATFORM_ARCHITECTURE.md](./NAIL_3D_PLATFORM_ARCHITECTURE.md) | 本書 #A（プラットフォーム分裂）への回答。責務分離の比較と推奨案（案 A-1・G1 承認済み） |
+| [NAIL_3D_ISSUE_REORG_PLAN.md](./NAIL_3D_ISSUE_REORG_PLAN.md) | 本書 5 節の確定版。#390〜#407 の処置と追加 Issue |
 | [ROADMAP.md](./ROADMAP.md) | Phase 8 / 9、G16 / G17 の定義元 |
 | [PRODUCT_SPEC.md](./PRODUCT_SPEC.md) | Product Vision、NailItem 将来フィールド |
 | [3D_LIBRARY_EVALUATION.md](./3D_LIBRARY_EVALUATION.md) | R3F vs model-viewer（結論維持・理由更新） |
