@@ -99,11 +99,11 @@ users/{uid}/handProfiles/{handedness}
 |---|---|:---:|---|
 | `contractVersion` | number | ✅ | 契約バージョン（v1 = `1`） |
 | `handedness` | `"left" \| "right"` | ✅ | 記録単位が片手である既存決定（2026-09-15 / #392）と一致 |
-| `boneLengths` | number[20] | ✅ | landmarks から算出。正規化スケール |
-| `fingerRadii` | number[5] | ✅ | 指の太さ |
-| `canonicalPose` | object | ✅ | 正規化ポーズ。**撮影時ポーズは再現しない**（非目標） |
-| `nailSockets` | NailSocket[5] | ✅ | → 2.2 |
-| `source` | object | ✅ | `{ deviceClass, capturedAt, sampleCount }` |
+| `boneLengths` | number[] | ✅ | landmarks から算出。正規化スケール。**要素数は厳密に 20** |
+| `fingerRadii` | number[] | ✅ | 指の太さ。**要素数は厳密に 5** |
+| `canonicalPose` | object | ✅ | `{ wristOrigin: vec3, palmNormal: vec3, palmTangent: vec3 }`。**撮影時ポーズは再現しない**（非目標） |
+| `nailSockets` | NailSocket[] | ✅ | 1〜5 件。`finger` は重複不可 → 2.2 |
+| `source` | object | ✅ | `{ deviceClass: string, capturedAt: string, sampleCount: int≥1 }` |
 | `reconstructionVersion` | number | ✅ | 生成アルゴリズム版 |
 | `updatedAt` | Timestamp | ✅ | |
 
@@ -144,7 +144,7 @@ users/{uid}/handProfiles/{handedness}
 | フィールド | 型 | 必須 | 説明 |
 |---|---|:---:|---|
 | `textureRef` | string | ✅ | Storage パス（socket UV 空間に整形済み） |
-| `uvTransform` | mat3 | ✅ | socket 座標系への対応 |
+| `uvTransform` | number[9] | ✅ | socket 座標系への対応（row-major mat3） |
 | `heightMapRef` | string | — | **L1 / 2.5D 表現。これ単独でも成立する**（→ 3.2） |
 | `normalMapRef` | string | — | 任意 |
 | `capturedFrameHint` | string | — | 由来フレーム（デバッグ用・再スキャン判断） |
@@ -163,7 +163,7 @@ users/{uid}/nailItems/{itemId}/nail3d/current
 | `handProfileRef` | string | ✅ | 参照先が欠けていても L1 として描画可能 |
 | `nails` | array (≤5) | ✅ | `{ socketRef, geometry: NailGeometry, texture: NailTexture }` |
 | `quality` | object | ✅ | `{ overall, perNail[] }` |
-| `completeness` | `"full"\|"partial"` | ✅ | 5 本揃わなくても保存する |
+| `completeness` | `"full"\|"partial"` | ✅ | 5 本揃わなくても保存する。**`nails` の件数と一致すること**（`full` ⇔ 5 件） |
 | `createdAt` / `updatedAt` | Timestamp | ✅ | |
 
 **重要: `status: "failed"` のような失敗状態を持たない。** 失敗は「このドキュメントが存在しない」で表現する（INV-2）。部分成功は `completeness: "partial"` + `nails` の要素数で表現する。
@@ -197,15 +197,28 @@ users/{uid}/nailItems/{itemId}/measurement/current   ← 共有経路は読ま�
 ```text
 MAX_SUPPORTED_CONTRACT_VERSION = 1   // Web が理解できる上限
 
-NailSet を読んだとき:
-  1. ドキュメント不在                      → L0（写真のみ）。正常な状態として扱う
-  2. contractVersion > MAX_SUPPORTED       → L0。「新しい端末で作成されました」等の中立表示
-  3. contractVersion 欠落 / 数値でない     → L0
-  4. 必須フィールド欠落・型不一致          → L0。部分描画は試みない
-  5. handProfileRef の参照先が不在         → L1（2.5D）へ降格。heightMap があれば描画
-  6. textureRef の取得失敗                 → L0 へ降格
-  7. 上記すべて正常                        → L2 / L3 描画
+NailSet を読んだとき（この順序で評価する）:
+  1. ドキュメント不在 (null / undefined)   → L0 'absent'。異常ではなく正常な状態
+  2. オブジェクトでない                    → L0 'malformed'
+  3. contractVersion が正整数でない        → L0 'invalid-contract-version'
+  4. contractVersion > MAX_SUPPORTED       → L0 'unsupported-contract-version'
+  5. 必須フィールド欠落・型不一致          → L0 'malformed'。部分描画は試みない
+  6. textureRef（Canonical）が取得不可     → **その爪のみ除外**し droppedFingers に記録
+       └ 描画可能な爪が 0 本になった場合   → L0 'texture-unavailable'
+  7. HandProfile が不在 / 未対応版 / 不正  → L1 'hand-profile-missing'
+       └ handedness が NailSet と不一致     → L1（同 reason, detail に不一致を記録）
+       └ socket が 1 つも一致しない         → L1（同上）
+       └ 使用可能な heightMap が無い場合    → L0 'hand-profile-missing'
+  8. 上記すべて正常                        → L2 描画
 ```
+
+**6 の精緻化（実装時の決定）:** 当初は「texture 取得失敗 → L0」としていたが、
+**1 本のテクスチャ欠損で 5 本すべてを失うのは過剰**なため、該当する爪のみを除外し
+残りを描画する方式に変更した。`completeness: "partial"` と同じ思想であり、
+降格は「描画可能な爪が 0 本」のときだけ L0 まで落ちる。
+
+**L3 について:** `L3`（手 ＋ 10 本）は NailSet 2 つの合成であり、単一 NailSet を評価する
+`planNail3DRender()` の戻り値は `L0 | L1 | L2` に限られる。L3 の判定は 1 階層上で行う。
 
 **規範:**
 
@@ -319,6 +332,35 @@ CND は `NailItem` のサブコレクションに置くため、**`NailItem` の
 | T8 | 3D あり / なしの記録を一覧に混在 | 同等に表示される（優遇・欠陥表示なし） |
 
 ---
+
+## 7.1 実装（N1 完了分）
+
+| 成果物 | 内容 |
+|---|---|
+| `src/lib/nail3dContract.ts` | 契約の型定義とパーサ、`planNail3DRender()`（INV-3 の判定を実装）。Firebase / React / DOM に非依存 |
+| `contracts/nail3d/v1/fixtures/*.json` | **プラットフォーム非依存の契約 artifact。** 17 件（valid / unknown version / malformed / 部分欠損） |
+| `contracts/nail3d/v1/README.md` | fixtures 一覧と iOS 側の使い方、追加・変更ルール |
+| `tests/nail3dContract.test.ts` | fixtures をディスクから読み、降格挙動を 27 ケースで検証 |
+
+実行:
+
+```bash
+node --experimental-strip-types --test tests/nail3dContract.test.ts
+```
+
+> **未了（G9）:** `npm run test` はテストファイルを明示列挙しているため、本テストは
+> まだ `npm run test` に含まれていない。`package.json` の `test` スクリプトへの
+> 1 行追加が必要（`package.json` の変更は Human Gate G9）。
+
+検証済みの性質:
+
+- `valid-full` / `valid-partial` → L2。socket が欠ける指は除外され、残りは描画される
+- 未知 / 不正 / 欠落 `contractVersion` → L0（理由コードを区別）
+- malformed 5 種 → L0。部分描画しない
+- HandProfile 不在 / 未対応版 / 不正 / handedness 不一致 / socket 不一致 → L1、heightMap が無ければ L0
+- texture 1 件不可 → その爪のみ除外。全件不可 → L0
+- **additive-only の検証:** 未知フィールドを足しても L2 のまま（C1）
+- **例外を投げない:** 文字列・数値・配列・NaN・throw する getter など 15 種の異常入力すべてで L0 を返す
 
 ## 8. 参照
 

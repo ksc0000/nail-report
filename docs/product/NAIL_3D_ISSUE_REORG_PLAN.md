@@ -7,6 +7,11 @@
 
 本書は #390〜#407 の各 Issue に対する**処置を確定**し、追加すべき Issue を列挙する。適用（Issue の編集・起票）は未実施。
 
+> **2026-10-06 — N1（Canonical Nail Data 契約 v1）完了。**
+> 契約・fixtures・パース検証が揃い、Wave 1 の残り（N2 / N3）と Wave 2 / 3 に着手可能な状態。
+> 本書の Issue 再編（#404〜#407 の編集と新規起票）は**次の工程として実行可能**。
+> → [CANONICAL_NAIL_DATA_CONTRACT.md](./CANONICAL_NAIL_DATA_CONTRACT.md) 7.1 節
+
 ---
 
 ## 0. 再編の方針
@@ -212,7 +217,7 @@
 
 | # | 種別 | タイトル案 | Gate | 備考 |
 |---:|---|---|---|---|
-| N1 | contract | **Canonical Nail Data 契約 v1 を確定し JSON fixtures を追加する** | — | 仕様は docs 済み。fixtures と Web 側パーステストが成果物 |
+| N1 | contract | ~~Canonical Nail Data 契約 v1 を確定し JSON fixtures を追加する~~ | — | **実施済み（2026-10-06）。** `src/lib/nail3dContract.ts` / `contracts/nail3d/v1/` / `tests/nail3dContract.test.ts`。Issue 化は不要 |
 | N2 | contract | **ScanSession（iOS → CND 受け渡し）仕様を定義する** | — | frames / landmarks / nailQuads / captureMeta。EXIF・位置情報は保持しない |
 | N3 | design | **Firestore / Storage レイアウトと Rules を設計する**（private CND / 共有スコープ複製） | G3 / G4 / G6 | `nail3d/` と `publicAssets/` の新規パス。`contentType` 制約の見直し |
 | N4 | docs | HUMAN_GATES / PRODUCT_SPEC / ROADMAP / 3D 系 docs の不整合修正 | — | **本ブランチで実施済み。** Issue 化は不要 |
@@ -307,7 +312,8 @@ Wave 4                 └─ N13 ─ N14 ─ #392
 
 | ブロッカー | 影響 |
 |---|---|
-| **N1（契約 v1 確定）** | Wave 2 / 3 のすべて。契約未確定で実装を始めると両プラットフォームが手戻りする |
+| ~~N1（契約 v1 確定）~~ | **解消済み。** 契約 v1・fixtures 17 件・検証 27 ケースが揃い、Wave 2 / 3 に着手可能 |
+| **G9（`package.json` の test スクリプト 1 行追加）** | 契約テストが `npm run test` / CI に含まれない。回帰検知が効かないため、Wave 2 着手前に承認が望ましい |
 | **N6（features 分離）** | N8 以降。先に決めないと PR が 150 行規約に収まらない |
 | **G8 / G9 承認** | N5 以降の Web 実装すべて |
 | **#391 のオーナー撮影** | 推定器の実写較正。iOS 側の品質確定 |
