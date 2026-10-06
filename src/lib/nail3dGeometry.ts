@@ -430,3 +430,46 @@ export const boundsOfPlacedNails = (placed: readonly PlacedNail[]): PlacedBounds
 
   return { min, max, center, radius, viewDirection, upDirection }
 }
+
+export interface CameraFraming {
+  target: [number, number, number]
+  position: [number, number, number]
+  up: [number, number, number]
+  distance: number
+}
+
+export interface CameraFramingOptions {
+  sceneScale: number
+  fovDeg: number
+  /** Headroom around the bounding sphere. */
+  margin: number
+}
+
+/**
+ * Camera placement that puts `bounds` fully in view, looking along the nails'
+ * own surface normal.
+ *
+ * Exposed separately from the renderer so two views can be framed IDENTICALLY
+ * from one reference. Letting each view frame itself would rescale them
+ * independently and hide exactly the differences a comparison is meant to show.
+ */
+export const cameraFraming = (bounds: PlacedBounds, options: CameraFramingOptions): CameraFraming => {
+  const { sceneScale, fovDeg, margin } = options
+  const target: [number, number, number] = [
+    bounds.center[0] * sceneScale,
+    bounds.center[1] * sceneScale,
+    bounds.center[2] * sceneScale,
+  ]
+  const radius = bounds.radius * sceneScale
+  const distance = (radius / Math.tan((fovDeg / 2) * (Math.PI / 180))) * margin
+  return {
+    target,
+    distance,
+    position: [
+      target[0] + bounds.viewDirection[0] * distance,
+      target[1] + bounds.viewDirection[1] * distance,
+      target[2] + bounds.viewDirection[2] * distance,
+    ],
+    up: [bounds.upDirection[0], bounds.upDirection[1], bounds.upDirection[2]],
+  }
+}

@@ -19,20 +19,12 @@ import {
 import type { Mesh, Texture } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { planNail3DRender } from '../../lib/nail3dContract'
-import { boundsOfPlacedNails, buildFlatLayout, buildPlacedNails } from '../../lib/nail3dGeometry'
+import { boundsOfPlacedNails, buildFlatLayout, buildPlacedNails, cameraFraming } from '../../lib/nail3dGeometry'
 import type { Nail3DPlan } from '../../lib/nail3dContract'
-import type { PlacedNail } from '../../lib/nail3dGeometry'
+import type { CameraFraming, PlacedNail } from '../../lib/nail3dGeometry'
+import { CAMERA_FOV, SCENE_SCALE, VIEW_FRAMING_OPTIONS } from './viewFraming'
 import './nail3d.css'
 
-/**
- * CND is in metres (a nail bed is ~0.012). Scaling the scene up keeps the
- * geometry clear of three's default near plane and lets a conventional camera
- * distance work.
- */
-const SCENE_SCALE = 20
-const CAMERA_FOV = 40
-/** Headroom around the bounding sphere so the nails are not flush to the edge. */
-const FRAMING_MARGIN = 1.9
 /** Used until a NailTexture resolves — a neutral nail tone, never an error colour. */
 const UNTEXTURED_COLOR = '#e8c4cb'
 
@@ -144,6 +136,14 @@ export interface Nail3DViewProps {
   resolveTextureUrl?: (ref: string) => string | undefined
   /** Called with the decided plan, so callers can show the level in dev tools. */
   onPlan?: (plan: Nail3DPlan) => void
+  /**
+   * Fixes the camera instead of framing from this view's own geometry.
+   *
+   * Two views being compared MUST share one framing. If each framed itself,
+   * a size or position difference would be normalized away and become
+   * invisible — hiding exactly what the comparison is there to reveal.
+   */
+  framing?: CameraFraming | null
 }
 
 /**
@@ -158,6 +158,7 @@ const Nail3DView = ({
   unavailableRefs,
   resolveTextureUrl,
   onPlan,
+  framing: framingOverride,
 }: Nail3DViewProps) => {
   const plan = useMemo(
     () => planNail3DRender({ nailSet, handProfile, unavailableRefs }),
@@ -176,23 +177,13 @@ const Nail3DView = ({
 
   // Frame from the geometry itself so any HandProfile — including real scan
   // data — is in view without retuning the camera.
-  const framing = useMemo(() => {
+  const ownFraming = useMemo(() => {
     const bounds = boundsOfPlacedNails(placed)
     if (!bounds) return null
-    const target: [number, number, number] = [
-      bounds.center[0] * SCENE_SCALE,
-      bounds.center[1] * SCENE_SCALE,
-      bounds.center[2] * SCENE_SCALE,
-    ]
-    const radius = bounds.radius * SCENE_SCALE
-    const distance = (radius / Math.tan((CAMERA_FOV / 2) * (Math.PI / 180))) * FRAMING_MARGIN
-    const position: [number, number, number] = [
-      target[0] + bounds.viewDirection[0] * distance,
-      target[1] + bounds.viewDirection[1] * distance,
-      target[2] + bounds.viewDirection[2] * distance,
-    ]
-    return { target, distance, position, up: bounds.upDirection }
+    return cameraFraming(bounds, VIEW_FRAMING_OPTIONS)
   }, [placed])
+
+  const framing = framingOverride ?? ownFraming
 
   // L0, or geometry that could not be built: show no 3D area whatsoever.
   if (plan.level === 'L0' || placed.length === 0 || !framing) return null

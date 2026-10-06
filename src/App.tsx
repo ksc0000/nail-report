@@ -33,6 +33,7 @@ const TermsOfServicePage = lazy(() => import('./components/TermsOfServicePage'))
 const NailImageDetailViewer = lazy(() => import('./components/NailImageDetailViewer'))
 const NailComparisonPanel = lazy(() => import('./components/NailComparisonPanel'))
 const Nail3DPreview = lazy(() => import('./features/nail3d/Nail3DPreview'))
+const Nail3DCalibration = lazy(() => import('./features/nail3d/Nail3DCalibration'))
 import './App.css'
 
 const DISPLAY_MODES = ['Glass', 'Snow Globe', 'Velvet', 'Showcase'] as const
@@ -327,6 +328,7 @@ function App() {
   const isTermsPage = pathname === '/terms'
   // 3D レンダリング確認用。VITE_ENABLE_NAIL3D=true のときだけ到達でき、通常フローには影響しない。
   const isNail3DPreviewPage = isNail3DEnabled && pathname === '/nail3d-preview'
+  const isNail3DCalibrationPage = isNail3DEnabled && pathname === '/nail3d-calibration'
   const [user, setUser] = useState<User | null | undefined>(
     isFirebaseConfigComplete ? undefined : null
   )
@@ -1131,6 +1133,14 @@ function App() {
     return (
       <Suspense fallback={null}>
         <Nail3DPreview />
+      </Suspense>
+    )
+  }
+
+  if (isNail3DCalibrationPage) {
+    return (
+      <Suspense fallback={null}>
+        <Nail3DCalibration />
       </Suspense>
     )
   }

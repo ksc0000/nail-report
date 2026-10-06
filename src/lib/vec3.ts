@@ -49,6 +49,23 @@ export const angleBetweenDeg = (a: Vec3, b: Vec3): number | null => {
   return (Math.acos(cosine) * 180) / Math.PI
 }
 
+/**
+ * Rotates `point` around `axis` (through the origin) by `radians`, Rodrigues.
+ * A degenerate axis leaves the point untouched rather than producing NaN.
+ */
+export const rotateAroundAxis = (point: Vec3, axis: Vec3, radians: number): Vec3 => {
+  const k = normalize(axis)
+  if (!k || radians === 0) return point
+  const cos = Math.cos(radians)
+  const sin = Math.sin(radians)
+  return add(
+    add(scale(point, cos), scale(cross(k, point), sin)),
+    scale(k, (1 - cos) * dot(k, point)),
+  )
+}
+
+export const degToRad = (degrees: number): number => (degrees * Math.PI) / 180
+
 export interface OrthonormalBasis {
   x: Vec3
   y: Vec3

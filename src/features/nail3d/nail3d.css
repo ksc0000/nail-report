@@ -57,3 +57,74 @@
     background: linear-gradient(160deg, #2b2327 0%, #1d181a 100%);
   }
 }
+
+.nail3d-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.nail3d-compare-pane {
+  position: relative;
+  min-width: 0;
+}
+
+.nail3d-compare-label {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  z-index: 1;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5c4b51;
+  background: rgba(255, 255, 255, 0.78);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.nail3d-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #5c4b51;
+}
+
+.nail3d-slider input[type='range'] {
+  width: 100%;
+}
+
+.nail3d-results {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.nail3d-results th,
+.nail3d-results td {
+  border-bottom: 1px solid #e4d7dc;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.nail3d-export {
+  width: 100%;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  border: 1px solid #d8c6cc;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+@media (max-width: 640px) {
+  .nail3d-compare {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .nail3d-compare-label {
+    color: #f0e6ea;
+    background: rgba(40, 32, 36, 0.78);
+  }
+}
