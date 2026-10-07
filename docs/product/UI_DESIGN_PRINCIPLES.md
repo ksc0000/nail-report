@@ -111,7 +111,9 @@ The Nail screen may use a restrained **Floating Nail View** treatment: rounded-r
 
 This is an interaction treatment, not decorative glassmorphism.
 
-- Bubble/container stays visually quiet.
+- Bubble/container stays visually quiet and should generally be **compact rather than large card-like**.
+- Nail view may support multiple compositions such as **Flow / Scatter / Focus**; mixed horizontal/vertical placement is allowed when intentionally composed.
+- Each nail bubble may use a small lower-right **♡ favorite** action.
 - Nail may lag, translate, rotate, or scale subtly with scroll.
 - The nail remains the visual focal point.
 - Do not add floating particles, strong blur, rainbow reflections, heavy gradients, or decorative motion.
