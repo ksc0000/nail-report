@@ -218,6 +218,25 @@ weak perspective 2 視点では回転の大きさが深度スケールと厳密�
 - 交差検証に使えるのは `axisDisagreementDeg()`（軸の不一致）のみ。`poseDisagreement().baselineAxisDeg` は何も検証していない
 - 爪床 semantic landmarks は姿勢推定器の入力型に含めない。爪床の残差を独立した検証量として残すため
 
+### 4.2 既知 HandProfile を使う場合（Stage 6）
+
+**Canonical な Personal HandProfile（21 点の 3D 形状）を既知 prior として与えると、この縮退は消える**
+（PoC 計画 §6-H）。点ごとの深度が未知数でなくなり、各視点が姿勢あてはめ（回転 3 ＋スケール 1 ＋並進 2 対測定値 2N）になるため。
+
+| | landmark のみ | 既知 HandProfile 併用 |
+|---|---|---|
+| 相対回転の大きさ | **観測不能** | median 0.2° / p95 0.5° |
+| conditionNumber | ∞ | 1.8〜2.5 |
+| 必要点数 | 5 以上（それでも大きさは不能） | **4 以上** |
+| 実装 | `src/lib/nail3dLandmarkPose.ts` | `src/lib/nail3dProfilePose.ts` |
+
+HandProfile に必要なのは**形だけで、大きさは不要**（`units: 'profile'`。絶対スケールを ±20% 狂わせても結果は 1e-6 度まで同一）。
+拘束が効くのは**手のひら幅と手長の縦横比で、±5%（2° 予算）/ ±10%（4° 予算）**。
+厚み・横アーチ・指長比・MCP 位置はいずれも桁違いにゆるい。
+
+⚠ **縦横比の誤差は profile mismatch 残差にほとんど現れない**（指長 ±5% は残差 5.9 倍で無害、
+palm width +5% は残差 1.3 倍で予算の半分を消費）。較正時に測って確定させる必要があり、残差による検出には頼れない。
+
 ---
 
 ## 5. nail bed と free edge の入力契約（Stage 1 の結論を強制する）

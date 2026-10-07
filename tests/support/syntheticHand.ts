@@ -102,6 +102,14 @@ export interface SyntheticOptions {
   depthScale?: number
   /** Per-finger bone-length multiplier — finger proportion variation. */
   fingerScale?: Partial<Record<Finger, number>>
+  /** Scales the MCP row's lateral spread: a wider or narrower palm. */
+  palmWidthScale?: number
+  /**
+   * Deterministic displacement of each MCP, as a fraction of palm width.
+   * Separate from `landmarkNoise` because a HandProfile's MCPs can be
+   * systematically wrong while the detector is perfectly precise.
+   */
+  mcpJitter?: number
   /** Extra curl per joint, in degrees, added to the layout — articulation. */
   articulationDeg?: Partial<Record<Finger, number>>
   seed?: number
@@ -154,17 +162,27 @@ const archHeight = (finger: Finger, palmArch: number): number => {
   return palmArch * (pinkyX - indexX) * Math.max(0, 1 - offset * offset)
 }
 
+const PALM_WIDTH = LAYOUT.pinky.mcp[0] - LAYOUT.index.mcp[0]
+
 const buildFingerChain = (
   finger: Finger,
-  options: { palmArch?: number; boneScale?: number; extraCurlDeg?: number } = {},
+  options: {
+    palmArch?: number
+    boneScale?: number
+    extraCurlDeg?: number
+    palmWidthScale?: number
+    mcpOffset?: Vec3
+  } = {},
 ): FingerChain => {
   const layout = LAYOUT[finger]
   const boneScale = options.boneScale ?? 1
   const curl = layout.curl + ((options.extraCurlDeg ?? 0) * Math.PI) / 180
+  const widthScale = options.palmWidthScale ?? 1
+  const offset = options.mcpOffset ?? [0, 0, 0]
   const mcp: Vec3 = [
-    layout.mcp[0],
-    layout.mcp[1],
-    layout.mcp[2] + archHeight(finger, options.palmArch ?? 0),
+    layout.mcp[0] * widthScale + offset[0],
+    layout.mcp[1] + offset[1],
+    layout.mcp[2] + archHeight(finger, options.palmArch ?? 0) + offset[2],
   ]
   const joints: Vec3[] = [mcp]
   let direction: Vec3 = normalize([finger === 'thumb' ? -0.45 : 0, 1, 0]) ?? [0, 1, 0]
@@ -236,11 +254,19 @@ export const syntheticHand = (options: SyntheticOptions = {}): SyntheticHand => 
   const bedCorners = {} as Record<Finger, NailBedCorners>
   const fullNailCorners = {} as Record<Finger, NailBedCorners>
 
+  // Drawn once per hand, before the finger loop, so a given seed always moves
+  // the same MCP the same way however the other options change.
+  const mcpGaussian = gaussianSource((options.seed ?? 1) + 7919)
   for (const finger of Object.keys(LAYOUT) as Finger[]) {
+    const mcpSigma = (options.mcpJitter ?? 0) * PALM_WIDTH
     const chain = buildFingerChain(finger, {
       palmArch: options.palmArch,
       boneScale: options.fingerScale?.[finger],
       extraCurlDeg: options.articulationDeg?.[finger],
+      palmWidthScale: options.palmWidthScale,
+      mcpOffset: mcpSigma
+        ? [mcpGaussian() * mcpSigma, mcpGaussian() * mcpSigma, mcpGaussian() * mcpSigma]
+        : undefined,
     })
     const indices = FINGER_LANDMARKS[finger]
     const proximalLength = LAYOUT[finger].bones[0]
