@@ -210,6 +210,14 @@ R1〜R3 がないと「推定器を差し替えて再解析する」ができな
 **供給元はまだ確定していない。** ARKit / IMU が観測するのは camera-to-world であり、
 必要なのは camera-to-hand なので、両者が一致するのは手が静止している撮影モデルに限られる（§6-F D-1）。
 
+⚠ **21 hand landmarks からは相対回転の「軸」しか得られない**（PoC 計画 §6-G）。
+weak perspective 2 視点では回転の大きさが深度スケールと厳密にトレードオフするため、
+点を増やしても手を厚くしても観測可能にならない。したがって:
+
+- `src/lib/nail3dLandmarkPose.ts` は観測不能と判定したとき `rotation` を返さず `refusedReason: 'notObservable'` を返す
+- 交差検証に使えるのは `axisDisagreementDeg()`（軸の不一致）のみ。`poseDisagreement().baselineAxisDeg` は何も検証していない
+- 爪床 semantic landmarks は姿勢推定器の入力型に含めない。爪床の残差を独立した検証量として残すため
+
 ---
 
 ## 5. nail bed と free edge の入力契約（Stage 1 の結論を強制する）

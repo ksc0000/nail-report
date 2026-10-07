@@ -89,6 +89,21 @@ export interface SyntheticOptions {
   cornerNoise?: number
   /** Free edge beyond the bed, as a fraction of the bed length. */
   freeEdgeFraction?: number
+  /**
+   * Depth of the transverse metacarpal arch, as a fraction of palm width:
+   * how far the middle MCP stands above the line from the index to the pinky.
+   *
+   * This is the hand's only non-finger depth, so it is what makes a
+   * palm-only point set anything other than a plane. A real hand is around
+   * 0.12-0.18; the default is 0, which keeps the palm exactly flat.
+   */
+  palmArch?: number
+  /** Scales every depth about the palm plane: a thinner or thicker hand. */
+  depthScale?: number
+  /** Per-finger bone-length multiplier — finger proportion variation. */
+  fingerScale?: Partial<Record<Finger, number>>
+  /** Extra curl per joint, in degrees, added to the layout — articulation. */
+  articulationDeg?: Partial<Record<Finger, number>>
   seed?: number
 }
 
@@ -126,17 +141,40 @@ interface FingerChain {
   distalLength: number
 }
 
-const buildFingerChain = (finger: Finger): FingerChain => {
+/** The metacarpal arch: how far this finger's MCP stands off the palm plane. */
+const archHeight = (finger: Finger, palmArch: number): number => {
+  if (!palmArch) return 0
+  const indexX = LAYOUT.index.mcp[0]
+  const pinkyX = LAYOUT.pinky.mcp[0]
+  const halfWidth = (pinkyX - indexX) / 2
+  const centre = (pinkyX + indexX) / 2
+  const offset = (LAYOUT[finger].mcp[0] - centre) / halfWidth
+  // A parabola across the palm, peaking between the middle and ring MCPs and
+  // falling to zero at the index and pinky — the shape of a real arch.
+  return palmArch * (pinkyX - indexX) * Math.max(0, 1 - offset * offset)
+}
+
+const buildFingerChain = (
+  finger: Finger,
+  options: { palmArch?: number; boneScale?: number; extraCurlDeg?: number } = {},
+): FingerChain => {
   const layout = LAYOUT[finger]
-  const joints: Vec3[] = [layout.mcp]
+  const boneScale = options.boneScale ?? 1
+  const curl = layout.curl + ((options.extraCurlDeg ?? 0) * Math.PI) / 180
+  const mcp: Vec3 = [
+    layout.mcp[0],
+    layout.mcp[1],
+    layout.mcp[2] + archHeight(finger, options.palmArch ?? 0),
+  ]
+  const joints: Vec3[] = [mcp]
   let direction: Vec3 = normalize([finger === 'thumb' ? -0.45 : 0, 1, 0]) ?? [0, 1, 0]
   const lateral: Vec3 = [1, 0, 0]
 
   for (let i = 0; i < 3; i += 1) {
     // Each joint curls a little toward the palm, so the nail plane is never
     // exactly axis-aligned and the frame is genuinely exercised.
-    direction = normalize(rotate(direction, lateral, layout.curl)) ?? direction
-    joints.push(add(joints[i], scale(direction, layout.bones[i])))
+    direction = normalize(rotate(direction, lateral, curl)) ?? direction
+    joints.push(add(joints[i], scale(direction, layout.bones[i] * boneScale)))
   }
 
   const distalDir = normalize(sub(joints[3], joints[2])) ?? [0, 1, 0]
@@ -183,17 +221,27 @@ export const syntheticHand = (options: SyntheticOptions = {}): SyntheticHand => 
   const gaussian = gaussianSource(options.seed ?? 1)
   const freeEdge = options.freeEdgeFraction ?? 0
 
+  const depthScale = options.depthScale ?? 1
+  // A thinner or thicker hand: every depth about the palm plane is scaled
+  // before the pose is applied, so the whole hand flattens together.
+  const toWorld = (point: Vec3): Vec3 =>
+    applyPose(depthScale === 1 ? point : [point[0], point[1], point[2] * depthScale], pose)
+
   const landmarks: Vec3[] = new Array<Vec3>(LANDMARK_COUNT).fill([0, 0, 0])
   // The wrist takes part in the palm normal, so it must be posed like any
   // other landmark — leaving it at the origin silently breaks translation
   // invariance while rotation still passes.
-  landmarks[WRIST] = applyPose([0, 0, 0], pose)
+  landmarks[WRIST] = toWorld([0, 0, 0])
 
   const bedCorners = {} as Record<Finger, NailBedCorners>
   const fullNailCorners = {} as Record<Finger, NailBedCorners>
 
   for (const finger of Object.keys(LAYOUT) as Finger[]) {
-    const chain = buildFingerChain(finger)
+    const chain = buildFingerChain(finger, {
+      palmArch: options.palmArch,
+      boneScale: options.fingerScale?.[finger],
+      extraCurlDeg: options.articulationDeg?.[finger],
+    })
     const indices = FINGER_LANDMARKS[finger]
     const proximalLength = LAYOUT[finger].bones[0]
 
@@ -203,7 +251,7 @@ export const syntheticHand = (options: SyntheticOptions = {}): SyntheticHand => 
         const sigma = options.landmarkNoise * proximalLength
         point = add(point, [gaussian() * sigma, gaussian() * sigma, gaussian() * sigma])
       }
-      landmarks[landmarkIndex] = applyPose(point, pose)
+      landmarks[landmarkIndex] = toWorld(point)
     })
 
     const bedLength = chain.distalLength * BED_LENGTH_FRACTION
@@ -217,10 +265,10 @@ export const syntheticHand = (options: SyntheticOptions = {}): SyntheticHand => 
 
     const withNoise = (corners: NailBedCorners): NailBedCorners =>
       corners.map(corner => {
-        if (!options.cornerNoise) return applyPose(corner, pose)
+        if (!options.cornerNoise) return toWorld(corner)
         const sigma = options.cornerNoise * bedLength
         const jittered = add(corner, [gaussian() * sigma, gaussian() * sigma, gaussian() * sigma])
-        return applyPose(jittered, pose)
+        return toWorld(jittered)
       }) as unknown as NailBedCorners
 
     bedCorners[finger] = withNoise(bed)
