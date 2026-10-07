@@ -9,6 +9,18 @@
 
 Nailous は、ネイル写真・メモ・タグをかんたんに残し、あとから見返し、必要な相手に共有できる、ネイル好きのためのパーソナルアーカイブです。
 
+## UI Direction（2026-10-07 決定）
+
+UI の正は [UI_DESIGN_PRINCIPLES.md](./UI_DESIGN_PRINCIPLES.md) とする。
+
+- 下部の主要ナビゲーションは **「ネイル / 撮る / 検索」** の3項目だけにする。
+- 3項目は最終的に Nailous 専用の特製アイコンとして設計し、汎用システムアイコンだけでブランド表現を完結させない。
+- アカウント設定・規約・ヘルプ・詳細・ログアウトなどの低頻度操作は、右上の **「…」** などのオーバーフローメニューへ集約する。
+- UI は **minimal / monochrome** を基本とし、装飾背景、柄、glass、gold-rim、過剰なグラデーション・影・カード装飾は原則使わない。
+- 白 / 黒 / neutral gray を主なUI色とし、**ネイル写真・3Dネイルそのものを画面上の主な色とインパクトにする。**
+- 原則は **“Minimal UI. Maximum Nail.”**。管理画面ではなく、ネイルビューを主役にする。
+
+
 ---
 
 ## Target Users
@@ -148,20 +160,21 @@ Nailous は、ネイル写真・メモ・タグをかんたんに残し、あと
 
 ---
 
-## Jewelry Box Route Map
+## App Navigation Model
 
-> このセクションは Phase 1 のルーティング整理です。現在の手動ルーティングを壊さず、将来のBottom Navigation実装に備えて画面IDとURL方針を定義します。
+> 2026-10-07: 旧 Jewelry Box の6画面 bottom-nav 計画は廃止。現在の正は [BOTTOM_NAV_DESIGN.md](./BOTTOM_NAV_DESIGN.md) と [UI_DESIGN_PRINCIPLES.md](./UI_DESIGN_PRINCIPLES.md)。
 
-### Future App Screens
+### Primary bottom navigation
 
-| Screen | Proposed route | Current implementation source | Notes |
-|---|---|---|---|
-| Home | `/` | Signed-in Jewelry Box studio hero and collection entry | Signed-out users also use `/` for the landing page. Auth state determines the visible shell. |
-| Nail Design | `/design` | `nail-design-screen`, existing add/edit form, shape/color/texture/parts controls | Route implementation is deferred; current UI remains on `/`. |
-| Inspiration | `/inspiration` | `inspiration-screen`, static Explore cards, category tabs | Static UI exists; data fetching is not required yet. |
-| Saved Designs | `/saved` | Existing `nailItems` list, search, filters, detail viewer | Premium saved/liked separation is future work. |
-| Book Appointment | `/book` | Existing memo, share, and export flows | Booking handoff is future work; no scheduling backend exists. |
-| Profile | `/profile` | Auth bar, data management modal, legal/export links | Account/settings shell is future work. |
+| Item | Role |
+|---|---|
+| **ネイル** | 自分のネイルビュー、履歴、比較への入口 |
+| **撮る** | カメラ撮影 / Nail Scan の開始 |
+| **検索** | ネイルの検索・発見 |
+
+### Secondary actions
+
+Profile / Settings / Legal / Help / Export / Sign out は bottom navigation に置かず、右上の **「…」** 等からアクセスする。
 
 ### Routes That Must Remain Supported
 
@@ -169,26 +182,7 @@ Nailous は、ネイル写真・メモ・タグをかんたんに残し、あと
 |---|---|
 | `/terms` | Terms page remains public and must not require auth. |
 | `/privacy` | Privacy page remains public and must not require auth. |
-| `/share/:id` | Public share route remains public and must not depend on the authenticated app shell or future bottom nav. |
-
-### Migration Risks
-
-| Risk | Mitigation |
-|---|---|
-| Manual `pathname` state and future screen state diverge | Introduce a single screen ID mapping before moving sections behind tabs. |
-| Public share route accidentally inherits authenticated UI | Keep `/share/:id` as an early route branch outside the signed-in app shell. |
-| Legal routes regress during bottom nav implementation | Keep `/terms` and `/privacy` route checks before authenticated screen rendering. |
-| Fixed bottom navigation covers forms or share actions | Reuse `--fixed-control-safe-gap` and maintain bottom content padding. |
-| Future route implementation changes too much at once | Migrate one screen at a time: Home, Nail Design, Inspiration, Saved Designs, Book Appointment, then Profile. |
-
-### Low-Risk Implementation Order
-
-1. Define screen IDs and route constants without changing rendered behavior.
-2. Add bottom navigation shell for authenticated users only.
-3. Move Home, Nail Design, and Inspiration sections behind screen selection.
-4. Move Saved Designs and Review/share-related surfaces after collection grid behavior is stable.
-5. Add Book Appointment and Profile shells as static screens.
-6. Consider a routing library only after manual route behavior and public routes are covered by regression checks.
+| `/share/:id` | Public share route remains public and must not depend on the authenticated app shell. |
 
 ---
 
