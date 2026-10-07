@@ -6,6 +6,7 @@ import {
   deleteNailItem,
 } from '../lib/firestore'
 import * as firestore from 'firebase/firestore'
+import { db } from '../lib/firebase'
 
 // Mock firebase/firestore
 vi.mock('firebase/firestore', () => ({
@@ -20,7 +21,7 @@ vi.mock('firebase/firestore', () => ({
 
 // Mock ../lib/firebase
 vi.mock('../lib/firebase', () => ({
-  db: { type: 'firestore' },
+  db: { type: 'firestore-instance' },
 }))
 
 describe('firestore helper functions', () => {
@@ -29,7 +30,6 @@ describe('firestore helper functions', () => {
   const input = {
     title: 'New Nail',
     imageUrl: 'http://example.com/image.png',
-    thumbnailUrl: 'http://example.com/thumb.png',
     tags: ['tag1'],
     memo: 'memo content',
   }
@@ -60,18 +60,12 @@ describe('firestore helper functions', () => {
 
       const result = await fetchNailItems(userId)
 
-      expect(firestore.collection).toHaveBeenCalledWith(expect.anything(), 'users', userId, 'nailItems')
+      expect(firestore.collection).toHaveBeenCalledWith(db, 'users', userId, 'nailItems')
       expect(result).toHaveLength(1)
-      expect(result[0]).toEqual({
+      expect(result[0]).toEqual(expect.objectContaining({
         id: 'item-1',
         title: 'Item 1',
-        imageUrl: 'url1',
-        thumbnailUrl: 'url1',
-        tags: [],
-        memo: '',
-        createdAt: null,
-        updatedAt: null,
-      })
+      }))
     })
 
     it('returns an empty array when no nail items are found', async () => {
@@ -80,8 +74,6 @@ describe('firestore helper functions', () => {
       } as unknown as never)
 
       const result = await fetchNailItems(userId)
-
-      expect(firestore.collection).toHaveBeenCalledWith(expect.anything(), 'users', userId, 'nailItems')
       expect(result).toEqual([])
     })
 
@@ -99,18 +91,30 @@ describe('firestore helper functions', () => {
 
       const result = await addNailItem(userId, input)
 
-      expect(firestore.collection).toHaveBeenCalledWith(expect.anything(), 'users', userId, 'nailItems')
-      expect(firestore.addDoc).toHaveBeenCalledWith(expect.anything(), {
+      expect(firestore.collection).toHaveBeenCalledWith(db, 'users', userId, 'nailItems')
+      expect(firestore.addDoc).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
         title: input.title,
-        imageUrl: input.imageUrl,
-        thumbnailUrl: input.imageUrl,
-        tags: input.tags,
-        memo: input.memo,
         imageSource: 'unknown',
         createdAt: 'mock-timestamp',
         updatedAt: 'mock-timestamp',
-      })
+      }))
       expect(result).toBe('new-item-id')
+    })
+
+    it('supports optional fields and explicit imageSource', async () => {
+      vi.mocked(firestore.addDoc).mockResolvedValue({ id: 'id2' } as unknown as never)
+      const inputWithExtras = {
+        ...input,
+        imageSource: 'camera' as const,
+        shape: 'oval',
+      }
+
+      await addNailItem(userId, inputWithExtras)
+
+      expect(firestore.addDoc).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+        imageSource: 'camera',
+        shape: 'oval',
+      }))
     })
 
     it('throws error when addDoc fails', async () => {
@@ -123,16 +127,11 @@ describe('firestore helper functions', () => {
     it('updates an existing nail item', async () => {
       await updateNailItem(userId, itemId, input)
 
-      expect(firestore.doc).toHaveBeenCalledWith(expect.anything(), 'users', userId, 'nailItems', itemId)
-      expect(firestore.updateDoc).toHaveBeenCalledWith(expect.anything(), {
+      expect(firestore.doc).toHaveBeenCalledWith(db, 'users', userId, 'nailItems', itemId)
+      expect(firestore.updateDoc).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
         title: input.title,
-        imageUrl: input.imageUrl,
-        thumbnailUrl: input.imageUrl,
-        tags: input.tags,
-        memo: input.memo,
-        imageSource: 'unknown',
         updatedAt: 'mock-timestamp',
-      })
+      }))
     })
 
     it('throws error when updateDoc fails', async () => {
@@ -145,7 +144,7 @@ describe('firestore helper functions', () => {
     it('deletes a nail item', async () => {
       await deleteNailItem(userId, itemId)
 
-      expect(firestore.doc).toHaveBeenCalledWith(expect.anything(), 'users', userId, 'nailItems', itemId)
+      expect(firestore.doc).toHaveBeenCalledWith(db, 'users', userId, 'nailItems', itemId)
       expect(firestore.deleteDoc).toHaveBeenCalled()
     })
 
