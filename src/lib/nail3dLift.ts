@@ -80,6 +80,11 @@ export interface LiftResiduals {
 export interface LiftedBed {
   finger: Finger
   quad: NailBedCorners
+  /**
+   * The optional bed points, lifted when the lift was asked to. Absent means
+   * "not used", never "observed at the origin".
+   */
+  optional?: Partial<Record<'cuticleApex' | 'bedWallSideA' | 'bedWallSideB', Vec3>>
 }
 
 export interface CanonicalObservation {

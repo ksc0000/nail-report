@@ -61,6 +61,13 @@ export interface ProjectionOptions {
   fingers?: readonly Finger[]
   /** Drops these landmarks, to exercise the "not measured" path. */
   omitLandmarks?: readonly string[]
+  /**
+   * Also emit the optional bed points. The synthetic bed is a flat
+   * rectangle, so cuticleApex lands ON the cuticle chord (a real cuticle is
+   * curved and its apex sits proximal of the chord), and each bed wall point
+   * is the midpoint of its lateral edge.
+   */
+  optionalBedPoints?: boolean
 }
 
 const observedPoint = (xy: readonly [number, number]): ObservedPoint2D => ({
@@ -80,18 +87,30 @@ const annotate = (
   quad: NailBedCorners,
   camera: CameraSetup,
   view: Mat3,
-): NailBedAnnotation => ({
-  finger,
-  // The synthetic layout runs the lateral axis from thumb (-x) to pinky (+x),
-  // so corner A is the thumb-side one.
-  sideAToward: 'thumb',
-  points: {
-    cuticleSideA: observedPoint(projectPoint(applyMat3(view, quad[0]), camera)),
-    cuticleSideB: observedPoint(projectPoint(applyMat3(view, quad[1]), camera)),
-    freeEdgeSideB: observedPoint(projectPoint(applyMat3(view, quad[2]), camera)),
-    freeEdgeSideA: observedPoint(projectPoint(applyMat3(view, quad[3]), camera)),
-  },
-})
+  optional = false,
+): NailBedAnnotation => {
+  const at = (point: Vec3) => observedPoint(projectPoint(applyMat3(view, point), camera))
+  const half = (a: Vec3, b: Vec3): Vec3 => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2]
+  return {
+    finger,
+    // The synthetic layout runs the lateral axis from thumb (-x) to pinky (+x),
+    // so corner A is the thumb-side one.
+    sideAToward: 'thumb',
+    points: {
+      cuticleSideA: at(quad[0]),
+      cuticleSideB: at(quad[1]),
+      freeEdgeSideB: at(quad[2]),
+      freeEdgeSideA: at(quad[3]),
+      ...(optional
+        ? {
+            cuticleApex: at(half(quad[0], quad[1])),
+            bedWallSideA: at(half(quad[0], quad[3])),
+            bedWallSideB: at(half(quad[1], quad[2])),
+          }
+        : {}),
+    },
+  }
+}
 
 export const projectToObservation = (
   hand: SyntheticHand,
@@ -121,7 +140,9 @@ export const projectToObservation = (
       const [x, y] = projectPoint(applyMat3(view, point), camera)
       return { name, x, y, confidence: 0.95 }
     }),
-    nails: fingers.map(finger => annotate(finger, hand.bedCorners[finger], camera, view)),
+    nails: fingers.map(finger =>
+      annotate(finger, hand.bedCorners[finger], camera, view, options.optionalBedPoints ?? false),
+    ),
     // Honest about what a synthetic capture does not have.
     missing: ['camera.focalLengthPx', 'camera.principalPointPx'],
   }
@@ -137,6 +158,12 @@ export interface JitterOptions {
   /** Per-point annotation sigma, in this view's pixels. */
   sigmaPx: number
   seed?: number
+  /** Jitter the 21 hand landmarks. Default true. */
+  landmarks?: boolean
+  /** Restrict landmark jitter to these names. Default: all of them. */
+  landmarkNames?: readonly string[]
+  /** Jitter the nail-bed points. Default true. */
+  nails?: boolean
 }
 
 /**
@@ -157,14 +184,21 @@ export const jitterObservation = (
   const sigma = options.sigmaPx
   const jitter = (value: number): number => value + gaussian() * sigma
 
+  const doLandmarks = options.landmarks ?? true
+  const doNails = options.nails ?? true
+
   return {
     ...observation,
-    landmarks: observation.landmarks.map(landmark =>
-      landmark.x === null || landmark.y === null
-        ? landmark
-        : { ...landmark, x: jitter(landmark.x), y: jitter(landmark.y) },
-    ),
-    nails: observation.nails.map(nail => ({
+    landmarks: observation.landmarks.map(landmark => {
+      // Draw for every landmark regardless, so restricting the subset does not
+      // change the noise any other landmark receives for the same seed.
+      const dx = jitter(0)
+      const dy = jitter(0)
+      if (!doLandmarks || landmark.x === null || landmark.y === null) return landmark
+      if (options.landmarkNames && !options.landmarkNames.includes(landmark.name)) return landmark
+      return { ...landmark, x: landmark.x + dx, y: landmark.y + dy }
+    }),
+    nails: !doNails ? observation.nails : observation.nails.map(nail => ({
       ...nail,
       points: Object.fromEntries(
         Object.entries(nail.points).map(([name, point]) => [

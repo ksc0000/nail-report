@@ -103,6 +103,15 @@ export interface MultiViewResiduals {
    * the pose the caller supplied.
    */
   reprojectionRmsPx: number
+  /**
+   * The same residual restricted to each finger's four bed corners.
+   *
+   * The overall figure averages the bed into the 21 hand landmarks, which
+   * dilutes a bed annotation error several-fold; this is the number a bed
+   * check should read. Like the overall residual it is blind to any error
+   * along the depth direction of the second view, which the depth absorbs.
+   */
+  bedReprojectionRmsPx: Partial<Record<Finger, number>>
   /** Why the lift refused, when it did. */
   refusedReason?: 'viewsTooSimilar' | 'tooFewCorrespondences' | 'scaleUnsolvable'
 }
@@ -127,9 +136,15 @@ const BASE_ASSUMPTIONS: readonly string[] = [
 /** Image pixels -> world-ish 2D, matching the v1 convention (Y negated). */
 const toPlane = (x: number, y: number): [number, number] => [x, -y]
 
+const OPTIONAL_BED_POINTS = ['cuticleApex', 'bedWallSideA', 'bedWallSideB'] as const
+type OptionalBedPoint = (typeof OPTIONAL_BED_POINTS)[number]
+
 interface Correspondence {
   /** Where this vector belongs once solved. */
-  slot: { kind: 'landmark'; index: number } | { kind: 'bed'; finger: Finger; corner: number }
+  slot:
+    | { kind: 'landmark'; index: number }
+    | { kind: 'bed'; finger: Finger; corner: number }
+    | { kind: 'bedOptional'; finger: Finger; name: OptionalBedPoint }
   /** Offset from the wrist in the reference view, in that view's pixels. */
   a: [number, number]
   /** The same offset as seen in the second view. */
@@ -156,6 +171,7 @@ const buildCorrespondences = (
   reference: ScanObservation,
   second: ScanObservation,
   fingers: readonly Finger[],
+  includeOptional: boolean,
 ): { items: Correspondence[]; wristA: [number, number]; wristB: [number, number] } | null => {
   const mapA = landmarkMap(reference)
   const mapB = landmarkMap(second)
@@ -186,6 +202,23 @@ const buildCorrespondences = (
         b: [quadB[corner][0] - wristB[0], quadB[corner][1] - wristB[1]],
       })
     }
+    if (!includeOptional) continue
+    const nailA = reference.nails.find(nail => nail.finger === finger)
+    const nailB = second.nails.find(nail => nail.finger === finger)
+    for (const name of OPTIONAL_BED_POINTS) {
+      const pa = nailA?.points[name]
+      const pb = nailB?.points[name]
+      // Only a point seen in BOTH views can be lifted; one-view points stay
+      // observations and are not invented a depth.
+      if (!pa || !pb) continue
+      const a = toPlane(pa.x, pa.y)
+      const b = toPlane(pb.x, pb.y)
+      items.push({
+        slot: { kind: 'bedOptional', finger, name },
+        a: [a[0] - wristA[0], a[1] - wristA[1]],
+        b: [b[0] - wristB[0], b[1] - wristB[1]],
+      })
+    }
   }
 
   return { items, wristA, wristB }
@@ -212,7 +245,7 @@ const buildCorrespondences = (
 const solve = (
   items: readonly Correspondence[],
   relative: Mat3,
-): { u: number; depths: number[]; reprojectionRmsPx: number } | null => {
+): { u: number; depths: number[]; reprojectionRmsPx: number; squaredErrors: number[] } | null => {
   const [r00, r01, r02, r10, r11, r12] = relative
   let numerator = 0
   let denominator = 0
@@ -234,20 +267,24 @@ const solve = (
 
   const normSquared = r02 * r02 + r12 * r12
   const depths: number[] = []
+  const squaredErrors: number[] = []
   let squaredError = 0
   items.forEach((item, index) => {
     const { mx, my } = prepared[index]
     // Least-squares depth from both rows of the second view.
     const alpha = (r02 * (item.b[0] - u * mx) + r12 * (item.b[1] - u * my)) / normSquared
     depths.push(alpha / u)
-    squaredError +=
+    const pointError =
       (u * mx + r02 * alpha - item.b[0]) ** 2 + (u * my + r12 * alpha - item.b[1]) ** 2
+    squaredErrors.push(pointError)
+    squaredError += pointError
   })
 
   return {
     u,
     depths,
     reprojectionRmsPx: Math.sqrt(squaredError / Math.max(1, items.length * 2)),
+    squaredErrors,
   }
 }
 
@@ -258,11 +295,21 @@ const solve = (
  * geometry does not determine depth. A plausible-looking 3D bed from two
  * nearly identical photos would be worse than none.
  */
+export interface LiftOptions {
+  /**
+   * Also lift cuticleApex and the bed-wall points when both views have them.
+   * Off by default, so a caller that does not use them gets exactly the
+   * four-corner lift it always got.
+   */
+  optionalBedPoints?: boolean
+}
+
 export const liftTwoView = (
   reference: ScanObservation,
   second: ScanObservation,
   setup: TwoViewSetup,
   fingers: readonly Finger[] = FINGERS,
+  options: LiftOptions = {},
 ): MultiViewResult => {
   const relative = multiplyMat3(setup.second.rotation, transposeMat3(setup.reference.rotation))
   const viewSeparationIndex = Math.hypot(relative[2], relative[5])
@@ -277,13 +324,14 @@ export const liftTwoView = (
       viewScaleRatio: Number.NaN,
       correspondences: 0,
       reprojectionRmsPx: Number.NaN,
+      bedReprojectionRmsPx: {},
       refusedReason: reason,
     },
   })
 
   if (viewSeparationIndex < threshold) return empty('viewsTooSimilar')
 
-  const built = buildCorrespondences(reference, second, fingers)
+  const built = buildCorrespondences(reference, second, fingers, options.optionalBedPoints ?? false)
   if (!built || built.items.length < 4) return empty('tooFewCorrespondences')
 
   const solved = solve(built.items, relative)
@@ -294,6 +342,7 @@ export const liftTwoView = (
   landmarks3d[WRIST] = [built.wristA[0], built.wristA[1], 0]
 
   const bedCorners = new Map<Finger, (Vec3 | null)[]>()
+  const bedOptional = new Map<Finger, Partial<Record<OptionalBedPoint, Vec3>>>()
   built.items.forEach((item, index) => {
     const point: Vec3 = [
       built.wristA[0] + item.a[0],
@@ -304,6 +353,12 @@ export const liftTwoView = (
       landmarks3d[item.slot.index] = point
       return
     }
+    if (item.slot.kind === 'bedOptional') {
+      const extra = bedOptional.get(item.slot.finger) ?? {}
+      extra[item.slot.name] = point
+      bedOptional.set(item.slot.finger, extra)
+      return
+    }
     const corners = bedCorners.get(item.slot.finger) ?? new Array<Vec3 | null>(4).fill(null)
     corners[item.slot.corner] = point
     bedCorners.set(item.slot.finger, corners)
@@ -311,7 +366,25 @@ export const liftTwoView = (
 
   const beds = [...bedCorners.entries()]
     .filter(([, corners]) => corners.every(corner => corner !== null))
-    .map(([finger, corners]) => ({ finger, quad: corners as unknown as NailBedCorners }))
+    .map(([finger, corners]) => {
+      const optional = bedOptional.get(finger)
+      return optional
+        ? { finger, quad: corners as unknown as NailBedCorners, optional }
+        : { finger, quad: corners as unknown as NailBedCorners }
+    })
+
+  const bedSquared = new Map<Finger, { total: number; count: number }>()
+  built.items.forEach((item, index) => {
+    if (item.slot.kind === 'landmark') return
+    const entry = bedSquared.get(item.slot.finger) ?? { total: 0, count: 0 }
+    entry.total += solved.squaredErrors[index]
+    entry.count += 1
+    bedSquared.set(item.slot.finger, entry)
+  })
+  const bedReprojectionRmsPx: Partial<Record<Finger, number>> = {}
+  for (const [finger, entry] of bedSquared) {
+    bedReprojectionRmsPx[finger] = Math.sqrt(entry.total / Math.max(1, entry.count * 2))
+  }
 
   const scaleReferencePx = (() => {
     const index = landmarks3d[FINGER_LANDMARKS.index[0]]
@@ -347,6 +420,7 @@ export const liftTwoView = (
       viewScaleRatio: solved.u,
       correspondences: built.items.length,
       reprojectionRmsPx: solved.reprojectionRmsPx,
+      bedReprojectionRmsPx,
     },
   }
 }

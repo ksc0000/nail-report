@@ -255,6 +255,22 @@ palm width +5% は残差 1.3 倍で予算の半分を消費）。較正時に測
 
 ---
 
+### 4.4 爪床 semantic landmarks の精度の効き方（Stage 8）
+
+PoC 計画 §6-J の要約。**Layer A の点の定義は変えていない**（効き方を測っただけ）。
+
+| 点 | socket のどこに効くか | 残差で検出できない誤差 |
+|---|---|---|
+| `cuticleSideA` / `cuticleSideB` | **origin（爪床由来では唯一）**・width・length・tangent・normal | 両 view 共通の偏り、左右非対称、半月などとの取り違え |
+| `freeEdgeSideA` / `freeEdgeSideB` | length・tangent・normal（**origin と width には効かない**） | 両 view 共通の偏り、**爪先端との取り違え**（M6 でのみ検出） |
+| `cuticleApex` / `bedWallSideA` / `bedWallSideB` | **推定器が読む場合のみ**: apex で origin −11%、walls で width p95 −28% | — |
+
+- 要求精度は**画素ではなく爪床長に対する比**で決まる（origin p95 ≈ 1.64 × 爪床 σ / 爪床長）
+- **cuticle と free edge の入れ替え**は tangent の向き（canonical +y が指先方向）で必ず検出できる
+- ⚠ **origin については手 landmark（indexPIP）の精度のほうが爪床より約 2 倍効く**（§6-J 0, E）
+
+---
+
 ## 5. nail bed と free edge の入力契約（Stage 1 の結論を強制する）
 
 ### 5.1 禁止
