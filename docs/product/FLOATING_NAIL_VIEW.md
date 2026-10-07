@@ -31,6 +31,63 @@ The bubble is only a framing surface that gives the nail depth and separation fr
 
 The nail remains the hero.
 
+### Bubble scale
+
+The current direction is **smaller bubbles with more surrounding whitespace**, rather than large card-like panels that dominate the viewport.
+
+- A bubble should feel like a compact viewing capsule, not a dashboard card.
+- Multiple bubbles may coexist in one viewport.
+- Size may vary by layout or emphasis.
+- Do not hard-code one fixed card size as the product identity.
+- Exact dimensions remain a PoC/tuning decision rather than a canonical constant.
+
+## Layout Variety
+
+Floating Nail View is **not limited to one grid or one orientation**.
+
+Supported visual families may include:
+
+### Flow
+
+Bubbles follow a calm, mostly consistent direction/order. This is the clearest archive/history presentation.
+
+### Scatter
+
+Bubbles are distributed more freely across the canvas:
+
+- mixed portrait / landscape orientation
+- modest variation in size
+- non-uniform X/Y placement
+- optional slight rotation
+- intentional whitespace between groups
+
+Scatter should look editorial and composed, not random or chaotic.
+
+### Focus
+
+One selected/current nail receives more space or depth while surrounding NailSets remain smaller and quieter.
+
+### Constraint
+
+The product should support multiple presentation modes without turning them into a large settings surface.
+
+Layout variety is a presentation capability. It does **not** imply that users must be shown many layout controls.
+
+The nail remains the hero.
+
+## Favorite Action
+
+Each nail bubble may expose a lightweight **heart favorite control in the lower-right corner**.
+
+- default: outline heart
+- favorited: filled heart
+- keep the control visually small and subordinate to the nail
+- avoid a large button background unless needed for contrast/accessibility
+- the heart position should remain predictable across layout variants
+- favorite state is an interaction/data concern independent of bubble layout and 3D rendering
+
+The same heart interaction language may later be reused in Search/discovery, but archive favorite and discovery-save semantics must remain explicit in the data model.
+
 ## Motion Direction
 
 Scrolling should create a small amount of inertial movement in the nail.
@@ -138,12 +195,15 @@ The interaction language should survive graceful degradation.
 
 Build one isolated Nail screen experiment with:
 
-- 3–5 rounded-rectangle nail bubbles
+- several **compact** rounded-rectangle nail bubbles with generous whitespace
 - neutral background
 - subtle configurable tint
+- a **Scatter** composition with mixed horizontal/vertical placement as one primary test case
+- a **Flow** composition as a second test case
+- small lower-right heart favorite controls
 - native scrolling
 - spring-delayed nail motion
-- one active/selected nail with slightly stronger presence
+- one active/selected nail with slightly stronger presence when testing Focus behavior
 - existing R3F renderer where available
 
 The PoC should answer only:
@@ -152,5 +212,8 @@ The PoC should answer only:
 2. Does the nail remain the strongest visual element?
 3. Does the treatment still feel minimal/monochrome?
 4. Does it perform smoothly on mobile?
+5. Do smaller bubbles still give the nail enough visual impact?
+6. Does Scatter feel intentional rather than cluttered?
+7. Can Flow / Scatter / Focus share the same bubble, favorite, motion, and renderer primitives?
 
 Do not expand it into a new UI framework before those are answered.
