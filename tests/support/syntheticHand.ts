@@ -118,6 +118,15 @@ export interface SyntheticOptions {
    */
   wristShift?: number
   /**
+   * Stress test, not a claim about any detector: the TIP landmark follows the
+   * nail, so it moves with `freeEdgeFraction`. 'axial' pushes it out along the
+   * distal phalanx by the free edge's length; 'dorsalTip' also lifts it onto
+   * the nail's height, where the nail tip sits when it outgrows the finger.
+   * If a real detector did either, every frame that reads TIP would move when
+   * only the nail changed.
+   */
+  tipFollowsNail?: 'axial' | 'dorsalTip'
+  /**
    * Deterministic displacement of each MCP, as a fraction of palm width.
    * Separate from `landmarkNoise` because a HandProfile's MCPs can be
    * systematically wrong while the detector is perfectly precise.
@@ -299,6 +308,11 @@ export const syntheticHand = (options: SyntheticOptions = {}): SyntheticHand => 
     })
 
     const bedLength = chain.distalLength * BED_LENGTH_FRACTION
+    if (options.tipFollowsNail && freeEdge) {
+      const outward = add(chain.joints[3], scale(chain.distalDir, bedLength * freeEdge))
+      const lift = options.tipFollowsNail === 'dorsalTip' ? chain.distalLength * FINGER_RADIUS_FRACTION : 0
+      landmarks[indices[3]] = toWorld(add(outward, scale(chain.dorsal, lift)))
+    }
     const bed = bedQuad(chain, BED_LENGTH_FRACTION)
     // A longer nail is not just a longer rectangle: the free edge also curls
     // toward the palm, which tilts the plane a naive full-nail outline fits.

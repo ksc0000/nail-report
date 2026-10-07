@@ -156,7 +156,24 @@ export const estimateSocket = (
 ): SocketObservation | null => {
   const frame = buildCanonicalHandFrame(landmarks, finger)
   if (!frame) return null
+  return socketInFrame(frame, landmarks, corners, finger)
+}
+
+/**
+ * The socket read from bed corners in a GIVEN frame.
+ *
+ * `estimateSocket` is this with the standard MCP -> PIP frame. Stage 9 feeds
+ * other frame definitions through the same arithmetic, so that any difference
+ * in the result comes from the frame and from nothing else.
+ */
+export const socketInFrame = (
+  frame: CanonicalHandFrame,
+  landmarks: readonly Vec3[],
+  corners: NailBedCorners,
+  finger: Finger,
+): SocketObservation | null => {
   if (!corners.every(isVec3)) return null
+  if (!(frame.scaleReferenceLength > 1e-9)) return null
 
   const [proximalA, proximalB, distalB, distalA] = corners
   const proximalMid = midpoint(proximalA, proximalB)

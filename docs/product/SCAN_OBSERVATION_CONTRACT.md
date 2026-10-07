@@ -269,6 +269,26 @@ PoC 計画 §6-J の要約。**Layer A の点の定義は変えていない**（
 - **cuticle と free edge の入れ替え**は tangent の向き（canonical +y が指先方向）で必ず検出できる
 - ⚠ **origin については手 landmark（indexPIP）の精度のほうが爪床より約 2 倍効く**（§6-J 0, E）
 
+### 4.5 canonical frame の定義（Stage 9）
+
+PoC 計画 §6-K の要約。**Layer A は変えていない**。frame は Layer B → C の導出の一部で、どの定義も Layer A と HandProfile から作り直せる。
+
+| | 現行（F0） | 採用候補（`F3dNoTip`、synthetic のみ） |
+|---|---|---|
+| 原点 | indexMCP | profile の指チェーンを PIP・DIP にあてはめた DIP |
+| 指軸 | MCP → PIP | あてはめた末節方向（DIP 角は較正姿勢） |
+| 尺度 | \|MCP → PIP\| | 手のひら（wrist ＋ 5 MCP）への profile の相似あてはめ × profile の近位指骨長 |
+| 必要な入力 | Layer B の landmarks | Layer B の landmarks ＋ **Personal HandProfile（H1 で足りる）** |
+| 読まない点 | — | **TIP**（爪に最も近く、NailSet で動く疑いが最も強い手 landmark） |
+
+採用するなら守ること:
+
+- **socket は frame の定義をまたいで比べない。** 同じ爪でも原点が違えば座標が違う。`handFrame` と `NormalizedNailSocket` に frame 定義の識別子を持たせ、
+  `liftVersion` と同じく、定義を変えたら Layer A から作り直す
+- **socket が HandProfile に依存するようになる。** 較正をやり直したら（profile が変わったら）socket も作り直す。導出元に profile の版を記録する
+- **frame に TIP を使わない。** NailSet を替えても socket が動かないこと（M6）を構造で保証するため。§5 で free edge を読まないのと同じ理由
+- 単位は従来どおり `units: 'normalized'`・`scaleReference: 'proximalPhalanx'`。メートルへの変換は作らない
+
 ---
 
 ## 5. nail bed と free edge の入力契約（Stage 1 の結論を強制する）
