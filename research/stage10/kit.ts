@@ -103,13 +103,14 @@ export const parseAnnotationCsv = (text: string): { rows: AnnotationRow[]; error
     .map(line => line.trim())
     .filter(line => line.length > 0 && !line.startsWith('#'))
   if (lines.length === 0) return { rows, errors: ['annotations: empty'] }
-  if (lines[0].replace(/\s/g, '') !== 'captureId,pass,point,x,y') {
+  if (lines[0].replace(/[\s"]/g, '') !== 'captureId,pass,point,x,y') {
     errors.push('annotations: the header must be captureId,pass,point,x,y')
   }
   const seen = new Set<string>()
   lines.slice(1).forEach((line, index) => {
     const where = `annotations line ${index + 2}`
-    const cells = line.split(',').map(cell => cell.trim())
+    // Spreadsheet exports may quote cells; the values themselves never contain commas.
+    const cells = line.split(',').map(cell => cell.trim().replace(/^"(.*)"$/, '$1').trim())
     if (cells.length !== 5) {
       errors.push(`${where}: expected 5 columns`)
       return

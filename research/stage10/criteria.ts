@@ -85,8 +85,8 @@ export interface Distribution {
 
 const distribution = (values: number[]): Distribution => {
   const sorted = values.filter(Number.isFinite).sort((a, b) => a - b)
-  const at = (q: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))]
-  return { median: at(0.5), p90: at(0.9), max: sorted[sorted.length - 1], values: sorted }
+  const at = (q: number) => (sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))] : Number.NaN)
+  return { median: at(0.5), p90: at(0.9), max: sorted.length ? sorted[sorted.length - 1] : Number.NaN, values: sorted }
 }
 
 export interface SyntheticExpectation {
@@ -118,6 +118,12 @@ const analyseDryRun = (options: Parameters<typeof dryRunDataset>[0]) => {
  * numbers should look like.
  */
 export const simulateExpectation = (noise: MeasuredNoise, seeds = 3): SyntheticExpectation => {
+  // No measured noise (too few annotated photos): there is nothing to simulate
+  // at, and every criterion that needs the expectation reads N/A.
+  if (!Number.isFinite(noise.detectorPct)) {
+    const none = distribution([])
+    return { noise, datasets: 0, m1: { F0: none, F3dNoTip: none }, ratio: none, poseMedianDeg: none, axisGapSdDeg: none, remainder: none }
+  }
   const m1F0: number[] = []
   const m1F3: number[] = []
   const ratio: number[] = []
@@ -222,11 +228,16 @@ export const evaluateCriteria = (analysis: Stage10Analysis, expected: SyntheticE
     assumption: 'H1 + palmRigid recovers the relative pose as well as in synthetic (Stage 7)',
     measured: `refusals ${f(analysis.pose.refusalRate * 100, 0)}%, median deviation ${f(analysis.pose.acrossSessionsMedianDeg)}° (synthetic ${f(expected.poseMedianDeg.median)}°)`,
     rule: `BREAK if refusals > ${THRESHOLDS.poseRefusalRate * 100}% or scatter > ${THRESHOLDS.poseScatterFactor}× synthetic`,
+    // A comparison with an unknown (NaN) limit is not a pass: it is N/A.
     status: !Number.isFinite(analysis.pose.refusalRate)
       ? 'N/A'
-      : analysis.pose.refusalRate > THRESHOLDS.poseRefusalRate || analysis.pose.acrossSessionsMedianDeg > poseLimit
+      : analysis.pose.refusalRate > THRESHOLDS.poseRefusalRate
         ? 'BREAK'
-        : 'HOLD',
+        : !Number.isFinite(poseLimit) || !Number.isFinite(analysis.pose.acrossSessionsMedianDeg)
+          ? 'N/A'
+          : analysis.pose.acrossSessionsMedianDeg > poseLimit
+            ? 'BREAK'
+            : 'HOLD',
   })
 
   // B4 — origin repeatability vs the synthetic model at the measured noise (Q4)
@@ -242,12 +253,19 @@ export const evaluateCriteria = (analysis: Stage10Analysis, expected: SyntheticE
       .map(name => `${name} M1 ${f(frame(name).m1Pooled)}% (synthetic ${f(expected.m1[name].median)}%)`)
       .join(', '),
     rule: `BREAK if either > ${THRESHOLDS.repeatabilityFactor}× synthetic median`,
-    status: !Number.isFinite(frame('F0').m1Pooled) ? 'N/A' : over.length ? 'BREAK' : 'HOLD',
+    status: (['F0', 'F3dNoTip'] as const).some(
+      name => !Number.isFinite(frame(name).m1Pooled) || !Number.isFinite(expected.m1[name].median),
+    )
+      ? 'N/A'
+      : over.length
+        ? 'BREAK'
+        : 'HOLD',
   })
 
   // B5 — F3dNoTip against F0 (Q3)
   const ratio = frame('F3dNoTip').m1Pooled / frame('F0').m1Pooled
-  const moves = frame('F3dNoTip').m6 > THRESHOLDS.m6ChanceFactor * frame('F3dNoTip').m6Chance
+  const m6Known = Number.isFinite(frame('F3dNoTip').m6) && Number.isFinite(frame('F3dNoTip').m6Chance)
+  const moves = m6Known && frame('F3dNoTip').m6 > THRESHOLDS.m6ChanceFactor * frame('F3dNoTip').m6Chance
   criteria.push({
     id: 'B5',
     question: 'Q3',
@@ -258,9 +276,11 @@ export const evaluateCriteria = (analysis: Stage10Analysis, expected: SyntheticE
       ? 'N/A'
       : ratio >= THRESHOLDS.frameRatio || moves
         ? 'BREAK'
-        : ratio > expected.ratio.p90
-          ? 'WEAKENED'
-          : 'HOLD',
+        : !m6Known || !Number.isFinite(expected.ratio.p90)
+          ? 'N/A'
+          : ratio > expected.ratio.p90
+            ? 'WEAKENED'
+            : 'HOLD',
   })
 
   // B6 — DIP posture held by the capture UX (Q4)
@@ -271,7 +291,12 @@ export const evaluateCriteria = (analysis: Stage10Analysis, expected: SyntheticE
     assumption: 'the DIP angle repeats under the capture instructions (F3dNoTip holds it at calibration)',
     measured: `F3d − F3dNoTip axis gap SD ${f(analysis.axisGap.sdDeg)}° (synthetic ${f(expected.axisGapSdDeg.median)}°)`,
     rule: `BREAK if > ${f(gapLimit, 1)}° (max of ${THRESHOLDS.axisGapDeg}° and ${THRESHOLDS.axisGapFactor}× synthetic)`,
-    status: !Number.isFinite(analysis.axisGap.sdDeg) ? 'N/A' : analysis.axisGap.sdDeg > gapLimit ? 'BREAK' : 'HOLD',
+    status:
+      !Number.isFinite(analysis.axisGap.sdDeg) || !Number.isFinite(gapLimit)
+        ? 'N/A'
+        : analysis.axisGap.sdDeg > gapLimit
+          ? 'BREAK'
+          : 'HOLD',
   })
 
   // B7 — the origin budget closes (Q5)

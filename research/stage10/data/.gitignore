@@ -13,3 +13,6 @@
 *.DNG
 *.mov
 *.MOV
+# by-eye overlays drawn over the photos (smoke-check.ts)
+*.svg
+*.SVG

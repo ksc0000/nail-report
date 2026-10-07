@@ -2546,8 +2546,31 @@ B2 の素の χ²(2) 判定は少標本で裾が重く、誤報率が 10% あっ
 | 規模 | 1 人・右手・人差し指・1 日・1 照明。結果は「この条件で最初に崩れるもの」であって一般化しない |
 | アノテーション | 1 人が 2 回。人の間のばらつきは測らない |
 
+### Stage 10A — 本収集の前の capture pipeline smoke test
+
+目的は**実写 → `vision-dump.swift` → upright 座標 → 手動アノテーション → Layer A → frozen analyzer** が Mac 上で一周することの確認だけ。
+数枚（8 枚 ＋ 鏡像の negative control 1 枚）で行い、**Stage 10B の統計には使わず、accuracy / repeatability / F0 vs F3dNoTip の結論は出さない**。
+`research/stage10/smoke-check.ts` が 8 項目（Vision export・EXIF / orientation / mirroring・upright と座標・annotation と座標・landmark ID・parser・frozen analyzer・git）を機械的に判定し、
+画像と座標の重なりは overlay を目で見て確かめる。手順は `research/stage10/README.md` の Stage 10A。
+
+**Stage 10A で変えてよいのは measurement plumbing だけ**（I/O・座標変換・format・script / runtime bug）。frame・pose・lift・判定・閾値・配分・12 セッション・synthetic 基準は変えない。
+
+実写の前に、小さなデータ（較正 2 枚 ＋ 2 セッション）を frozen analyzer に通して見つかった plumbing の不具合は直した（判定の中身は不変。完全なデータでの判定は 1 つも変わらないことを空撃ちで確認）:
+
+| 不具合 | 修正 |
+|---|---|
+| 同条件 synthetic が計算できないとき（ノイズが測れない）、**NaN との比較が素通りで HOLD になっていた**（例: B3 が「synthetic n/a」で HOLD） | 判定できないものは **N/A** と書く。有限の値での判定は従来どおり |
+| ノイズが測れないのに同条件 synthetic を NaN のノイズで回していた | 回さずに「なし」を返す |
+| 数枚のデータでも判定表と指標（M6 など）を書き出し、結論のように読めた | `analyze.ts --smoke`: 全段を同じコードで走らせ、**判定も指標も書かず**、各キャプチャがどの段まで届いたかだけを `smoke-report.*` に書く |
+| 表計算ソフトの CSV（BOM・CRLF・引用符）で見出しや ID が一致しない | 読み込み時に BOM・引用符を外す |
+| `annotations.csv` が無い・JSON が壊れていると例外で落ちる | 問題として報告して続ける |
+| overlay（`*.overlay.svg`）が git に入りうる | `data/.gitignore` に追加 |
+
+`vision-dump.swift` は Mac がないので本セッションでは未実行で、**Stage 10A が最初の実行になる**。
+
 ### 次の手順
 
+0. **Stage 10A**（上記）を通す。FAIL があれば plumbing を直してからもう一度
 1. オーナー: `research/stage10/README.md` の手順で撮影 → `vision-dump.swift` → アノテーション → `research/stage10/data/<日付>/` に JSON と CSV を置いてコミット
 2. `node --experimental-strip-types research/stage10/analyze.ts research/stage10/data/<日付>` → 判定表・乖離・ボトルネック
 3. そこで止まり、次の Stage を判断する

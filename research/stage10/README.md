@@ -7,6 +7,61 @@
 > **解析は撮影前に固定してある**（`kit.ts` / `criteria.ts`）。実写を見てから解析やアルゴリズムを変えない。
 > 変えるときは別のコミット・別の解析として報告する（`analyze.ts` はコードが変わっていると報告の 1 行目に出す）。
 
+## Stage 10A — 本収集の前の smoke test（パイプラインが Mac 上で一周するかだけ）
+
+63 枚の前に、**実写 → `vision-dump.swift` → upright 座標 → 手動アノテーション → Layer A → frozen analyzer** が一周するかを数枚で確かめる。
+**Stage 10B の統計には使わない。accuracy / repeatability / F0 vs F3dNoTip の結論は出さない**（`analyze.ts --smoke` は判定も指標も出さない）。
+FAIL のときに直してよいのは I/O・座標変換・format・script / runtime bug だけ（frame・pose・lift・判定・閾値・配分・12 セッション・synthetic 基準は変えない）。
+
+**撮るもの（8 枚 ＋ 鏡像 1 枚）**: 下の §0〜§1 と同じ置き方・同じ 2 か所の印で。
+
+| ファイル名 | 内容 |
+|---|---|
+| `CAL-01`, `CAL-02` | V1、素の爪（置き直して 2 枚） |
+| `S1-N0-V1-1`, `S1-N0-V1-2` | V1、素の爪、**スマホを縦に**持って |
+| `S1-N0-V2-1`, `S1-N0-V2-2` | V2、素の爪 |
+| `S2-N1-V1-1`, `S2-N1-V2-1` | 長いチップを付けて、**スマホを横に**持って（EXIF の向きが変わる場合を通す） |
+| `MIRROR-S1-N0-V1-1` | **左右反転したコピー（negative control）**: `sips -s format jpeg -f horizontal S1-N0-V1-1.HEIC --out MIRROR-S1-N0-V1-1.jpg` |
+
+```bash
+D=research/stage10/data/smoke-2026-10-xx
+swift research/stage10/vision-dump.swift $D/obs --upright ~/stage10a-upright ~/stage10a-photos/*
+# annotate on ~/stage10a-upright/*.jpg  (§3 と同じ定義で、約 30 クリック):
+#   S1-N0-V1-1, S1-N0-V2-1 : pass 1 = cuticleSideA/B, freeEdgeSideA/B, indexDIP, indexPIP
+#   S1-N0-V1-1             : pass 2 = cuticleSideA/B, indexDIP, indexPIP
+#   S2-N1-V1-1, S2-N1-V2-1 : pass 1 = cuticleSideA/B, indexDIP, indexPIP
+#   -> $D/annotations.csv
+node --experimental-strip-types research/stage10/smoke-check.ts $D ~/stage10a-upright
+```
+
+`smoke-check.ts` が `$D/smoke-check.md` を書き、frozen analyzer を `--smoke` で走らせ（`smoke-report.md/json`）、`~/stage10a-upright/*.overlay.svg` を描く:
+
+| | 確かめること | 方法 |
+|---|---|---|
+| S1 | Vision export script が実機写真で動く | 写真ごとに JSON があり、21 点がこのリポジトリの名前で揃う（欠けたら FAIL — 凍結した F0 は 2 view とも 21 点を要する） |
+| S2 | EXIF / orientation / mirroring | JSON の幅高さ = upright コピーの幅高さ（1/4 回転のずれを検出）。右手の甲の向きの符号（wrist→indexMCP→pinkyMCP）と Vision の chirality。**`MIRROR-*` が無い、または鏡像と判定されないと FAIL**。EXIF の向きが 1 種類しかなければ LOOK（回転の経路を通っていない） |
+| S3 | upright 画像と landmark 座標の一致 | 全点が画像内。**overlay を目で見る（LOOK）**: 黄色の点が関節に、× が付けた点に乗っていること |
+| S4 | annotation CSV と画像座標の一致 | 画像内・付けた DIP/PIP に最も近い Vision の点が同じ名前・cuticle が Vision の DIP と TIP の間・A が親指側・自由縁が cuticle より遠位 |
+| S5 | DIP / PIP / TIP の landmark ID | 各指 MCP→TIP が手首から外へ順に並ぶ、indexDIP が indexPIP と indexTIP の間、親指の隣が index |
+| S6 | Layer A JSON が parser を通る | 単体でも、手で付けた爪床を合わせても |
+| S7 | frozen analyzer が実データを最後まで読む | `analyze.ts --smoke` が終了コード 0 で、少なくとも 1 ペアが F0 と F3dNoTip の socket origin まで届く |
+| S8 | 写真が git に入らない | `research/` に追跡中の画像がなく、リポジトリに追加されうる画像がない |
+
+**コミットするもの**: `$D/obs/*.json`・`annotations.csv`・`conditions.json`・`smoke-check.md`・`smoke-report.md/json` だけ。写真・upright・overlay は入れない（`data/.gitignore` が弾く）。
+
+### 10B の前の独立レビュー（Codex CLI）
+
+依頼文は [`review/REVIEW_REQUEST_10B_GATE.md`](review/REVIEW_REQUEST_10B_GATE.md)（結論を含めない。レビュアーがリポジトリを自分で読む）。ログイン済みの Codex CLI がある端末で、このブランチの最新を読ませる:
+
+```bash
+git fetch origin claude/festive-lovelace-5teapy && git checkout claude/festive-lovelace-5teapy && git pull
+npm ci   # レビュアーがテストを走らせられるように
+codex exec -m gpt-6-astra -s read-only -C "$PWD" --ephemeral \
+  -o ~/astra-10b-gate.md - < research/stage10/review/REVIEW_REQUEST_10B_GATE.md
+```
+
+`-s read-only` なのでレビュアーはファイルを書けない。結果（`~/astra-10b-gate.md`）は `research/stage10/review/` に置いてコミットするか、次の指示に添える。指摘は自動では直さない。
+
 ## 0. 用意するもの
 
 | | |
