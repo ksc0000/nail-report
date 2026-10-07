@@ -190,6 +190,21 @@ R1〜R3 がないと「推定器を差し替えて再解析する」ができな
 
 **`liftVersion` を上げれば Layer A から全部作り直せる。** これが「推定器を差し替えて再解析する」の実体。
 
+### 4.1 実装済みの liftVersion
+
+| version | method | 状態 |
+|---|---|---|
+| 1 | `weakPerspective+planarPalm+minimumTilt` | **baseline のみ。** 爪床の幅軸まわりの傾きが原理的に観測できない（PoC 計画 §6-D 3） |
+| 2 | `twoViewOrthographic+knownRelativePose` | 2 視点。v1 の盲点を解消（PoC 計画 §6-E） |
+
+**Layer A は version 2 でも変更していない。** カメラ姿勢は観測ではなく lift の入力なので、
+`ScanObservation` には入れず `TwoViewSetup`（参照視点 / 第 2 視点の回転）として別に渡す。
+同じ Layer A の観測 2 件があればそれで足りる。
+
+⚠ version 2 では、**与えた相対姿勢が誤っていても reprojection 残差に現れない**
+（2 視点正射影系は回転誤差に対する冗長性を持たない）。
+相対姿勢は画像の外（ARKit / IMU）から 1° 程度の精度で与える必要がある。詳細は PoC 計画 §6-E 5。
+
 ---
 
 ## 5. nail bed と free edge の入力契約（Stage 1 の結論を強制する）

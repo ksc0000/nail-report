@@ -66,6 +66,47 @@ export const rotateAroundAxis = (point: Vec3, axis: Vec3, radians: number): Vec3
 
 export const degToRad = (degrees: number): number => (degrees * Math.PI) / 180
 
+/** Row-major 3x3: [r00 r01 r02, r10 r11 r12, r20 r21 r22]. */
+export type Mat3 = readonly number[]
+
+export const IDENTITY_MAT3: Mat3 = [1, 0, 0, 0, 1, 0, 0, 0, 1]
+
+/** Rotation matrix for an axis-angle pair, row-major. */
+export const rotationMat3 = (axis: Vec3, radians: number): Mat3 => {
+  const k = normalize(axis)
+  if (!k) return IDENTITY_MAT3
+  const [x, y, z] = k
+  const c = Math.cos(radians)
+  const s = Math.sin(radians)
+  const t = 1 - c
+  return [
+    t * x * x + c, t * x * y - s * z, t * x * z + s * y,
+    t * x * y + s * z, t * y * y + c, t * y * z - s * x,
+    t * x * z - s * y, t * y * z + s * x, t * z * z + c,
+  ]
+}
+
+export const applyMat3 = (m: Mat3, v: Vec3): Vec3 => [
+  m[0] * v[0] + m[1] * v[1] + m[2] * v[2],
+  m[3] * v[0] + m[4] * v[1] + m[5] * v[2],
+  m[6] * v[0] + m[7] * v[1] + m[8] * v[2],
+]
+
+/** Transpose, which for a rotation is also its inverse. */
+export const transposeMat3 = (m: Mat3): Mat3 => [m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]]
+
+export const multiplyMat3 = (a: Mat3, b: Mat3): Mat3 => {
+  const out = new Array<number>(9).fill(0)
+  for (let row = 0; row < 3; row += 1) {
+    for (let col = 0; col < 3; col += 1) {
+      let sum = 0
+      for (let k = 0; k < 3; k += 1) sum += a[row * 3 + k] * b[k * 3 + col]
+      out[row * 3 + col] = sum
+    }
+  }
+  return out
+}
+
 export interface OrthonormalBasis {
   x: Vec3
   y: Vec3

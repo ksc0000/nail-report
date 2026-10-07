@@ -28,7 +28,13 @@ const mulberry32 = (seed: number): (() => number) => {
   }
 }
 
-const gaussianSource = (seed: number): (() => number) => {
+/**
+ * Exported so each view of a multi-view capture can draw its OWN annotation
+ * noise. Perturbing the 3D hand once and projecting it twice gives both views
+ * identical error, which a two-view lift then reconstructs perfectly — the
+ * error has to be injected per view, in pixels, to mean anything.
+ */
+export const gaussianSource = (seed: number): (() => number) => {
   const random = mulberry32(seed)
   return () => {
     // Box-Muller; the uniform is clamped away from 0 to avoid log(0).

@@ -17,7 +17,9 @@ import type {
   ObservedPoint2D,
   ScanObservation,
 } from '../../src/lib/nail3dObservation.ts'
-import type { Vec3 } from '../../src/lib/vec3.ts'
+import { IDENTITY_MAT3, applyMat3, rotationMat3 } from '../../src/lib/vec3.ts'
+import type { Mat3, Vec3 } from '../../src/lib/vec3.ts'
+import { gaussianSource } from './syntheticHand.ts'
 import type { SyntheticHand } from './syntheticHand.ts'
 
 export interface CameraSetup {
@@ -44,8 +46,14 @@ export const projectPoint = (point: Vec3, camera: CameraSetup): [number, number]
   camera.principalPoint[1] - camera.scale * point[1],
 ]
 
+/** A camera orientation: world points are rotated by this before projecting. */
+export const viewRotation = (axis: Vec3, degrees: number): Mat3 =>
+  rotationMat3(axis, (degrees * Math.PI) / 180)
+
 export interface ProjectionOptions {
   camera?: CameraSetup
+  /** World->camera rotation for this view. Identity means the reference view. */
+  view?: Mat3
   captureId?: string
   sessionId?: string
   handedness?: 'left' | 'right'
@@ -71,16 +79,17 @@ const annotate = (
   finger: Finger,
   quad: NailBedCorners,
   camera: CameraSetup,
+  view: Mat3,
 ): NailBedAnnotation => ({
   finger,
   // The synthetic layout runs the lateral axis from thumb (-x) to pinky (+x),
   // so corner A is the thumb-side one.
   sideAToward: 'thumb',
   points: {
-    cuticleSideA: observedPoint(projectPoint(quad[0], camera)),
-    cuticleSideB: observedPoint(projectPoint(quad[1], camera)),
-    freeEdgeSideB: observedPoint(projectPoint(quad[2], camera)),
-    freeEdgeSideA: observedPoint(projectPoint(quad[3], camera)),
+    cuticleSideA: observedPoint(projectPoint(applyMat3(view, quad[0]), camera)),
+    cuticleSideB: observedPoint(projectPoint(applyMat3(view, quad[1]), camera)),
+    freeEdgeSideB: observedPoint(projectPoint(applyMat3(view, quad[2]), camera)),
+    freeEdgeSideA: observedPoint(projectPoint(applyMat3(view, quad[3]), camera)),
   },
 })
 
@@ -91,6 +100,7 @@ export const projectToObservation = (
   const camera = options.camera ?? DEFAULT_CAMERA
   const fingers = options.fingers ?? (['index'] as const)
   const omit = new Set(options.omitLandmarks ?? [])
+  const view = options.view ?? IDENTITY_MAT3
 
   return {
     schemaVersion: 1,
@@ -108,10 +118,10 @@ export const projectToObservation = (
     landmarks: hand.landmarks.map((point, index) => {
       const name = LANDMARK_NAMES[index]
       if (omit.has(name)) return { name, x: null, y: null, confidence: null }
-      const [x, y] = projectPoint(point, camera)
+      const [x, y] = projectPoint(applyMat3(view, point), camera)
       return { name, x, y, confidence: 0.95 }
     }),
-    nails: fingers.map(finger => annotate(finger, hand.bedCorners[finger], camera)),
+    nails: fingers.map(finger => annotate(finger, hand.bedCorners[finger], camera, view)),
     // Honest about what a synthetic capture does not have.
     missing: ['camera.focalLengthPx', 'camera.principalPointPx'],
   }
@@ -122,3 +132,46 @@ export const truthLandmarks = (hand: SyntheticHand): readonly Vec3[] => hand.lan
 
 export const truthBed = (hand: SyntheticHand, finger: Finger): NailBedCorners =>
   hand.bedCorners[finger]
+
+export interface JitterOptions {
+  /** Per-point annotation sigma, in this view's pixels. */
+  sigmaPx: number
+  seed?: number
+}
+
+/**
+ * Adds independent 2D noise to an already-projected observation.
+ *
+ * This is the only honest way to model annotation error across views: a person
+ * (or a mask generator) marks each photo separately, so the pixel error in one
+ * view says nothing about the error in the other. Jittering the 3D hand and
+ * projecting it twice instead gives the two views the SAME error, which a
+ * two-view lift reconstructs exactly — a measurement that looks like perfect
+ * noise immunity and is really just a shared perturbation.
+ */
+export const jitterObservation = (
+  observation: ScanObservation,
+  options: JitterOptions,
+): ScanObservation => {
+  const gaussian = gaussianSource(options.seed ?? 1)
+  const sigma = options.sigmaPx
+  const jitter = (value: number): number => value + gaussian() * sigma
+
+  return {
+    ...observation,
+    landmarks: observation.landmarks.map(landmark =>
+      landmark.x === null || landmark.y === null
+        ? landmark
+        : { ...landmark, x: jitter(landmark.x), y: jitter(landmark.y) },
+    ),
+    nails: observation.nails.map(nail => ({
+      ...nail,
+      points: Object.fromEntries(
+        Object.entries(nail.points).map(([name, point]) => [
+          name,
+          point ? { ...point, x: jitter(point.x), y: jitter(point.y) } : point,
+        ]),
+      ) as NailBedAnnotation['points'],
+    })),
+  }
+}
