@@ -1,0 +1,15 @@
+# Stage 10 data: numbers only. Photos (and their upright copies) never enter git.
+*.jpg
+*.jpeg
+*.JPG
+*.JPEG
+*.heic
+*.HEIC
+*.png
+*.PNG
+*.tif
+*.tiff
+*.dng
+*.DNG
+*.mov
+*.MOV
