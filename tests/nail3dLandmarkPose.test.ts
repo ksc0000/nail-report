@@ -44,7 +44,8 @@ import {
 import { add, multiplyMat3, normalize, rotationMat3, scale as vscale, transposeMat3 } from '../src/lib/vec3.ts'
 import type { Mat3, Vec3 } from '../src/lib/vec3.ts'
 import { syntheticHand } from './support/syntheticHand.ts'
-import type { Finger, SyntheticHand, SyntheticOptions } from './support/syntheticHand.ts'
+import type { Finger } from '../src/lib/nail3dContract.ts'
+import type { SyntheticHand, SyntheticOptions } from './support/syntheticHand.ts'
 import {
   DEFAULT_CAMERA,
   cameraPosition,

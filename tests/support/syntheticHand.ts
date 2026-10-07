@@ -105,6 +105,19 @@ export interface SyntheticOptions {
   /** Scales the MCP row's lateral spread: a wider or narrower palm. */
   palmWidthScale?: number
   /**
+   * Scales the wrist-to-MCP distance: a longer or shorter palm, with the
+   * fingers unchanged. Together with `palmWidthScale` this lets the palm's
+   * aspect ratio vary by length as well as by width.
+   */
+  palmLengthScale?: number
+  /**
+   * Moves the WRIST landmark along the palm's long axis, as a fraction of
+   * palm length. Models detector disagreement about where the wrist is (and
+   * wrist flexion), which is a landmark effect, not a change in the hand —
+   * so it is meant for calibration captures, never for the truth profile.
+   */
+  wristShift?: number
+  /**
    * Deterministic displacement of each MCP, as a fraction of palm width.
    * Separate from `landmarkNoise` because a HandProfile's MCPs can be
    * systematically wrong while the detector is perfectly precise.
@@ -171,6 +184,7 @@ const buildFingerChain = (
     boneScale?: number
     extraCurlDeg?: number
     palmWidthScale?: number
+    palmLengthScale?: number
     mcpOffset?: Vec3
   } = {},
 ): FingerChain => {
@@ -178,10 +192,11 @@ const buildFingerChain = (
   const boneScale = options.boneScale ?? 1
   const curl = layout.curl + ((options.extraCurlDeg ?? 0) * Math.PI) / 180
   const widthScale = options.palmWidthScale ?? 1
+  const lengthScale = options.palmLengthScale ?? 1
   const offset = options.mcpOffset ?? [0, 0, 0]
   const mcp: Vec3 = [
     layout.mcp[0] * widthScale + offset[0],
-    layout.mcp[1] + offset[1],
+    layout.mcp[1] * lengthScale + offset[1],
     layout.mcp[2] + archHeight(finger, options.palmArch ?? 0) + offset[2],
   ]
   const joints: Vec3[] = [mcp]
@@ -249,7 +264,9 @@ export const syntheticHand = (options: SyntheticOptions = {}): SyntheticHand => 
   // The wrist takes part in the palm normal, so it must be posed like any
   // other landmark — leaving it at the origin silently breaks translation
   // invariance while rotation still passes.
-  landmarks[WRIST] = toWorld([0, 0, 0])
+  // The middle MCP sits on the long axis, so its height is the palm length.
+  const palmLength = LAYOUT.middle.mcp[1] * (options.palmLengthScale ?? 1)
+  landmarks[WRIST] = toWorld([0, (options.wristShift ?? 0) * palmLength, 0])
 
   const bedCorners = {} as Record<Finger, NailBedCorners>
   const fullNailCorners = {} as Record<Finger, NailBedCorners>
@@ -264,6 +281,7 @@ export const syntheticHand = (options: SyntheticOptions = {}): SyntheticHand => 
       boneScale: options.fingerScale?.[finger],
       extraCurlDeg: options.articulationDeg?.[finger],
       palmWidthScale: options.palmWidthScale,
+      palmLengthScale: options.palmLengthScale,
       mcpOffset: mcpSigma
         ? [mcpGaussian() * mcpSigma, mcpGaussian() * mcpSigma, mcpGaussian() * mcpSigma]
         : undefined,

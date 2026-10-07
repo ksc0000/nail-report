@@ -186,8 +186,8 @@ test('estimateSocket rejects degenerate quads', () => {
   const collapsed = [corner, corner, corner, corner] as typeof hand.bedCorners.index
   assert.equal(estimateSocket(hand.landmarks, collapsed, 'index'), null)
 
-  const notFinite = [...hand.bedCorners.index] as unknown as typeof hand.bedCorners.index
-  notFinite[2] = [Number.POSITIVE_INFINITY, 0, 0]
+  const [a, b, , d] = hand.bedCorners.index
+  const notFinite: typeof hand.bedCorners.index = [a, b, [Number.POSITIVE_INFINITY, 0, 0], d]
   assert.equal(estimateSocket(hand.landmarks, notFinite, 'index'), null)
 
   assert.equal(estimateSocket(hand.landmarks.slice(0, 3), hand.bedCorners.index, 'index'), null)

@@ -234,6 +234,22 @@ HandProfile に必要なのは**形だけで、大きさは不要**（`units: 'p
 拘束が効くのは**手のひら幅と手長の縦横比で、±5%（2° 予算）/ ±10%（4° 予算）**。
 厚み・横アーチ・指長比・MCP 位置はいずれも桁違いにゆるい。
 
+### 4.3 初回 Hand Calibration（Stage 7）
+
+**full 3D scan は不要。** generic profile を本人の palm aspect ratio に合わせて横方向へ伸縮するだけ（H1）で、
+日常 pose を palm landmark（`palmRigid`）で解く限り正確な profile とほぼ同じ性能になる（PoC 計画 §6-I）。
+
+| | |
+|---|---|
+| 較正の出力 | **無次元の伸縮率 1 つ**（`stretchProfileLaterally`）。cm は一切不要 |
+| aspect の定義 | `palmShapeFit` — wrist ＋ 4 指 MCP に相似変換＋横伸縮を最小二乗あてはめ |
+| 必要精度 | **±1〜2%**（§4.2 の ±5% は「他が正確な profile ＋ all21」での値。母集団・H1・palmRigid では ±5% で p95 4.6°） |
+| 撮影 | 手を平らな面に置き、端末を真上に平行（傾き 5° 以内）、**独立な約 15 フレームを平均**。斜め撮影は加えない |
+| 日常 pose | **palmRigid を primary**（all21 は H1 だと指の比率で偏る） |
+
+⚠ **wrist landmark の位置ずれはどの aspect 定義にも 1:1 で入る**（手のひらの近位側の landmark は wrist だけ）。
+wrist が欠損したフレームは較正に使わず拒否する。系統的な姿勢の誤りは画像から検出できないので、撮影姿勢の指示で予防する。
+
 ⚠ **縦横比の誤差は profile mismatch 残差にほとんど現れない**（指長 ±5% は残差 5.9 倍で無害、
 palm width +5% は残差 1.3 倍で予算の半分を消費）。較正時に測って確定させる必要があり、残差による検出には頼れない。
 

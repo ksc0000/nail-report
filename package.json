@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "test": "node --experimental-strip-types --test tests/firestoreModel.test.ts tests/nailTags.test.ts tests/nail3dContract.test.ts tests/nail3dGeometry.test.ts tests/nail3dSocket.test.ts tests/nail3dStability.test.ts tests/nail3dPerturbation.test.ts tests/nail3dObservation.test.ts tests/nail3dLift.test.ts tests/nail3dMultiView.test.ts tests/nail3dPoseSensitivity.test.ts tests/nail3dLandmarkPose.test.ts tests/nail3dProfilePose.test.ts && vitest run src/__tests__/firestore.test.ts",
+    "test": "node --experimental-strip-types --test tests/firestoreModel.test.ts tests/nailTags.test.ts tests/nail3dContract.test.ts tests/nail3dGeometry.test.ts tests/nail3dSocket.test.ts tests/nail3dStability.test.ts tests/nail3dPerturbation.test.ts tests/nail3dObservation.test.ts tests/nail3dLift.test.ts tests/nail3dMultiView.test.ts tests/nail3dPoseSensitivity.test.ts tests/nail3dLandmarkPose.test.ts tests/nail3dProfilePose.test.ts tests/nail3dHandCalibration.test.ts && vitest run src/__tests__/firestore.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {

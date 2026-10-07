@@ -529,6 +529,31 @@ const centreItems = (items: readonly Correspondence[]): Correspondence[] => {
 }
 
 /**
+ * Fits the profile to ONE view: the closed-form weak-perspective pose, with
+ * the depth branch chosen by handedness. Exposed for calibration, which has
+ * to fit a candidate profile to single frames before any second view exists.
+ */
+export const fitProfileToView = (
+  profile: HandProfile3D,
+  view: ScanObservation,
+  options: ProfilePoseOptions = {},
+): (ViewFit & { usedLandmarkIds: readonly string[]; rejectedLandmarkIds: readonly string[] }) | null => {
+  const ids = options.landmarkIds ?? POSE_LANDMARK_SETS[options.set ?? 'all21']
+  const { items, rejected } = collect(profile, view, ids, options.minConfidence ?? 0.3)
+  if (items.length < 4) return null
+  const solved = fitView(profile, centreItems(items))
+  if (!solved) return null
+  return {
+    rotation: solved.rotation,
+    scale: solved.scale,
+    mismatchRmsPx: solved.mismatchRmsPx,
+    depthBranch: solved.depthBranch,
+    usedLandmarkIds: items.map(item => item.id),
+    rejectedLandmarkIds: rejected,
+  }
+}
+
+/**
  * Profile mismatch for ONE view at a GIVEN rotation, in that view's pixels.
  *
  * Exposed so the residual landscape can be walked from outside: Stage 5's
