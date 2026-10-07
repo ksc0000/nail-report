@@ -105,6 +105,21 @@ The UI should make users want to:
 
 Navigation, metadata, settings, and controls should stay visually subordinate to that experience.
 
+## Floating Nail View
+
+The Nail screen may use a restrained **Floating Nail View** treatment: rounded-rectangle bubbles with subtle neutral tint, while the nail itself moves slightly with scroll inertia.
+
+This is an interaction treatment, not decorative glassmorphism.
+
+- Bubble/container stays visually quiet.
+- Nail may lag, translate, rotate, or scale subtly with scroll.
+- The nail remains the visual focal point.
+- Do not add floating particles, strong blur, rainbow reflections, heavy gradients, or decorative motion.
+- Prefer **CSS + Motion + the existing React Three Fiber renderer**.
+- Keep framing, motion, and nail rendering independent.
+
+Implementation direction and PoC constraints are defined in [FLOATING_NAIL_VIEW.md](./FLOATING_NAIL_VIEW.md).
+
 ## Review Checklist
 
 Before adding a UI element, ask:
