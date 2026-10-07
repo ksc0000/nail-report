@@ -17,7 +17,7 @@ import type {
   ObservedPoint2D,
   ScanObservation,
 } from '../../src/lib/nail3dObservation.ts'
-import { IDENTITY_MAT3, applyMat3, rotationMat3 } from '../../src/lib/vec3.ts'
+import { IDENTITY_MAT3, add, applyMat3, cross, normalize, rotationMat3, sub } from '../../src/lib/vec3.ts'
 import type { Mat3, Vec3 } from '../../src/lib/vec3.ts'
 import { gaussianSource } from './syntheticHand.ts'
 import type { SyntheticHand } from './syntheticHand.ts'
@@ -174,4 +174,46 @@ export const jitterObservation = (
       ) as NailBedAnnotation['points'],
     })),
   }
+}
+
+/**
+ * World->camera rotation for a camera at `position` looking at `target`.
+ *
+ * The projection stays weak perspective; the camera's distance is used only
+ * to turn a POSITION into a view direction. That is the whole reason this
+ * exists: the two-view lift needs a relative rotation, so a camera-position
+ * error only matters through the view direction it implies, and the
+ * conversion between the two depends on how far away the hand is.
+ */
+export const lookAtRotation = (
+  position: Vec3,
+  target: Vec3 = [0, 0, 0],
+  up: Vec3 = [0, 1, 0],
+): Mat3 => {
+  // Row 2 is the camera's +Z, which points back toward the camera.
+  const z = normalize(sub(position, target))
+  if (!z) return IDENTITY_MAT3
+  const x = normalize(cross(up, z)) ?? ([1, 0, 0] as Vec3)
+  const y = cross(z, x)
+  return [x[0], x[1], x[2], y[0], y[1], y[2], z[0], z[1], z[2]]
+}
+
+/**
+ * A camera position on a sphere around the hand. Elevation moves the camera
+ * over the fingertip (about the bed's width axis); azimuth moves it across
+ * the hand.
+ */
+export const cameraPosition = (
+  distance: number,
+  azimuthDeg: number,
+  elevationDeg: number,
+  target: Vec3 = [0, 0, 0],
+): Vec3 => {
+  const az = (azimuthDeg * Math.PI) / 180
+  const el = (elevationDeg * Math.PI) / 180
+  return add(target, [
+    distance * Math.cos(el) * Math.sin(az),
+    distance * Math.sin(el),
+    distance * Math.cos(el) * Math.cos(az),
+  ])
 }
