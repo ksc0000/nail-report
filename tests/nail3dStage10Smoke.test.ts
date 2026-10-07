@@ -417,7 +417,8 @@ test('on a few photos every criterion reads INCONCLUSIVE — never HOLD', () => 
   const analysis = analyse(smokeData())
   const expectation = simulateExpectation(measuredNoise(analysis))
   assert.equal(expectation.datasets, 0, 'no noise estimate from two pairs: nothing to simulate at')
-  for (const criterion of evaluateCriteria(analysis, expectation).criteria) assert.equal(criterion.status, 'INCONCLUSIVE', criterion.id)
+  const verdict = evaluateCriteria(analysis, expectation)
+  for (const entry of [...verdict.criteria, ...verdict.diagnostics]) assert.equal(entry.status, 'INCONCLUSIVE', entry.id)
 })
 
 test('end to end on disk: smoke-check.ts runs the frozen analyzer in --smoke mode, reads the blind path and the record, draws the overlays', () => {

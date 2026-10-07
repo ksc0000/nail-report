@@ -83,6 +83,9 @@ const verdictFor = (options: DryRunOptions): { analysis: Stage10Analysis; verdic
 }
 const criterion = (verdict: Verdict, id: string) => verdict.criteria.find(entry => entry.id === id)!
 const status = (verdict: Verdict, id: string) => criterion(verdict, id).status
+/** B6 is a diagnostic now, not a criterion. */
+const b6 = (verdict: Verdict) => verdict.diagnostics.find(entry => entry.id === 'B6')!
+const POSTURE = 'DIP posture between sessions'
 
 // ---------------------------------------------------------------------------
 // Formats and the protocol
@@ -280,10 +283,33 @@ test('fault-free: every session accounted for and matched; F3dNoTip steadier tha
   assert.ok(shares.creaseJoints > shares.cuticleNoise && shares.creaseJoints > shares.rigPose)
 })
 
-test('fault-free: no criterion breaks', () => {
+test('fault-free: no criterion breaks, and nothing is put forward as a failure mode', () => {
   const { verdict } = verdictFor({ seed: 700 })
   for (const entry of verdict.criteria) assert.notEqual(entry.status, 'BREAK', `${entry.id}: ${entry.measured}`)
-  assert.notEqual(verdict.nextStep.kind, 'first-break')
+  assert.equal(verdict.nextStep.kind, 'unresolved')
+})
+
+// ---------------------------------------------------------------------------
+// B6 is a posture diagnostic: it can show posture inconsistency, never rule it out
+// ---------------------------------------------------------------------------
+
+test('B6 is a diagnostic, not a criterion, and its HOLD never takes posture off the suspects', () => {
+  const { verdict } = verdictFor({ seed: 700 })
+  assert.ok(!verdict.criteria.some(entry => (entry.id as string) === 'B6'), 'B6 is not judged with B1–B5 / B7')
+  assert.equal(b6(verdict).status, 'HOLD')
+  assert.match(b6(verdict).reading, /does NOT mean the DIP posture repeated/)
+  assert.match(b6(verdict).reading, /does NOT rule out posture variation/)
+  // The posture stays an unresolved explanation; B6 HOLD is not used to exclude it.
+  assert.ok(verdict.nextStep.unresolved.some(entry => entry.startsWith(POSTURE) && entry.includes('does not exclude it')), verdict.nextStep.unresolved.join(' | '))
+  assert.notEqual(verdict.nextStep.suspect, `${POSTURE} (capture UX)`)
+})
+
+test('B6 INCONCLUSIVE says nothing about posture, and posture stays open', () => {
+  // Two N0 sessions never shot: four N0 sessions left for the axis gap, fewer than five.
+  const { verdict } = verdictFor({ seed: 723, skipSessions: [1, 4] })
+  assert.equal(b6(verdict).status, 'INCONCLUSIVE')
+  assert.equal(b6(verdict).reading, 'no statement about posture')
+  assert.ok(verdict.nextStep.unresolved.some(entry => entry.startsWith(POSTURE) && entry.includes('B6 could not be read')))
 })
 
 // ---------------------------------------------------------------------------
@@ -477,11 +503,12 @@ test('stress: a detector error shared by DIP and PIP and by both views, with no 
 // One known fault at a time: the right criterion, the right first break
 // ---------------------------------------------------------------------------
 
-test('a long nail that moves Vision\'s DIP trips the B2 screening rule, and the first broken assumption says so', () => {
+test('a long nail that moves Vision\'s DIP trips the B2 screening rule, and that failure mode is put forward on its break evidence', () => {
   const { verdict } = verdictFor({ seed: 702, geometry: PERSONS[2][1], nailSetDipShiftPx: 8 })
   assert.equal(status(verdict, 'B2'), 'BREAK')
-  assert.equal(verdict.nextStep.kind, 'first-break')
-  assert.equal(verdict.nextStep.name, 'nail-set-dependent DIP/PIP detection')
+  assert.equal(verdict.nextStep.kind, 'evidence')
+  assert.equal(verdict.nextStep.suspect, 'nail-set-dependent DIP/PIP detection')
+  assert.match(verdict.nextStep.reason, /independent break evidence/)
   assert.ok(screenShift(verdictFor({ seed: 702, geometry: PERSONS[2][1], nailSetDipShiftPx: 8 }).analysis.joints.find(j => j.joint === 'indexDIP' && j.view === 'V1')!).flagged)
 })
 
@@ -489,20 +516,22 @@ test('a long nail that moves Vision\'s DIP trips the B2 screening rule, and the 
 const outcomes = (fault: DryRunOptions, firstSeed: number) =>
   [0, 1, 2, 3].map(i => verdictFor({ seed: firstSeed + i * 10, geometry: PERSONS[(i * 3 + 1) % 8][1], ...fault }).verdict)
 
-// The two tests below check the WIRING — the right criterion and the right first break for a large
-// fault, against one reference expectation. What the criteria can detect when, as with real data,
+// The two tests below check the WIRING — the right criterion (or diagnostic) and the right suspect for
+// a large fault, against one reference expectation. What they can detect when, as with real data,
 // the expectation is simulated at the noise measured on the same photos is measured in §6-L.
 
 test('noisy palm landmarks break the pose criterion, named as pose / hand motion / model inconsistency', () => {
   const verdicts = outcomes({ palmSigmaPx: 8 }, 713)
   assert.ok(verdicts.filter(v => status(v, 'B3') === 'BREAK').length >= 3)
-  assert.ok(verdicts.filter(v => v.nextStep.name.startsWith('pose / hand motion / model inconsistency')).length >= 3)
+  assert.ok(verdicts.filter(v => v.nextStep.kind === 'evidence' && v.nextStep.suspect.startsWith('pose / hand motion / model inconsistency')).length >= 3)
 })
 
-test('a finger bent differently each session breaks B6, and the posture comes before the Q5 substitutions', () => {
+test('a finger bent differently each session flags the B6 diagnostic, and that BREAK is evidence enough to put posture forward', () => {
   const verdicts = outcomes({ flexSigmaDeg: 8 }, 714)
-  assert.ok(verdicts.filter(v => status(v, 'B6') === 'BREAK').length >= 3)
-  assert.ok(verdicts.filter(v => v.nextStep.name === 'DIP posture between sessions (capture UX)').length >= 3)
+  const flagged = verdicts.filter(v => b6(v).status === 'BREAK')
+  assert.ok(flagged.length >= 3)
+  for (const verdict of flagged) assert.equal(b6(verdict).reading, 'evidence of posture inconsistency between sessions')
+  assert.ok(verdicts.filter(v => v.nextStep.kind === 'evidence' && v.nextStep.suspect === `${POSTURE} (capture UX)`).length >= 3)
 })
 
 test('known limit: judged as real data is (expectation at the noise measured on the same photos), a 4° posture change reads as B1, not B6', () => {
@@ -513,7 +542,13 @@ test('known limit: judged as real data is (expectation at the noise measured on 
   assert.ok(measuredNoise(bent).detectorPct > 3 * measuredNoise(clean).detectorPct)
   const verdict = evaluateCriteria(bent, simulateExpectation(measuredNoise(bent), 1))
   assert.equal(status(verdict, 'B1'), 'BREAK')
-  assert.equal(status(verdict, 'B6'), 'HOLD')
+  assert.equal(b6(verdict).status, 'HOLD')
+  // So the report must not read the B6 HOLD as "posture repeated": B1's break stays unseparated ...
+  assert.match(criterion(verdict, 'B1').basis, /detector noise, posture or their interaction/)
+  assert.ok(verdict.nextStep.unresolved.some(entry => entry.includes('detector noise, posture, or their interaction')), verdict.nextStep.unresolved.join(' | '))
+  // ... posture stays a suspect, and a B1 break alone is not independent evidence for any failure mode.
+  assert.ok(verdict.nextStep.unresolved.some(entry => entry.startsWith(POSTURE)))
+  assert.equal(verdict.nextStep.kind, 'unresolved')
 })
 
 test('a TIP dragged onto the nail moves Vision\'s fingertip and F3d, while F3dNoTip stays within chance', () => {
@@ -538,9 +573,18 @@ test('the report states what it is, accounts for every session, and claims no ca
   assert.ok(report.includes('Nothing here is accuracy'))
   assert.ok(report.includes('within the sensitivity of this experiment, no break was detected'))
   assert.ok(report.includes('## Data accounting (sessions)'))
-  for (const id of ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7']) assert.ok(report.includes(`| ${id} |`), id)
+  for (const id of ['B1', 'B2', 'B3', 'B4', 'B5', 'B7']) assert.ok(report.includes(`| ${id} |`), id)
+  // B6 sits in its own section, as a diagnostic, with what its status may not be read as.
+  const diagnostic = report.slice(report.indexOf('## Posture diagnostic (B6)'))
+  assert.ok(report.indexOf('## Posture diagnostic (B6)') > report.indexOf('## Verdict'))
+  assert.ok(diagnostic.includes('| B6 |') && diagnostic.includes('does NOT mean the DIP posture repeated'))
+  assert.ok(!report.slice(report.indexOf('## Verdict'), report.indexOf('## Posture diagnostic (B6)')).includes('| B6 |'), 'B6 is not in the verdict table')
+  // A next SUSPECTED bottleneck and what stays unresolved — never an identified one.
+  assert.ok(report.includes('## Next suspected bottleneck (not an identification)'))
+  assert.ok(report.includes('**Next suspected bottleneck:'))
+  assert.ok(report.includes('**Unresolved explanations (not excluded by this experiment):**'))
+  assert.ok(!/identified bottleneck|First broken assumption|\*\*Bottleneck/i.test(report), 'no identification wording')
   assert.ok(report.includes('not a causal attribution'))
   assert.ok(report.includes('empirical, not a formal test'))
   assert.ok(!/\bperfect\b/i.test(report), 'no "perfect input" wording')
-  assert.ok(!report.includes('**Bottleneck'), 'no causal bottleneck heading')
 })

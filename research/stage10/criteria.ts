@@ -30,7 +30,23 @@
 //
 // Q5 is a reference-substitution SENSITIVITY analysis (kit.ts
 // ReferenceSubstitution), never a causal attribution: the largest share is a
-// candidate for the next step, not "the cause".
+// suspect for the next step, not "the cause".
+//
+// B6 is a DIAGNOSTIC, not a criterion (the interpretation contract that closes
+// kit v2). Judged as real data is — the expectation simulated at the noise
+// measured on the same photos — a posture change between sessions inflates
+// that noise estimate and B6's limit with it: the dry run's 4–6° per joint went
+// unflagged (0/16) while B1 broke. So:
+//   B6 BREAK         evidence of posture inconsistency between sessions.
+//   B6 HOLD          not flagged. NOT "the DIP posture repeated", NOT "posture
+//                    variation was ruled out": posture stays a suspect.
+//   B6 INCONCLUSIVE  nothing about posture.
+//
+// Nothing here identifies a bottleneck. The output names the NEXT SUSPECTED
+// bottleneck: a specific failure mode only where independent break evidence
+// supports it (B3, B2; posture on a B6 BREAK), otherwise the explanations this
+// experiment could not exclude, with Q5's largest reference-substitution share
+// as one suspect among them.
 //
 // The thresholds below were fixed before any real photo existed
 // (docs/product/NAIL_SOCKET_POC_PLAN.md §6-L; v2 after the independent review,
@@ -72,9 +88,10 @@ export const THRESHOLDS = {
   frameRatio: 1,
   m6ChanceFactor: 2,
   /**
-   * B6: spread of the F3d − F3dNoTip axis gap, degrees, and against its
-   * simulated median. The gap follows only ~55% of a real DIP flexion in
-   * synthetic, so 1.5 degrees of gap is ~3 degrees of DIP angle.
+   * B6 (posture diagnostic — flags, never clears): spread of the F3d − F3dNoTip
+   * axis gap, degrees, and against its simulated median. The gap follows only
+   * ~55% of a real DIP flexion in synthetic, so 1.5 degrees of gap is ~3
+   * degrees of DIP angle.
    */
   axisGapDeg: 1.5,
   axisGapFactor: 2.5,
@@ -219,7 +236,7 @@ export const shiftChi2Threshold = (dof: number, alpha: number = THRESHOLDS.nailS
 export type Status = 'BREAK' | 'WEAKENED' | 'HOLD' | 'INCONCLUSIVE'
 
 export interface Criterion {
-  id: 'B1' | 'B2' | 'B3' | 'B4' | 'B5' | 'B6' | 'B7'
+  id: 'B1' | 'B2' | 'B3' | 'B4' | 'B5' | 'B7'
   question: string
   assumption: string
   measured: string
@@ -286,18 +303,43 @@ export const screenShift = (joint: JointStats): ShiftScreen => {
 const combine = (statuses: readonly Status[]): Status =>
   statuses.includes('BREAK') ? 'BREAK' : statuses.includes('INCONCLUSIVE') || !statuses.length ? 'INCONCLUSIVE' : 'HOLD'
 
+/**
+ * B6, demoted from criterion to diagnostic (see the header): a flag is
+ * evidence of posture inconsistency; no flag rules nothing out.
+ */
+export interface Diagnostic {
+  id: 'B6'
+  question: string
+  /** What a flag (BREAK) is evidence of. */
+  indicates: string
+  measured: string
+  rule: string
+  status: Exclude<Status, 'WEAKENED'>
+  /** What THIS status may — and may not — be read as. */
+  reading: string
+  basis: string
+  sensitivity: string
+}
+
 export interface NextStep {
-  /** first-break: an assumption broke, by the pre-registered order. candidate: nothing in the order broke; the largest Q5 substitution share — a candidate, not a cause. */
-  kind: 'first-break' | 'candidate' | 'none'
-  name: string
+  /**
+   * evidence: a specific failure mode backed by independent break evidence (B3, B2, or the B6 diagnostic's BREAK).
+   * unresolved: no such evidence; the suspect is one of the explanations this experiment could not exclude.
+   */
+  kind: 'evidence' | 'unresolved'
+  /** The NEXT SUSPECTED bottleneck — never an identified one. */
+  suspect: string
   reason: string
-  /** Criteria earlier in the order that read INCONCLUSIVE: the order cannot rule them out. */
-  caveats: string[]
-  conclusive: boolean
+  /** The explanations this experiment could not exclude (and any other break evidence), each with why. */
+  unresolved: string[]
+  /** Unresolved kind only: the suspect stands at least 1.5x above the next Q5 share and Q5 was readable. */
+  separated: boolean
 }
 
 export interface Verdict {
   criteria: Criterion[]
+  /** B6 only: indicators that can show a problem but never clear one. */
+  diagnostics: Diagnostic[]
   shifts: ShiftScreen[]
   nextStep: NextStep
 }
@@ -421,24 +463,45 @@ export const evaluateCriteria = (analysis: Stage10Analysis, expected: SyntheticE
     sensitivity: `ratio ${interval(ratioCi95)}; nail-set shifts of F3dNoTip's origin below ≈ ${f(M6_DETECTABLE_FACTOR * m6Chance, 1)}% (${M6_DETECTABLE_FACTOR}× chance) would likely go unflagged. The M6 screen is empirical too: its false-alarm rate depends on how anisotropic the origin scatter is (dry run: 2 of 80 fault-free datasets)`,
   })
 
-  // B6 — DIP posture held by the capture UX (Q4)
+  // B6 — the posture DIAGNOSTIC (Q4): it can show posture inconsistency, never rule it out.
   const gapLimit = Math.max(THRESHOLDS.axisGapDeg, THRESHOLDS.axisGapFactor * expected.axisGapSdDeg.median)
-  criteria.push({
+  const b6Status: Diagnostic['status'] =
+    analysis.axisGap.sessions < min || !Number.isFinite(analysis.axisGap.sdDeg) || !Number.isFinite(gapLimit)
+      ? 'INCONCLUSIVE'
+      : analysis.axisGap.sdDeg > gapLimit
+        ? 'BREAK'
+        : 'HOLD'
+  const b6: Diagnostic = {
     id: 'B6',
     question: 'Q4',
-    assumption: 'the DIP angle repeats under the capture instructions (F3dNoTip holds it at calibration)',
+    indicates: 'posture inconsistency between sessions: the DIP angle did not repeat under the capture instructions (F3dNoTip holds it at calibration)',
     measured: `F3d − F3dNoTip axis gap SD ${f(analysis.axisGap.sdDeg)}° over ${analysis.axisGap.sessions} N0 sessions (synthetic ${f(expected.axisGapSdDeg.median)}°)`,
-    rule: `BREAK if > ${f(gapLimit, 1)}° (max of ${THRESHOLDS.axisGapDeg}° and ${THRESHOLDS.axisGapFactor}× synthetic)`,
-    ...(analysis.axisGap.sessions < min
-      ? { status: 'INCONCLUSIVE' as const, basis: `coverage: ${analysis.axisGap.sessions} N0 sessions (needs ≥ ${min})` }
-      : !Number.isFinite(analysis.axisGap.sdDeg) || !Number.isFinite(gapLimit)
-        ? { status: 'INCONCLUSIVE' as const, basis: 'not computable' }
-        : analysis.axisGap.sdDeg > gapLimit
-          ? { status: 'BREAK' as const, basis: `${f(analysis.axisGap.sdDeg)}° > ${f(gapLimit, 1)}°` }
-          : { status: 'HOLD' as const, basis: `${f(analysis.axisGap.sdDeg)}° ≤ ${f(gapLimit, 1)}°` }),
+    rule: `flags (BREAK) if > ${f(gapLimit, 1)}° (max of ${THRESHOLDS.axisGapDeg}° and ${THRESHOLDS.axisGapFactor}× synthetic)`,
+    status: b6Status,
+    reading:
+      b6Status === 'BREAK'
+        ? 'evidence of posture inconsistency between sessions'
+        : b6Status === 'HOLD'
+          ? 'not flagged — does NOT mean the DIP posture repeated, and does NOT rule out posture variation; posture stays a suspect'
+          : 'no statement about posture',
+    basis:
+      analysis.axisGap.sessions < min
+        ? `coverage: ${analysis.axisGap.sessions} N0 sessions (needs ≥ ${min})`
+        : b6Status === 'INCONCLUSIVE'
+          ? 'not computable'
+          : `${f(analysis.axisGap.sdDeg)}° ${b6Status === 'BREAK' ? '>' : '≤'} ${f(gapLimit, 1)}°`,
     sensitivity:
-      "the limit scales with the synthetic gap at the MEASURED detector noise, which a posture change inflates (see B1): judged that way, B6 did not respond to 4–6° per joint in the dry run (0/16) while B1 did — a B6 HOLD does not rule out a posture change",
-  })
+      'the limit scales with the synthetic gap at the MEASURED detector noise, which a posture change inflates (see B1): judged that way, the dry run\'s 4–6° per joint went unflagged (0/16) while B1 broke. A flag is evidence; the absence of a flag clears nothing',
+  }
+  const diagnostics: Diagnostic[] = [b6]
+  // B1 broke: say what it cannot separate, in the light of the posture diagnostic.
+  const b1 = criteria.find(criterion => criterion.id === 'B1')!
+  if (b1.status === 'BREAK') {
+    b1.basis +=
+      b6Status === 'BREAK'
+        ? '; B6 flagged posture, so part or all of this may be posture rather than detector noise'
+        : '; B6 did not flag posture, which does not exclude it: detector noise, posture or their interaction — not separable here'
+  }
 
   // B7 — the origin budget closes (Q5), matched sessions
   const shares = analysis.substitution.find(entry => entry.frame === 'F3dNoTip')!
@@ -459,54 +522,84 @@ export const evaluateCriteria = (analysis: Stage10Analysis, expected: SyntheticE
     sensitivity: '',
   })
 
-  // What to look at next, by the order fixed in advance. Not a causal claim.
+  // The next SUSPECTED bottleneck. A specific failure mode only where independent
+  // break evidence supports it, in the order fixed in advance; otherwise the
+  // explanations this experiment could not exclude. Never an identification.
   const status = (id: Criterion['id']) => criteria.find(criterion => criterion.id === id)!.status
-  const order: [Criterion['id'], string, string][] = [
-    ['B3', 'pose / hand motion / model inconsistency (H1 + palmRigid on a stand)', 'every frame and socket number rides on the per-session pose'],
-    [
-      'B2',
-      'nail-set-dependent DIP/PIP detection',
-      `the screening rule flagged ${shifts.filter(s => s.status === 'BREAK').map(s => `${s.joint}/${s.view}`).join(', ')}; F3dNoTip reads both, so its nail-set invariance fails`,
-    ],
-    [
-      'B6',
+  const basisOf = (id: Criterion['id']) => criteria.find(criterion => criterion.id === id)!.basis
+  const flaggedJoints = shifts.filter(s => s.status === 'BREAK').map(s => `${s.joint}/${s.view}`).join(', ')
+  const evidence: [string, string][] = []
+  if (status('B3') === 'BREAK') {
+    evidence.push(['pose / hand motion / model inconsistency (H1 + palmRigid on a stand)', `B3 broke (${basisOf('B3')}); every frame and socket number rides on the per-session pose`])
+  }
+  if (status('B2') === 'BREAK') {
+    evidence.push(['nail-set-dependent DIP/PIP detection', `B2's screening rule flagged ${flaggedJoints}; F3dNoTip reads both, so its nail-set invariance fails`])
+  }
+  if (b6Status === 'BREAK') {
+    evidence.push([
       'DIP posture between sessions (capture UX)',
-      'F3dNoTip holds the DIP at its calibrated angle, so a finger that bends differently each time moves the socket (checked before Q5: posture also moves the creases against Vision\'s joints)',
-    ],
-  ]
-  const caveats: string[] = []
-  let nextStep: NextStep | null = null
-  for (const [id, name, why] of order) {
-    if (status(id) === 'BREAK') {
-      nextStep = { kind: 'first-break', name, reason: `${id} broke: ${why}`, caveats: [...caveats], conclusive: true }
-      break
-    }
-    if (status(id) === 'INCONCLUSIVE') caveats.push(`${id} INCONCLUSIVE — ${criteria.find(c => c.id === id)!.basis}`)
+      `the B6 posture diagnostic flagged it (${b6.basis}); F3dNoTip holds the DIP at its calibrated angle, so a finger that bends differently each time moves the socket`,
+    ])
   }
-  if (!nextStep) {
-    const ranked = (
-      [
-        ["Vision's DIP/PIP (substituting the annotator's creases)", shares.creaseJoints],
-        ['cuticle annotation noise', shares.cuticleNoise],
-        ['pose / hand motion / model inconsistency (substituting the rig-mean pose)', shares.rigPose],
-        ['what the substitutions leave (outside the synthetic model: perspective, palm landmarks, lift)', shares.remainder],
-      ] as [string, number][]
+
+  const unresolved: string[] = []
+  for (const [suspect, why] of evidence.slice(1)) unresolved.push(`${suspect} — also has break evidence: ${why}`)
+  if (status('B3') === 'INCONCLUSIVE') unresolved.push(`pose / hand motion / model inconsistency — B3 INCONCLUSIVE (${basisOf('B3')}): not excluded`)
+  if (status('B2') === 'INCONCLUSIVE') unresolved.push(`nail-set-dependent DIP/PIP detection — B2 INCONCLUSIVE: not excluded`)
+  if (b6Status !== 'BREAK') {
+    unresolved.push(
+      `DIP posture between sessions — ${b6Status === 'HOLD' ? 'B6 did not flag it, which does not exclude it (posture inflates the noise B6 is judged against)' : `B6 could not be read (${b6.basis})`}; posture also moves the creases against Vision's joints, so it can hide inside the Q5 crease substitution`,
     )
-      .filter(([, share]) => Number.isFinite(share))
-      .sort((a, b) => b[1] - a[1])
-    const [first, second] = ranked
-    if (status('B7') === 'INCONCLUSIVE') caveats.push(`B7 INCONCLUSIVE — ${criteria.find(c => c.id === 'B7')!.basis}`)
-    nextStep = first
-      ? {
-          kind: 'candidate',
-          name: first[0],
-          reason: `no assumption in the order broke; the largest Q5 substitution share for F3dNoTip (${f(first[1] * 100, 0)}%${second ? `; next ${second[0]} ${f(second[1] * 100, 0)}%` : ''}) — a sensitivity, not a cause`,
-          caveats,
-          conclusive: status('B7') !== 'INCONCLUSIVE' && (!second || first[1] >= 1.5 * Math.max(second[1], 1e-9)),
-        }
-      : { kind: 'none', name: 'n/a', reason: 'no break in the order and no Q5 substitution available', caveats, conclusive: false }
   }
-  return { criteria, shifts, nextStep }
+  if (status('B1') === 'BREAK') {
+    unresolved.push(
+      b6Status === 'BREAK'
+        ? "B1 broke and B6 flagged posture: part or all of B1's excess may be posture rather than detector noise"
+        : 'B1 broke while B6 did not flag posture: detector noise, posture, or their interaction — this experiment cannot tell them apart',
+    )
+  }
+  if (status('B4') === 'BREAK') unresolved.push(`B4 broke (${basisOf('B4')}): the synthetic error model does not explain the real scatter; the excess is not attributed here`)
+  if (status('B7') === 'BREAK') unresolved.push(`B7 broke (${basisOf('B7')}): most of the origin variance is left after the substitutions — outside the synthetic model (perspective, palm landmarks, lift), not attributed here`)
+
+  // Q5, read as sensitivity: its largest share is a suspect, not a cause.
+  const q5Readable = status('B7') !== 'INCONCLUSIVE'
+  const ranked = (
+    [
+      ["Vision's DIP/PIP (substituting the annotator's creases)", shares.creaseJoints],
+      ['cuticle annotation noise', shares.cuticleNoise],
+      ['pose / hand motion / model inconsistency (substituting the rig-mean pose)', shares.rigPose],
+      ['what the substitutions leave (outside the synthetic model: perspective, palm landmarks, lift)', shares.remainder],
+    ] as [string, number][]
+  )
+    .filter(([, share]) => Number.isFinite(share))
+    .sort((a, b) => b[1] - a[1])
+  const [first, second] = ranked
+  if (!q5Readable) unresolved.push(`Q5 could not be read — B7 INCONCLUSIVE (${basisOf('B7')})`)
+
+  let nextStep: NextStep
+  if (evidence.length) {
+    const [suspect, why] = evidence[0]
+    nextStep = { kind: 'evidence', suspect, reason: `supported by independent break evidence: ${why}`, unresolved, separated: true }
+  } else if (first && q5Readable) {
+    const separated = !second || first[1] >= 1.5 * Math.max(second[1], 1e-9)
+    if (second && !separated) unresolved.push(`${second[0]} — Q5 share ${f(second[1] * 100, 0)}%, within 1.5× of the suspect`)
+    nextStep = {
+      kind: 'unresolved',
+      suspect: first[0],
+      reason: `no independent break evidence (B3, B2, B6); among the unresolved explanations, Q5's largest reference-substitution share for F3dNoTip (${f(first[1] * 100, 0)}%${second ? `; next ${second[0]} ${f(second[1] * 100, 0)}%` : ''}) — a sensitivity, not a cause`,
+      unresolved,
+      separated,
+    }
+  } else {
+    nextStep = {
+      kind: 'unresolved',
+      suspect: 'none stands out',
+      reason: 'no independent break evidence (B3, B2, B6) and no readable Q5 sensitivity',
+      unresolved,
+      separated: false,
+    }
+  }
+  return { criteria, diagnostics, shifts, nextStep }
 }
 
 // ---------------------------------------------------------------------------
@@ -528,6 +621,8 @@ export const renderReport = (
     `kit v${analysis.kitVersion}${header.kitCommit ? ` @ ${header.kitCommit}` : ''} · R = repeatability, C = consistency of two routes on one photo, S = shift between conditions. Nothing here is accuracy: there is no 3D truth.`,
     '',
     '**Statuses.** BREAK: the assumption failed by the pre-registered rule. HOLD: within the sensitivity of this experiment, no break was detected — not "equivalent", not "invariant". INCONCLUSIVE: coverage or uncertainty too thin to say either. WEAKENED (B5): steadier, but by less than synthetic predicts.',
+    '',
+    '**B6 is a diagnostic, not a criterion**: a B6 BREAK is evidence of posture inconsistency; a B6 HOLD does not mean the posture repeated or that posture variation was ruled out; a B6 INCONCLUSIVE says nothing about posture. **No bottleneck is identified here**: the report names the next suspected one, and what remains unresolved.',
     '',
   )
   if (header.conditions) lines.push('```json', JSON.stringify(header.conditions, null, 2), '```', '')
@@ -556,11 +651,23 @@ export const renderReport = (
   if (sensitivities.length) {
     lines.push('', '**What each criterion could see:**', ...sensitivities.map(entry => `- ${entry.id}: ${entry.sensitivity}`))
   }
+
+  lines.push('', '## Posture diagnostic (B6) — flags, never clears', '')
+  lines.push(row(['', 'question', 'a flag is evidence of', 'measured', 'flag rule', 'status', 'what this status means', 'basis']), divider(8))
+  for (const diagnostic of verdict.diagnostics) {
+    lines.push(row([diagnostic.id, diagnostic.question, diagnostic.indicates, diagnostic.measured, diagnostic.rule, `**${diagnostic.status}**`, diagnostic.reading, diagnostic.basis]))
+  }
+  lines.push('', ...verdict.diagnostics.map(diagnostic => `${diagnostic.id}: ${diagnostic.sensitivity}.`))
+
   const next = verdict.nextStep
   lines.push(
     '',
-    `**${next.kind === 'first-break' ? 'First broken assumption' : next.kind === 'candidate' ? 'Candidate for the next step (not a causal attribution)' : 'Next step'}: ${next.name}** — ${next.reason}${next.conclusive ? '' : ' (INCONCLUSIVE)'}`,
-    ...next.caveats.map(caveat => `- caveat: ${caveat}`),
+    '## Next suspected bottleneck (not an identification)',
+    '',
+    `**Next suspected bottleneck: ${next.suspect}** — ${next.reason}${next.kind === 'unresolved' && !next.separated ? ' (not separated from the other explanations)' : ''}`,
+    '',
+    next.unresolved.length ? '**Unresolved explanations (not excluded by this experiment):**' : 'No other explanation is left open by the criteria above.',
+    ...next.unresolved.map(entry => `- ${entry}`),
     '',
   )
 

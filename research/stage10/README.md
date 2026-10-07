@@ -195,8 +195,12 @@ node --experimental-strip-types research/stage10/analyze.ts research/stage10/dat
 
 `report.md` / `report.json` が同じフォルダにできる。報告には、条件ごとの**データの勘定**（attempted / available / pose accepted / frame accepted / primary comparison eligible / Q5 matched と、
 外れたセッションごとの理由）、**プロトコルからの逸脱**（ABBA の順・撮影時刻の順）、判定（**BREAK / WEAKENED / HOLD / INCONCLUSIVE**）、
-B2 と B5 のセッション単位の不確かさ、Q5 の参照差し替えの感度、次に見るべきものの候補が入る。
-**HOLD は「この実験の感度の範囲で崩れは見つからなかった」だけを意味し、同等・不変ではない。**
+B2 と B5 のセッション単位の不確かさ、**B6 の姿勢診断**、Q5 の参照差し替えの感度、**次に疑うボトルネックと未解決の説明**が入る。
+
+- **HOLD は「この実験の感度の範囲で崩れは見つからなかった」だけを意味し、同等・不変ではない。**
+- **B6 は判定ではなく診断**: BREAK は姿勢の不整合の証拠、HOLD は姿勢が再現したことも姿勢のばらつきが除外されたことも意味しない、INCONCLUSIVE は姿勢について何も言わない。
+  B1 が BREAK で B6 が BREAK でなければ、検出器ノイズ・姿勢・その相互作用は区別できない
+- 報告は**ボトルネックを特定しない**。具体的な failure mode を前に出すのは独立した break の証拠（B3・B2・B6 の BREAK）があるときだけで、それ以外は未解決の説明を並べる。Q5 は感度であって因果ではない
 
 **コミットするのは `obs/*.json`・`annotations.csv`・`annotations-blind.csv`・`blind/key.json`・`conditions.json`・`report.*` だけ**（`data/.gitignore` が画像を弾く）。
 
