@@ -11,6 +11,11 @@
 // F3dNoTip, and nothing computed from Stage 10A photos may be used in 10B.
 // The checks below only say whether the numbers are where they should be.
 //
+// kit v2 widened the gate: every path 10B needs must run in BOTH conditions
+// (S7), the camera must come back to V1 with nothing moved (S9), DIP / PIP must
+// go through the blind crops and back (S10), and the capture record —
+// geometry, session log, EXIF times, shot order, lens — must be complete (S11).
+//
 // Geometry used by the checks assumes the protocol's view: a RIGHT hand, back
 // of the hand toward the camera. Both V1 and V2 keep the back of the hand in
 // view, so the 2D handedness sign is the same in both.
@@ -18,13 +23,16 @@
 import { LANDMARK_NAMES } from '../../src/lib/nail3dLift.ts'
 import { parseScanObservation } from '../../src/lib/nail3dObservation.ts'
 import type { NailBedAnnotation } from '../../src/lib/nail3dObservation.ts'
-import { isCalibrationName, parseAnnotationCsv, parseCaptureName } from './kit.ts'
-import type { AnnotationRow, Stage10Analysis } from './kit.ts'
+import { toCrop } from './blind.ts'
+import type { BlindKey } from './blind.ts'
+import { PRIMARY_FRAMES, RETURN_SHOT, captureTimeValue, checkConditions, isCalibrationName, parseAnnotationCsv, parseCaptureName, shotOrder } from './kit.ts'
+import type { CaptureName } from './kit.ts'
+import type { AnnotationRow, NailSetId, Stage10Analysis } from './kit.ts'
 
 export type SmokeStatus = 'PASS' | 'FAIL' | 'LOOK'
 
 export interface SmokeCheck {
-  id: 'S1' | 'S2' | 'S3' | 'S4' | 'S5' | 'S6' | 'S7' | 'S8'
+  id: 'S1' | 'S2' | 'S3' | 'S4' | 'S5' | 'S6' | 'S7' | 'S8' | 'S9' | 'S10' | 'S11'
   item: string
   status: SmokeStatus
   details: string[]
@@ -88,6 +96,8 @@ interface RawObservation {
   visionChirality?: unknown
   landmarkModel?: { provider?: unknown }
   missing?: unknown
+  capturedAtLocal?: unknown
+  lens?: { focalLength35mm?: unknown; model?: unknown; focalLengthMm?: unknown; digitalZoom?: unknown }
 }
 
 const landmarkOf = (raw: RawObservation, name: string): Px | null => {
@@ -140,6 +150,12 @@ export interface SmokeInput {
   addableImages: readonly string[]
   /** The frozen analyzer run in --smoke mode. */
   analyzer: { exitCode: number | null; message?: string; reach?: SmokeReach } | null
+  /** blind/key.json, parsed; null when the blind path was not run. */
+  blindKey?: BlindKey | null
+  /** annotations-blind.csv (DIP / PIP mapped back from the blind crops); null when absent. */
+  blindCsv?: string | null
+  /** conditions.json, parsed; null when absent. */
+  conditions?: Record<string, unknown> | null
 }
 
 /**
@@ -151,6 +167,8 @@ export interface SmokeReach {
   kitVersion: number
   counts: Stage10Analysis['counts']
   calibration: { profileBuilt: boolean; refused: string[] }
+  /** Session counts per condition (counts, not metrics). */
+  conditions: Record<NailSetId, { attempted: number; available: number; poseAccepted: number; primaryEligible: number }>
   pairs: Array<{
     session: string
     nailSet: string
@@ -158,10 +176,15 @@ export interface SmokeReach {
     pose: { accepted: boolean; refusedReason?: string; mismatchPx: number }
     /** Frames that reached a socket origin from the cuticle probe. */
     framesReached: string[]
+    /** Origin variants that exist in both primary frames (base, cuticlePass2, manualJointsPass2, …): which annotation paths ran. */
+    variants: string[]
     cuticleProbe: boolean
+    /** The full socket (bed corners in both views) exists in both primary frames. */
     fullSocket: boolean
     notes: string[]
   }>
+  /** The analyzer's protocol notes (schedule, capture order). */
+  protocol: string[]
   problems: string[]
 }
 
@@ -169,18 +192,93 @@ export const smokeReach = (analysis: Stage10Analysis): SmokeReach => ({
   kitVersion: analysis.kitVersion,
   counts: analysis.counts,
   calibration: { profileBuilt: analysis.calibration.profile !== null, refused: analysis.calibration.refused },
+  conditions: Object.fromEntries(
+    (['N0', 'N1'] as const).map(set => {
+      const c = analysis.accounting.conditions[set]
+      return [set, { attempted: c.attempted, available: c.available, poseAccepted: c.poseAccepted, primaryEligible: c.primaryEligible }]
+    }),
+  ) as SmokeReach['conditions'],
   pairs: analysis.pairs.map(pair => ({
     session: pair.session,
     nailSet: pair.nailSet,
     shot: pair.shot,
     pose: { accepted: pair.pose.accepted, refusedReason: pair.pose.refusedReason, mismatchPx: pair.pose.mismatchPx },
     framesReached: (['F0', 'F3dNoTip', 'F3d', 'F4'] as const).filter(frame => pair.origins.base?.[frame]),
+    variants: Object.keys(pair.origins).filter(variant =>
+      PRIMARY_FRAMES.every(frame => pair.origins[variant as keyof typeof pair.origins]?.[frame]),
+    ),
     cuticleProbe: Object.keys(pair.origins.base ?? {}).length > 0,
-    fullSocket: Object.keys(pair.sockets).length > 0,
+    fullSocket: PRIMARY_FRAMES.every(frame => pair.sockets[frame]),
     notes: pair.notes,
   })),
+  protocol: analysis.protocol,
   problems: analysis.problems,
 })
+
+// ---------------------------------------------------------------------------
+// Return-to-V1: did the hand or the camera move while the camera went to V2 and back?
+// ---------------------------------------------------------------------------
+
+const PALM_POINTS = ['wrist', 'thumbMCP', 'indexMCP', 'middleMCP', 'ringMCP', 'pinkyMCP']
+const INDEX_CHAIN = ['indexPIP', 'indexDIP', 'indexTIP']
+
+export interface TransferResult {
+  /** Rigid part (palm similarity fit): camera endpoint error and/or the whole hand moving — not separable without fixed marks. */
+  translation: number
+  rotationDeg: number
+  scaleChangePct: number
+  /** Non-rigid part: the index finger's largest residual after the palm fit (the finger moved against the palm). */
+  fingerResidual: number
+  /** Unit of translation and residual: Vision's PIP–DIP length in the first photo, px. */
+  unitPx: number
+}
+
+/** Palm similarity fit (complex least squares) from photo a to photo b; the index chain judged against it. */
+export const transferBetween = (a: RawObservation, b: RawObservation): TransferResult | null => {
+  const palm = PALM_POINTS.map(name => [landmarkOf(a, name), landmarkOf(b, name)] as const).filter(
+    (pair): pair is readonly [Px, Px] => pair[0] !== null && pair[1] !== null,
+  )
+  const pip = landmarkOf(a, 'indexPIP')
+  const dip = landmarkOf(a, 'indexDIP')
+  if (palm.length < 4 || !pip || !dip) return null
+  const unitPx = length(sub(dip, pip))
+  const centre = (points: readonly Px[]): Px => [
+    points.reduce((sum, p) => sum + p[0], 0) / points.length,
+    points.reduce((sum, p) => sum + p[1], 0) / points.length,
+  ]
+  const ca = centre(palm.map(pair => pair[0]))
+  const cb = centre(palm.map(pair => pair[1]))
+  // z = Σ conj(a') b' / Σ |a'|²: b' ≈ z a' (rotation + scale).
+  let re = 0
+  let im = 0
+  let norm = 0
+  for (const [p, q] of palm) {
+    const [ax, ay] = sub(p, ca)
+    const [bx, by] = sub(q, cb)
+    re += ax * bx + ay * by
+    im += ax * by - ay * bx
+    norm += ax * ax + ay * ay
+  }
+  const zr = re / norm
+  const zi = im / norm
+  const map = (p: Px): Px => {
+    const [x, y] = sub(p, ca)
+    return [cb[0] + zr * x - zi * y, cb[1] + zi * x + zr * y]
+  }
+  const residuals = INDEX_CHAIN.map(name => [landmarkOf(a, name), landmarkOf(b, name)] as const)
+    .filter((pair): pair is readonly [Px, Px] => pair[0] !== null && pair[1] !== null)
+    .map(([p, q]) => length(sub(map(p), q)))
+  return {
+    translation: length(sub(cb, ca)) / unitPx,
+    rotationDeg: (Math.atan2(zi, zr) * 180) / Math.PI,
+    scaleChangePct: (Math.hypot(zr, zi) - 1) * 100,
+    fingerResidual: residuals.length ? Math.max(...residuals) / unitPx : Number.NaN,
+    unitPx,
+  }
+}
+
+/** Stage 10A gate for the return-to-V1 check (in Vision PIP–DIP lengths, and degrees / percent for the rigid part). */
+export const TRANSFER_LIMITS = { fingerPass: 0.03, fingerFail: 0.06, translation: 0.05, rotationDeg: 1, scaleChangePct: 1 } as const
 
 const status = (failures: string[], look = false): SmokeStatus => (failures.length ? 'FAIL' : look ? 'LOOK' : 'PASS')
 
@@ -193,7 +291,10 @@ export const smokeChecks = (input: SmokeInput): SmokeCheck[] => {
   }
   const ids = [...raws.keys()].sort()
   const annotation = input.annotationsCsv === null ? null : parseAnnotationCsv(input.annotationsCsv)
-  const rows: AnnotationRow[] = annotation?.rows ?? []
+  const blind = input.blindCsv ? parseAnnotationCsv(input.blindCsv) : null
+  // Cuticle and free edge from annotations.csv, DIP / PIP from the blind crops.
+  const rows: AnnotationRow[] = [...(annotation?.rows ?? []), ...(blind?.rows ?? [])]
+  const names = ids.map(parseCaptureName).filter((name): name is CaptureName => name !== null)
 
   // S1 — vision-dump.swift ran on real photos and wrote what it should.
   {
@@ -295,7 +396,9 @@ export const smokeChecks = (input: SmokeInput): SmokeCheck[] => {
     const notes: string[] = []
     if (!annotation) failures.push('annotations.csv not found')
     else failures.push(...annotation.errors)
+    if (blind) failures.push(...blind.errors.map(error => `annotations-blind.csv: ${error}`))
     const annotatedIds = [...new Set(rows.map(row => row.captureId))].sort()
+    const beyond: Record<string, Record<string, number>> = { V1: {}, V2: {} }
     const get = (id: string, pass: 1 | 2, point: AnnotationRow['point']): Px | null => {
       const row = rows.find(r => r.captureId === id && r.pass === pass && r.point === point)
       return row ? [row.x, row.y] : null
@@ -347,6 +450,17 @@ export const smokeChecks = (input: SmokeInput): SmokeCheck[] => {
           if (cross(sub(tip, dip), sub(freeA, freeB)) > 0) failures.push(`${id}: freeEdgeSideA is on the pinky side — A and B swapped`)
         }
         notes.push(`${id}: cuticle at ${fixed(t, 2)} of DIP -> TIP`)
+        // Where the cuticle sits past the annotator's own DIP crease, in PIP–DIP lengths: the same skin fold in N0 and N1.
+        const creasePip = get(id, 1, 'indexPIP')
+        const creaseDip = get(id, 1, 'indexDIP')
+        const name = parseCaptureName(id)
+        if (creasePip && creaseDip && name) beyond[name.view][name.nailSet] = alongAndAcross(middle, creaseDip, [2 * creaseDip[0] - creasePip[0], 2 * creaseDip[1] - creasePip[1]]).t
+      }
+    }
+    for (const view of ['V1', 'V2'] as const) {
+      const { N0, N1 } = beyond[view]
+      if (N0 !== undefined && N1 !== undefined) {
+        notes.push(`${view}: the cuticle sits ${fixed(N0, 2)} (N0) and ${fixed(N1, 2)} (N1) PIP–DIP lengths past the DIP crease — the same skin fold should sit at about the same place; a tip's edge would sit further out (look at the N1 overlay)`)
       }
     }
     if (!annotatedIds.length && annotation) failures.push('annotations.csv has no rows')
@@ -435,15 +549,27 @@ export const smokeChecks = (input: SmokeInput): SmokeCheck[] => {
     else if (run.exitCode !== 0) failures.push(`analyze.ts --smoke exited with ${String(run.exitCode)}: ${run.message ?? ''}`)
     else if (!run.reach) failures.push('analyze.ts --smoke wrote no smoke-report.json')
     else {
+      // Every path Stage 10B needs must run on real data, in BOTH conditions: one condition passing is not a pass.
       const reach = run.reach
       notes.push(`calibration frames ${reach.counts.calibration}, H1 profile ${reach.calibration.profileBuilt ? 'built' : 'NOT built'}; annotated pairs ${reach.counts.annotatedPairs}, poses accepted ${reach.counts.posesAccepted}`)
-      const through = reach.pairs.filter(pair => pair.framesReached.includes('F0') && pair.framesReached.includes('F3dNoTip'))
+      const of = (set: string) => reach.pairs.filter(pair => pair.nailSet === set)
+      const primary = (pair: SmokeReach['pairs'][number]) => pair.framesReached.includes('F0') && pair.framesReached.includes('F3dNoTip')
       if (!reach.calibration.profileBuilt) failures.push('no H1 profile — the calibration frames did not reach the pose')
-      if (!through.length) failures.push('no capture pair reached a socket origin in both F0 and F3dNoTip')
-      for (const pair of reach.pairs) notes.push(`${pair.session} ${pair.nailSet}: ${pair.notes.length ? pair.notes.join('; ') : 'every stage ran'}`)
+      for (const set of ['N0', 'N1']) {
+        if (!of(set).length) failures.push(`${set} path: no ${set} pair (shot 1 in BOTH views)`)
+        else if (!of(set).some(primary)) failures.push(`${set} path: no ${set} pair reached a socket origin in both F0 and F3dNoTip`)
+      }
+      if (!of('N0').some(pair => pair.fullSocket)) failures.push('N0 full socket: no N0 pair has the full socket (all four bed corners in both views) in F0 and F3dNoTip')
+      if (!of('N1').some(pair => pair.cuticleProbe)) failures.push('N1 cuticle: no N1 pair has the cuticle marked in both views')
+      if (!reach.pairs.some(pair => pair.variants.includes('cuticlePass2') && pair.variants.includes('manualJointsPass2'))) {
+        failures.push('repeated annotation path: no pair has a pass-2 cuticle AND pass-2 DIP/PIP through to the origin')
+      }
+      for (const pair of reach.pairs) {
+        notes.push(`${pair.session} ${pair.nailSet}: ${pair.notes.length ? pair.notes.join('; ') : 'every stage ran'} (paths: ${pair.variants.join(', ') || 'none'})`)
+      }
       notes.push(...reach.problems.map(problem => `analyzer problem: ${problem}`))
     }
-    checks.push({ id: 'S7', item: 'the frozen analyzer reads the real data to the end', status: status(failures), details: [...failures, ...notes] })
+    checks.push({ id: 'S7', item: 'the frozen analyzer reads the real data to the end, in N0 and in N1', status: status(failures), details: [...failures, ...notes] })
   }
 
   // S8 — photos stay out of git.
@@ -458,6 +584,129 @@ export const smokeChecks = (input: SmokeInput): SmokeCheck[] => {
       status: status(failures),
       details: failures.length ? failures : ['no image is tracked under research/, and none in the repository is addable'],
     })
+  }
+
+  // S9 — physical transfer: back at V1 after V2, did the finger, the hand or the camera move?
+  {
+    const failures: string[] = []
+    const notes: string[] = []
+    let look = false
+    const pct = (value: number) => `${fixed(value * 100, 1)}%`
+    const returns = names.filter(name => name.view === 'V1' && name.shot === RETURN_SHOT)
+    if (!returns.length) failures.push(`no return-to-V1 photo (S<n>-<N0|N1>-V1-${RETURN_SHOT}, taken after V2): the physical transfer is unchecked`)
+    for (const name of returns) {
+      const first = raws.get(`${name.session}-${name.nailSet}-V1-1`)
+      if (!first) {
+        failures.push(`${name.captureId}: no ${name.session}-${name.nailSet}-V1-1 to compare with`)
+        continue
+      }
+      const result = transferBetween(first, raws.get(name.captureId)!)
+      if (!result) {
+        failures.push(`${name.captureId}: palm or index landmarks missing, the transfer cannot be measured`)
+        continue
+      }
+      const repeat = raws.get(`${name.session}-${name.nailSet}-V1-2`)
+      const floor = repeat ? transferBetween(first, repeat) : null
+      const line =
+        `${name.captureId} vs V1-1: index finger ${pct(result.fingerResidual)} of PIP–DIP off after the palm fit; palm ${pct(result.translation)}, ${fixed(result.rotationDeg, 2)}°, scale ${fixed(result.scaleChangePct, 2)}%` +
+        (floor ? ` (unmoved repeat V1-2: finger ${pct(floor.fingerResidual)}, palm ${pct(floor.translation)})` : '')
+      if (result.fingerResidual > TRANSFER_LIMITS.fingerFail) failures.push(`${line} — the finger moved against the palm during the transfer`)
+      else if (result.fingerResidual > TRANSFER_LIMITS.fingerPass) {
+        look = true
+        notes.push(`${line} — the finger may have moved; compare the overlays`)
+      } else notes.push(line)
+      if (
+        result.translation > TRANSFER_LIMITS.translation ||
+        Math.abs(result.rotationDeg) > TRANSFER_LIMITS.rotationDeg ||
+        Math.abs(result.scaleChangePct) > TRANSFER_LIMITS.scaleChangePct
+      ) {
+        look = true
+        notes.push(`${name.captureId}: the camera endpoint did not return to the same position / orientation, or the whole hand moved (not separable without fixed marks)`)
+      }
+    }
+    checks.push({ id: 'S9', item: 'physical transfer: back at V1 after V2, nothing moved', status: status(failures, look), details: [...failures, ...notes] })
+  }
+
+  // S10 — the blind DIP / PIP path: crops planned, marked, and mapped back onto the upright image.
+  {
+    const failures: string[] = []
+    const key = input.blindKey ?? null
+    const marked = names.filter(name => name.shot === 1)
+    if (!key) failures.push('blind/key.json not found: the blind DIP / PIP path was not run (blind-cli.ts plan)')
+    else {
+      if (key.kind !== 'stage10-blind-key') failures.push('blind/key.json is not a Stage 10 blind key')
+      failures.push(...key.unplanned.map(entry => `not planned: ${entry}`))
+      for (const name of marked) {
+        for (const pass of [1, 2] as const) {
+          if (!key.entries.some(entry => entry.captureId === name.captureId && entry.pass === pass)) failures.push(`${name.captureId}: no pass-${pass} crop in the key`)
+        }
+      }
+      for (const entry of key.entries) if (/S\d|N[01]|V[12]|CAL/.test(entry.blindId)) failures.push(`${entry.blindId}: the crop's ID gives the photo away`)
+    }
+    if (!input.blindCsv) failures.push('annotations-blind.csv not found: the blind marks were not merged (blind-cli.ts merge)')
+    else if (blind) {
+      if (blind.rows.some(row => row.point !== 'indexDIP' && row.point !== 'indexPIP')) failures.push('annotations-blind.csv carries points other than indexDIP / indexPIP')
+      for (const entry of key?.entries ?? []) {
+        for (const point of ['indexDIP', 'indexPIP'] as const) {
+          const row = blind.rows.find(r => r.captureId === entry.captureId && r.pass === entry.pass && r.point === point)
+          if (!row) {
+            failures.push(`${entry.blindId} (${entry.captureId}, pass ${entry.pass}): no ${point}`)
+            continue
+          }
+          const [u, v] = toCrop(entry.crop, row.x, row.y)
+          if (u < -0.5 || v < -0.5 || u > entry.crop.width + 0.5 || v > entry.crop.height + 0.5) {
+            failures.push(`${entry.captureId} pass ${entry.pass} ${point}: maps outside its crop — the key and the marks do not belong together`)
+          }
+        }
+      }
+    }
+    if (annotation?.rows.some(row => row.point === 'indexDIP' || row.point === 'indexPIP')) failures.push('annotations.csv carries indexDIP / indexPIP: marked unblinded (they belong to the blind crops)')
+    checks.push({
+      id: 'S10',
+      item: 'blind DIP / PIP path: crops, marks, back onto the upright image',
+      status: status(failures, true),
+      details: [
+        ...failures,
+        `${key?.entries.length ?? 0} crops in the key; S4 checks the mapped-back marks against Vision's joints`,
+        'open the crops of both passes: the DIP and PIP creases must be inside them, the nail and any tip must not',
+      ],
+    })
+  }
+
+  // S11 — the capture record: geometry, session log, capture times, shot order, lens.
+  {
+    const failures: string[] = [...checkConditions(input.conditions ?? undefined)]
+    const notes: string[] = []
+    let look = false
+    const photos = ids.filter(id => !id.startsWith(NEGATIVE_CONTROL_PREFIX))
+    const time = (id: string) => captureTimeValue(String(raws.get(id)?.capturedAtLocal ?? ''))
+    const untimed = photos.filter(id => !Number.isFinite(time(id)))
+    if (untimed.length) failures.push(`no capture time (EXIF DateTimeOriginal) for ${untimed.join(', ')}`)
+    const sessions = [...new Set(names.map(name => name.session))]
+    for (const session of sessions) {
+      const shots = names.filter(name => name.session === session && Number.isFinite(time(name.captureId))).sort((a, b) => shotOrder(a) - shotOrder(b))
+      for (let k = 1; k < shots.length; k += 1) {
+        if (time(shots[k].captureId) < time(shots[k - 1].captureId)) {
+          failures.push(`${session}: ${shots[k].captureId} was taken before ${shots[k - 1].captureId} — the protocol order is V1 1, 2 → V2 1, 2 → V1 ${RETURN_SHOT}`)
+        }
+      }
+    }
+    const lenses = new Set(
+      photos.map(id => {
+        const lens = raws.get(id)!.lens
+        return `${String(lens?.model ?? 'lens ?')}, ${String(lens?.focalLength35mm ?? '?')} mm (35 mm eq.)`
+      }),
+    )
+    if (lenses.size > 1) {
+      look = true
+      notes.push(`more than one lens or focal length among the photos (${[...lenses].join(' | ')}): a lens switch changes the projection — lock the lens`)
+    } else if (lenses.size) notes.push(`every photo: ${[...lenses][0]}`)
+    const views = (input.conditions?.views ?? {}) as Record<string, Record<string, unknown> | undefined>
+    for (const view of ['V1', 'V2']) {
+      const entry = views[view]
+      if (entry) notes.push(`${view}: ${String(entry.lens)}, zoom ${String(entry.zoom)}, ${String(entry.distanceCm)} cm, endpoint: ${String(entry.endpoint)}`)
+    }
+    checks.push({ id: 'S11', item: 'capture record: geometry, session log, capture times and order, lens', status: status(failures, look), details: [...failures, ...notes] })
   }
 
   return checks
@@ -497,15 +746,20 @@ export const renderSmokeReport = (reach: SmokeReach, header: { title: string; ki
     '',
     `- Calibration frames: ${reach.counts.calibration}; H1 profile ${reach.calibration.profileBuilt ? 'built' : 'NOT built'}${reach.calibration.refused.length ? ` (refused: ${reach.calibration.refused.join('; ')})` : ''}`,
     `- Captures named by the protocol: ${reach.counts.captures}; annotated pairs: ${reach.counts.annotatedPairs}; poses accepted: ${reach.counts.posesAccepted}`,
+    ...(['N0', 'N1'] as const).map(set => {
+      const c = reach.conditions[set]
+      return `- ${set}: attempted ${c.attempted}, available ${c.available}, pose accepted ${c.poseAccepted}, F0 and F3dNoTip both reached ${c.primaryEligible}`
+    }),
     '',
-    '| pair | pose | profile mismatch px | frames reached | cuticle probe | full socket | notes |',
-    '| --- | --- | --- | --- | --- | --- | --- |',
+    '| pair | pose | profile mismatch px | frames reached | annotation paths | cuticle probe | full socket | notes |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- |',
   ]
   for (const pair of reach.pairs) {
     lines.push(
-      `| ${pair.session} ${pair.nailSet} shot ${pair.shot} | ${pair.pose.accepted ? 'accepted' : `refused (${pair.pose.refusedReason ?? '?'})`} | ${fixed(pair.pose.mismatchPx)} | ${pair.framesReached.join(' ') || '—'} | ${pair.cuticleProbe ? 'yes' : 'no'} | ${pair.fullSocket ? 'yes' : 'no'} | ${pair.notes.join('; ') || '—'} |`,
+      `| ${pair.session} ${pair.nailSet} shot ${pair.shot} | ${pair.pose.accepted ? 'accepted' : `refused (${pair.pose.refusedReason ?? '?'})`} | ${fixed(pair.pose.mismatchPx)} | ${pair.framesReached.join(' ') || '—'} | ${pair.variants.join(' ') || '—'} | ${pair.cuticleProbe ? 'yes' : 'no'} | ${pair.fullSocket ? 'yes' : 'no'} | ${pair.notes.join('; ') || '—'} |`,
     )
   }
+  lines.push('', reach.protocol.length ? '**Protocol notes:**' : 'No protocol note.', ...reach.protocol.map(note => `- ${note}`))
   lines.push('', reach.problems.length ? '**Problems:**' : 'No problems reported.', ...reach.problems.map(problem => `- ${problem}`))
   return `${lines.join('\n')}\n`
 }

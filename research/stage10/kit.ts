@@ -17,6 +17,12 @@
 // annotator's convention (dorsal skin crease, skin apex), which differs from
 // the detector's by a constant that the S and R numbers cancel and the C
 // numbers report as such.
+//
+// v2 (re-frozen once after the independent review, still before any photo):
+// the primary F0 / F3dNoTip comparison and every Q5 substitution run on
+// MATCHED sessions only, every session is accounted for with the reason it
+// left the analysis, uncertainties are session-level, and the protocol is
+// time-balanced (ABBA x 3) with the capture order checked against EXIF time.
 
 import type { Finger } from '../../src/lib/nail3dContract.ts'
 import { buildFrame } from '../../src/lib/nail3dCanonicalFrames.ts'
@@ -32,13 +38,17 @@ import { computeStability } from '../../src/lib/nail3dStability.ts'
 import { add, distance, dot, midpoint, scale, sub, toBasisCoords } from '../../src/lib/vec3.ts'
 import type { Mat3, Vec3 } from '../../src/lib/vec3.ts'
 import { GENERIC_PROFILE } from '../../tests/support/handPopulation.ts'
+import { jackknife, mean, variance, welchDifference } from './stats.ts'
+import type { Jackknife, WelchDifference } from './stats.ts'
 
-export const STAGE10_KIT_VERSION = 1
+export const STAGE10_KIT_VERSION = 2
 const FINGER: Finger = 'index'
 
 /** F0 is the product frame; F3dNoTip the Stage 9 candidate; F3d and F4 diagnose TIP and DIP. */
 export const STAGE10_FRAMES = ['F0', 'F3dNoTip', 'F3d', 'F4'] as const satisfies readonly FrameMethod[]
 export type Stage10Frame = (typeof STAGE10_FRAMES)[number]
+/** The pre-registered comparison. F3d and F4 are descriptive only and are never selected from Stage 10 data. */
+export const PRIMARY_FRAMES = ['F0', 'F3dNoTip'] as const satisfies readonly Stage10Frame[]
 
 // ---------------------------------------------------------------------------
 // Names: S<session>-<N0|N1>-<V1|V2>-<shot>, CAL-<n>
@@ -46,6 +56,17 @@ export type Stage10Frame = (typeof STAGE10_FRAMES)[number]
 
 export type NailSetId = 'N0' | 'N1'
 export type ViewId = 'V1' | 'V2'
+
+/**
+ * The session order: ABBA x 3 (N0 N1 N1 N0, three times). Both conditions sit
+ * at a mean session index of 6.5, so a linear drift over the day cannot pose
+ * as a nail-set shift (ABAB would leave one session step of it). Every
+ * session is a fresh placement of the hand, also when the same condition
+ * comes twice in a row; an N1 session re-attaches the tip every time.
+ */
+export const STAGE10_SCHEDULE: readonly NailSetId[] = ['N0', 'N1', 'N1', 'N0', 'N0', 'N1', 'N1', 'N0', 'N0', 'N1', 'N1', 'N0']
+/** Shot 1 is the analysed pair, shot 2 the unmoved repeat (R floor), V1 shot 3 the Stage 10A return-to-V1 check. */
+export const RETURN_SHOT = 3
 
 export interface CaptureName {
   captureId: string
@@ -147,12 +168,6 @@ class Annotations {
 // Small numerics
 // ---------------------------------------------------------------------------
 
-const mean = (values: readonly number[]) => values.reduce((sum, value) => sum + value, 0) / values.length
-const variance = (values: readonly number[]) => {
-  if (values.length < 2) return Number.NaN
-  const m = mean(values)
-  return values.reduce((sum, value) => sum + (value - m) ** 2, 0) / (values.length - 1)
-}
 const median = (values: readonly number[]) => {
   const sorted = values.filter(Number.isFinite).sort((a, b) => a - b)
   return sorted.length ? sorted[Math.floor(sorted.length / 2)] : Number.NaN
@@ -363,6 +378,12 @@ export interface PairOutcome {
   nailSet: NailSetId
   shot: number
   pose: { accepted: boolean; refusedReason?: string; rotation: Mat3 | null; mismatchPx: number }
+  /** The landmark lift ran at the estimated pose. */
+  lifted: boolean
+  /** Pass-1 cuticle marked in both views: the origin probe exists. */
+  cuticleMarked: boolean
+  /** Which frames the lifted landmarks could build (independent of the cuticle). */
+  framesBuilt: Partial<Record<Stage10Frame, boolean>>
   /** Socket origin from the cuticle probe, in frame units (proximal phalanx). */
   origins: Partial<Record<OriginVariant, Partial<Record<Stage10Frame, Vec3>>>>
   /** Angle between the F3d and F3dNoTip finger axes: DIP flexion against the calibrated posture, or TIP drift. */
@@ -441,6 +462,9 @@ const processPair = (
       rotation: estimate.rotation,
       mismatchPx: estimate.profileMismatchRmsPx,
     },
+    lifted: false,
+    cuticleMarked: false,
+    framesBuilt: {},
     origins: {},
     axisGapDeg: null,
     sockets: {},
@@ -459,10 +483,12 @@ const processPair = (
     notes.push('lift refused')
     return outcome
   }
+  outcome.lifted = true
   outcome.liftResidualPx = lifted.reprojectionRmsPx
 
   const cuticle1 = cuticleOf(annotations, idA, idB, 1)
   const cuticle2 = cuticleOf(annotations, idA, idB, 2)
+  outcome.cuticleMarked = cuticle1 !== null
   if (!cuticle1) notes.push('cuticle not marked in both views')
   outcome.origins.base = probeOrigins(lifted, profile, cuticle1)
   if (cuticle2) outcome.origins.cuticlePass2 = probeOrigins(lifted, profile, cuticle2)
@@ -482,7 +508,10 @@ const processPair = (
 
   const frames = framesOf(lifted, profile)
   if (frames.F3d && frames.F3dNoTip) outcome.axisGapDeg = angleDeg(frames.F3d.basis.y, frames.F3dNoTip.basis.y)
-  for (const method of STAGE10_FRAMES) if (!frames[method]) notes.push(`${method} refused`)
+  for (const method of STAGE10_FRAMES) {
+    outcome.framesBuilt[method] = Boolean(frames[method])
+    if (!frames[method]) notes.push(`${method} refused`)
+  }
 
   // The full socket, through the frozen lift WITH the bed in the solve.
   const bedA = withBed(pair.a, annotations)
@@ -512,8 +541,11 @@ type Joint = (typeof JOINTS)[number]
 export interface JointStats {
   joint: Joint
   view: ViewId
-  photos: number
-  /** C: mean (Vision − annotator), along / across the finger, % bed length. A convention offset, not an error. */
+  /** Sessions that gave a row, per condition. One photo per session: the session is the unit. */
+  rows: Record<NailSetId, number>
+  /** Annotated captures that gave no row, with the reason. */
+  excluded: string[]
+  /** C: mean (Vision − annotator) over N0, along / across the finger, % bed length. A convention offset, not an error. */
   offsetAlong: number
   offsetAcross: number
   /** C: annotator noise per axis, from pass 1 vs pass 2, % bed length. */
@@ -522,15 +554,11 @@ export interface JointStats {
   sdDetector: number
   /** R: Vision's shot-to-shot scatter on an unmoved hand (shot 1 vs 2), per axis, % bed length. */
   sdShotFloor: number
-  /** S: nail-set shift of (Vision − annotator), N1 − N0, along / across the finger, % bed length. */
-  shiftAlong: number
-  shiftAcross: number
-  /** Their standard errors (each set's own scatter, per axis). */
-  shiftAlongSe: number
-  shiftAcrossSe: number
-  /** |shift| and its chi-square (2 dof) against no shift. */
+  /** S: N1 − N0 of (Vision − annotator), along / across the finger, % bed length, with session-level Welch intervals. */
+  shiftAlong: WelchDifference
+  shiftAcross: WelchDifference
+  /** |shift|, % bed length. */
   nailSetShift: number
-  shiftChi2: number
 }
 
 const fingerAxis = (annotations: Annotations, id: string): Px | null => {
@@ -561,15 +589,21 @@ const jointStatistics = (
     const toPct = 100 / bedLength[view]
     for (const joint of JOINTS) {
       const rows: { nailSet: NailSetId; along: number; across: number }[] = []
+      const excluded: string[] = []
       const annotator: number[] = []
       const floor: number[] = []
       for (const capture of annotated.filter(c => c.view === view)) {
         const id = capture.captureId
-        const axis = fingerAxis(annotations, id)
-        const manual = annotations.get(id, 1, joint)
         const observation = observations.get(id)
+        const manual = annotations.get(id, 1, joint)
+        const axis = fingerAxis(annotations, id)
         const detected = observation ? landmarkPx(observation, joint) : null
-        if (!axis || !manual || !detected) continue
+        if (!observation) excluded.push(`${id}: no Layer A`)
+        else if (!manual) excluded.push(`${id}: ${joint} not marked (pass 1)`)
+        else if (!axis) excluded.push(`${id}: no finger axis (pass-1 indexPIP and indexDIP both needed)`)
+        else if (!detected) excluded.push(`${id}: Vision gave no ${joint}`)
+        else if (!Number.isFinite(toPct)) excluded.push(`${id}: no ${view} bed length to scale by`)
+        if (!observation || !manual || !axis || !detected || !Number.isFinite(toPct)) continue
         const along = (d: Px) => (d[0] * axis[0] + d[1] * axis[1]) * toPct
         const across = (d: Px) => (-d[0] * axis[1] + d[1] * axis[0]) * toPct
         const d: Px = [detected[0] - manual[0], detected[1] - manual[1]]
@@ -583,35 +617,31 @@ const jointStatistics = (
       }
       const n0 = rows.filter(row => row.nailSet === 'N0')
       const n1 = rows.filter(row => row.nailSet === 'N1')
-      if (n0.length < 2) continue
       // Per-axis variances, each set about its own mean (the nail set may shift it).
       const perAxis = (items: typeof rows) => (variance(items.map(r => r.along)) + variance(items.map(r => r.across))) / 2
-      const pooled = n1.length > 1 ? (perAxis(n0) * (n0.length - 1) + perAxis(n1) * (n1.length - 1)) / (n0.length + n1.length - 2) : perAxis(n0)
+      const pooled =
+        n0.length > 1 && n1.length > 1
+          ? (perAxis(n0) * (n0.length - 1) + perAxis(n1) * (n1.length - 1)) / (n0.length + n1.length - 2)
+          : n0.length > 1
+            ? perAxis(n0)
+            : Number.NaN
       // pass1 − pass2 carries two passes' noise over two axes.
       const annotatorVar = annotator.length ? mean(annotator) / 4 : Number.NaN
-      const component = (key: 'along' | 'across') => {
-        if (n1.length < 2) return { delta: Number.NaN, se: Number.NaN }
-        const a = n0.map(r => r[key])
-        const b = n1.map(r => r[key])
-        return { delta: mean(b) - mean(a), se: Math.sqrt(variance(a) / a.length + variance(b) / b.length) }
-      }
-      const along = component('along')
-      const across = component('across')
+      const shiftAlong = welchDifference(n0.map(r => r.along), n1.map(r => r.along))
+      const shiftAcross = welchDifference(n0.map(r => r.across), n1.map(r => r.across))
       out.push({
         joint,
         view,
-        photos: rows.length,
+        rows: { N0: n0.length, N1: n1.length },
+        excluded,
         offsetAlong: mean(n0.map(r => r.along)),
         offsetAcross: mean(n0.map(r => r.across)),
         sdAnnotator: Math.sqrt(annotatorVar),
-        sdDetector: Math.sqrt(Math.max(0, pooled - (Number.isFinite(annotatorVar) ? annotatorVar : 0))),
+        sdDetector: Number.isFinite(pooled) ? Math.sqrt(Math.max(0, pooled - (Number.isFinite(annotatorVar) ? annotatorVar : 0))) : Number.NaN,
         sdShotFloor: floor.length ? Math.sqrt(mean(floor) / 4) : Number.NaN,
-        shiftAlong: along.delta,
-        shiftAcross: across.delta,
-        shiftAlongSe: along.se,
-        shiftAcrossSe: across.se,
-        nailSetShift: Math.hypot(along.delta, across.delta),
-        shiftChi2: (along.delta / along.se) ** 2 + (across.delta / across.se) ** 2,
+        shiftAlong,
+        shiftAcross,
+        nailSetShift: Math.hypot(shiftAlong.delta, shiftAcross.delta),
       })
     }
   }
@@ -622,9 +652,8 @@ export interface TipReach {
   /** Mean distance from the annotator's DIP crease to Vision's TIP, along the finger, % bed length. */
   n0: number
   n1: number
-  /** S: N1 − N0, and its standard error. */
-  shift: number
-  shiftSe: number
+  /** S: N1 − N0, with its session-level Welch interval. */
+  shift: WelchDifference
 }
 
 /** How far Vision puts the fingertip beyond the DIP crease: TIP needs no annotation of its own. */
@@ -645,14 +674,114 @@ const tipReach = (
       if (!axis || !dip || !tip) continue
       reach[capture.nailSet].push((((tip[0] - dip[0]) * axis[0] + (tip[1] - dip[1]) * axis[1]) * 100) / bedLength[view])
     }
-    out[view] = {
-      n0: mean(reach.N0),
-      n1: mean(reach.N1),
-      shift: mean(reach.N1) - mean(reach.N0),
-      shiftSe: Math.sqrt(variance(reach.N0) / reach.N0.length + variance(reach.N1) / reach.N1.length),
-    }
+    out[view] = { n0: mean(reach.N0), n1: mean(reach.N1), shift: welchDifference(reach.N0, reach.N1) }
   }
   return out
+}
+
+// ---------------------------------------------------------------------------
+// Protocol: schedule, capture order, the record of the capture
+// ---------------------------------------------------------------------------
+
+const sessionIndex = (session: string) => Number(session.slice(1))
+
+/** EXIF "YYYY:MM:DD HH:MM:SS" (vision-dump's capturedAtLocal) or ISO, as a number for ordering; NaN if unreadable. */
+export const captureTimeValue = (text: string): number => {
+  const exif = /^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(text)
+  if (exif) {
+    const [y, mo, d, h, mi, se] = exif.slice(1).map(Number)
+    return Date.UTC(y, mo - 1, d, h, mi, se)
+  }
+  const parsed = Date.parse(text)
+  return Number.isFinite(parsed) ? parsed : Number.NaN
+}
+
+/** The order the shots of one session are taken in: V1 1, 2 → V2 1, 2 → (Stage 10A) back to V1 for shot 3. */
+export const shotOrder = (capture: CaptureName) =>
+  capture.view === 'V1' && capture.shot === RETURN_SHOT ? 100 : (capture.view === 'V1' ? 0 : 10) + capture.shot
+
+/** Deviations from the pre-registered protocol. Reported, never silently corrected. */
+const protocolChecks = (
+  captures: readonly CaptureName[],
+  schedule: readonly NailSetId[],
+  capturedAt: ReadonlyMap<string, string> | undefined,
+): string[] => {
+  const notes: string[] = []
+  const bySession = new Map<string, CaptureName[]>()
+  for (const capture of captures) bySession.set(capture.session, [...(bySession.get(capture.session) ?? []), capture])
+  const sessions = [...bySession.keys()].sort((a, b) => sessionIndex(a) - sessionIndex(b))
+  for (const session of sessions) {
+    const sets = [...new Set(bySession.get(session)!.map(capture => capture.nailSet))]
+    const planned = schedule[sessionIndex(session) - 1]
+    if (sets.length > 1) notes.push(`${session}: its photos name both N0 and N1`)
+    if (!planned) notes.push(`${session}: not one of the ${schedule.length} scheduled sessions`)
+    else if (!sets.includes(planned)) notes.push(`${session}: shot as ${sets.join('/')}, the ABBA schedule says ${planned}`)
+  }
+  schedule.forEach((planned, index) => {
+    if (!bySession.has(`S${index + 1}`)) notes.push(`S${index + 1} (${planned}): no photo — the reason belongs in conditions.json deviations`)
+  })
+  if (!capturedAt) {
+    notes.push('no capture times: the order of sessions and shots is unchecked')
+    return notes
+  }
+  const untimed: string[] = []
+  const starts: { session: string; start: number }[] = []
+  for (const session of sessions) {
+    const timed = bySession
+      .get(session)!
+      .map(capture => ({ capture, t: captureTimeValue(capturedAt.get(capture.captureId) ?? '') }))
+    for (const entry of timed) if (!Number.isFinite(entry.t)) untimed.push(entry.capture.captureId)
+    const known = timed.filter(entry => Number.isFinite(entry.t)).sort((a, b) => shotOrder(a.capture) - shotOrder(b.capture))
+    for (let k = 1; k < known.length; k += 1) {
+      if (known[k].t < known[k - 1].t) notes.push(`${session}: ${known[k].capture.captureId} was taken before ${known[k - 1].capture.captureId}`)
+    }
+    if (known.length) starts.push({ session, start: Math.min(...known.map(entry => entry.t)) })
+  }
+  for (let k = 1; k < starts.length; k += 1) {
+    if (starts[k].start < starts[k - 1].start) notes.push(`${starts[k].session} started before ${starts[k - 1].session}: sessions not shot in schedule order`)
+  }
+  if (untimed.length) notes.push(`no capture time (EXIF DateTimeOriginal) for ${untimed.length} photo(s): ${untimed.slice(0, 6).join(', ')}${untimed.length > 6 ? ', …' : ''}`)
+  return notes
+}
+
+const isText = (value: unknown) => typeof value === 'string' && value.trim().length > 0
+const isPositive = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value > 0
+
+/**
+ * What conditions.json must record for a Stage 10B capture (README §4): both
+ * camera endpoints with lens, zoom and camera-to-hand distance and how their
+ * position AND orientation are reproduced, how the hand and forearm are
+ * supported, and a per-session log. Missing fields are reported, not filled.
+ */
+export const checkConditions = (conditions: Record<string, unknown> | undefined): string[] => {
+  if (!conditions) return ['conditions.json missing: the capture geometry and the session log are unrecorded']
+  const problems: string[] = []
+  for (const key of ['date', 'hand', 'finger', 'device', 'endpointReproduction', 'handSupport', 'lighting', 'background', 'N0', 'N1']) {
+    if (!isText(conditions[key])) problems.push(`conditions.json: ${key} missing`)
+  }
+  const views = (conditions.views ?? {}) as Record<string, Record<string, unknown> | undefined>
+  for (const view of ['V1', 'V2']) {
+    const entry = views[view]
+    if (!entry) {
+      problems.push(`conditions.json: views.${view} missing`)
+      continue
+    }
+    if (!isText(entry.lens)) problems.push(`conditions.json: views.${view}.lens missing`)
+    if (!isPositive(entry.zoom)) problems.push(`conditions.json: views.${view}.zoom missing (a number, e.g. 3)`)
+    if (!isPositive(entry.distanceCm)) problems.push(`conditions.json: views.${view}.distanceCm missing (camera to hand, cm)`)
+    if (!isText(entry.endpoint)) problems.push(`conditions.json: views.${view}.endpoint missing (position and orientation of the camera)`)
+  }
+  const log = conditions.sessionLog
+  if (!Array.isArray(log) || !log.length) problems.push('conditions.json: sessionLog missing (one entry per session: session, nailSet, startedAt, attachment, notes)')
+  else {
+    for (const [index, entry] of (log as Record<string, unknown>[]).entries()) {
+      if (!isText(entry?.session)) problems.push(`conditions.json: sessionLog[${index}].session missing`)
+      if (!isText(entry?.startedAt)) problems.push(`conditions.json: sessionLog[${index}].startedAt missing`)
+      if (entry?.nailSet === 'N1' && !isText(entry?.attachment)) problems.push(`conditions.json: sessionLog[${index}].attachment missing (how the tip went on, any problem)`)
+    }
+  }
+  if (!Array.isArray(conditions.deviations)) problems.push('conditions.json: deviations missing (an empty list if none)')
+  return problems
 }
 
 // ---------------------------------------------------------------------------
@@ -662,53 +791,121 @@ const tipReach = (
 export interface Stage10Input {
   observations: ReadonlyMap<string, ScanObservation>
   annotations: readonly AnnotationRow[]
+  /** EXIF capture time per captureId (vision-dump's capturedAtLocal), to check the protocol order. */
+  capturedAt?: ReadonlyMap<string, string>
+  /** The pre-registered session order. Default STAGE10_SCHEDULE. */
+  schedule?: readonly NailSetId[]
+}
+
+/** One session through the pipeline: how far it got, and why it stopped. */
+export interface SessionAccount {
+  session: string
+  /** Condition from the file names, or from the schedule when no photo exists. */
+  nailSet: NailSetId
+  scheduled: NailSetId | null
+  /** Both shot-1 photos (V1, V2) exist as Layer A. */
+  available: boolean
+  poseAccepted: boolean
+  /** A socket origin from the cuticle probe exists in this frame. */
+  frames: Record<Stage10Frame, boolean>
+  /** F0 AND F3dNoTip both have an origin: the session enters the primary comparison. */
+  primaryEligible: boolean
+  /** Every Q5 substitution exists for both primary frames: the session enters Q5. */
+  q5Matched: boolean
+  /** Why the session stopped where it did, in pipeline order. Empty when it reached Q5. */
+  excluded: string[]
+}
+
+export interface ConditionAccount {
+  nailSet: NailSetId
+  attempted: number
+  available: number
+  poseAccepted: number
+  frameAccepted: Record<Stage10Frame, number>
+  primaryEligible: number
+  q5Matched: number
+  /** Mean session index of the available sessions: equal for N0 and N1 when the order is time-balanced. */
+  meanSessionIndex: number
 }
 
 export interface FrameRepeatability {
   frame: Stage10Frame
+  /** Sessions used, per condition: the primary set (F0 and F3dNoTip both valid), for F3d / F4 the part of it where they are valid too. */
+  sessions: Record<NailSetId, number>
   /** R: origin scatter per nail set (rms distance from that set's mean), % bed length. */
   m1: Record<NailSetId, number>
   /** Both sets, each about its own mean. */
   m1Pooled: number
   /** S: distance between the N0 and N1 mean origins, % bed length. */
   m6: number
-  /** What `m6` would be by chance alone, from the M1 scatter. */
+  /** The rms of `m6` under no shift, from the M1 scatter. */
   m6Chance: number
-  /** Full-socket M0–M4 over the N0 captures (computeStability), when beds were marked. */
+  /** Full-socket M0–M4 over the N0 sessions of the set (computeStability), when beds were marked. */
   socket: { m0: number; m1: number; m2: number; m3: number; m4: number } | null
 }
 
+/** The pre-registered comparison, on matched sessions only. */
+export interface PrimaryComparison {
+  /** Sessions where F0 AND F3dNoTip both have an origin: the only ones compared. */
+  sessions: Record<NailSetId, string[]>
+  /** N0 sessions of that set with a full socket in both frames: the bed-length unit comes from these. */
+  unitSessions: string[]
+  /** F3dNoTip / F0 pooled M1 on the same sessions. */
+  ratio: number
+  /** Delete-one-session jackknife of ln(ratio). */
+  logRatio: Jackknife
+  /** exp of the jackknife 95% interval on ln(ratio). */
+  ratioCi95: [number, number]
+}
+
 /**
- * Q5, as counterfactuals on the same captures: by how much the origin
- * variance would fall if one input were noise-free. Not additive shares — the
- * palm points feed both the pose and the palm fit, so their effects partly
- * cancel, and a share table would double-count them.
+ * Q5 as a reference-substitution SENSITIVITY analysis, on matched sessions
+ * (every variant exists for both primary frames in every session used). Each
+ * share is the change in origin variance when one input is REPLACED by a
+ * reference — the annotator's creases for Vision's DIP/PIP, the rig-mean pose
+ * for the per-session estimate, pass 1 vs 2 for the cuticle. A reference has
+ * its own convention and error, and the rig-mean pose also absorbs hand motion
+ * between the views, camera endpoint error and model inconsistency, so no
+ * share is a "true error removed". Not additive, not causal.
  */
-export interface Attribution {
+export interface ReferenceSubstitution {
   frame: Stage10Frame
-  captures: number
+  sessions: number
   /** Pooled origin variance (each nail set about its own mean), %² of bed length. */
   total: number
-  /** Fraction of `total` removed by a noise-free cuticle annotation. */
-  cuticleAnnotation: number
-  /** ... by the true relative pose (the rig mean) in place of each estimate. */
-  pose: number
-  /** ... by DIP/PIP as repeatable as nothing at all (the annotator's points, their own noise taken out). */
-  pipDipDetector: number
-  /** Fraction of `total` LEFT with all three removed together: palm landmarks, posture, lift, perspective. */
+  /** Share of `total` one pass of cuticle annotation noise accounts for (pass 1 vs 2). */
+  cuticleNoise: number
+  /** Share removed by the rig-mean pose in place of each session's estimate (pose / hand motion / model inconsistency). */
+  rigPose: number
+  /** Share removed by the annotator's creases in place of Vision's DIP/PIP (the annotator's own noise taken out). */
+  creaseJoints: number
+  /** Share LEFT with all three substitutions together. */
   remainder: number
 }
 
 export interface Stage10Analysis {
   kitVersion: number
   counts: { calibration: number; captures: number; annotatedPairs: number; posesAccepted: number }
+  accounting: {
+    sessions: SessionAccount[]
+    conditions: Record<NailSetId, ConditionAccount>
+    /** Photos the 10B analysis does not use, and why. */
+    unusedCaptures: string[]
+  }
+  /** Deviations from the pre-registered protocol (schedule, capture order). */
+  protocol: string[]
   calibration: CalibrationResult
   bedLengthPx: Record<ViewId, number>
   joints: JointStats[]
   tipReach: Record<ViewId, TipReach>
   pose: {
     refusalRate: number
-    /** R: rotation scatter across sessions about the rig mean (the stand fixes the true one), degrees. */
+    /**
+     * R: per-session relative pose about the rig mean, degrees. The stand
+     * fixes the camera endpoints, so this is pose-estimator error AND hand
+     * motion between the views AND camera endpoint error AND model
+     * inconsistency — not separable here.
+     */
     acrossSessionsMedianDeg: number
     acrossSessionsP95Deg: number
     /** R: shot 1 vs shot 2 of the same placement, degrees — the estimator's floor. */
@@ -716,25 +913,155 @@ export interface Stage10Analysis {
     mismatchMedianPx: number
   }
   frames: FrameRepeatability[]
+  primary: PrimaryComparison
   /** F3d − F3dNoTip axis gap over N0: DIP flexion against the calibrated posture. */
-  axisGap: { sdDeg: number; medianDeg: number }
-  attribution: Attribution[]
+  axisGap: { sdDeg: number; medianDeg: number; sessions: number }
+  substitution: ReferenceSubstitution[]
   pairs: PairOutcome[]
   problems: string[]
 }
 
+const Q5_VARIANTS: readonly OriginVariant[] = [
+  'base',
+  'cuticlePass2',
+  'rigPose',
+  'manualJoints',
+  'manualJointsPass2',
+  'rigManualJoints',
+  'rigManualJointsPass2',
+]
+
+const Q5_MISSING: Record<OriginVariant, string> = {
+  base: 'no origin',
+  cuticlePass2: 'no pass-2 cuticle',
+  rigPose: 'no rig-mean pose lift',
+  manualJoints: 'no pass-1 DIP/PIP substitution',
+  manualJointsPass2: 'no pass-2 DIP/PIP substitution',
+  rigManualJoints: 'no rig-pose + pass-1 DIP/PIP substitution',
+  rigManualJointsPass2: 'no rig-pose + pass-2 DIP/PIP substitution',
+}
+
+const byCondition = (outcomes: readonly PairOutcome[], sessions: ReadonlySet<string>, set: NailSetId) =>
+  outcomes.filter(outcome => sessions.has(outcome.session) && outcome.nailSet === set)
+
+/** The bed-length unit of a frame: the median N0 full-socket bed length over the given sessions. */
+const bedUnit = (outcomes: readonly PairOutcome[], frame: Stage10Frame, unitSessions: ReadonlySet<string>) =>
+  median(byCondition(outcomes, unitSessions, 'N0').filter(o => o.sockets[frame]).map(o => o.sockets[frame]!.socket.bedLength))
+
+/** Sessions of `sessions` whose N0 full socket exists in both primary frames: one unit set for both. */
+const unitSessionsOf = (outcomes: readonly PairOutcome[], sessions: ReadonlySet<string>) =>
+  new Set(byCondition(outcomes, sessions, 'N0').filter(o => o.sockets.F0 && o.sockets.F3dNoTip).map(o => o.session))
+
+export const frameRepeatability = (
+  outcomes: readonly PairOutcome[],
+  frame: Stage10Frame,
+  sessions: ReadonlySet<string>,
+): FrameRepeatability => {
+  const unit = bedUnit(outcomes, frame, unitSessionsOf(outcomes, sessions))
+  const toPct = (value: number) => (value / unit) * 100
+  const originsOf = (set: NailSetId) =>
+    byCondition(outcomes, sessions, set).filter(o => o.origins.base?.[frame]).map(o => o.origins.base![frame]!)
+  const n0 = originsOf('N0')
+  const n1 = originsOf('N1')
+  const pooledSquared =
+    n0.length > 1 && n1.length > 1
+      ? (spreadSquared(n0) * (n0.length - 1) + spreadSquared(n1) * (n1.length - 1)) / (n0.length + n1.length - 2)
+      : spreadSquared(n0)
+  const n0Sockets = byCondition(outcomes, sessions, 'N0').filter(o => o.sockets[frame])
+  let socket: FrameRepeatability['socket'] = null
+  if (n0Sockets.length > 1) {
+    const report = computeStability(n0Sockets.map(o => ({ sessionId: o.session, observation: o.sockets[frame]! })))
+    if (report) {
+      socket = {
+        m0: report.m0CanonicalFrame.rms,
+        m1: report.m1Origin.rms * 100,
+        m2: report.m2Normal.rms,
+        m3: report.m3Tangent.rms,
+        m4: report.m4Dimensions.bedLengthCv * 100,
+      }
+    }
+  }
+  return {
+    frame,
+    sessions: { N0: n0.length, N1: n1.length },
+    m1: {
+      N0: n0.length > 1 ? toPct(Math.sqrt(spreadSquared(n0))) : Number.NaN,
+      N1: n1.length > 1 ? toPct(Math.sqrt(spreadSquared(n1))) : Number.NaN,
+    },
+    m1Pooled: toPct(Math.sqrt(pooledSquared)),
+    m6: n0.length && n1.length ? toPct(distance(centroid(n0), centroid(n1))) : Number.NaN,
+    m6Chance: n0.length && n1.length ? toPct(Math.sqrt(pooledSquared * (1 / n0.length + 1 / n1.length))) : Number.NaN,
+    socket,
+  }
+}
+
+const referenceSubstitution = (
+  outcomes: readonly PairOutcome[],
+  frame: Stage10Frame,
+  sessions: ReadonlySet<string>,
+  unitSessions: ReadonlySet<string>,
+): ReferenceSubstitution => {
+  const unit = bedUnit(outcomes, frame, unitSessions)
+  const pct2 = (value: number) => value * (100 / unit) ** 2
+  const used = outcomes.filter(o => sessions.has(o.session) && Q5_VARIANTS.every(variant => o.origins[variant]?.[frame]))
+  const pooledVariance = (variant: OriginVariant) => {
+    let sum = 0
+    let count = 0
+    let groups = 0
+    for (const set of ['N0', 'N1'] as const) {
+      const points = used.filter(o => o.nailSet === set).map(o => o.origins[variant]![frame]!)
+      if (points.length < 2) continue
+      const centre = centroid(points)
+      sum += points.reduce((total, point) => total + distance(point, centre) ** 2, 0)
+      count += points.length
+      groups += 1
+    }
+    return count > groups ? pct2(sum / (count - groups)) : Number.NaN
+  }
+  const halfDifference = (x: OriginVariant, y: OriginVariant) => {
+    const differences = used.map(o => sub(o.origins[x]![frame]!, o.origins[y]![frame]!))
+    return differences.length > 1 ? pct2(spreadSquared(differences) / 2) : Number.NaN
+  }
+  const total = pooledVariance('base')
+  // One pass of annotation noise, independent per photo: additive.
+  const cuticle = halfDifference('base', 'cuticlePass2')
+  const withoutPose = pooledVariance('rigPose')
+  // The annotator's PIP/DIP sit at a different convention (skin crease), but
+  // a near-constant one; their own noise is measured by the second pass and taken out.
+  const withCreases = pooledVariance('manualJoints') - halfDifference('manualJoints', 'manualJointsPass2')
+  const left = pooledVariance('rigManualJoints') - halfDifference('rigManualJoints', 'rigManualJointsPass2') - cuticle
+  return {
+    frame,
+    sessions: used.length,
+    total,
+    cuticleNoise: cuticle / total,
+    rigPose: (total - withoutPose) / total,
+    creaseJoints: (total - withCreases) / total,
+    remainder: left / total,
+  }
+}
+
 export const analyzeStage10 = (input: Stage10Input): Stage10Analysis => {
   const problems: string[] = []
+  const unusedCaptures: string[] = []
   const annotations = new Annotations(input.annotations)
+  const schedule = input.schedule ?? STAGE10_SCHEDULE
   const calibrationFrames = [...input.observations.values()].filter(o => isCalibrationName(o.captureId))
   const captures: CaptureName[] = []
   for (const id of input.observations.keys()) {
     if (isCalibrationName(id)) continue
     const name = parseCaptureName(id)
-    if (name) captures.push(name)
-    else problems.push(`${id}: not a Stage 10 name (S<n>-<N0|N1>-<V1|V2>-<shot> or CAL-<n>), ignored`)
+    if (!name) {
+      problems.push(`${id}: not a Stage 10 name (S<n>-<N0|N1>-<V1|V2>-<shot> or CAL-<n>), ignored`)
+      unusedCaptures.push(`${id}: not a Stage 10 name`)
+      continue
+    }
+    captures.push(name)
+    if (name.shot === RETURN_SHOT && name.view === 'V1') unusedCaptures.push(`${id}: return-to-V1 shot (the Stage 10A transfer check), not part of the 10B analysis`)
+    else if (name.shot > 2) unusedCaptures.push(`${id}: shot ${name.shot} is not in the protocol, not used`)
   }
   const annotated = captures.filter(c => c.shot === 1)
+  const protocol = protocolChecks(captures, schedule, input.capturedAt)
 
   const calibration = calibrate(calibrationFrames)
   if (!calibration.profile) problems.push('calibration produced no H1 profile; nothing downstream can run')
@@ -762,28 +1089,80 @@ export const analyzeStage10 = (input: Stage10Input): Stage10Analysis => {
     }
   }
 
-  const pairOf = (capture: CaptureName): PairInput | null => {
-    const partnerId = `${capture.session}-${capture.nailSet}-V2-${capture.shot}`
-    const a = input.observations.get(capture.captureId)
-    const b = input.observations.get(partnerId)
-    if (!a || !b) {
-      problems.push(`${capture.captureId}: no ${partnerId} to pair with`)
-      return null
-    }
-    return { session: capture.session, nailSet: capture.nailSet, shot: capture.shot, a, b }
+  // Every session the schedule names or a photo names, accounted for.
+  const observedSet = new Map<string, NailSetId>()
+  for (const capture of captures) if (!observedSet.has(capture.session)) observedSet.set(capture.session, capture.nailSet)
+  const sessionIds = [...new Set([...schedule.map((_, index) => `S${index + 1}`), ...observedSet.keys()])].sort(
+    (a, b) => sessionIndex(a) - sessionIndex(b),
+  )
+  const accounts = new Map<string, SessionAccount>()
+  for (const session of sessionIds) {
+    const scheduled = schedule[sessionIndex(session) - 1] ?? null
+    accounts.set(session, {
+      session,
+      nailSet: observedSet.get(session) ?? scheduled ?? 'N0',
+      scheduled,
+      available: false,
+      poseAccepted: false,
+      frames: { F0: false, F3dNoTip: false, F3d: false, F4: false },
+      primaryEligible: false,
+      q5Matched: false,
+      excluded: [],
+    })
   }
-  const pairs = annotated.filter(c => c.view === 'V1').map(pairOf).filter((p): p is PairInput => p !== null)
+
+  const pairs: PairInput[] = []
+  for (const account of accounts.values()) {
+    const v1 = `${account.session}-${account.nailSet}-V1-1`
+    const v2 = `${account.session}-${account.nailSet}-V2-1`
+    const a = input.observations.get(v1)
+    const b = input.observations.get(v2)
+    if (!observedSet.has(account.session)) account.excluded.push('no photo')
+    else if (!a || !b) {
+      account.excluded.push(`no ${[!a ? v1 : null, !b ? v2 : null].filter(Boolean).join(' / ')}`)
+      problems.push(`${account.session}: ${[!a ? v1 : null, !b ? v2 : null].filter(Boolean).join(' and ')} missing, the session cannot be paired`)
+    } else {
+      account.available = true
+      pairs.push({ session: account.session, nailSet: account.nailSet, shot: 1, a, b })
+    }
+  }
   const floorPairs = captures
     .filter(c => c.view === 'V1' && c.shot === 2)
-    .map(pairOf)
+    .map(c => {
+      const a = input.observations.get(c.captureId)
+      const partner = `${c.session}-${c.nailSet}-V2-2`
+      const b = input.observations.get(partner)
+      if (!a || !b) problems.push(`${c.captureId}: no ${partner}, so the pose floor (shot 1 vs 2) skips ${c.session}`)
+      return a && b ? { session: c.session, nailSet: c.nailSet, shot: 2, a, b } : null
+    })
     .filter((p): p is PairInput => p !== null)
 
   const profile = calibration.profile
-  // The rig: one stand, two marked positions, so one true relative rotation.
+  // The rig: one stand, two marked endpoints, so one relative rotation when nothing moves.
   const estimates = profile ? pairs.map(pair => estimatePose(profile, pair)) : []
   const acceptedRotations = estimates.map(e => e.rotation).filter((r): r is Mat3 => r !== null)
   const rigRotation = acceptedRotations.length ? meanRotation(acceptedRotations) : null
   const outcomes = profile ? pairs.map(pair => processPair(pair, profile, annotations, rigRotation)) : []
+  if (!profile) for (const pair of pairs) accounts.get(pair.session)!.excluded.push('no H1 profile (calibration)')
+
+  for (const outcome of outcomes) {
+    const account = accounts.get(outcome.session)!
+    account.poseAccepted = outcome.pose.accepted
+    for (const frame of STAGE10_FRAMES) account.frames[frame] = Boolean(outcome.origins.base?.[frame])
+    account.primaryEligible = PRIMARY_FRAMES.every(frame => account.frames[frame])
+    account.q5Matched =
+      account.primaryEligible && PRIMARY_FRAMES.every(frame => Q5_VARIANTS.every(variant => outcome.origins[variant]?.[frame]))
+    if (!outcome.pose.accepted) account.excluded.push(`pose refused (${outcome.pose.refusedReason ?? 'unknown'})`)
+    else if (!outcome.lifted) account.excluded.push('lift refused')
+    else {
+      if (!outcome.cuticleMarked) account.excluded.push('cuticle not marked in both views (pass 1): no origin probe')
+      for (const frame of PRIMARY_FRAMES) if (!outcome.framesBuilt[frame]) account.excluded.push(`${frame} refused`)
+      if (account.primaryEligible && !account.q5Matched) {
+        const missing = Q5_VARIANTS.filter(variant => PRIMARY_FRAMES.some(frame => !outcome.origins[variant]?.[frame]))
+        account.excluded.push(`not in Q5: ${missing.map(variant => Q5_MISSING[variant]).join(', ')}`)
+      }
+    }
+  }
 
   const accepted = outcomes.filter(o => o.pose.rotation)
   const shotFloor: number[] = []
@@ -802,86 +1181,47 @@ export const analyzeStage10 = (input: Stage10Input): Stage10Analysis => {
     mismatchMedianPx: median(outcomes.map(o => o.pose.mismatchPx)),
   }
 
-  const frames: FrameRepeatability[] = []
-  const attribution: Attribution[] = []
-  for (const frame of STAGE10_FRAMES) {
-    const n0Sockets = outcomes.filter(o => o.nailSet === 'N0' && o.sockets[frame])
-    // The unit: the N0 bed length expressed in this frame's own units.
-    const bedRef = median(n0Sockets.map(o => o.sockets[frame]!.socket.bedLength))
-    const toPct = (value: number) => (value / bedRef) * 100
-    const originsOf = (set: NailSetId) =>
-      outcomes.filter(o => o.nailSet === set && o.origins.base?.[frame]).map(o => o.origins.base![frame]!)
-    const n0 = originsOf('N0')
-    const n1 = originsOf('N1')
-    const m1 = {
-      N0: n0.length > 1 ? toPct(Math.sqrt(spreadSquared(n0))) : Number.NaN,
-      N1: n1.length > 1 ? toPct(Math.sqrt(spreadSquared(n1))) : Number.NaN,
-    }
-    const pooledSquared =
-      n0.length > 1 && n1.length > 1
-        ? (spreadSquared(n0) * (n0.length - 1) + spreadSquared(n1) * (n1.length - 1)) / (n0.length + n1.length - 2)
-        : spreadSquared(n0)
-    const m6 = n0.length && n1.length ? toPct(distance(centroid(n0), centroid(n1))) : Number.NaN
-    const m6Chance = n0.length && n1.length ? toPct(Math.sqrt(pooledSquared * (1 / n0.length + 1 / n1.length))) : Number.NaN
-
-    let socket: FrameRepeatability['socket'] = null
-    if (n0Sockets.length > 1) {
-      const report = computeStability(n0Sockets.map(o => ({ sessionId: o.session, observation: o.sockets[frame]! })))
-      if (report) {
-        socket = {
-          m0: report.m0CanonicalFrame.rms,
-          m1: report.m1Origin.rms * 100,
-          m2: report.m2Normal.rms,
-          m3: report.m3Tangent.rms,
-          m4: report.m4Dimensions.bedLengthCv * 100,
-        }
-      }
-    }
-    frames.push({ frame, m1, m1Pooled: toPct(Math.sqrt(pooledSquared)), m6, m6Chance, socket })
-
-    // Q5 — counterfactuals on the same captures. Each nail set is centred on
-    // its own mean first, so a nail-set shift is not counted as scatter.
-    const pct2 = (value: number) => value * (100 / bedRef) ** 2
-    const pooledVariance = (variant: OriginVariant) => {
-      let sum = 0
-      let count = 0
-      let groups = 0
-      for (const set of ['N0', 'N1'] as const) {
-        const points = outcomes.filter(o => o.nailSet === set && o.origins[variant]?.[frame]).map(o => o.origins[variant]![frame]!)
-        if (points.length < 2) continue
-        const centre = centroid(points)
-        sum += points.reduce((total, point) => total + distance(point, centre) ** 2, 0)
-        count += points.length
-        groups += 1
-      }
-      return count > groups ? pct2(sum / (count - groups)) : Number.NaN
-    }
-    const halfDifference = (x: OriginVariant, y: OriginVariant) => {
-      const differences = outcomes
-        .filter(o => o.origins[x]?.[frame] && o.origins[y]?.[frame])
-        .map(o => sub(o.origins[x]![frame]!, o.origins[y]![frame]!))
-      return differences.length > 1 ? pct2(spreadSquared(differences) / 2) : Number.NaN
-    }
-    const total = pooledVariance('base')
-    // One pass of annotation noise, independent per photo: additive.
-    const cuticle = halfDifference('base', 'cuticlePass2')
-    const withoutPose = pooledVariance('rigPose')
-    // The annotator's PIP/DIP sit at a different convention (skin crease), but
-    // a constant one; their own noise is measured by the second pass and taken out.
-    const withoutJoints = pooledVariance('manualJoints') - halfDifference('manualJoints', 'manualJointsPass2')
-    const left = pooledVariance('rigManualJoints') - halfDifference('rigManualJoints', 'rigManualJointsPass2') - cuticle
-    attribution.push({
-      frame,
-      captures: outcomes.filter(o => o.origins.base?.[frame]).length,
-      total,
-      cuticleAnnotation: cuticle / total,
-      pose: (total - withoutPose) / total,
-      pipDipDetector: (total - withoutJoints) / total,
-      remainder: left / total,
-    })
+  // The primary comparison: matched sessions only.
+  const primarySessions = new Set([...accounts.values()].filter(a => a.primaryEligible).map(a => a.session))
+  const q5Sessions = new Set([...accounts.values()].filter(a => a.q5Matched).map(a => a.session))
+  const frames = STAGE10_FRAMES.map(frame => frameRepeatability(outcomes, frame, primarySessions))
+  const ratioOn = (subset: readonly string[]) => {
+    const set = new Set(subset)
+    return frameRepeatability(outcomes, 'F3dNoTip', set).m1Pooled / frameRepeatability(outcomes, 'F0', set).m1Pooled
   }
+  const primaryList = [...primarySessions].sort((a, b) => sessionIndex(a) - sessionIndex(b))
+  const logRatio = jackknife(primaryList, subset => Math.log(ratioOn(subset)))
+  const primary: PrimaryComparison = {
+    sessions: {
+      N0: primaryList.filter(session => accounts.get(session)!.nailSet === 'N0'),
+      N1: primaryList.filter(session => accounts.get(session)!.nailSet === 'N1'),
+    },
+    unitSessions: [...unitSessionsOf(outcomes, primarySessions)].sort((a, b) => sessionIndex(a) - sessionIndex(b)),
+    ratio: ratioOn(primaryList),
+    logRatio,
+    ratioCi95: [Math.exp(logRatio.ci95[0]), Math.exp(logRatio.ci95[1])],
+  }
+  if (!primary.unitSessions.length && primaryList.length) problems.push('no N0 session of the primary set has a full socket in both frames: no bed-length unit for the 3D numbers')
+
+  const q5Units = unitSessionsOf(outcomes, q5Sessions)
+  const substitution = STAGE10_FRAMES.map(frame => referenceSubstitution(outcomes, frame, q5Sessions, q5Units))
 
   const gaps = outcomes.filter(o => o.nailSet === 'N0' && o.axisGapDeg !== null).map(o => o.axisGapDeg!)
+
+  const condition = (set: NailSetId): ConditionAccount => {
+    const list = [...accounts.values()].filter(a => a.nailSet === set)
+    const available = list.filter(a => a.available)
+    return {
+      nailSet: set,
+      attempted: list.length,
+      available: available.length,
+      poseAccepted: list.filter(a => a.poseAccepted).length,
+      frameAccepted: Object.fromEntries(STAGE10_FRAMES.map(frame => [frame, list.filter(a => a.frames[frame]).length])) as Record<Stage10Frame, number>,
+      primaryEligible: list.filter(a => a.primaryEligible).length,
+      q5Matched: list.filter(a => a.q5Matched).length,
+      meanSessionIndex: mean(available.map(a => sessionIndex(a.session))),
+    }
+  }
 
   return {
     kitVersion: STAGE10_KIT_VERSION,
@@ -891,14 +1231,21 @@ export const analyzeStage10 = (input: Stage10Input): Stage10Analysis => {
       annotatedPairs: pairs.length,
       posesAccepted: accepted.length,
     },
+    accounting: {
+      sessions: [...accounts.values()],
+      conditions: { N0: condition('N0'), N1: condition('N1') },
+      unusedCaptures,
+    },
+    protocol,
     calibration,
     bedLengthPx: bedLength,
     joints: jointStatistics(annotated, input.observations, annotations, bedLength),
     tipReach: tipReach(annotated, input.observations, annotations, bedLength),
     pose,
     frames,
-    axisGap: { sdDeg: Math.sqrt(variance(gaps)), medianDeg: median(gaps) },
-    attribution,
+    primary,
+    axisGap: { sdDeg: Math.sqrt(variance(gaps)), medianDeg: median(gaps), sessions: gaps.length },
+    substitution,
     pairs: outcomes,
     problems,
   }

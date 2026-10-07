@@ -4,9 +4,13 @@
 //   node --experimental-strip-types research/stage10/analyze.ts <data-dir> --smoke
 //   node --experimental-strip-types research/stage10/analyze.ts --dry-run
 //
-// <data-dir> holds obs/*.json (one Layer A per photo, from vision-dump.swift),
-// annotations.csv and, optionally, conditions.json. The report is written to
-// <data-dir>/report.md and report.json. Photos are never read: only numbers.
+// <data-dir> holds obs/*.json (one Layer A per photo, from vision-dump.swift,
+// with the EXIF capture time), annotations.csv (cuticle and free edge, marked
+// on the upright copies), annotations-blind.csv (DIP / PIP, marked on blind
+// crops and mapped back by blind-cli.ts) and conditions.json (the capture
+// geometry and the session log; missing fields are reported). The report is
+// written to <data-dir>/report.md and report.json. Photos are never read:
+// only numbers.
 //
 // --smoke (Stage 10A) runs every stage of the same frozen analysis on a few
 // photos but evaluates no criterion and writes no metric: smoke-report.md/json
@@ -23,7 +27,7 @@ import { parseScanObservation } from '../../src/lib/nail3dObservation.ts'
 import type { ScanObservation } from '../../src/lib/nail3dObservation.ts'
 import { dryRunDataset } from '../../tests/support/stage10DryRun.ts'
 import { evaluateCriteria, measuredNoise, renderReport, simulateExpectation } from './criteria.ts'
-import { analyzeStage10, parseAnnotationCsv } from './kit.ts'
+import { STAGE10_SCHEDULE, analyzeStage10, checkConditions, parseAnnotationCsv } from './kit.ts'
 import { renderSmokeReport, smokeReach } from './smoke.ts'
 
 const FROZEN_PATHS = ['research/stage10', 'src/lib', 'tests/support']
@@ -76,12 +80,14 @@ const main = () => {
   let conditions: Record<string, unknown> | undefined
   let outDir: string | null = null
   let title: string
+  const capturedAt = new Map<string, string>()
 
   if (argument === '--dry-run') {
     const dataset = dryRunDataset()
     rawObservations = JSON.parse(JSON.stringify(dataset.observations)) as Record<string, unknown>
     annotationsCsv = dataset.annotationsCsv
     conditions = dataset.conditions
+    for (const [id, time] of Object.entries(dataset.capturedAt)) capturedAt.set(id, time)
     title = 'Stage 10 — DRY RUN on synthetic data (pipeline check, NOT evidence)'
   } else {
     const obsDir = path.join(argument, 'obs')
@@ -97,9 +103,23 @@ const main = () => {
         ioProblems.push(`obs/${file}: not valid JSON (${String(error)})`)
       }
     }
+    for (const value of Object.values(rawObservations)) {
+      const raw = value as { captureId?: unknown; capturedAtLocal?: unknown }
+      if (typeof raw.captureId === 'string' && typeof raw.capturedAtLocal === 'string') capturedAt.set(raw.captureId, raw.capturedAtLocal)
+    }
     const csvPath = path.join(argument, 'annotations.csv')
     annotationsCsv = existsSync(csvPath) ? readFileSync(csvPath, 'utf8') : ''
     if (!existsSync(csvPath)) ioProblems.push('annotations.csv not found: nothing is annotated')
+    // DIP / PIP come from the blind crops (blind-cli.ts merge); marked on the full photo they are not blind.
+    if (/,\s*"?index(DIP|PIP)"?\s*,/.test(annotationsCsv)) {
+      ioProblems.push('annotations.csv has indexDIP / indexPIP rows: they were marked unblinded (the protocol marks them on blind crops, annotations-blind.csv)')
+    }
+    const blindPath = path.join(argument, 'annotations-blind.csv')
+    if (existsSync(blindPath)) {
+      // Same five columns; its header is dropped and its rows appended (duplicates are reported by the parser).
+      const blindRows = readFileSync(blindPath, 'utf8').split(/\r?\n/).slice(1).join('\n')
+      annotationsCsv = `${annotationsCsv.replace(/\s*$/, '')}\n${blindRows}`
+    } else ioProblems.push('annotations-blind.csv not found: no blind DIP / PIP marks')
     const conditionsPath = path.join(argument, 'conditions.json')
     try {
       conditions = existsSync(conditionsPath) ? (JSON.parse(readFileSync(conditionsPath, 'utf8')) as Record<string, unknown>) : undefined
@@ -114,8 +134,15 @@ const main = () => {
 
   const { observations, errors } = parseAll(rawObservations)
   const annotations = annotationsCsv ? parseAnnotationCsv(annotationsCsv) : { rows: [], errors: [] }
-  const analysis = analyzeStage10({ observations, annotations: annotations.rows })
-  analysis.problems.unshift(...ioProblems, ...errors.map(error => `Layer A rejected: ${error}`), ...annotations.errors)
+  // Stage 10A shoots the first two sessions of the schedule (S1 = N0, S2 = N1) only.
+  const schedule = smoke ? STAGE10_SCHEDULE.slice(0, 2) : STAGE10_SCHEDULE
+  const analysis = analyzeStage10({ observations, annotations: annotations.rows, capturedAt, schedule })
+  analysis.problems.unshift(
+    ...ioProblems,
+    ...errors.map(error => `Layer A rejected: ${error}`),
+    ...annotations.errors,
+    ...(smoke ? [] : checkConditions(conditions)),
+  )
 
   if (smoke && outDir) {
     // Stage 10A: every stage of the frozen analysis has run above; no

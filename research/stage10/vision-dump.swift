@@ -154,9 +154,13 @@ func dump(_ photo: URL, into outDir: URL, upright uprightDir: URL?) throws {
         "nails": [],
         "missing": missing,
     ]
-    if let focal = exif[kCGImagePropertyExifFocalLenIn35mmFilm] as? NSNumber {
-        observation["lens"] = ["focalLength35mm": focal.doubleValue]
-    }
+    // Which physical lens took it: an iPhone can switch lens on its own (smoke-check S11 looks for that).
+    var lens: [String: Any] = [:]
+    if let focal = exif[kCGImagePropertyExifFocalLenIn35mmFilm] as? NSNumber { lens["focalLength35mm"] = focal.doubleValue }
+    if let focal = exif[kCGImagePropertyExifFocalLength] as? NSNumber { lens["focalLengthMm"] = focal.doubleValue }
+    if let zoom = exif[kCGImagePropertyExifDigitalZoomRatio] as? NSNumber { lens["digitalZoom"] = zoom.doubleValue }
+    if let model = exif[kCGImagePropertyExifLensModel] as? String { lens["model"] = model }
+    if !lens.isEmpty { observation["lens"] = lens }
     if let taken = exif[kCGImagePropertyExifDateTimeOriginal] as? String {
         observation["capturedAtLocal"] = taken
     }

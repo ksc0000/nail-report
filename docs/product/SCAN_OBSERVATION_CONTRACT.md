@@ -279,14 +279,15 @@ PoC 計画 §6-K の要約。**Layer A は変えていない**。frame は Layer
 | 指軸 | MCP → PIP | あてはめた末節方向（DIP 角は較正姿勢） |
 | 尺度 | \|MCP → PIP\| | 手のひら（wrist ＋ 5 MCP）への profile の相似あてはめ × profile の近位指骨長 |
 | 必要な入力 | Layer B の landmarks | Layer B の landmarks ＋ **Personal HandProfile（H1 で足りる）** |
-| 読まない点 | — | **TIP**（爪に最も近く、NailSet で動く疑いが最も強い手 landmark） |
+| 読まない点 | — | **TIP**（爪に最も近く、NailSet で動く疑いが最も強い手 landmark）。**frame の構築では**読まない。上流の 2 view lift は TIP を含む全 landmark から尺度比を 1 つ解くので、end to end では TIP から独立ではない（§6-L） |
 
 採用するなら守ること:
 
 - **socket は frame の定義をまたいで比べない。** 同じ爪でも原点が違えば座標が違う。`handFrame` と `NormalizedNailSocket` に frame 定義の識別子を持たせ、
   `liftVersion` と同じく、定義を変えたら Layer A から作り直す
 - **socket が HandProfile に依存するようになる。** 較正をやり直したら（profile が変わったら）socket も作り直す。導出元に profile の版を記録する
-- **frame に TIP を使わない。** NailSet を替えても socket が動かないこと（M6）を構造で保証するため。§5 で free edge を読まないのと同じ理由
+- **frame に TIP を使わない。** NailSet を替えても socket が動かないこと（M6）に、frame の定義の側から近づけるため。§5 で free edge を読まないのと同じ理由。
+  ただし保証ではない: 上流の lift が TIP を尺度比の推定に使うので、TIP が動けば PIP・DIP の 3D 位置もわずかに動きうる（PoC 計画 §6-L。Stage 10 の M6 はこの経路も含めて測る）
 - 単位は従来どおり `units: 'normalized'`・`scaleReference: 'proximalPhalanx'`。メートルへの変換は作らない
 
 ---

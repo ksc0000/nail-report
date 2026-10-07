@@ -3,16 +3,18 @@
 //   node --experimental-strip-types research/stage10/smoke-check.ts <data-dir> <upright-dir>
 //
 // <data-dir> is the smoke folder (obs/*.json from vision-dump.swift,
-// annotations.csv); <upright-dir> holds the --upright copies. Writes
-// <data-dir>/smoke-check.md, runs the frozen analyzer in --smoke mode (which
-// writes smoke-report.md/json), and draws <upright-dir>/<id>.overlay.svg for
-// the by-eye check. Exits 1 if any check FAILs. Plumbing only: see smoke.ts.
+// annotations.csv, blind/key.json and annotations-blind.csv from the blind
+// DIP / PIP path, conditions.json); <upright-dir> holds the --upright copies.
+// Writes <data-dir>/smoke-check.md, runs the frozen analyzer in --smoke mode
+// (which writes smoke-report.md/json), and draws <upright-dir>/<id>.overlay.svg
+// for the by-eye check. Exits 1 if any check FAILs. Plumbing only: see smoke.ts.
 
 import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import type { BlindKey } from './blind.ts'
 import { parseAnnotationCsv } from './kit.ts'
 import { IMAGE_EXTENSIONS, jpegSize, overlaySvg, renderSmokeChecks, smokeChecks } from './smoke.ts'
 import type { SmokeReach } from './smoke.ts'
@@ -59,6 +61,17 @@ const main = () => {
 
   const csvPath = path.join(dataDir, 'annotations.csv')
   const annotationsCsv = existsSync(csvPath) ? readFileSync(csvPath, 'utf8') : null
+  const blindPath = path.join(dataDir, 'annotations-blind.csv')
+  const blindCsv = existsSync(blindPath) ? readFileSync(blindPath, 'utf8') : null
+  const readJson = <T>(file: string): T | null => {
+    try {
+      return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as T) : null
+    } catch {
+      return null
+    }
+  }
+  const blindKey = readJson<BlindKey>(path.join(dataDir, 'blind', 'key.json'))
+  const conditions = readJson<Record<string, unknown>>(path.join(dataDir, 'conditions.json'))
 
   const trackedImages = git(['ls-files', '--', 'research']).split('\n').filter(file => IMAGE_EXTENSIONS.test(file))
   const addableImages = git(['status', '--porcelain', '--untracked-files=all'])
@@ -84,9 +97,12 @@ const main = () => {
     trackedImages,
     addableImages,
     analyzer: { exitCode: run.status, message: (run.stderr || '').split('\n').slice(-6).join(' '), reach },
+    blindKey,
+    blindCsv,
+    conditions,
   })
 
-  const rows = annotationsCsv ? parseAnnotationCsv(annotationsCsv).rows : []
+  const rows = [...(annotationsCsv ? parseAnnotationCsv(annotationsCsv).rows : []), ...(blindCsv ? parseAnnotationCsv(blindCsv).rows : [])]
   for (const value of Object.values(observations)) {
     const id = (value as { captureId?: unknown }).captureId
     if (typeof id !== 'string' || !uprightFiles.has(id)) continue

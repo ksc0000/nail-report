@@ -20,8 +20,12 @@
 //   F3d       F3, anchored on the fitted DISTAL phalanx, where the nail is
 //   F3dDir    F3d, but TIP enters the chain fit as a DIRECTION from DIP only,
 //             so moving it along the finger changes nothing
-//   F3dNoTip  F3d, with the chain fitted to PIP and DIP only: TIP is never
-//             read, and the DIP angle stays at the calibrated posture
+//   F3dNoTip  F3d, with the chain fitted to PIP and DIP only: this builder
+//             never reads TIP, and the DIP angle stays at the calibrated
+//             posture. Upstream it is not TIP-free: the two-view lift solves
+//             one scale ratio from every landmark, TIP included
+//             (nail3dMultiView.ts), so a TIP that moves can still move the
+//             lifted PIP / DIP slightly
 //   F4        anchored on the observed DIP with the DIP -> TIP axis — the
 //             plain distal-phalanx frame, for comparison with F3d
 //
