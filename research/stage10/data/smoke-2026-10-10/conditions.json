@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-10",
+  "hand": "right",
+  "finger": "index",
+  "device": "iPhone 17",
+  "views": {
+    "V1": {
+      "lens": "main wide 5.96mm f/1.6, 2x sensor crop (52mm equiv in EXIF; iPhone 17 has no telephoto module)",
+      "zoom": 2,
+      "distanceCm": 40,
+      "endpoint": "phone propped on a box on the desk, aimed straight down; portrait for CAL and S1 V1-1/V1-2, landscape for S1 V1-3 and all of S2"
+    },
+    "V2": {
+      "lens": "main wide 5.96mm f/1.6, 2x sensor crop (52mm equiv in EXIF)",
+      "zoom": 2,
+      "distanceCm": 40,
+      "endpoint": "phone leaned against a box, oblique toward the thumb + fingertip side; tilt from vertical estimated from palm landmarks at 37-47 degrees across shots, landscape"
+    }
+  },
+  "endpointReproduction": "box positions returned by eye (no head lock, no angle readout); reproduction accuracy is what S9 measures, not a controlled quantity here",
+  "handSupport": "not recorded (no dedicated forearm support confirmed)",
+  "lighting": "ceiling LED only, no flash",
+  "background": "black matte mat",
+  "N0": "bare natural nail",
+  "N1": "handmade opaque paper/tape tip over the index nail, extends <1mm beyond the fingertip (spec asked >=5mm), attached once for the whole S2 session",
+  "sessionLog": [
+    { "session": "CAL", "nailSet": "N0", "startedAt": "15:29 JST", "attachment": "n/a", "notes": "hand lifted and re-placed between CAL-01 and CAL-02" },
+    { "session": "S1", "nailSet": "N0", "startedAt": "15:30 JST", "attachment": "n/a", "notes": "V1 x2 (portrait) -> V2 x2 (landscape) -> return to V1 (landscape); hand kept on the mat throughout" },
+    { "session": "S2", "nailSet": "N1", "startedAt": "16:09 JST", "attachment": "ok", "notes": "handmade tip crafted during the ~39 min gap after S1; V1 -> V2 -> V1, all landscape" }
+  ],
+  "deviations": [
+    "N1 tip extends <1mm beyond the fingertip instead of the >=5mm the protocol asks for; it does cover the nail plate and hide the free edge",
+    "phone mount orientation was not held fixed per endpoint: S1 V1-1/V1-2 portrait but S1 V1-3 landscape (operator kept the V2 mounting on the return)",
+    "camera endpoints were reproduced by eye only (boxes, no taped angle readout), so endpoint error folds into the S9 rigid part",
+    "shutter: 2-second self-timer (screen tap per shot), no remote; the tap can nudge the propped phone between shots",
+    "the capture environment could not support the full rig the protocol describes (tripod with locked head, angle readout); operator notes accurate data capture is impractical in this environment",
+    "operator annotated and analysed in the same session as capture (single-person study, no independent annotator)"
+  ]
+}

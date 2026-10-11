@@ -1,0 +1,164 @@
+{
+  "capturedAtLocal" : "2026:10:10 15:30:57",
+  "captureId" : "S1-N0-V1-3",
+  "handedness" : "right",
+  "handednessSource" : "userSelected",
+  "image" : {
+    "coordinateOrigin" : "topLeft",
+    "exifOrientation" : 1,
+    "fileName" : "S1-N0-V1-3.heic",
+    "height" : 3024,
+    "units" : "pixels",
+    "width" : 4032
+  },
+  "landmarkModel" : {
+    "coordinateConversion" : "vision-normalized-bottomLeft -> pixel-topLeft (orientation applied)",
+    "dimensionality" : "2d",
+    "provider" : "vision",
+    "request" : "VNDetectHumanHandPoseRequest",
+    "revision" : 1
+  },
+  "landmarks" : [
+    {
+      "confidence" : 0.75244140625,
+      "name" : "wrist",
+      "x" : 3511.4571647644043,
+      "y" : 1458.2467803955078
+    },
+    {
+      "confidence" : 0.71875,
+      "name" : "thumbMCP",
+      "x" : 3308.7328720092773,
+      "y" : 2062.4497747421265
+    },
+    {
+      "confidence" : 0.822265625,
+      "name" : "thumbPIP",
+      "x" : 2773.065845489502,
+      "y" : 2357.1245698928833
+    },
+    {
+      "confidence" : 0.888671875,
+      "name" : "thumbDIP",
+      "x" : 2240.1056098937988,
+      "y" : 2471.3350210189819
+    },
+    {
+      "confidence" : 0.908203125,
+      "name" : "thumbTIP",
+      "x" : 1831.2821273803711,
+      "y" : 2555.4713258743286
+    },
+    {
+      "confidence" : 0.86279296875,
+      "name" : "indexMCP",
+      "x" : 2192.4381637573242,
+      "y" : 1917.372462272644
+    },
+    {
+      "confidence" : 0.9189453125,
+      "name" : "indexPIP",
+      "x" : 1607.5817070007324,
+      "y" : 2068.5622243881226
+    },
+    {
+      "confidence" : 0.9091796875,
+      "name" : "indexDIP",
+      "x" : 1282.5333194732666,
+      "y" : 2124.0616521835327
+    },
+    {
+      "confidence" : 0.91796875,
+      "name" : "indexTIP",
+      "x" : 981.93274784088135,
+      "y" : 2167.7768783569336
+    },
+    {
+      "confidence" : 0.859375,
+      "name" : "middleMCP",
+      "x" : 2182.3269309997559,
+      "y" : 1533.370322227478
+    },
+    {
+      "confidence" : 0.90869140625,
+      "name" : "middlePIP",
+      "x" : 1503.0167369842529,
+      "y" : 1567.9604930877686
+    },
+    {
+      "confidence" : 0.91015625,
+      "name" : "middleDIP",
+      "x" : 1101.5495109558105,
+      "y" : 1557.5421838760376
+    },
+    {
+      "confidence" : 0.9150390625,
+      "name" : "middleTIP",
+      "x" : 801.22327136993408,
+      "y" : 1539.7635927200317
+    },
+    {
+      "confidence" : 0.85498046875,
+      "name" : "ringMCP",
+      "x" : 2299.2094459533691,
+      "y" : 1214.7286033630371
+    },
+    {
+      "confidence" : 0.90087890625,
+      "name" : "ringPIP",
+      "x" : 1652.8991260528564,
+      "y" : 1187.255744934082
+    },
+    {
+      "confidence" : 0.9091796875,
+      "name" : "ringDIP",
+      "x" : 1277.6858253479004,
+      "y" : 1178.0672435760498
+    },
+    {
+      "confidence" : 0.927734375,
+      "name" : "ringTIP",
+      "x" : 953.15528011322021,
+      "y" : 1181.9680938720703
+    },
+    {
+      "confidence" : 0.81787109375,
+      "name" : "pinkyMCP",
+      "x" : 2483.9833145141602,
+      "y" : 933.75635147094727
+    },
+    {
+      "confidence" : 0.8642578125,
+      "name" : "pinkyPIP",
+      "x" : 2023.6548614501953,
+      "y" : 809.70058822631836
+    },
+    {
+      "confidence" : 0.90478515625,
+      "name" : "pinkyDIP",
+      "x" : 1737.4817161560059,
+      "y" : 735.07001495361328
+    },
+    {
+      "confidence" : 0.90234375,
+      "name" : "pinkyTIP",
+      "x" : 1441.6504726409912,
+      "y" : 671.64740180969238
+    }
+  ],
+  "lens" : {
+    "focalLength35mm" : 52,
+    "focalLengthMm" : 5.9600000381469727,
+    "model" : "iPhone 17 back dual wide camera 5.96mm f\/1.6"
+  },
+  "missing" : [
+    "camera",
+    "nails"
+  ],
+  "nails" : [
+
+  ],
+  "schemaVersion" : 1,
+  "sessionId" : "S1",
+  "visionChirality" : "right"
+}

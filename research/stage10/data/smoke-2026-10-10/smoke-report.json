@@ -1,0 +1,89 @@
+{
+  "reach": {
+    "kitVersion": 2,
+    "counts": {
+      "calibration": 2,
+      "captures": 8,
+      "annotatedPairs": 2,
+      "posesAccepted": 2
+    },
+    "calibration": {
+      "profileBuilt": true,
+      "refused": []
+    },
+    "conditions": {
+      "N0": {
+        "attempted": 1,
+        "available": 1,
+        "poseAccepted": 1,
+        "primaryEligible": 1
+      },
+      "N1": {
+        "attempted": 1,
+        "available": 1,
+        "poseAccepted": 1,
+        "primaryEligible": 1
+      }
+    },
+    "pairs": [
+      {
+        "session": "S1",
+        "nailSet": "N0",
+        "shot": 1,
+        "pose": {
+          "accepted": true,
+          "mismatchPx": 113.44230588888804
+        },
+        "framesReached": [
+          "F0",
+          "F3dNoTip",
+          "F3d",
+          "F4"
+        ],
+        "variants": [
+          "base",
+          "cuticlePass2",
+          "rigPose",
+          "manualJoints",
+          "rigManualJoints",
+          "manualJointsPass2",
+          "rigManualJointsPass2"
+        ],
+        "cuticleProbe": true,
+        "fullSocket": true,
+        "notes": []
+      },
+      {
+        "session": "S2",
+        "nailSet": "N1",
+        "shot": 1,
+        "pose": {
+          "accepted": true,
+          "mismatchPx": 107.04748312633717
+        },
+        "framesReached": [
+          "F0",
+          "F3dNoTip",
+          "F3d",
+          "F4"
+        ],
+        "variants": [
+          "base",
+          "cuticlePass2",
+          "rigPose",
+          "manualJoints",
+          "rigManualJoints",
+          "manualJointsPass2",
+          "rigManualJointsPass2"
+        ],
+        "cuticleProbe": true,
+        "fullSocket": false,
+        "notes": []
+      }
+    ],
+    "protocol": [],
+    "problems": [
+      "MIRROR-S1-N0-V1-1: not a Stage 10 name (S<n>-<N0|N1>-<V1|V2>-<shot> or CAL-<n>), ignored"
+    ]
+  }
+}
