@@ -90,7 +90,12 @@ const NailMeshObject = ({ nail, textureUrl }: { nail: PlacedNail; textureUrl?: s
 
   return (
     <mesh ref={meshRef} geometry={geometry}>
+      {/* three compiles USE_MAP into the shader program; going from no map to a
+          map on the same material leaves the old program in place and renders
+          plain white. Remounting the material when a texture appears forces a
+          fresh program. Swapping one texture for another needs no remount. */}
       <meshStandardMaterial
+        key={texture ? 'textured' : 'untextured'}
         map={texture}
         color={texture ? '#ffffff' : UNTEXTURED_COLOR}
         roughness={0.25}
