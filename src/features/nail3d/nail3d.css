@@ -57,3 +57,161 @@
     background: linear-gradient(160deg, #2b2327 0%, #1d181a 100%);
   }
 }
+
+.nail3d-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.nail3d-compare-pane {
+  position: relative;
+  min-width: 0;
+}
+
+.nail3d-compare-label {
+  position: absolute;
+  top: 6px;
+  left: 8px;
+  z-index: 1;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5c4b51;
+  background: rgba(255, 255, 255, 0.78);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.nail3d-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #5c4b51;
+}
+
+.nail3d-slider input[type='range'] {
+  width: 100%;
+}
+
+.nail3d-results {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.nail3d-results th,
+.nail3d-results td {
+  border-bottom: 1px solid #e4d7dc;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.nail3d-export {
+  width: 100%;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  border: 1px solid #d8c6cc;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+@media (max-width: 640px) {
+  .nail3d-compare {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .nail3d-compare-label {
+    color: #f0e6ea;
+    background: rgba(40, 32, 36, 0.78);
+  }
+}
+
+/* H1 texture studio (/nail3d-texture) */
+.nail3d-file {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #4a3b40;
+  background: #4a3b40;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.nail3d-file input[type='file'] {
+  display: none;
+}
+
+.nail3d-download {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #d8c6cc;
+  background: #fff;
+  color: #4a3b40;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.nail3d-studio-stage {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #1d181a;
+  touch-action: none;
+  user-select: none;
+}
+
+.nail3d-studio-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.nail3d-studio-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.nail3d-studio-quad {
+  fill: rgba(255, 255, 255, 0.12);
+  stroke: #fff;
+}
+
+.nail3d-studio-quad.is-invalid {
+  fill: rgba(220, 60, 90, 0.2);
+  stroke: #dc3c5a;
+}
+
+.nail3d-studio-cuticle {
+  stroke: #f2b8c6;
+  stroke-linecap: round;
+}
+
+.nail3d-studio-handle {
+  fill: rgba(255, 255, 255, 0.9);
+  stroke: #4a3b40;
+  stroke-width: 2px;
+  cursor: grab;
+}
+
+.nail3d-studio-handle.is-active {
+  fill: #f2b8c6;
+  cursor: grabbing;
+}
+
+.nail3d-studio-label {
+  fill: #fff;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.6);
+  stroke-width: 3px;
+  pointer-events: none;
+}
