@@ -393,12 +393,13 @@ test('bounds enclose every placed nail and look along the nail normal', () => {
 })
 
 test('bounds grow with the nails they contain', () => {
-  const one = buildFlatLayout(
-    (planNail3DRender({ nailSet: fixture('nailset-valid-partial') }) as { nails: never[] }).nails,
-  )
-  const all = buildFlatLayout(
-    (planNail3DRender({ nailSet: fixture('nailset-valid-full') }) as { nails: never[] }).nails,
-  )
+  const nailsOf = (plan: ReturnType<typeof planNail3DRender>) => {
+    assert.notEqual(plan.level, 'L0', 'fixture should render')
+    if (plan.level === 'L0') throw new Error('unreachable')
+    return plan.nails
+  }
+  const one = buildFlatLayout(nailsOf(planNail3DRender({ nailSet: fixture('nailset-valid-partial') })))
+  const all = buildFlatLayout(nailsOf(planNail3DRender({ nailSet: fixture('nailset-valid-full') })))
   const small = boundsOfPlacedNails(one)
   const large = boundsOfPlacedNails(all)
   assert.ok(small && large)
