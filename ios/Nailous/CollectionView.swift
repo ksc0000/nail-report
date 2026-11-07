@@ -58,6 +58,9 @@ struct CollectionView: View {
     @EnvironmentObject private var deletionUndo: DeletionUndoStore
     @Query(sort: \NailRecord.createdAt, order: .reverse) private var records: [NailRecord]
     @State private var isAdding = false
+    /// Photo try-on prototype (#431) — a separate sheet that never writes to
+    /// the collection, so the record flow above is untouched.
+    @State private var isTryingOn = false
     @State private var glowingID: UUID?
     @State private var selected: NailRecord?
     @State private var gridShown = false
@@ -125,6 +128,9 @@ struct CollectionView: View {
             .sheet(isPresented: $isAdding) {
                 AddNailView()
             }
+            .sheet(isPresented: $isTryingOn) {
+                PhotoTryOnView()
+            }
             .navigationDestination(item: $selected) { record in
                 NailDetailView(
                     appearance: record.appearance ?? NailStyle.samples[0].appearance,
@@ -158,6 +164,9 @@ struct CollectionView: View {
             seedIfRequested()
             if UserDefaults.standard.string(forKey: "openAdd") == "1" {
                 isAdding = true
+            }
+            if UserDefaults.standard.string(forKey: "openTryOn") == "1" {
+                isTryingOn = true
             }
             if UserDefaults.standard.string(forKey: "openGrid") == "1" {
                 try? await Task.sleep(for: .seconds(0.4))
@@ -207,6 +216,9 @@ struct CollectionView: View {
             HStack(spacing: 10) {
                 if !records.isEmpty {
                     outlineButton(systemName: "magnifyingglass", label: "コレクションを検索") { gridShown = true }
+                }
+                outlineButton(systemName: "hand.raised", label: "手の写真で試着する（プロトタイプ）") {
+                    isTryingOn = true
                 }
                 displayMenu
                 outlineButton(systemName: "plus", label: "ネイルを記録する") { isAdding = true }
