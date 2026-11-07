@@ -26,10 +26,13 @@ struct PhotoTryOnView: View {
     @State private var selectedID: TryOnNail.ID?
     @State private var paletteIndex = 0
 
-    // Gesture anchors, per overlay: the value the gesture started from.
+    // Gesture anchors: the value the gesture started from. Drag is per
+    // overlay (one finger lands on the patch); pinch and rotate are taken on
+    // the whole stage and applied to the selected overlay, because two
+    // fingers cannot both land inside a fingertip-sized patch.
     @State private var dragAnchors: [TryOnNail.ID: CGPoint] = [:]
-    @State private var sizeAnchors: [TryOnNail.ID: CGFloat] = [:]
-    @State private var rotationAnchors: [TryOnNail.ID: Angle] = [:]
+    @State private var sizeAnchor: CGFloat?
+    @State private var rotationAnchor: Angle?
 
     var body: some View {
         NavigationStack {
@@ -66,9 +69,16 @@ struct PhotoTryOnView: View {
             isLoadingPhoto = true
             Task {
                 let loaded = try? await newItem.loadTransferable(type: Data.self)
+                // Decode and downscale off the main thread: a camera HEIC is
+                // 12–48 MP, far more than the stage can show, and drawing it
+                // at full size stalls the sheet and inflates memory.
+                let image = await Task.detached(priority: .userInitiated) { () -> UIImage? in
+                    guard let loaded, let raw = UIImage(data: loaded) else { return nil }
+                    return Self.displayImage(raw)
+                }.value
                 guard generation == loadGeneration else { return }
                 isLoadingPhoto = false
-                guard let loaded, let image = UIImage(data: loaded) else { return }
+                guard let image else { return }
                 // A new photo invalidates every placement made on the old one.
                 photo = image
                 nails = []
@@ -140,6 +150,8 @@ struct PhotoTryOnView: View {
             }
             .contentShape(Rectangle())
             .onTapGesture { selectedID = nil }
+            .simultaneousGesture(stageMagnifyGesture)
+            .simultaneousGesture(stageRotateGesture)
         }
         .frame(maxHeight: .infinity)
     }
@@ -179,11 +191,9 @@ struct PhotoTryOnView: View {
             .contentShape(Rectangle())
             .position(TryOnLayout.point(for: value.center, in: rect))
             .gesture(dragGesture(for: nail, in: rect))
-            .simultaneousGesture(magnifyGesture(for: nail))
-            .simultaneousGesture(rotateGesture(for: nail))
             .onTapGesture { selectedID = value.id }
             .accessibilityLabel("\(TryOnPalette.entry(value.colorIndex).label)の爪")
-            .accessibilityHint("ドラッグで位置、ピンチで大きさ、回転で角度を調整します")
+            .accessibilityHint("ドラッグで位置を調整します。選択中は写真のどこでもピンチで大きさ、2本指の回転で角度を変えられます")
     }
 
     // MARK: - Gestures
@@ -210,28 +220,28 @@ struct PhotoTryOnView: View {
             .onEnded { _ in dragAnchors[nail.wrappedValue.id] = nil }
     }
 
-    private func magnifyGesture(for nail: Binding<TryOnNail>) -> some Gesture {
+    /// Pinch anywhere on the stage resizes the selected overlay. With nothing
+    /// selected the gesture is a no-op rather than grabbing an arbitrary nail.
+    private var stageMagnifyGesture: some Gesture {
         MagnificationGesture()
             .onChanged { scale in
-                let id = nail.wrappedValue.id
-                selectedID = id
-                let anchor = sizeAnchors[id] ?? nail.wrappedValue.heightFraction
-                sizeAnchors[id] = anchor
-                nail.wrappedValue.heightFraction = TryOnNail.clampedHeight(anchor * scale)
+                guard let index = selectedIndex else { return }
+                let anchor = sizeAnchor ?? nails[index].heightFraction
+                sizeAnchor = anchor
+                nails[index].heightFraction = TryOnNail.clampedHeight(anchor * scale)
             }
-            .onEnded { _ in sizeAnchors[nail.wrappedValue.id] = nil }
+            .onEnded { _ in sizeAnchor = nil }
     }
 
-    private func rotateGesture(for nail: Binding<TryOnNail>) -> some Gesture {
+    private var stageRotateGesture: some Gesture {
         RotationGesture()
             .onChanged { angle in
-                let id = nail.wrappedValue.id
-                selectedID = id
-                let anchor = rotationAnchors[id] ?? nail.wrappedValue.rotation
-                rotationAnchors[id] = anchor
-                nail.wrappedValue.rotation = Angle(radians: anchor.radians + angle.radians)
+                guard let index = selectedIndex else { return }
+                let anchor = rotationAnchor ?? nails[index].rotation
+                rotationAnchor = anchor
+                nails[index].rotation = Angle(radians: anchor.radians + angle.radians)
             }
-            .onEnded { _ in rotationAnchors[nail.wrappedValue.id] = nil }
+            .onEnded { _ in rotationAnchor = nil }
     }
 
     // MARK: - Controls
@@ -248,7 +258,7 @@ struct PhotoTryOnView: View {
                     ? "「爪を追加」で色見本を置き、ドラッグとピンチで指先に合わせます"
                     : selectedIndex == nil
                         ? "爪をタップすると、色・形・濃さを変えられます"
-                        : "ドラッグで移動、ピンチで大きさ、2本指の回転で角度"
+                        : "ドラッグで移動。写真のどこでもピンチで大きさ、2本指の回転で角度"
             )
             .font(.system(size: 12))
             .multilineTextAlignment(.center)
@@ -383,8 +393,8 @@ struct PhotoTryOnView: View {
     private func removeNail(at index: Int) {
         let removed = nails.remove(at: index)
         dragAnchors[removed.id] = nil
-        sizeAnchors[removed.id] = nil
-        rotationAnchors[removed.id] = nil
+        sizeAnchor = nil
+        rotationAnchor = nil
         selectedID = nil
     }
 
@@ -392,8 +402,23 @@ struct PhotoTryOnView: View {
         nails = []
         selectedID = nil
         dragAnchors = [:]
-        sizeAnchors = [:]
-        rotationAnchors = [:]
+        sizeAnchor = nil
+        rotationAnchor = nil
+    }
+
+    /// Caps the photo at a size the stage can actually use (long edge 2048pt,
+    /// comfortably above the ~1200pt stage on a 3× screen) so decode, layout
+    /// and gesture redraws stay cheap. Orientation is baked in by the draw.
+    nonisolated static func displayImage(_ image: UIImage) -> UIImage {
+        let maxEdge: CGFloat = 2048
+        let scale = min(1, maxEdge / max(image.size.width, image.size.height))
+        guard scale < 1 else { return image }
+        let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: size))
+        }
     }
 
     private func cancel() {
