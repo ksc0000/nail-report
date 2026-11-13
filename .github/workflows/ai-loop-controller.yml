@@ -19,9 +19,11 @@ on:
         description: "Roadmap or issue reference"
         required: true
         default: "docs"
-  schedule:
-    - cron: "0 */2 * * *"
-    - cron: "0 1,9,17 * * *"
+  # Periodic AI Loop disabled 2026-11-13 to conserve shared Actions budget.
+  # Use workflow_dispatch for an explicitly requested run.
+  # schedule:
+  #   - cron: "0 */2 * * *"
+  #   - cron: "0 1,9,17 * * *"
 
 jobs:
   controller:
